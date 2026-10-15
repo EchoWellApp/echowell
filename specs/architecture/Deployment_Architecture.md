@@ -4,15 +4,13 @@
 
 EchoWell will be developed as a single GitHub monorepo containing the frontend, backend, analytics engine, database schema, testing framework, and documentation. This architecture prioritizes simplicity, rapid development, low operational cost, and ease of maintenance while remaining scalable enough to support future migration to AWS or another enterprise cloud provider.
 
----
+## Repository Strategy
 
-# Repository Strategy
-
-## Monorepo
+### Monorepo
 
 All application components will be maintained in a single repository.
 
-### Benefits
+#### Benefits
 
 - Simplified project management
 - Easier onboarding for new contributors
@@ -21,50 +19,40 @@ All application components will be maintained in a single repository.
 - Simplified CI/CD workflows
 - Improved AI-assisted development
 
----
+## Technology Stack
 
-# Technology Stack
+### Frontend
 
-## Frontend
-
-### Framework
+#### Framework
 
 - React
 - Next.js
 
-### Purpose
+#### Purpose
 
-Provides the web-based dashboard for:
+Provides the web-based dashboard for resident monitoring, alert review, analytics visualization, and system administration.
 
-- Resident monitoring
-- Alert review
-- Analytics visualization
-- System administration
-
-### Hosting
+#### Hosting
 
 - Netlify
 
-### Justification
+#### Justification
 
 Netlify provides:
-
 - Free hosting for prototype development
 - Automatic deployments from GitHub
 - Built-in HTTPS
 - Environment variable management
 - Simplified frontend deployment
 
----
+### Backend
 
-## Backend
-
-### Framework
+#### Framework
 
 - FastAPI
 - Python
 
-### Responsibilities
+#### Responsibilities
 
 - Session ingestion
 - Validation
@@ -74,29 +62,26 @@ Netlify provides:
 - API endpoints
 - Database interactions
 
-### Hosting
+#### Hosting
 
 - Railway
 
-### Justification
+#### Justification
 
 Railway provides:
-
 - Convenient FastAPI deployment
 - Simple configuration
 - GitHub integration
 - Minimal DevOps overhead
 - Suitable free/trial tier for MVP development
 
----
+### Analytics Engine
 
-## Analytics Engine
-
-### Language
+#### Language
 
 - Python
 
-### Responsibilities
+#### Responsibilities
 
 - Duplicate detection
 - Quality screening
@@ -109,27 +94,24 @@ Railway provides:
 - CUSUM monitoring
 - Alert generation
 
-### Location
+#### Location
 
 Contained within the backend codebase as a dedicated analytics module.
 
-### Justification
+#### Justification
 
 Python is the native language of the reference implementation and provides strong support for:
-
 - Statistical processing
 - Numerical computation
 - Data analysis
 
----
+## Database
 
-# Database
-
-## Database Engine
+### Database Engine
 
 PostgreSQL
 
-### Responsibilities
+#### Responsibilities
 
 - Resident storage
 - Device storage
@@ -138,143 +120,125 @@ PostgreSQL
 - Scoring history
 - Alert history
 
-### Hosting Options
+#### Hosting Options
 
-#### Preferred Prototype Options
+##### Preferred Prototype Options
 
 - Neon PostgreSQL
 - Railway PostgreSQL
 
-#### Future Production Option
+##### Future Production Option
 
 - AWS RDS PostgreSQL
 
-### Justification
+#### Justification
 
 PostgreSQL provides:
-
 - Strong relational modeling
 - Excellent performance
 - Robust querying
 - Industry-standard deployment patterns
 
----
-
-# Hosting Architecture
+## Hosting Architecture
 
 ```text
-                 GitHub Monorepo
-                         │
-        ┌────────────────┴────────────────┐
-        │                                 │
-        ▼                                 ▼
+GitHub Monorepo
+│
+├── Netlify Hosting (React / Next.js)
+└── Railway Hosting (FastAPI Backend)
+      │
+      └── Analytics Engine
+            │
+            └── PostgreSQL (Neon or Railway PostgreSQL)
+```
 
-  Netlify Hosting                  Railway Hosting
- (React / Next.js)                 (FastAPI Backend)
+## Testing Infrastructure
 
-        │                                 │
-        └───────────────┬─────────────────┘
-                        ▼
+### Framework
 
-                Analytics Engine
+- Pytest
 
-                        ▼
+### Test Categories
 
-                  PostgreSQL
-          (Neon or Railway PostgreSQL)
-Testing Infrastructure
-Framework
-
-Pytest
-
-Test Categories
-Unit Tests
+#### Unit Tests
 
 Validate:
+- Baseline calculations
+- MAD calculations
+- Z-score calculations
+- Composite score calculations
+- CUSUM calculations
 
-Baseline calculations
-MAD calculations
-Z-score calculations
-Composite score calculations
-CUSUM calculations
-Integration Tests
+#### Integration Tests
 
 Validate:
+- Database interactions
+- API endpoints
+- End-to-end processing
 
-Database interactions
-API endpoints
-End-to-end processing
-Algorithm Validation Tests
+#### Algorithm Validation Tests
 
 Validate outputs against:
+- EchoWell test dataset
+- Expected workbook results
 
-EchoWell test dataset
-Expected workbook results
-CI/CD
-Platform
+## CI/CD
 
-GitHub Actions
+### Platform
 
-Responsibilities
+- GitHub Actions
+
+### Responsibilities
 
 On every pull request or merge:
+- Run unit tests
+- Run integration tests
+- Run algorithm validation tests
+- Build frontend
+- Validate backend
 
-Run unit tests
-Run integration tests
-Run algorithm validation tests
-Build frontend
-Validate backend
-Deployment Strategy
-Frontend
+## Deployment Strategy
+
+### Frontend
 
 GitHub → Netlify
 
-Backend
+### Backend
 
 GitHub → Railway
 
-Future AWS Migration
+## Future AWS Migration
 
 If AWS credits or sponsorship become available, the architecture may migrate to:
 
-Plain Text
-Frontend:
-AWS Amplify
- 
-Backend:
-AWS App Runner
- 
-Database:
-AWS RDS PostgreSQL
-Migration Justification
+### Frontend
+- AWS Amplify
+
+### Backend
+- AWS App Runner
+
+### Database
+- AWS RDS PostgreSQL
+
+### Migration Justification
 
 This provides:
-
-Enterprise scalability
-Managed infrastructure
-Monitoring and observability
-Long-term production readiness
+- Enterprise scalability
+- Managed infrastructure
+- Monitoring and observability
+- Long-term production readiness
 
 No significant application code changes should be required for migration.
 
-Final Architecture Decision
+## Final Architecture Decision
 
-Repository: Single GitHub Monorepo
-
-Frontend: React + Next.js
-
-Frontend Hosting: Netlify
-
-Backend: FastAPI + Python
-
-Backend Hosting: Railway
-
-Database: PostgreSQL
-
-Database Hosting: Neon or Railway PostgreSQL
-
-Testing: Pytest
-
-CI/CD: GitHub Actions
-
-Future Cloud Target: AWS
+- **Repository:** Single GitHub Monorepo
+- **Frontend:** React + Next.js
+- **Frontend Hosting:** Netlify
+- **Backend:** FastAPI + Python
+- **Backend Hosting:** Railway
+- **Database:** PostgreSQL
+- **Database Hosting:** Neon or Railway PostgreSQL
+- **Testing:** Pytest
+- **CI/CD:** GitHub Actions
+- **Future Cloud Target:** AWS
