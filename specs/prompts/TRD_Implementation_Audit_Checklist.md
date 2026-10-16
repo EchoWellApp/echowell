@@ -147,7 +147,7 @@ Generate tests.
 Do not implement APIs yet.
 ```
 
-**Action:** Commit changes.
+**Action:** Do not commit changes.
 
 ---
 
@@ -173,7 +173,7 @@ Tasks:
 Generate tests.
 ```
 
-**Action:** Commit changes.
+**Action:** Do not commit changes.
 
 ---
 
@@ -203,7 +203,7 @@ Tasks:
 Generate unit tests.
 ```
 
-**Action:** Commit changes.
+**Action:** Do not commit changes.
 
 ---
 
@@ -226,7 +226,7 @@ R01-R10
 Tests must compare generated outputs against workbook expected results.
 ```
 
-**Action:** Commit changes.
+**Action:** Do not commit changes.
 
 ---
 
@@ -252,11 +252,11 @@ Build:
 Connect to backend APIs.
 ```
 
-**Action:** Commit changes.
+**Action:** Do not commit changes.
 
 ---
 
-## Final Phase: Full Repository Audit
+## Sprint 6: Full Repository Audit
 
 ### Prompt
 
@@ -270,9 +270,30 @@ Verify:
 - Every database entity is used.
 - Every acceptance criterion is satisfied.
 - Deployment pipeline works.
+- Frontend and backend are connected.
 
 Generate:
 
 TRD_Implementation_Audit.md
 
 with pass/fail status for every requirement.
+
+---
+
+## Sprint 7: Deployment
+
+### Prompt
+
+Generate:
+
+Project_Backlog.md
+
+containing:
+
+- Epic
+- Feature
+- User Story
+- Priority
+- Dependencies
+
+**Action:** Do not commit changes.
