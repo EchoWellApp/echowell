@@ -90,6 +90,144 @@ Assume PostgreSQL and generate complete schema definitions, relationships, index
 
 Generate full REST API specifications including request/response schemas and authentication requirements.
 
+## Frontend Requirements
+
+The application shall be based on the official wireframes located in:
+
+specs/UI-wireframe/
+
+Read all HTML wireframe files and treat them as source-of-truth UI requirements.
+
+The application must contain three primary views:
+
+1. Residents Overview Page
+2. Resident Detail Page
+3. New Admissions Page
+
+Residents Overview Page Requirements
+
+The page shall display:
+
+- All enrolled residents.
+- Sort controls for:
+  - Alarm status
+  - Resident ID
+  - Date of last check-in
+
+Each resident row shall display:
+
+- Resident ID
+- Alarm Status
+
+Valid status values:
+
+- Alarm On
+- No Alarm
+- Baseline Still Forming
+
+Display the previous 30 days of activity:
+
+- Used Sessions
+- Set Aside Sessions
+- Quarantined Sessions
+- Missed Days
+
+Requirements:
+
+- Missing days must remain visible.
+- Missing data shall never be backfilled.
+- Counts must accurately reflect pipeline results.
+
+Device Monitoring Panel
+
+Display:
+
+- Assigned device
+- Shared devices
+- Device sharing relationships
+- Device silent periods
+- Days with no device activity
+
+The panel must support validation against the pipeline mock datasets.
+
+Resident Detail Page Requirements
+
+Primary Visualization:
+
+- Running CUSUM tally
+- Alarm threshold line at 5.0
+
+The chart must make visible:
+
+- Baseline period
+- Score progression
+- Alarm triggers
+- Alarm persistence
+
+Scored Features Section
+
+Display only the 7 scored measurements in plain language.
+
+Examples:
+
+- Quieter
+- More pauses
+
+Additional requirements:
+
+- Remaining 12 measurements must be stored
+- Remaining 12 measurements are not shown in scoring summary
+
+Baseline Information
+
+Display:
+
+- Baseline status
+- Baseline formation progress
+- Baseline freeze indicator
+
+Requirements:
+
+- Residents must only be compared against their own frozen baseline
+- Baseline must never drift after freeze
+
+Check-In Log
+
+Display:
+
+- Alarms
+- Set-Asides
+- Quarantines
+- Missed Days
+- Baseline Restarts
+
+Staff Review Section
+
+Allow staff notes documenting:
+
+- Observations
+- Actions taken
+- Follow-up activity
+
+New Admissions Page Requirements
+
+Purpose:
+
+Support future study-arm functionality.
+
+Display:
+
+- Newly admitted residents
+- Facility comparison baseline
+
+Requirements:
+
+- New residents are compared against facility-level ranges until their personal baseline forms
+- Once baseline forms, resident transitions to main resident list
+- Mark this area as future/experimental functionality
+
+Generate detailed UI specifications that match these requirements exactly.
+
 ## Testing Requirements
 
 Generate unit, integration, regression, and algorithm-validation specifications using the EchoWell workbook test suite.

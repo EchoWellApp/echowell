@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EchoWell – Residents overview</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F1F1E}a:hover{color:#000}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #1F1F1E; background: #F6F6F4; min-height: 1180px; box-sizing: border-box; padding: 32px 24px">
+<div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 2px solid #1F1F1E; padding-bottom: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 28px; font-weight: 600">EchoWell</div>
+<div style="font-size: 15px; color: #4A4A47">Voice check-ins · [Facility name] · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT</div>
+</div>
+<nav style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="Main.dc.html" style="padding: 12px 16px; border: 2px solid #1F1F1E; background: #FFFFFF; text-decoration: none; font-weight: 600">Residents</a>
+<a href="Admission.dc.html" style="padding: 12px 16px; border: 1px solid #8A8A85; background: #FFFFFF; text-decoration: none">New admissions</a>
+<a href="#devices" style="padding: 12px 16px; border: 1px solid #8A8A85; background: #FFFFFF; text-decoration: none">Devices</a>
+</nav>
+</header>
+
+<section style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<div style="background: #FFFFFF; border: 2px solid #9A4508; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 14px; color: #4A4A47">Alarm on</div>
+<div style="font-size: 32px; font-weight: 600; color: #9A4508">2</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 14px; color: #4A4A47">Being watched, no alarm</div>
+<div style="font-size: 32px; font-weight: 600">7</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 14px; color: #4A4A47">Baseline still forming</div>
+<div style="font-size: 32px; font-weight: 600">1</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 14px; color: #4A4A47">Missed check-ins, last 30 days</div>
+<div style="font-size: 32px; font-weight: 600">19</div>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #8A8A85; display: flex; flex-direction: column">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid #C9C9C4">
+<h2 style="margin: 0; font-size: 20px">Residents</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<label for="sort" style="font-size: 14px; color: #4A4A47">Sort by</label>
+<select id="sort" style="min-height: 44px; padding: 0 12px; font: inherit; border: 1px solid #8A8A85; background: #FFFFFF">
+<option>Alarms first</option>
+<option>Resident ID</option>
+<option>Last check-in</option>
+</select>
+</div>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 15px">
+<thead>
+<tr style="text-align: left; background: #EDEDEA">
+<th style="padding: 12px 16px">Resident</th>
+<th style="padding: 12px 16px">Device</th>
+<th style="padding: 12px 16px">Status</th>
+<th style="padding: 12px 16px">Last check-in (local)</th>
+<th style="padding: 12px 16px">Last 30 days: used · set aside · quarantined · missed</th>
+<th style="padding: 12px 16px"></th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px; font-weight: 600">R09</td>
+<td style="padding: 12px 16px">D09</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 2px solid #9A4508; color: #9A4508; font-weight: 600">▲ Alarm since Oct 21</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:28 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px; font-weight: 600">R10</td>
+<td style="padding: 12px 16px">D10</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 2px solid #9A4508; color: #9A4508; font-weight: 600">▲ Alarm since Oct 24</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:39 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R08</td>
+<td style="padding: 12px 16px">D08</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px dashed #8A8A85">Baseline forming · 13 of 16 sessions</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:28 PM</td>
+<td style="padding: 12px 16px">13 · 5 · 0 · 12</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R07</td>
+<td style="padding: 12px 16px">D07B <span style="color: #4A4A47">(was D07)</span></td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm · baseline restarted Oct 13</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:52 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R05</td>
+<td style="padding: 12px 16px">D05</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:40 PM</td>
+<td style="padding: 12px 16px">28 · 0 · 2 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R03</td>
+<td style="padding: 12px 16px">D02 <span style="color: #4A4A47">(shared)</span></td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:19 PM</td>
+<td style="padding: 12px 16px">22 · 7 · 0 · 1</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R02</td>
+<td style="padding: 12px 16px">D02 <span style="color: #4A4A47">(shared)</span></td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:55 PM</td>
+<td style="padding: 12px 16px">24 · 0 · 0 · 6</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R01</td>
+<td style="padding: 12px 16px">D01</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:07 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R04</td>
+<td style="padding: 12px 16px">D04</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:17 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+<tr style="border-top: 1px solid #C9C9C4">
+<td style="padding: 12px 16px">R06</td>
+<td style="padding: 12px 16px">D06</td>
+<td style="padding: 12px 16px"><span style="display: inline-block; padding: 4px 10px; border: 1px solid #8A8A85">No alarm</span></td>
+<td style="padding: 12px 16px">Oct 30, 2:38 PM</td>
+<td style="padding: 12px 16px">30 · 0 · 0 · 0</td>
+<td style="padding: 12px 16px"><a href="Resident.dc.html" style="display: inline-block; padding: 10px 14px; border: 1px solid #1F1F1E; text-decoration: none">Open</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="devices" style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 20px">Devices</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<div style="border: 1px solid #8A8A85; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+<div style="font-weight: 600">D02 · shared by R02, R03</div>
+<div style="font-size: 14px; color: #4A4A47">Last upload Oct 30, 2:55 PM · silent all day Oct 12</div>
+</div>
+<div style="border: 1px solid #8A8A85; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+<div style="font-weight: 600">D07B · R07</div>
+<div style="font-size: 14px; color: #4A4A47">In use since Oct 13 (replaced D07) · last upload Oct 30, 2:52 PM</div>
+</div>
+<div style="border: 1px dashed #8A8A85; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+<div style="font-weight: 600">D01, D04–D06, D08–D10</div>
+<div style="font-size: 14px; color: #4A4A47">All uploaded on Oct 30 · firmware fw-1.0.0</div>
+</div>
+</div>
+</section>
+
+<footer style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; color: #4A4A47">No audio is stored or played here — only extracted voice measurements. Duplicate records are removed quietly and not shown.</footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

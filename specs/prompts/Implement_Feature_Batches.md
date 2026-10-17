@@ -2,7 +2,6 @@
 
 ## Prompt
 
-```text
 Read all finalized documentation:
 
 - specs/TRDS/
@@ -35,7 +34,44 @@ Requirements:
 7. Cross-reference relevant TRDs and feature specifications.
 
 Output only design documents.
-```
+
+UI Design Requirements
+
+Read:
+
+specs/UI-wireframe/
+
+Generate:
+
+docs/design/UI_Architecture.md
+
+Include:
+
+- Page hierarchy
+- Navigation architecture
+- Component hierarchy
+- State management design
+- Data flow diagrams
+
+Generate screen designs for:
+
+1. Residents Overview
+2. Resident Detail
+3. New Admissions
+
+Document:
+
+- Tables
+- Filters
+- Sorting logic
+- Device panel
+- CUSUM visualization
+- Alert indicators
+- Baseline status displays
+- Staff review workflow
+
+Map every UI component to supporting APIs and database entities.
+
 # Phase 8: Generate Project Skeleton
 
 ## Prompt
@@ -306,12 +342,12 @@ Do not proceed until all validation tests pass.
 
 ## Prompt
 
-```text
 Read:
 
 - specs/TRDS/
 - specs/backlog/features/
 - docs/design/
+- specs/UI-wireframe/
 
 Implement all frontend features.
 
@@ -321,31 +357,138 @@ Technology:
 - Next.js
 - TypeScript
 
+The UI must match the provided wireframes.
+
 Build:
 
-- Dashboard
-- Resident List Page
-- Resident Detail Page
-- Alerts Page
-- Analytics Page
-- Navigation
-- Layout Components
+1. Residents Overview Page
+2. Resident Detail Page
+3. New Admissions Page
+
+Residents Overview Requirements
+
+Display:
+
+- All enrolled residents
+
+Sorting:
+
+- Alarm Status
+- Resident ID
+- Last Check-In Date
+
+Status Values:
+
+- Alarm On
+- No Alarm
+- Baseline Still Forming
+
+Each row shall display:
+
+- Resident ID
+- Alarm Status
+- 30 Day Used Count
+- 30 Day Set Aside Count
+- 30 Day Quarantined Count
+- 30 Day Missed Count
+
+Missing Data Requirements:
+
+- Missing days remain visible
+- Missing data is never hidden
+- Missing data is never backfilled
+
+Device Monitoring Panel
+
+Display:
+
+- Device Assignment
+- Shared Devices
+- Device Silence Periods
+- Device Activity Status
+
+Resident Detail Requirements
+
+Implement a CUSUM trend visualization.
+
+Display:
+
+- Running CUSUM tally
+- Alarm threshold line at 5.0
+- Alarm trigger points
+
+Display scored measurements using plain language descriptions.
+
+Examples:
+
+- Quieter
+- More Pauses
+
+Display:
+
+- Baseline status
+- Baseline progress
+- Baseline freeze state
+
+Implement Check-In Log:
+
+- Alarms
+- Set-Asides
+- Quarantines
+- Missed Days
+- Baseline Restarts
+
+Implement Staff Review Section:
+
+- Notes
+- Interventions
+- Follow-Up Actions
+
+New Admissions Requirements
+
+Display:
+
+- Residents awaiting baseline formation
+- Facility comparison ranges
+- Admission status
 
 Requirements:
 
-1. Connect all pages to backend APIs.
-2. Implement loading states.
-3. Implement error states.
-4. Implement responsive design.
-5. Implement charts and visualizations.
-6. Match UX specifications.
-7. Generate frontend tests.
-8. Update backlog status.
+- Resident transitions automatically after baseline completion
+- Clearly label page as future study-arm functionality
+
+General UI Requirements
+
+- Responsive layout
+- Accessible design
+- Loading states
+- Error states
+- Empty states
+
+Data Integration
+
+Connect all pages to backend APIs.
+
+Requirements:
+
+- Real data only
+- No mock values in production builds
+
+Testing
+
+Generate:
+
+- Component Tests
+- Page Tests
+- API Integration Tests
+- End-to-End UI Tests
 
 Generate:
 
 FRONTEND_IMPLEMENTATION_REPORT.md
-```
+
+Update feature completion status.
+
 # Phase 14A: Generate Deployment Configuration & Infrastructure Files
 
 ## Prompt

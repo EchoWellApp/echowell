@@ -27,3 +27,39 @@ Verify:
 10. No placeholder sections remain.
 
 Produce a pass/fail matrix with issues and recommendations.
+
+Frontend Verification
+
+Verify:
+
+Residents Overview
+
+- Resident sorting functions
+- Alarm status displays correctly
+- 30-day counts display correctly
+- Missing days remain visible
+- Device panel displays correctly
+
+Resident Detail
+
+- CUSUM chart displays correctly
+- Alarm line at 5.0 present
+- Scored features display correctly
+- Check-In log displays correctly
+- Staff review section functions
+
+New Admissions
+
+- Facility baseline view exists
+- Transition workflow documented
+- Future study-arm functionality identified
+
+Verify all wireframe requirements have been implemented.
+
+Generate a UI_REQUIREMENTS_TRACEABILITY_MATRIX showing:
+
+Wireframe Requirement
+→ Feature
+→ Component
+→ API
+→ Test Coverage
