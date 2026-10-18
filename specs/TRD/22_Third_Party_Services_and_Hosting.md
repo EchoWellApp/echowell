@@ -91,7 +91,7 @@ the services that are explicitly excluded.
 | Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine, plus the Cron Job service `nightly`; environments `staging` and `production`; GitHub integration with "Wait for CI"; TLS edge |
 | Plan | Hobby (monthly subscription that includes a usage credit; usage-based above it). Trial credit only for the first days. |
 | Relevant limits | Usage billed by vCPU, memory and egress; one always-on small service per environment is expected to stay near the included credit (about USD 5 per environment per month, TRD 15 DEP-100). The nightly run is a separate Railway Cron Job service (`nightly`, TRD 15 DEP-046) billed only while it runs; the backend may use app sleeping to reduce usage (cold start on the first request), except on demo days (TRD 15 DEP-042). Log retention on Hobby is short (about 7 days, TRD 17 §4.10). Team (shared workspace) features may require the Pro plan. |
-| Data stored | Container images, environment variables (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17). Synthetic/test data only passes through (D-OWNER-4). |
+| Data stored | Container images, environment variables (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17). Synthetic/test data only passes through (D-OWNER-4). |
 | Region | US East (Virginia) |
 | Ownership | Railway workspace owned by the project mailbox; DevOps owner + 1 other admin; if team membership needs Pro, the upgrade decision follows OQ-07 |
 | Exit path | AWS App Runner running the same image from ECR (TRD 15 §4.16, DEP-116 for the nightly run) |

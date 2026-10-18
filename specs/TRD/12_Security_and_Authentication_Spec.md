@@ -70,7 +70,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | T-13 | Denial of service | Request floods or oversized bodies exhaust free-tier resources (RSK-07) | B1, B3 | Rate limits, body-size limits, batch limits (SEC-090..SEC-094) |
 | T-14 | Elevation of privilege | Clinician/researcher calls admin endpoints, or API key reads data | B3 | Server-side role checks from DB, API keys limited to `ingest:write` (SEC-040..SEC-046) |
 | T-15 | Elevation of privilege | SQL injection | B4 | SQLAlchemy bound parameters only; no string-built SQL (SEC-083) |
-| T-17 | Tampering | Pipeline tuned against the answer key (evaluation data leaks into the analytics) | A7 | `evaluation_ground_truth` not readable by `echowell_app`; only the `evaluation_alarm_timing` view is exposed to the analytics endpoint (SEC-114) |
+| T-17 | Tampering | Pipeline tuned against the answer key (evaluation data leaks into the analytics) | A7 | `evaluation_ground_truth` not readable by `echowell_app`; only `analytics_summary.py` reads it, through a separate DATABASE_READONLY_URL engine, in test_v0_1 (SEC-114, SEC-116) |
 | T-16 | Information disclosure | Audio smuggled into the cloud via extra fields | B1 | `extra="forbid"`, 64 KB body limit, no audio media types, no audio endpoints (SEC-080..SEC-082, SEC-121) |
 
 ### 4.2 Data classification and hosting (owner decisions D-OWNER-3, D-OWNER-4)
@@ -187,7 +187,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, SENTRY_DSN, database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. | Must | contract §12, D-OWNER-3 | Inspection |
+| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. | Must | contract §12, D-OWNER-3 | Inspection |
 | SEC-051 | `.env`, `.env.*` (except `.env.example`) shall be listed in `.gitignore`; `.env.example` shall contain variable names with non-secret dummy values only. | Must | contract §12 | Inspection |
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
@@ -302,9 +302,9 @@ Audit events (`audit_logs.action`):
 
 | Role | Purpose | Privileges |
 |---|---|---|
-| echowell_migrator | Alembic migrations (CI deploy step only), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL; owner of view `evaluation_alarm_timing` |
-| echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `alert_reviews`; SELECT on view `evaluation_alarm_timing`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE, DELETE on derived and mutable tables (`processed_sessions`, `day_ledger`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `data_alerts`, `facility_reference_ranges`, `pipeline_runs`, `ingest_batches`, `users`, `api_keys`, `config_parameters`, `residents`, `devices`, `device_assignments`, `facilities`); USAGE on sequences; no DDL, no TRUNCATE |
-| echowell_readonly | Researchers' offline analysis, audit review, exports | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
+| echowell_migrator | Alembic migrations (CI deploy step only), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
+| echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `alert_reviews`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE, DELETE on derived and mutable tables (`processed_sessions`, `day_ledger`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `data_alerts`, `facility_reference_ranges`, `pipeline_runs`, `ingest_batches`, `users`, `api_keys`, `config_parameters`, `residents`, `devices`, `device_assignments`, `facilities`); USAGE on sequences; no DDL, no TRUNCATE |
+| echowell_readonly | Researchers' offline analysis, audit review, exports; login used by DATABASE_READONLY_URL (alarm-timing read in `analytics_summary.py`, test_v0_1 only) | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -313,6 +313,7 @@ Audit events (`audit_logs.action`):
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
 | SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` fail and that `SELECT * FROM evaluation_ground_truth` fails with a permission error. | Must | T-04, contract §21 R20 | Test |
+| SEC-116 | DATABASE_READONLY_URL (role `echowell_readonly`) shall be set only where PIPELINE_PROFILE is `test_v0_1`, shall be stored as a platform secret, shall use `sslmode=require`, and shall be referenced only by `backend/services/analytics_summary.py`; no code shall use `SET ROLE` to switch database roles. | Must | contract R27, §21 R20 | Test |
 | SEC-115 | The Neon/RDS owner (superuser-equivalent) credentials shall be held only by the Team 2 DevOps lead and the PI's designated deputy and shall not be used by applications. | Must | T-09 | Inspection |
 
 ### 4.14 Privacy and data minimisation
@@ -410,6 +411,7 @@ Audit events (`audit_logs.action`):
 - Startup checks live in `backend/core/config.py` (`Settings.validate_for_env()`): JWT_SECRET length, `sslmode`,
   PIPELINE_PROFILE vs APP_ENV, CORS_ORIGINS non-empty and without `*` in staging/production.
 - Trigger SQL (in the migration): `CREATE FUNCTION forbid_mutation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '% is append-only', TG_TABLE_NAME; END $$;` attached `BEFORE UPDATE OR DELETE` to `raw_sessions`, `audit_logs`, `staff_notes`, `alert_reviews`.
+- `staff_notes.marked_reviewed` remains in the schema but is always written false; the notes request has no `mark_reviewed` field (contract R5/R27).
 - Note: the pipeline's natural-key upserts (contract §20 R15) never touch `alert_reviews` or `staff_notes`, so append-only enforcement does not conflict with rebuilds.
 - Audit writes go through `services/audit_service.record(session, action, entity_type, entity_id, details)` which
   reads actor, IP and request_id from the request context var; never call it after commit.

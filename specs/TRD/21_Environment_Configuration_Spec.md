@@ -58,7 +58,7 @@ the AWS target.
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
 | `APP_ENV` | Deployment environment name | Yes | — | `staging` | all | No | one of `local`, `staging`, `production`, `test` |
-| `DATABASE_URL` | Runtime DB connection (role `echowell_app`; Neon pooled endpoint); researcher exports may use a separate `echowell_readonly` connection configured in TRD 12 | Yes | — | `postgresql+psycopg://echowell_app:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | scheme `postgres`, `postgresql`, `postgresql+psycopg` (normalised to `postgresql+psycopg`); must contain `sslmode=require` (or `verify-full`) when APP_ENV is `staging` or `production` |
+| `DATABASE_URL` | Runtime DB connection (role `echowell_app`; Neon pooled endpoint) | Yes | — | `postgresql+psycopg://echowell_app:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | scheme `postgres`, `postgresql`, `postgresql+psycopg` (normalised to `postgresql+psycopg`); must contain `sslmode=require` (or `verify-full`) when APP_ENV is `staging` or `production` |
 | `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 hex chars from `openssl rand -hex 32` | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
 | `JWT_EXPIRES_MINUTES` | Access token lifetime | No | `60` | `60` | all | No | integer 5–1440 |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated | Yes in staging/production | `http://localhost:3000,http://localhost:3001` (local/test only) | `https://echowell-und.netlify.app` | all | No | each item a valid origin without path; `*` forbidden; `http://` allowed only for `localhost` origins and only when APP_ENV is `local` or `test` |
@@ -79,6 +79,7 @@ the AWS target.
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
 | `DATABASE_MIGRATION_URL` | Connection used by Alembic only (role `echowell_migrator`, direct non-pooled endpoint) | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
+| `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes in local, staging and test; optional in production (the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
@@ -86,7 +87,7 @@ the AWS target.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-010 | With APP_ENV=`production`, startup shall fail if PIPELINE_PROFILE is `test_v0_1`. | Must | D-OWNER-2, ASM-04 | Test |
-| ENV-011 | With APP_ENV=`staging` or `production`, startup shall fail if DATABASE_URL or DATABASE_MIGRATION_URL lacks `sslmode=require` or `sslmode=verify-full`. | Must | D-OWNER-3, TRD 12 | Test |
+| ENV-011 | With APP_ENV=`staging` or `production`, startup shall fail if DATABASE_URL, DATABASE_MIGRATION_URL or DATABASE_READONLY_URL (when set) lacks `sslmode=require` or `sslmode=verify-full`. | Must | D-OWNER-3, TRD 12 | Test |
 | ENV-012 | With APP_ENV=`production`, startup shall fail if PIPELINE_AS_OF or CORS_ORIGIN_REGEX is non-empty, if LOG_FORMAT is `console`, or if any CORS origin uses `http://`; when LOG_LEVEL is `DEBUG` in staging or production the backend shall log WARNING `debug_logging_enabled` at startup and every hour (time-boxed use, TRD 17 LOG-012). | Must | BR-16, TRD 17 | Test |
 | ENV-013 | JWT_SECRET shall be rejected if shorter than 32 bytes in every environment, including `test`. | Must | contract §12 | Test |
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
@@ -149,6 +150,7 @@ Three committed templates; real `.env` files are gitignored (TRD 18 §4.11).
 # Local development (docker compose). Copy to .env. Local-only values; never reuse elsewhere.
 APP_ENV=local
 DATABASE_URL=postgresql+psycopg://echowell:echowell@db:5432/echowell
+DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly:local-dev-only-readonly@db:5432/echowell
 JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
@@ -178,6 +180,7 @@ NEXT_TELEMETRY_DISABLED=1
 APP_ENV=production                 # staging for the staging environment
 DATABASE_URL=                      # secret: Neon pooled URL, role echowell_app, must include sslmode=require
 DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_migrator, must include sslmode=require
+DATABASE_READONLY_URL=             # secret: Neon pooled URL, role echowell_readonly, sslmode=require; required in staging, optional in production
 JWT_SECRET=                        # secret: openssl rand -hex 32 (different per environment)
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://staging--echowell-und.netlify.app)
@@ -210,7 +213,8 @@ NEXT_PUBLIC_APP_ENV=production
 |---|---|---|---|---|---|
 | APP_ENV | `local` | `test` | `staging` | `production` | `production` |
 | DATABASE_URL | Compose `db` | CI service `localhost:5432/echowell_test` | Neon `staging` pooled, app role | Neon `main` pooled, app role | RDS endpoint, app role, `sslmode=require` (Secrets Manager) |
-| DATABASE_MIGRATION_URL | unset (= DATABASE_URL) | unset | Neon `staging` direct, owner role | Neon `main` direct, owner role | RDS, owner role (Secrets Manager) |
+| DATABASE_READONLY_URL | Compose `db`, readonly role | CI service, readonly role | Neon `staging` pooled, readonly role | optional (empty) | optional, RDS readonly role (Secrets Manager) |
+| DATABASE_MIGRATION_URL | unset (= DATABASE_URL) | unset | Neon `staging` direct, migrator role | Neon `main` direct, migrator role | RDS, migrator role (Secrets Manager) |
 | JWT_SECRET | local-dev-only value | generated per run | unique secret | unique secret | unique secret (Secrets Manager) |
 | CORS_ORIGINS | `http://localhost:3000,http://localhost:3001` | `http://localhost:3000` | `https://staging--echowell-und.netlify.app` | `https://echowell-und.netlify.app` | Amplify production domain |
 | CORS_ORIGIN_REGEX | empty | empty | deploy-preview regex | empty | empty |
@@ -255,13 +259,14 @@ NEXT_PUBLIC_APP_ENV=production
 - AC-ENV-06 With APP_ENV=production and PIPELINE_AS_OF set, startup fails; with APP_ENV=staging and PIPELINE_AS_OF=2026-10-30T15:00:00-05:00 the residents summary returns tiles 2 / 7 / 1 / 19 on any calendar date.
 - AC-ENV-07 FACILITY_NAME=`Edge4Care` is rejected.
 - AC-ENV-08 The unit test comparing `Settings` fields with `.env.example` passes; `frontend` build fails when NEXT_PUBLIC_API_BASE_URL is unset.
-- AC-ENV-09 `repr(get_settings())` shows `**********` for DATABASE_URL, DATABASE_MIGRATION_URL, JWT_SECRET and SENTRY_DSN.
+- AC-ENV-09 `repr(get_settings())` shows `**********` for DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET and SENTRY_DSN.
 
 ## 8. Implementation Notes
 
 - `Settings` uses `model_config = SettingsConfigDict(env_file=".env" if APP_ENV in {"local","test"} else None, extra="ignore", case_sensitive=True)`; read APP_ENV first from `os.environ` in the factory to decide on `env_file` (the single allowed direct read, inside `backend/core/config.py`).
 - Implement cross-field rules (ENV-010 to ENV-012, ENV-041) in a `@model_validator(mode="after")`.
 - Parse `CORS_ORIGINS` with a `field_validator(mode="before")` splitting on commas and stripping spaces; pydantic-settings otherwise expects JSON for list types.
+- Only `backend/services/analytics_summary.py` may create an engine from DATABASE_READONLY_URL; the pipeline and every other module must never use it (the answer key never touches the analytics, SRC-02).
 - Alembic `env.py` must import `get_settings()` and use `DATABASE_MIGRATION_URL or DATABASE_URL`, so the same validation applies to migrations.
 - For psycopg 3 behind the Neon pooler pass `connect_args={"prepare_threshold": None}` (TRD 15 Implementation Notes).
 - Do not log the `Settings` object; log only a startup summary (`env`, `version`, `pipeline_profile`, `facility_tz`, `sentry_enabled` boolean, `as_of_fixed` boolean).

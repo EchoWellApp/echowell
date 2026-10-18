@@ -210,7 +210,7 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 3. The default branch is renamed or confirmed as `main` (production).
 4. Create roles: `echowell_migrator` (owns the schema; used by Alembic only via DATABASE_MIGRATION_URL), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
 5. Create child branch `staging` from `main` immediately after step 4 (empty schema).
-6. Copy four connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Store them only in Railway variables (DEP-033).
+6. Copy the connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Also copy, per branch, the pooled string for `echowell_readonly` (DATABASE_READONLY_URL; required for staging, optional for production). Store them only in Railway variables (DEP-033).
 7. Set compute autosuspend to the plan default (5 min) for `staging`; for `main` keep the default as well (cost, TRD 22) and accept cold starts (RSK-07).
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -471,7 +471,7 @@ Target configuration (region `us-east-1`, AWS account owned by UND per OQ-07):
 | Frontend | AWS Amplify Hosting app connected to `EchoWellApp/echowell`, app root `frontend`, build `npm ci && npm run build`, Node 20; branches `main` → production, `staging` → staging; environment variables NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_APP_ENV. |
 | Backend | Amazon ECR repository `echowell-backend` (scan on push, KMS encryption); App Runner service `echowell-backend-production` from the same `backend/Dockerfile` image, port 8000, health check HTTP `/api/v1/health`, 1 vCPU / 2 GB, min 1 / max 1 instance, VPC connector to the private subnets of the RDS VPC. |
 | Database | Amazon RDS for PostgreSQL 16, `db.t4g.micro` (staging) / `db.t4g.small` (production), storage encrypted with KMS customer-managed key `alias/echowell-rds`, not publicly accessible, private subnets in 2 AZs, parameter `rds.force_ssl = 1`, automated backups 14 days, deletion protection on. |
-| Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21). |
+| Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/DATABASE_READONLY_URL` (optional), `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21). |
 | Logs and monitoring | CloudWatch Logs (App Runner application + service logs, JSON format unchanged, TRD 17), retention 90 days, KMS-encrypted; CloudWatch alarms on health check failures, 5xx rate and RDS CPU/storage; SNS topic to the DevOps owner's email. |
 | Nightly run | EventBridge Scheduler rule `cron(0 2 * * ? *)` with time zone America/Chicago invoking `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (alternative: an ECS scheduled task running `python -m backend.jobs.nightly_run`); App Runner has no cron facility. |
 | Network | Only App Runner (HTTPS) and Amplify (HTTPS) are public; the RDS security group allows 5432 only from the App Runner VPC connector security group. |
@@ -482,7 +482,7 @@ Mapping from the current interim stack:
 |---|---|---|
 | Netlify site (`frontend/`, `@netlify/plugin-nextjs`) | AWS Amplify Hosting (Next.js SSR) | New Amplify app with base `frontend/`, build `npm run build`; same NEXT_PUBLIC_* variables. No code change. |
 | Railway service `backend` (`backend/Dockerfile`) | AWS App Runner from ECR image | Push the same image to ECR; App Runner port 8000 via PORT; health path `/api/v1/health`; nightly run via EventBridge (DEP-116). |
-| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_migrator` / `echowell_app` / `echowell_readonly`; update DATABASE_URL and DATABASE_MIGRATION_URL. |
+| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_migrator` / `echowell_app` / `echowell_readonly`; update DATABASE_URL, DATABASE_MIGRATION_URL and (optional) DATABASE_READONLY_URL. |
 | Railway / Netlify variables | AWS Secrets Manager + App Runner env | Same variable names (TRD 21). |
 | Railway logs | CloudWatch Logs | JSON log format unchanged (TRD 17). |
 | GitHub Actions deploy verification | GitHub Actions with AWS OIDC role | Smoke tests unchanged; URLs change in Actions variables. |
@@ -490,7 +490,7 @@ Mapping from the current interim stack:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DEP-110 | No application code shall depend on a Netlify-, Railway- or Neon-specific SDK or API; platform specifics shall be confined to `netlify.toml`, `railway.toml` and environment variables. | Must | SRC-01 Future AWS | Inspection |
-| DEP-111 | The backend shall read its listening port only from PORT (default 8000) and its database only from DATABASE_URL / DATABASE_MIGRATION_URL, so the same image runs on Railway, Compose and App Runner. | Must | SRC-01 | Test |
+| DEP-111 | The backend shall read its listening port only from PORT (default 8000) and its database only from DATABASE_URL / DATABASE_MIGRATION_URL / DATABASE_READONLY_URL, so the same image runs on Railway, Compose and App Runner. | Must | SRC-01 | Test |
 | DEP-112 | The AWS production database shall be an RDS for PostgreSQL 16 instance with storage encryption using a KMS customer-managed key, `rds.force_ssl = 1`, no public access, automated backups of at least 14 days and deletion protection enabled. | Must | D-OWNER-3, BR-16 | Inspection |
 | DEP-113 | All AWS production secrets shall be held in AWS Secrets Manager (KMS-encrypted) and injected as environment variables with the names defined in TRD 21; no secret shall be stored in Amplify build settings or in the image. | Must | D-OWNER-3, TRD 12, TRD 21 | Inspection |
 | DEP-114 | The AWS BAA shall be accepted for the account, and every AWS service on the live-data path (Amplify, App Runner, ECR, RDS, KMS, Secrets Manager, CloudWatch, EventBridge, SNS) shall be confirmed against the AWS HIPAA Eligible Services Reference before live data is loaded; a service not listed shall be replaced or removed from the live-data path. | Must | D-OWNER-3, D-OWNER-4, RSK-14 | Inspection |

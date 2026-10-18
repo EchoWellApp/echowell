@@ -505,7 +505,7 @@ record from D02. For D08 (single resident R08) the 12 missed days are silent day
 
 #### E-18 GET /api/v1/analytics
 - Auth: bearer (A, Rs). Clinicians receive 403 `FORBIDDEN`. 200 `AnalyticsResponse`.
-- Exactly one of `alarm_timing` (PIPELINE_PROFILE `test_v0_1`; from view `evaluation_alarm_timing`, TRD 05 API-136) and
+- Exactly one of `alarm_timing` (PIPELINE_PROFILE `test_v0_1`; read from `evaluation_ground_truth` via the DATABASE_READONLY_URL engine in `analytics_summary.py`, TRD 05 API-136) and
   `review_outcomes` (production) is non-null. Percentages are rounded half-up to integers.
 
 ```json
