@@ -72,7 +72,7 @@ flowchart LR
   ALL[every privileged action] --> AUD[(audit_logs<br/>IMMUTABLE)]
   KEY[SRC-03 answer key] -. numeric expectations: tests only .-> TESTS[tests/validation]
   KEY -. planted change dates, test_v0_1 only .-> EGT[(evaluation_ground_truth<br/>no app-role access)]
-  EGT -. read after the run by GET /analytics via SET ROLE echowell_readonly .-> AN[Analytics alarm timing check]
+  EGT -. read after the run only via DATABASE_READONLY_URL by analytics_summary.py .-> AN[Analytics alarm timing check]
 ```
 
 | Layer | Tables | Written by | Mutability | Rebuildable from raw? |
@@ -97,7 +97,7 @@ flowchart LR
 | DB-004 | No row of `raw_sessions` or `audit_logs` shall be updatable or deletable by the application: the trigger `reject_mutation()` and the absence of UPDATE/DELETE/TRUNCATE grants for `echowell_app` shall each independently block it. | Must | BR-02, BR-16, SRC-02 | Test (AC-PGS-01..03 of TRD 20) |
 | DB-005 | Records that fail schema validation shall be written only to `ingest_rejections` (with the raw body and the error list) and shall never be inserted into `raw_sessions`. | Must | BR-01, TRD 10 | Test (invalid record → 0 new raw rows, 1 rejection row) |
 | DB-006 | Every row of `epochs`, `processed_sessions`, `day_ledger`, `scores`, `cusum_state`, `alerts` (identity and CUSUM fields) and `facility_reference_ranges` shall be computable solely from `raw_sessions`, the reference tables and the `config_parameters` profile in use. | Must | BR-02, SRC-02 | Test (DB-009) |
-| DB-007 | No table shall store the SRC-03 workbook expected values (statuses, baselines, scores); they shall be read only by tests under `tests/validation/`. The only answer-key facts in the database are the planted change type and true onset date per resident in `evaluation_ground_truth`, loaded only for the `test_v0_1` profile, on which `echowell_app` has no privilege; `GET /api/v1/analytics` reads it after the run through `SET LOCAL ROLE echowell_readonly`, and `analytics/` and the pipeline service never read it. | Must | SRC-02, BR-15, contract §19, R20 | Inspection (import-linter: `analytics` may not import `backend` or `tests`); Test (TRD 20 AC-PGS-14) |
+| DB-007 | No table shall store the SRC-03 workbook expected values (statuses, baselines, scores); they shall be read only by tests under `tests/validation/`. The only answer-key facts in the database are the planted change type and true onset date per resident in `evaluation_ground_truth`, loaded only for the `test_v0_1` profile, on which `echowell_app` has no privilege; it is loaded by `database/seeds/load_evaluation_ground_truth.py` and read after the run only by `backend/services/analytics_summary.py` through the separate connection `DATABASE_READONLY_URL` (role `echowell_readonly`); `analytics/`, the pipeline and all other code use `DATABASE_URL` and never read it. | Must | SRC-02, BR-15, contract §19, R20, R27 | Inspection (import-linter: `analytics` may not import `backend` or `tests`); Test (TRD 20 AC-PGS-14) |
 
 ### 4.2 Entity-relationship model
 
@@ -527,7 +527,7 @@ lookup indexes for `resident_code`, `device_code`, `(resident_id, local_date)` o
 | Data alerts queue (`GET /data-alerts`) | `data_alerts WHERE status = 'open' ORDER BY last_detected_at DESC` | `data_alerts_status_detected_idx` |
 | Data alert reconciliation | `data_alerts WHERE kind = :k AND resident_id = :r AND status = 'open'` | `data_alerts_open_subject_uq` |
 | Analytics review outcomes (production) | `alert_reviews GROUP BY outcome` | `alert_reviews_outcome_idx` |
-| Analytics alarm timing (test_v0_1) | `evaluation_ground_truth` (10 rows) joined in Python with `alerts` | `evaluation_ground_truth_resident_code_uq` |
+| Analytics alarm timing (test_v0_1) | `evaluation_ground_truth` (10 rows, via `DATABASE_READONLY_URL`) joined in Python with `alerts` | `evaluation_ground_truth_resident_code_uq` |
 | Staff notes (`GET /residents/{code}/notes`) | `staff_notes WHERE resident_id = :r ORDER BY created_at DESC` | `staff_notes_resident_created_idx` |
 | Device panel (`GET /devices`) | assignments by device; last upload `max(timestamp_utc) FROM raw_sessions WHERE device_id = :d`; silent days from `day_ledger` by `(device_id, local_date)` | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
 | Ingest duplicate check (`POST /sessions`) | `EXISTS raw_sessions WHERE session_id = :s` | `raw_sessions_session_id_idx` |
@@ -586,7 +586,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DB-055 | Migration `0002_seed_config_parameters` shall insert both profiles (`production`, `test_v0_1`) with the 21 keys of TRD 20 section 4.11 (16 of contract §7 plus `data_alert_baseline_stalled_enabled` true, `data_alert_set_aside_fraction` 0.20, `data_alert_device_silent_days` 2, `alert_snooze_hours` 24, `review_explanations` list of 5 codes, contract §19/R17); `production.baseline_n = 30`, `test_v0_1.baseline_n = 16`. | Must | SRC-03, D-OWNER-2 | Test |
-| DB-056 | `python -m backend.cli seed test_v0_1` shall create, in one transaction: facility `Edgewood test` (timezone America/Chicago); residents R01–R10 (cohort `longitudinal`, `enrolled_on` 2026-10-01, sex R01 F, R02 M, R03 F, R04 M, R05 F, R06 M, R07 F, R08 M, R09 F, R10 M per SRC-04); devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (`firmware_version_last` fw-1.0.0; D07 `active = false`); the 11 assignments of TRD 20 section 4.12 including R02 and R03 sharing D02 from 2026-10-01 and R07 on D07 2026-10-01..2026-10-12 then D07B from 2026-10-13; users `admin@echowell.test` (admin), `clinician@echowell.test` (clinician), `researcher@echowell.test` (researcher); API key `test-ingest`; and the 10 `evaluation_ground_truth` rows of TRD 20 section 4.12 (R09 `Sudden step` 2026-10-21, R10 `Slow drift` 2026-10-17, others `None`). | Must | SRC-04, BR-15, contract §19 | Test (counts 1/10/10/11/3/1/10) |
+| DB-056 | `python -m backend.cli seed test_v0_1` shall create, in one transaction: facility `Edgewood test` (timezone America/Chicago); residents R01–R10 (cohort `longitudinal`, `enrolled_on` 2026-10-01, sex R01 F, R02 M, R03 F, R04 M, R05 F, R06 M, R07 F, R08 M, R09 F, R10 M per SRC-04); devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (`firmware_version_last` fw-1.0.0; D07 `active = false`); the 11 assignments of TRD 20 section 4.12 including R02 and R03 sharing D02 from 2026-10-01 and R07 on D07 2026-10-01..2026-10-12 then D07B from 2026-10-13; users `admin@echowell.test` (admin), `clinician@echowell.test` (clinician), `researcher@echowell.test` (researcher); API key `test-ingest`; and, by calling `database/seeds/load_evaluation_ground_truth.py`, the 10 `evaluation_ground_truth` rows of TRD 20 section 4.12 (R09 `Sudden step` 2026-10-21, R10 `Slow drift` 2026-10-17, others `None`). | Must | SRC-04, BR-15, contract §19 | Test (counts 1/10/10/11/3/1/10) |
 | DB-057 | The seed command shall generate user passwords and the API key with `secrets.token_urlsafe(24)`, print them once to standard output, and store only their argon2id / SHA-256 hashes; no credential shall be committed to the repository. | Must | BR-16, TRD 12 | Inspection; Test |
 | DB-058 | `python -m backend.cli seed test_v0_1 --with-input` shall additionally ingest SRC-05 through the ingestion service as one `ingest_batches` row with `source = 'seed'` and then run the pipeline with trigger `test` and explicit `as_of` 2026-10-30 15:00 America/Chicago (2026-10-30T20:00:00Z), as POST /api/v1/pipeline/run `{as_of}` would (contract R21). | Must | BR-15, SRC-05 | Test (283 raw rows; counts of DB-020) |
 | DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Railway/Neon stack only synthetic or test data shall be loaded until OQ-23 is resolved. | Must | D-OWNER-3, OQ-23 | Test |
@@ -618,7 +618,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 - TRD 20 for the DDL; TRD 23 for entity semantics; TRD 07–10 for writer behaviour.
 - TRD 12 for roles, audit action vocabulary and credential hashing.
 - TRD 15 / TRD 16 for the deploy step that runs migrations and the CI schema diff job.
-- TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role), `APP_ENV`, `PIPELINE_PROFILE`, `PIPELINE_AS_OF`, `FACILITY_TZ`, `GIT_SHA`.
+- TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role), `DATABASE_READONLY_URL` (readonly role, R27), `APP_ENV`, `PIPELINE_PROFILE`, `PIPELINE_AS_OF`, `FACILITY_TZ`, `GIT_SHA`.
 - TRD 22 for Neon/Railway/RDS plan features (PITR window, encryption, branching).
 - PostgreSQL 16, Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x.
 
@@ -654,7 +654,8 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 - Pitfall: deleting `processed_sessions` cascades to `scores` (only CASCADE in the schema); `cusum_state` and `day_ledger`
   must be deleted explicitly.
 - `DATABASE_URL` (app role) is used by the backend and jobs; `DATABASE_MIGRATION_URL` (migrator role) only by Alembic and the
-  seed/reset/purge CLI commands; the backend shall never receive the migrator credential.
+  seed/reset/purge CLI commands; the backend shall never receive the migrator credential. `DATABASE_READONLY_URL` (readonly role) is opened only by
+  `backend/services/analytics_summary.py` for the Alarm timing check; the app login has no membership in `echowell_readonly`.
 - Pitfall: `alerts.session_id` and baseline session references are text business keys; do not replace them with
   `processed_sessions.id`, which changes on every rebuild.
 - The SRC-03 workbook is read only by `tests/validation/` with openpyxl/pandas; keep it out of any seed or fixture loaded

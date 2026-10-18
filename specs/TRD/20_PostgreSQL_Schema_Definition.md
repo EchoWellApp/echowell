@@ -81,7 +81,7 @@ Out of scope:
 | PGS-024 | Migration `0002_seed_config_parameters` shall insert the 42 rows of section 4.11 (21 keys × 2 profiles: the 16 keys of contract §7 and the 5 keys of contract §19/§20 R17) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 21 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
 | PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, OQ-23 | Test (CLI with APP_ENV=production writes nothing) |
-| PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL` and `DATABASE_MIGRATION_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
+| PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
 | PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 `application/problem+json` response (error code from the TRD 05 catalogue, contract R19) and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
 | PGS-029 | `alerts` shall have at most one non-closed row per `epoch_id` (partial unique index `alerts_one_active_per_epoch_uq`) and at most one row per `(epoch_id, session_id)`. | Must | BR-11, TRD 09 | Test |
 | PGS-030 | `epochs` shall have at most one row per resident with `ended_at IS NULL` (partial unique index `epochs_current_uq`) and unique `(resident_id, epoch_number)`. | Must | BR-08 | Test |
@@ -93,7 +93,7 @@ Out of scope:
 | PGS-036 | `staff_notes.body` shall be 1–2000 characters after trimming, and a note may be superseded by at most one later note (`UNIQUE (supersedes_id)`). | Must | BR-13 | Test |
 | PGS-037 | `residents.status = 'withdrawn'` shall hold if and only if `withdrawn_on IS NOT NULL`, and `withdrawn_on` shall not precede `enrolled_on`. | Must | OQ-11 | Test |
 | PGS-038 | Every index of section 4.7 shall exist with the exact name, columns, order, INCLUDE list and predicate shown. | Should | TRD 06 DB-040..DB-047 | Test (PGS-016) |
-| PGS-040 | `echowell_app` shall have no privilege on `evaluation_ground_truth` and no UPDATE, DELETE or TRUNCATE on `raw_sessions`, `audit_logs`, `alert_reviews` or `staff_notes` (contract R20). The Analytics "Alarm timing check" (`GET /api/v1/analytics`, test_v0_1 profile only) shall read `evaluation_ground_truth` in a separate read-only transaction after `SET LOCAL ROLE echowell_readonly`, which `echowell_app_login` holds `WITH INHERIT FALSE, SET TRUE` in local, test and staging only; the pipeline service shall never issue that `SET ROLE`. In production the membership is not granted and the table is empty. | Must | SRC-02 ("answer key never touches the analytics"), contract §19, R20 | Test (as app login: SELECT fails with 42501; after SET LOCAL ROLE it succeeds) |
+| PGS-040 | `echowell_app` shall have no privilege on `evaluation_ground_truth` and no UPDATE, DELETE or TRUNCATE on `raw_sessions`, `audit_logs`, `alert_reviews` or `staff_notes` (contract R20). The Analytics "Alarm timing check" (test_v0_1 only) shall read `evaluation_ground_truth` only through a second connection `DATABASE_READONLY_URL` (login `echowell_readonly_login`, member of `echowell_readonly`, `sslmode=require`), opened solely by `backend/services/analytics_summary.py`; the pipeline and all other code use `DATABASE_URL`. `echowell_app_login` shall have no membership in `echowell_readonly` and no code shall issue `SET ROLE` to reach that table (contract R27). | Must | SRC-02 ("answer key never touches the analytics"), contract §19, R20, R27 | Test (as `echowell_app_login`: SELECT fails with 42501 and `SET ROLE echowell_readonly` fails with 42501; as `echowell_readonly_login`: SELECT returns 10 rows in test_v0_1); Inspection (only `analytics_summary.py` references `DATABASE_READONLY_URL`) |
 | PGS-041 | `data_alerts` shall enforce by CHECK that `device_silent` rows reference a device and no resident; `baseline_stalled`, `possible_other_speaker` and `high_set_aside` rows reference a resident and no device; `review_flagged_data_problem` rows reference a resident and an `alert_reviews` row and have no `pipeline_run_id`; all other kinds have a `pipeline_run_id`; and at most one `open` row per `(kind, resident_id, device_id)` for the rule kinds (partial unique index `data_alerts_open_subject_uq`, NULLS NOT DISTINCT). | Must | Contract §19, BR-12 | Test |
 | PGS-042 | `alert_reviews` shall be append-only for the application (SELECT, INSERT), shall require an `outcome` of enum `review_outcome`, shall store `explanations` as an array of 0–20 lower-case codes, and `note` NULL or 1–2000 characters. | Must | Contract §19, R5 | Test |
 | PGS-043 | `alerts.snoozed_until` and `alerts.snoozed_by` shall be both NULL or both set. | Must | Contract §19 | Test |
@@ -116,10 +116,9 @@ platform secret store (TRD 21):
 |---|---|---|---|
 | `echowell_app_login` | `echowell_app` | FastAPI backend and pipeline workers | `DATABASE_URL` |
 | `echowell_migrator_login` | `echowell_migrator` | Alembic in the deploy step; `backend.cli seed`, `reset-test-db`, `purge-resident` | `DATABASE_MIGRATION_URL` |
-| `echowell_readonly_login` | `echowell_readonly` | Researchers' offline analysis, restore drills | issued on request by admin |
+| `echowell_readonly_login` | `echowell_readonly` | `backend/services/analytics_summary.py` Alarm timing check (test_v0_1); researchers' offline analysis and restore drills (separate credentials issued by admin) | `DATABASE_READONLY_URL` (`sslmode=require`) |
 
-`echowell_app_login` is additionally granted `echowell_readonly WITH INHERIT FALSE, SET TRUE` in local, test and
-staging only (PGS-040); without `SET ROLE` the app cannot read the answer key.
+`echowell_app_login` is a member of `echowell_app` only; it has no membership in `echowell_readonly` (PGS-040, contract R27).
 
 Alembic's `env.py` shall execute `SET ROLE echowell_migrator` immediately after connecting, so that every object is
 owned by the group role and not by the login role.
@@ -143,8 +142,6 @@ $$;
 -- CREATE ROLE echowell_app_login      LOGIN PASSWORD :'app_password'      IN ROLE echowell_app;
 -- CREATE ROLE echowell_migrator_login LOGIN PASSWORD :'migrator_password' IN ROLE echowell_migrator;
 -- CREATE ROLE echowell_readonly_login LOGIN PASSWORD :'readonly_password' IN ROLE echowell_readonly;
--- Non-production only:
--- GRANT echowell_readonly TO echowell_app_login WITH INHERIT FALSE, SET TRUE;
 ```
 
 ### 4.4 Enumerated types
@@ -928,7 +925,7 @@ Privilege matrix (summary of the grants above):
 | facilities, residents, devices, device_assignments, ingest_batches, pipeline_runs, config_parameters, alerts, data_alerts | SELECT, INSERT, UPDATE | SELECT | owner |
 | users, api_keys | SELECT, INSERT, UPDATE | SELECT on non-credential columns only | owner |
 | epochs, processed_sessions, day_ledger, scores, cusum_state, facility_reference_ranges | SELECT, INSERT, UPDATE, DELETE | SELECT | owner |
-| evaluation_ground_truth | none (SELECT only via `SET LOCAL ROLE echowell_readonly`, PGS-040) | SELECT | owner |
+| evaluation_ground_truth | none (read only through `DATABASE_READONLY_URL`, PGS-040) | SELECT | owner |
 
 ### 4.9 Naming conventions
 
@@ -1021,8 +1018,9 @@ CROSS JOIN (VALUES
 
 ### 4.12 Seed: synthetic test roster (test_v0_1, non-production only)
 
-Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The last block loads the
-answer-key facts needed by the Analytics "Alarm timing check" (SRC-19) into `evaluation_ground_truth` only. Sex values are from SRC-04
+Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The last block (answer-key facts for the
+Analytics "Alarm timing check", SRC-19) is executed by `database/seeds/load_evaluation_ground_truth.py` (test_v0_1 only, refuses
+APP_ENV=production), which the seed command calls; it writes `evaluation_ground_truth` only. Sex values are from SRC-04
 `RESIDENTS`. Device D07 is inactive after R07 moved to D07B on 2026-10-13. Users and the ingest API key are not
 seeded by SQL: the CLI creates `admin@echowell.test`, `clinician@echowell.test` and `researcher@echowell.test` and one
 API key named `test-ingest`, generating random secrets that are printed once to the terminal and stored only as
@@ -1097,7 +1095,7 @@ COMMIT;
 - Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x (TRD 05, TRD 06).
 - `pg_dump` 16 client in CI for PGS-016/PGS-017.
 - TRD 10 for the validation that guarantees inserts into `raw_sessions` satisfy these constraints.
-- TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role) and `APP_ENV`.
+- TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role), `DATABASE_READONLY_URL` (readonly role, R27) and `APP_ENV`.
 
 ## 7. Acceptance Criteria
 
@@ -1117,7 +1115,7 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 11. AC-PGS-11: the schema diff test (PGS-016) and `alembic check` pass on a clean database.
 12. AC-PGS-12: `echowell_readonly_login` gets SQLSTATE 42501 on `SELECT password_hash FROM users` and succeeds on `SELECT email FROM users`.
 13. AC-PGS-13: `pg_constraint` shows every FK with `confdeltype = 'r'` except `scores_processed_session_id_fkey` with `'c'`.
-14. AC-PGS-14: as `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` fails with 42501; inside a transaction after `SET LOCAL ROLE echowell_readonly` it returns 10 (test seed).
+14. AC-PGS-14: as `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` and `SET ROLE echowell_readonly` both fail with 42501; as `echowell_readonly_login` the SELECT returns 10 (test seed).
 15. AC-PGS-15: inserting a second `open` `device_silent` data alert for D02 fails with 23505; a `device_silent` row without `pipeline_run_id` fails with 23514; `DELETE FROM alerts` as `echowell_app` fails with 42501.
 
 ## 8. Implementation Notes

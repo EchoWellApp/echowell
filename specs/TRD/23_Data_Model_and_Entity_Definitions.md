@@ -487,13 +487,13 @@ Append-only audit trail. Read by admins via SQL (`echowell_readonly`); no MVP en
 | `request_id` | text | yes | X-Request-ID of the request | API layer |
 
 #### 4.2.24 Evaluation ground truth (`evaluation_ground_truth`)
-Answer-key facts for the Analytics "Alarm timing check" (SRC-19), loaded only in test_v0_1. `echowell_app` has no privilege; read by `GET /api/v1/analytics` through `SET LOCAL ROLE echowell_readonly` after the run. Never read by the pipeline (SRC-02).
+Answer-key facts for the Analytics "Alarm timing check" (SRC-19), loaded only in test_v0_1. `echowell_app` has no privilege; loaded by `database/seeds/load_evaluation_ground_truth.py`; read after the run only by `backend/services/analytics_summary.py` through `DATABASE_READONLY_URL` (role `echowell_readonly`, contract R27). Never read by the pipeline (SRC-02).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
-| `resident_code` | text | no | Test resident (R01–R10); deliberately no FK | Seed CLI (test_v0_1 only) |
-| `planted_change` | text | no | `None`, `Sudden step` (R09), `Slow drift` (R10) | Seed CLI from SRC-03 Test_plan / SRC-04 |
+| `resident_code` | text | no | Test resident (R01–R10); deliberately no FK | `database/seeds/load_evaluation_ground_truth.py` (test_v0_1 only) |
+| `planted_change` | text | no | `None`, `Sudden step` (R09), `Slow drift` (R10) | `database/seeds/load_evaluation_ground_truth.py` from SRC-03 Test_plan / SRC-04 |
 | `true_onset_date` | date | yes | Planted change start: R09 2026-10-21, R10 2026-10-17; NULL when None | Same |
 | `source_file` | text | no | `EchoWell_pipeline_test_v0_1.xlsx` | Same |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
@@ -736,9 +736,9 @@ Cross-cutting schemas: `common.py` : `Page[T]` (`items`, `total`, `limit`, `offs
 `health.py` : `HealthResponse`; `analytics.py` : `AnalyticsSummary`, `ResidentOutcomeRow`, `ReviewOutcomeCount`;
 `common.py` : `Meta` (facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile; R3).
 
-`backend/models/evaluation.py` is an additional model file (not in the original list) holding `EvaluationGroundTruth`; its
-repository `backend/repositories/evaluation_repository.py` opens its own transaction and issues
-`SET LOCAL ROLE echowell_readonly` (TRD 20 PGS-040).
+`backend/models/evaluation.py` is an additional model file (not in the original list) holding `EvaluationGroundTruth`; it is read
+only by `backend/services/analytics_summary.py` through a separate engine bound to `DATABASE_READONLY_URL` (TRD 20
+PGS-040, contract R27); no repository on the `DATABASE_URL` engine maps it.
 
 ### 4.7 Source column ↔ database column mapping
 
