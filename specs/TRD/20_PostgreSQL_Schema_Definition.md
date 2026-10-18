@@ -21,7 +21,7 @@ In scope:
   of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions,
   2 trigger functions, 17 triggers, 4 group roles and their grants.
 - Seed SQL for `config_parameters` (profiles `production` and `test_v0_1`).
-- Seed SQL for the synthetic test roster (facility "Edgewood test", residents R01–R10, devices, assignments) and the
+- Seed SQL for the synthetic test roster (facility "Edgewood", residents R01–R10, devices, assignments) and the
   test-only evaluation answer key.
 - Rules that keep the Alembic migrations, `database/schema.sql` and SQLAlchemy models equivalent to this DDL.
 
@@ -78,7 +78,7 @@ Out of scope:
 | PGS-021 | Grants shall be exactly those of section 4.8: `echowell_app` has only `SELECT, INSERT` on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`, `alert_reviews`; no `DELETE` on master/config tables, `alerts` or `data_alerts`; no privilege on `evaluation_ground_truth`; and `echowell_readonly` cannot read `users.password_hash` or `api_keys.key_hash`. | Must | BR-16, TRD 12 | Test (`has_table_privilege`, `has_column_privilege`) |
 | PGS-022 | Every migration that creates a table shall issue that table's grants in the same migration; `ALTER DEFAULT PRIVILEGES` shall not be used. | Must | BR-16 | Inspection; Test (PGS-016 compares privileges via `\dp` export) |
 | PGS-023 | Constraint and index names shall follow section 4.9 and shall be declared explicitly in SQLAlchemy models (`name=`), so Alembic autogenerate produces no diff on a migrated database. | Must | TRD 06 DB-012 | Test (`alembic check` exits 0 in CI) |
-| PGS-024 | Migration `0002_seed_config_parameters` shall insert the 42 rows of section 4.11 (21 keys × 2 profiles: the 16 keys of contract §7 and the 5 keys of contract §19/§20 R17) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 21 each; values equal contract) |
+| PGS-024 | Migration `0002_seed_config_parameters` shall insert the 46 rows of section 4.11 (23 keys × 2 profiles: the 16 keys of contract §7, the 5 keys of contract §19/§20 R17 and the 2 ingest keys `supported_schema_versions`, `feature_name_map` of TRD 10) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 23 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
 | PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Test (CLI with APP_ENV=production writes nothing) |
 | PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
@@ -110,7 +110,11 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;   -- uuid equality inside GiST exclus
 
 Group roles are created once per cluster by the provisioning procedure of TRD 15 (on Neon by the project owner role,
 on RDS by the master user). Login roles are created by the same procedure with generated passwords stored only in the
-platform secret store (TRD 21):
+platform secret store (TRD 21). Locally (docker-compose) and in CI the procedure is the script
+`database/roles/provision_login_roles.sql`, run as the PostgreSQL superuser right after the server starts: it idempotently creates
+the three group roles below (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the three login roles with
+passwords read via psql `\getenv` from `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD` and
+`ECHOWELL_READONLY_DB_PASSWORD` (local/CI only). Tests run as `echowell_app_login` (TRD 16 CIC-015):
 
 | Login role | Member of | Used by | Connection string |
 |---|---|---|---|
@@ -138,7 +142,8 @@ BEGIN
 END
 $$;
 
--- Per-environment login roles (passwords injected by the provisioning script, never committed):
+-- Per-environment login roles (local/CI: database/roles/provision_login_roles.sql with passwords from env via \getenv;
+-- staging/production: provider console with generated secrets; passwords never committed):
 -- CREATE ROLE echowell_app_login      LOGIN PASSWORD :'app_password'      IN ROLE echowell_app;
 -- CREATE ROLE echowell_migrator_login LOGIN PASSWORD :'migrator_password' IN ROLE echowell_migrator;
 -- CREATE ROLE echowell_readonly_login LOGIN PASSWORD :'readonly_password' IN ROLE echowell_readonly;
@@ -970,7 +975,7 @@ No table beyond contract sections 9, 19 and 20 was added.
 
 ### 4.11 Seed: config_parameters (migration 0002)
 
-Values are exactly contract section 7 plus the five keys of contract sections 19/20 (R17); the data-alert thresholds and
+Values are exactly contract section 7 plus the five keys of contract sections 19/20 (R17) plus the two ingest keys `supported_schema_versions` and `feature_name_map` (TRD 10; 23 keys per profile); the data-alert thresholds and
 the explanation list are provisional (OQ-24, OQ-25). Numeric values are JSON numbers; `facility_tz` is a JSON string;
 `morning_offsets` is a JSON object with all 19 feature keys. `production.baseline_n = 30` is the owner-confirmed
 production value (D-OWNER-2); `test_v0_1` exists only for build-out and testing.
@@ -1015,13 +1020,27 @@ CROSS JOIN (VALUES
    '[{"code": "cold_cough_sore_throat", "label": "Cold, cough or sore throat"}, {"code": "dental_dentures", "label": "Dental problem or dentures out"}, {"code": "medication_change", "label": "New or changed medication"}, {"code": "poor_sleep_unusual_day", "label": "Poor sleep or unusual day"}, {"code": "room_device_moved", "label": "Room or device moved"}]'::jsonb,
    'Checklist "Anything that could explain it?" on the alert review form (codes stored in alert_reviews.explanations)')
 ) AS v(key, value, description);
+
+-- Ingest settings (lead decision 18 Oct 2026; read by the ingestion service, TRD 10 ING-013, ING-016)
+INSERT INTO config_parameters (profile, key, value, description)
+SELECT p.profile, v.key, v.value, v.description
+FROM (VALUES ('production'), ('test_v0_1')) AS p(profile)
+CROSS JOIN (VALUES
+  ('supported_schema_versions', '["0.1"]'::jsonb, 'Accepted values of schema_version; others are rejected (unsupported_schema_version)'),
+  ('feature_name_map',
+   '{"schema_version": "schema_version", "session_id": "session_id", "resident_id": "resident_id", "device_id": "device_id", "timestamp_utc": "timestamp_utc", "mic_noise_level_dbfs": "mic_noise_level_dbfs", "audio_quality_flag": "audio_quality_flag", "extraction_software_version": "extraction_software_version", "device_firmware_version": "device_firmware_version", "speech_duration_s": "speech_duration_s", "phrase_id": "phrase_id", "loudness_dbfs": "loudness_dbfs", "total_phrase_duration_s": "total_phrase_duration_s", "speech_rate_syl_per_s": "speech_rate_syl_per_s", "articulation_rate_syl_per_s": "articulation_rate_syl_per_s", "number_of_pauses": "number_of_pauses", "pause_fraction": "pause_fraction", "voiced_fraction": "voiced_fraction", "mean_f0_hz": "mean_f0_hz", "f0_variability_st": "f0_variability_st", "jitter_local_pct": "jitter_local_pct", "shimmer_local_pct": "shimmer_local_pct", "hnr_db": "hnr_db", "cpps_db": "cpps_db", "alpha_ratio_db": "alpha_ratio_db", "hammarberg_index_db": "hammarberg_index_db", "mfcc1": "mfcc1", "mfcc2": "mfcc2", "mfcc3": "mfcc3", "mfcc4": "mfcc4"}'::jsonb,
+   'External field name -> canonical name (identity for the 11 record fields and 19 features of schema 0.1; OQ-03)')
+) AS v(key, value, description);
 ```
 
 ### 4.12 Seed: synthetic test roster (test_v0_1, non-production only)
 
-Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The last block (answer-key facts for the
-Analytics "Alarm timing check", SRC-19) is executed by `database/seeds/load_evaluation_ground_truth.py` (test_v0_1 only, refuses
-APP_ENV=production), which the seed command calls; it writes `evaluation_ground_truth` only. Sex values are from SRC-04
+Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The test facility is named "Edgewood"
+(`meta.facility_name` is read from `facilities.name`; `DATA_SOURCE_LABEL` marks the data as test data). The answer-key facts for the
+Analytics "Alarm timing check" (SRC-19) are NOT part of this seed: they are loaded from the CSV fixture
+`tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (TRD 14 DS-10) by running
+`python database/seeds/load_evaluation_ground_truth.py <csv_path>` directly (refuses when APP_ENV=production or PIPELINE_PROFILE is not
+`test_v0_1`); the seed CLI does not call it and `backend/cli.py` never references `evaluation_ground_truth`. Sex values are from SRC-04
 `RESIDENTS`. Device D07 is inactive after R07 moved to D07B on 2026-10-13. Users and the ingest API key are not
 seeded by SQL: the CLI creates `admin@echowell.test`, `clinician@echowell.test` and `researcher@echowell.test` and one
 API key named `test-ingest`, generating random secrets that are printed once to the terminal and stored only as
@@ -1029,21 +1048,21 @@ argon2id / SHA-256 hashes (TRD 12). The CLI then ingests SRC-05 as an `ingest_ba
 
 ```sql
 BEGIN;
-INSERT INTO facilities (name, timezone) VALUES ('Edgewood test', 'America/Chicago');
+INSERT INTO facilities (name, timezone) VALUES ('Edgewood', 'America/Chicago');
 
 INSERT INTO residents (facility_id, resident_code, sex, cohort, enrolled_on, status)
 SELECT f.id, r.code, r.sex, 'longitudinal', DATE '2026-10-01', 'active'
 FROM facilities f
 CROSS JOIN (VALUES ('R01','F'), ('R02','M'), ('R03','F'), ('R04','M'), ('R05','F'),
                    ('R06','M'), ('R07','F'), ('R08','M'), ('R09','F'), ('R10','M')) AS r(code, sex)
-WHERE f.name = 'Edgewood test';
+WHERE f.name = 'Edgewood';
 
 INSERT INTO devices (facility_id, device_code, firmware_version_last, active)
 SELECT f.id, d.code, 'fw-1.0.0', d.active
 FROM facilities f
 CROSS JOIN (VALUES ('D01', true), ('D02', true), ('D04', true), ('D05', true), ('D06', true),
                    ('D07', false), ('D07B', true), ('D08', true), ('D09', true), ('D10', true)) AS d(code, active)
-WHERE f.name = 'Edgewood test';
+WHERE f.name = 'Edgewood';
 
 INSERT INTO device_assignments (resident_id, device_id, valid_from, valid_to)
 SELECT r.id, d.id, a.valid_from, a.valid_to
@@ -1064,7 +1083,8 @@ JOIN residents r ON r.resident_code = a.resident_code
 JOIN devices   d ON d.device_code   = a.device_code;
 COMMIT;
 
--- Answer key for the Analytics "Alarm timing check" (SRC-03 Test_plan / SRC-04); test_v0_1 only, never read by the pipeline
+-- Equivalent rows, for reference only: the canonical source is the CSV fixture loaded by
+-- database/seeds/load_evaluation_ground_truth.py (test_v0_1 only, never read by the pipeline); do not execute this block.
 BEGIN;
 INSERT INTO evaluation_ground_truth (resident_code, planted_change, true_onset_date, source_file) VALUES
   ('R01', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
@@ -1112,7 +1132,7 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 7. AC-PGS-07: a `missing_resident` ledger row with reason `no record` fails; a `missing_device_gap` row for R02 on 2026-10-12 with device D02 and reason `all residents on shared device D02 have no record` succeeds.
 8. AC-PGS-08: after the roster seed, inserting an R07 assignment to D09 from 2026-10-20 fails with SQLSTATE 23P01, while R02 and R03 both hold open assignments to D02.
 9. AC-PGS-09: as `echowell_migrator` with `SET echowell.allow_purge = 'on'`, `DELETE FROM audit_logs` succeeds and `UPDATE raw_sessions` still fails.
-10. AC-PGS-10: `config_parameters` holds 21 rows per profile; `baseline_n` is 30 (production) and 16 (test_v0_1); `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`.
+10. AC-PGS-10: `config_parameters` holds 23 rows per profile; `baseline_n` is 30 (production) and 16 (test_v0_1); `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`.
 11. AC-PGS-11: the schema diff test (PGS-016) and `alembic check` pass on a clean database.
 12. AC-PGS-12: `echowell_readonly_login` gets SQLSTATE 42501 on `SELECT password_hash FROM users` and succeeds on `SELECT email FROM users`.
 13. AC-PGS-13: `pg_constraint` shows every FK with `confdeltype = 'r'` except `scores_processed_session_id_fkey` with `'c'`.
@@ -1159,3 +1179,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

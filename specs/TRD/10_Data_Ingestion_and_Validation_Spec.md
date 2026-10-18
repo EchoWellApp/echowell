@@ -67,7 +67,7 @@ Out of scope:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ING-013 | Every record shall carry `schema_version` as a string; the value shall be in the configured list `supported_schema_versions` (config key, default `["0.1"]`); otherwise the record is rejected with code `unsupported_schema_version`. | Must | SRC-13 §6, contract §5 | Test |
+| ING-013 | Every record shall carry `schema_version` as a string; the value shall be in the configured list `supported_schema_versions` (`config_parameters` key, both profiles, seeded `["0.1"]`, TRD 20 §4.11); otherwise the record is rejected with code `unsupported_schema_version`. | Must | SRC-13 §6, contract §5 | Test |
 | ING-014 | Validation rules shall be selected by `schema_version` through a registry `backend/services/validation.py::VALIDATORS = {"0.1": validate_v0_1}`; adding a version shall add a validator and a feature-name mapping without changing existing ones. | Must | SRC-13 §6 | Inspection |
 | ING-015 | The stored `schema_version` shall be the received value; derived processing shall not depend on it in v0.1 beyond validation. | Must | BR-02 | Test |
 
@@ -75,7 +75,7 @@ Out of scope:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ING-016 | Incoming field names shall be translated to canonical names through the configuration value `feature_name_map` (config key; JSON object `{ "<external name>": "<canonical key>" }`, default empty = identity) before validation, so that Team 1's final extractor names can be adopted without a code change. | Must | OQ-03, RSK-02, SRC-13 §4 | Test |
+| ING-016 | Incoming field names shall be translated to canonical names through the configuration value `feature_name_map` (`config_parameters` key, both profiles; JSON object `{ "<external name>": "<canonical key>" }`, seeded as the identity map of the 11 record fields and 19 features, TRD 20 §4.11) before validation, so that Team 1's final extractor names can be adopted without a code change. | Must | OQ-03, RSK-02, SRC-13 §4 | Test |
 | ING-017 | The mapping shall be validated when loaded: each target shall be one of the 19 canonical feature keys, no two external names shall map to the same key, and no external name shall equal a different canonical key; an invalid mapping shall prevent startup with a configuration error. | Must | OQ-03 | Test |
 | ING-018 | `raw_sessions.payload` shall keep the original (unmapped) names and values; the typed columns shall use canonical names. | Must | BR-02 | Test |
 
@@ -263,7 +263,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's.
 - ASM-08 Volumes below 100 residents and 1 session per resident per day.
 - D-OWNER-4: the interim Netlify/Railway/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.
-- Note for lead (TRD-local definitions): config keys `supported_schema_versions` and `feature_name_map`; column
+- Note for lead (TRD-local definitions): config keys `supported_schema_versions` and `feature_name_map` (now `config_parameters` keys, lead decision 18 Oct 2026); column
   `raw_sessions.ingest_warnings` (jsonb); `status_after_processing = "pending"` (now contract §21 R23); size limits (64 KB single per TRD 05 API-104, 5 MB / 5,000
   records batch); rejection and warning code lists (ING-023); `row_number` inside `ingest_rejections.errors`.
 
@@ -314,3 +314,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

@@ -179,7 +179,13 @@ jobs:
           --health-interval 5s --health-retries 10
     env:
       APP_ENV: test
-      DATABASE_URL: postgresql+psycopg://echowell:echowell@localhost:5432/echowell_test
+      PGPASSWORD: echowell                       # superuser, used only by the provisioning step
+      ECHOWELL_MIGRATOR_DB_PASSWORD: migrator-ci # CI-only throwaway values (ephemeral service container)
+      ECHOWELL_APP_DB_PASSWORD: app-ci
+      ECHOWELL_READONLY_DB_PASSWORD: readonly-ci
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:app-ci@localhost:5432/echowell_test
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:migrator-ci@localhost:5432/echowell_test
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:readonly-ci@localhost:5432/echowell_test
       FACILITY_NAME: Edgewood
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
@@ -194,6 +200,7 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
       - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql   # as superuser
       - run: alembic upgrade head
       - run: alembic downgrade base && alembic upgrade head   # migrations reversible in test
       - run: >
@@ -285,7 +292,7 @@ jobs:
 | CIC-012 | `backend-test` shall run against a `postgres:16-alpine` service container, never against SQLite, so integration tests exercise PostgreSQL-specific behaviour (jsonb, triggers, roles). | Must | contract §3, TRD 13 | Inspection |
 | CIC-013 | `backend-test` shall run the unit, integration and validation suites (`tests/unit`, `tests/integration`, `tests/validation`) in one pytest invocation and fail if any test fails or errors. | Must | SRC-01, BR-15 | Test |
 | CIC-014 | The validation suite shall compare pipeline output against the SRC-03 answer key for R01–R10 with absolute tolerance 1e-6 and exact string match for statuses, reasons and alarm states; any mismatch shall fail the job. | Must | BR-15, SRC-03, TRD 14 | Test |
-| CIC-015 | `backend-test` shall apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error. | Must | TRD 06, TRD 15 DEP-060 | Test |
+| CIC-015 | `backend-test` shall first run `database/roles/provision_login_roles.sql` as the service superuser (creating `echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login`, TRD 20 §4.3, TRD 15 §4.2; passwords are CI-only throwaway values in the workflow env), then run all tests with DATABASE_URL = `echowell_app_login`, DATABASE_MIGRATION_URL = `echowell_migrator_login` and DATABASE_READONLY_URL = `echowell_readonly_login`; it shall then apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error. | Must | TRD 06, TRD 15 DEP-060 | Test |
 | CIC-016 | Line coverage shall be at least 95 % for `analytics/` and at least 85 % for `backend/`; the job shall fail below either gate. | Must | contract R7, TRD 13 | Test |
 | CIC-017 | The `frontend` job shall run `npm ci`, `npm run lint` (ESLint, zero warnings allowed: `--max-warnings=0`), `npm run typecheck` (`tsc --noEmit`), `npm run test` (Vitest + React Testing Library, line coverage at least 80 %) and `npm run build`, failing on any non-zero exit. | Must | contract §3, TRD 04, TRD 13 | Test |
 | CIC-018 | The `openapi-contract` job shall fail when the OpenAPI document generated from the backend differs from the committed `docs/api_reference/openapi.json`; intentional API changes shall update `docs/api_reference/openapi.json` and the generated `frontend/lib/api-types.ts` in the same PR; the job shall also fail if `frontend/lib/api-types.ts` differs from the output of openapi-typescript. | Must | TRD 19 | Test |
@@ -357,7 +364,7 @@ Steps:
 1. Checkout; set `EXPECTED_SHA=${{ github.sha }}`.
 2. Wait for backend: poll `${{ vars.STAGING_API_BASE_URL }}/health` every 15 s, up to 15 min, until JSON `version` equals `EXPECTED_SHA`.
 3. Wait for frontend: poll `${{ vars.STAGING_FRONTEND_URL }}/login` until the HTML contains `<meta name="echowell-build" content="EXPECTED_SHA">` (TRD 21 NEXT_PUBLIC_GIT_SHA), up to 15 min. If the commit changed no file under `frontend/` (Netlify skipped the build), accept the previous build.
-4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL=${{ secrets.STAGING_DATABASE_URL }}`, `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`.
+4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL=${{ secrets.STAGING_DATABASE_URL }}`, `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, followed by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` with the same variables.
 5. Run `pytest tests/smoke -m smoke` with SMOKE_API_BASE_URL, SMOKE_FRONTEND_URL, SMOKE_EXPECTED_SHA, SMOKE_USER_EMAIL (`secrets.STAGING_SMOKE_EMAIL`), SMOKE_USER_PASSWORD (`secrets.STAGING_SMOKE_PASSWORD`), `SMOKE_ENV=staging`.
 6. Upload `build/smoke-junit.xml`.
 
@@ -510,3 +517,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | Version | Date | Description | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

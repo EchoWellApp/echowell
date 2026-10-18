@@ -261,7 +261,7 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 Data alerts are data-quality findings for the study team, not health alarms. They are recomputed on every run over the
 30-day window of TRD 07 section 4.13 (local days ending on the as_of local date, not before enrolment). Thresholds are
 `config_parameters` keys with equal values in both profiles (provisional, OQ-24): `data_alert_baseline_stalled_enabled`
-= true, `data_alert_set_aside_fraction` = 0.20, `data_alert_device_silent_days` = 2; the minimum of 10 received records for high_set_aside is a fixed rule constant (contract §19), not a config key (TRD 20 seeds 21 keys).
+= true, `data_alert_set_aside_fraction` = 0.20, `data_alert_device_silent_days` = 2; the minimum of 10 received records for high_set_aside is a fixed rule constant (contract §19), not a config key (TRD 20 §4.11).
 
 | Kind | Rule (per resident or device, window = last 30 local days) | Title / detail |
 |---|---|---|
@@ -351,3 +351,4 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

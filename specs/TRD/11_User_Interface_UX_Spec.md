@@ -93,7 +93,7 @@ Wireframe SRC-09 header: a row with, on the left, "EchoWell" (28px, weight 600) 
 |---|---|---|---|---|
 | UX-010 | The header (`role="banner"`) shall show a 28px, weight-600 page title: "EchoWell" on `/residents`, "Alert review" on `/alerts`, "Analytics" on `/analytics`, "Admin" on `/admin`; on `/residents` the page `<h1>` shall be the visually hidden text "Residents", on the other pages the title itself shall be the `<h1>`. | Must | SRC-09, SRC-18, SRC-19, contract §20 R2 | T |
 | UX-011 | The Residents overview subline shall read "Voice check-ins · <FACILITY_NAME> · Showing <data source label> as of <as-of>", e.g. with test data "Voice check-ins · Edgewood · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT", where `<as-of>` is `meta.as_of` (the as-of of the latest succeeded pipeline run, contract §21 R21) in the format "Mon D, YYYY, h:mm AM/PM TZ". | Must | SRC-09, contract §11, §13, §21 R21 | T |
-| UX-012 | The facility name shall be rendered from `meta.facility_name` (FACILITY_NAME) and shall never be hard-coded; the UI shall never display the word "Edge4Care" as a facility name. | Must | contract §2, RSK-10 | T |
+| UX-012 | The facility name shall be rendered from `meta.facility_name` (`facilities.name`, seeded from FACILITY_NAME) and shall never be hard-coded; the UI shall never display the word "Edge4Care" as a facility name. | Must | contract §2, RSK-10 | T |
 | UX-013 | The navigation (on `/residents`, `/alerts`, `/analytics`, `/admin`) shall contain, in order, the links "Residents" (`/residents`), "Alerts (<n>)" (`/alerts`), "Analytics" (`/analytics`) and "New admissions" (`/admissions`), each with padding 12px 16px on a white background; the link for the current page shall have a 2px solid ink border and weight 600, the others a 1px solid `--color-border` border. | Must | SRC-09, SRC-18, SRC-19, contract §20 R2 | T |
 | UX-014 | For users with role `admin` the navigation shall show a fifth link "Admin" (`/admin`) after "New admissions"; it shall not be shown to other roles. | Must | contract §10, §20 R2 | T |
 | UX-015 | The header shall show the signed-in user's display name in 14px `--color-text-secondary` and a button "Sign out" (min-height 44px, 1px solid `--color-border`). | Must | BR-16 | T |
@@ -796,7 +796,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 
 - ASM-01: facility time zone America/Chicago (rendered from the API).
 - ASM-02: at most one session per resident per local day, so "n of N days" on the admissions page equals usable check-ins.
-- ASM-03: one facility (Edgewood); facility name from FACILITY_NAME.
+- ASM-03: one facility (Edgewood); facility name from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: production N = 30; the test profile N = 16 is used only for build-out and testing. Screens render N from the API.
 - ASM-06: a new epoch closes the previous epoch's open alert and restarts the tally, so the badge reflects the current epoch only.
 - ASM-08: fewer than 100 residents, so the overview shows all rows without paging.
@@ -866,3 +866,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 (rev. b) | 18 Oct 2026 | Contract §19–§21: Alert review (§4.17) and Analytics (§4.18) from SRC-18/19; unified navigation (R2, UX-016 retired); review model (R5: UX-121–UX-127, UX-130, UX-136–UX-138); watched-since/last check-in (R9, R10); admin runs list, legacy rejection, CLI-managed entities (R4, R12); problem+json field errors and degraded health (R19); as-of (R21); tokens (R13) | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

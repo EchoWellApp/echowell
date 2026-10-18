@@ -435,3 +435,4 @@ Audit events (`audit_logs.action`):
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

@@ -137,10 +137,19 @@ Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `DE
 3. `cp .env.development.example .env` (values in TRD 21 §4.6). Do not edit `JWT_SECRET` for local use unless sharing the stack on a network.
 4. `docker compose up --build -d`
 5. Wait until `docker compose ps` shows `db` healthy and `curl -s http://localhost:8000/api/v1/health` returns `"status":"ok"`.
-6. `docker compose exec backend python -m backend.cli seed test_v0_1`
+6. `docker compose exec backend python -m backend.cli seed test_v0_1`, then `docker compose exec backend python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (Analytics alarm timing check; test_v0_1 only).
 7. `docker compose exec backend python -m backend.cli create-user --email admin@local.test --role admin` (password prompted; local only).
 8. Open `http://localhost:3000`, sign in, confirm tiles 2 / 7 / 1 / 19.
 9. Reset: `docker compose down -v` deletes the `pgdata` volume; repeat from step 4.
+
+Database login roles (local and CI): `database/roles/provision_login_roles.sql` runs as the PostgreSQL superuser right after the
+server starts (Compose: `/docker-entrypoint-initdb.d`; CI: TRD 16). It idempotently creates the group roles `echowell_migrator`,
+`echowell_app`, `echowell_readonly` (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the login roles
+`echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login` (TRD 20 §4.3) with passwords read via psql `\getenv` from
+`ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD`, `ECHOWELL_READONLY_DB_PASSWORD` (local/CI only, TRD 21). Staging,
+production and AWS create the login roles through the provider console with generated secrets; the script is never run there.
+The backend then connects as `echowell_app_login` (DATABASE_URL), Alembic as `echowell_migrator_login` (DATABASE_MIGRATION_URL) and
+`analytics_summary.py` as `echowell_readonly_login` (DATABASE_READONLY_URL).
 
 Compose outline (Phase 14A generates the real file from this):
 
@@ -153,8 +162,13 @@ services:
       POSTGRES_USER: echowell
       POSTGRES_PASSWORD: echowell
       POSTGRES_DB: echowell
+      ECHOWELL_MIGRATOR_DB_PASSWORD: migrator-local   # local-only values, read by \getenv in the provisioning script
+      ECHOWELL_APP_DB_PASSWORD: app-local
+      ECHOWELL_READONLY_DB_PASSWORD: readonly-local
     ports: ["127.0.0.1:5432:5432"]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    volumes:
+      - "pgdata:/var/lib/postgresql/data"
+      - "./database/roles/provision_login_roles.sql:/docker-entrypoint-initdb.d/10_provision_login_roles.sql:ro"  # runs once, as superuser, on an empty volume
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U echowell -d echowell"]
       interval: 5s
@@ -163,7 +177,9 @@ services:
     build: { context: ., dockerfile: backend/Dockerfile }
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://echowell:echowell@db:5432/echowell
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell
       PORT: "8000"
     command: sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     ports: ["127.0.0.1:8000:8000"]
@@ -360,7 +376,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024). | all |
 | `import-master-data --dir D` | Idempotent upsert of residents, devices and device assignments from CSV files `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format in TRD 14/TRD 06); master data has no API endpoints in the MVP (contract R4). | all |
 | `withdraw-resident --code R --date YYYY-MM-DD` | Sets resident status `withdrawn` (audited). | all |
-| `seed test_v0_1 [--reset]` | Imports `database/seeds/test_v0_1/` master data (as `import-master-data`), loads `evaluation_ground_truth` from the answer key (never read by the pipeline), then loads the `test_v0_1` dataset (TRD 14) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`; `--reset` truncates all tables except `users`, `api_keys`, `audit_logs` and `config_parameters` first. | local, staging, test |
+| `seed test_v0_1 [--reset]` | Imports `database/seeds/test_v0_1/` master data (as `import-master-data`, facility named "Edgewood"), then loads the `test_v0_1` dataset (TRD 14) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`; `--reset` truncates all tables except `users`, `api_keys`, `audit_logs` and `config_parameters` first. It does not load `evaluation_ground_truth`; run `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` afterwards (refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`; `backend/cli.py` never references that table). | local, staging, test |
 | `run-pipeline --scope all [--profile P]` | Runs the full pipeline and records a `pipeline_runs` row with trigger `manual`. | all |
 | `export-openapi` | Prints the OpenAPI JSON (used by CI, TRD 16). | all |
 | `reset-test-db` | Removes all rows and re-applies migrations and seeds (TRD 06 DB-024). | local, test |
@@ -557,3 +573,4 @@ Mapping from the current interim stack:
 | Version | Date | Description | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

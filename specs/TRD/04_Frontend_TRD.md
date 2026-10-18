@@ -318,7 +318,7 @@ The authoritative schemas are in TRD 19. The frontend depends on the following f
 ```ts
 // Common block returned by every list, detail and analytics response (contract §20 R3)
 interface Meta {
-  facility_name: string;        // FACILITY_NAME, e.g. "Edgewood"
+  facility_name: string;        // facilities.name (seeded from FACILITY_NAME), e.g. "Edgewood"
   facility_tz: string;          // FACILITY_TZ, e.g. "America/Chicago"
   data_source_label: string;    // DATA_SOURCE_LABEL, e.g. "pipeline test data v0.1"
   as_of: string;                // ISO UTC as_of of the latest succeeded pipeline run (contract §21 R21), e.g. "2026-10-30T20:00:00Z"
@@ -693,7 +693,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 ## 5. Assumptions
 
 - ASM-01: Facility time zone is America/Chicago; the frontend still reads it from `meta.facility_tz`.
-- ASM-03: Single facility (Edgewood) in the MVP; the facility name is rendered from `meta.facility_name` (FACILITY_NAME).
+- ASM-03: Single facility (Edgewood) in the MVP; the facility name is rendered from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: Production `baseline_n` = 30 (owner decision 18 Oct 2026); the test_v0_1 profile (16) exists only for build-out and testing and is never used in production. The frontend renders N from the API, so the same build shows "of 16" on test data and "of 30" in production.
 - D-OWNER-3 / D-OWNER-4: AWS (Amplify for the frontend) is the target production platform; Netlify is the interim host and carries synthetic and test data only. The frontend shall stay portable (FE-044).
 - ASM-08: Fewer than 25 users and fewer than 100 residents; therefore lists are fetched in a single page of up to 500 rows and no virtualisation is used.
@@ -758,3 +758,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 (rev. c) | 18 Oct 2026 | Contract §21: problem+json error codes (R19), as_of from latest succeeded run (R21), generated types at `lib/api-types.ts` from `docs/api_reference/openapi.json` (R22); FE-079 added | — |
 | 0.1 (rev. b) | 18 Oct 2026 | Contract §19/§20: added `/alerts` and `/analytics` (SRC-18, SRC-19), unified navigation (R2), `meta.pipeline_profile` (R3), logout and pipeline-run list and CSV export (R4), review model replacing acknowledge (R5), coverage gate (R7), as-of handling (R11), tokens (R13); FE-026 retired | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

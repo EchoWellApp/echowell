@@ -93,7 +93,7 @@ flowchart LR
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-010 | The answer key (DS-02 and any future answer key) shall never be placed in a pipeline input folder; it shall live only in `specs/business-requirements/` and `tests/fixtures/answer_key/`. A test shall fail if any `.xlsx` file or any file name containing `answer_key` or `Exp_` exists under `tests/fixtures/pipeline_input/`. | Must | SRC-03 README, SRC-13 §5 | Test |
-| TDV-011 | Only code under `tests/` and the test_v0_1-only loader `database/seeds/load_evaluation_ground_truth.py` shall read `tests/fixtures/answer_key/`. A test shall scan `analytics/`, `backend/` (excluding `backend/services/analytics_summary.py`), `frontend/app`, `frontend/components`, `frontend/lib`, `frontend/services` and `database/` (excluding `database/seeds/`) and fail on any occurrence of `answer_key`, `Exp_`, `EchoWell_pipeline_test_v0_1.xlsx` or `openpyxl`. The ground-truth loader `database/seeds/load_evaluation_ground_truth.py` reads only the DS-10 CSV path given on its command line (contract R27). | Must | SRC-03 README, contract §3 (openpyxl tests only) | Test |
+| TDV-011 | Only code under `tests/` and the test_v0_1-only loader `database/seeds/load_evaluation_ground_truth.py` shall read `tests/fixtures/answer_key/`. A test shall scan `analytics/`, `backend/` (excluding `backend/services/analytics_summary.py`), `frontend/app`, `frontend/components`, `frontend/lib`, `frontend/services` and `database/` (excluding `database/seeds/`) and fail on any occurrence of `answer_key`, `Exp_`, `EchoWell_pipeline_test_v0_1.xlsx` or `openpyxl`. The ground-truth loader `database/seeds/load_evaluation_ground_truth.py` reads only the DS-10 CSV path given on its command line (contract R27); `backend/cli.py` shall not reference `evaluation_ground_truth` or the loader. | Must | SRC-03 README, contract §3 (openpyxl tests only) | Test |
 | TDV-012 | `tests/fixtures/pipeline_input/` shall contain only `EchoWell_pipeline_test_input_v0_1.csv`; DS-10 shall live in `tests/fixtures/answer_key/`. | Must | SRC-03 README | Test |
 | TDV-013 | `tests/fixtures/answer_key/SHA256SUMS` shall list the SHA-256 of the fixture workbook and the fixture CSV; at baseline v0.1 these are `ddbc03ea6fef37388d2f0265902096cc0fe28559d36cb2855f63ec51ec482257` (workbook) and `78e77faad423f305dfb83429ccd21978f089e843c181b5d244a5d7d4f5fabe28` (CSV). | Must | BR-15 | Test |
 | TDV-014 | The fixture copies shall be byte-identical to the `specs/` files (TRD 13 TST-071). | Must | BR-15 | Test |
@@ -507,7 +507,7 @@ Registry `tests/fixtures/seeds/pipeline_test_v0_1_registry.json` (loaded before 
 | R09 | F | longitudinal | 2026-10-01 | D09 from 2026-10-01 |
 | R10 | M | longitudinal | 2026-10-01 | D10 from 2026-10-01 |
 
-Devices: D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (there is no D03). Users: one each of admin, clinician,
+Devices: D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (there is no D03). Facility: `Edgewood` (`meta.facility_name` is read from `facilities.name`; DATA_SOURCE_LABEL `pipeline test data v0.1` marks the data as test data). Users: one each of admin, clinician,
 researcher with test-only passwords from the test environment, never reused in staging or production.
 
 Table 4.9-B Expected Residents overview (as of 2026-10-30 15:00 America/Chicago; "Last 30 days" = local dates 2026-10-01..2026-10-30 inclusive; default sort "Alarms first").
@@ -625,7 +625,7 @@ DS-10 content (exact):
 | TDV-100 | DS-10 shall agree with SRC-03 Test_plan (R09 step from day 21, R10 drift from day 17, no inserted change for R01–R08); a test shall check this. | Must | SRC-03 Test_plan | Test |
 | TDV-101 | The pipeline shall never read `evaluation_ground_truth`: a static scan of `analytics/` and of the backend pipeline runner (`backend/services/pipeline_runner.py`), its repositories and the ingest service (excluding `backend/services/analytics_summary.py` and `database/seeds/`) shall fail on any reference to `evaluation_ground_truth`, `true_onset` or `planted_change`; only the analytics summary read service may reference the table, and it reads it through the `echowell_readonly` connection; the `echowell_app` role used by the pipeline has no SELECT privilege on it (contract R20), verified by an integration test that runs the pipeline under `echowell_app` and asserts that a direct SELECT raises `permission denied`. | Must | contract §19, SRC-02 "answer key never touches the analytics" | Test |
 | TDV-102 | Tier A and Tier B outputs (all compared values plus alerts and data alerts) shall be identical with `evaluation_ground_truth` empty and with DS-10 loaded; the Tier B check loads DS-10 between two full runs and compares. | Must | contract §19 | Test |
-| TDV-103 | `python database/seeds/load_evaluation_ground_truth.py <csv>` (also called by `python -m backend.cli seed test_v0_1`) shall refuse (non-zero exit, no rows written) when the active profile is `production`; with `test_v0_1` it shall replace the table contents. | Must | contract §19, D-OWNER-2 | Test |
+| TDV-103 | `python database/seeds/load_evaluation_ground_truth.py <csv_path>` (run directly with the DS-10 CSV; not wrapped by the CLI) shall refuse (non-zero exit, no rows written) when APP_ENV is `production` or PIPELINE_PROFILE is not `test_v0_1`; with `test_v0_1` it shall replace the table contents. | Must | contract §19, D-OWNER-2 | Test |
 | TDV-104 | Under profile `production`, `GET /api/v1/analytics` shall omit `alarm_timing` and return `review_outcomes` (counts by outcome from `alert_reviews`), and the page shall show the review-outcomes panel. | Must | contract §19 | Test |
 
 ### 4.10 Validation report format
@@ -786,3 +786,4 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

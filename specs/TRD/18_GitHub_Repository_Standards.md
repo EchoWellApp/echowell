@@ -54,7 +54,7 @@ echowell/
 ├── backend/                  FastAPI app: main.py, cli.py, api/, models/, schemas/, services/, repositories/, core/, alembic/,
 │                             Dockerfile, requirements.txt, requirements-dev.txt
 ├── analytics/                pure-Python engine (contract §3 module list)
-├── database/                 schema.sql (generated reference DDL), seeds/
+├── database/                 schema.sql (generated reference DDL), seeds/, roles/provision_login_roles.sql (local/CI)
 ├── tests/                    unit/, integration/, contract/, security/, validation/, performance/, smoke/, fixtures/ (TRD 13 §4.2)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
 │                             team_workflow.md, api_reference/openapi.json, design/, reports/
@@ -426,3 +426,4 @@ updates:
 | Version | Date | Description | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

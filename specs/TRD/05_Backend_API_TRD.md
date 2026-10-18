@@ -203,8 +203,8 @@ sequenceDiagram
 
 Decision: the nightly full run is executed by a **Railway Cron Job service** (`echowell-nightly`) that runs
 `python -m backend.jobs.nightly_run` and exits, not by any in-process scheduler (no APScheduler, no
-`NIGHTLY_SCHEDULER_ENABLED` flag) (contract §21 R18). On AWS the same command runs as an EventBridge
-Scheduler target (ECS/App Runner job), or EventBridge calls `POST /api/v1/pipeline/run` with a `pipeline:run` API key.
+`NIGHTLY_SCHEDULER_ENABLED` flag) (contract §21 R18). On AWS (target, D-47) EventBridge Scheduler calls `POST /api/v1/pipeline/run` with a `pipeline:run` API key at 02:00
+America/Chicago (TRD 15 DEP-116).
 Justification: (1) the web service may sleep or restart on free/trial tiers (RSK-07), which would silently
 skip in-process schedules; (2) more than one uvicorn worker or replica would run an in-process scheduler
 more than once; (3) a cron service gives a separate log stream and exit code per run. Railway cron
@@ -227,7 +227,7 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 | API-128 | Pipeline rebuilds shall upsert derived rows by natural keys (epochs by (resident_id, epoch_number); alerts by (epoch_id, session_id); data_alerts by (kind, resident_id, device_id)) so that alert ids, `alert_reviews`, `snoozed_until` and `staff_notes.alert_id` links survive recomputation; the API shall never expose a surrogate id that a rebuild can change. | Must | contract §20 R15, BR-02 | Test |
 | API-068 | A run that is still `running` 30 minutes after `started_at` when the next run starts shall be marked `failed` with warning `STALE_RUN` before the new run proceeds. | Should | TRD 17 | Test |
 | API-069 | All read endpoints that use a reference date (30-day windows, day ledger, open days) shall use `as_of` = the `as_of` of the most recent `succeeded` pipeline run (API-135) and return it in `meta.as_of`. The 30-day window is the 30 local days ending on the as-of local date, never starting before the resident's `enrolled_on`. For the test_v0_1 data run with as-of 2026-10-30T15:00 America/Chicago the window is 2026-10-01..2026-10-30. | Must | contract §7, §20 R10, §21 R21 | Test |
-| API-057 | Every list, detail and analytics response body shall include a `meta` object `{facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile}` built by the `get_meta()` dependency from FACILITY_NAME, FACILITY_TZ, DATA_SOURCE_LABEL, the as-of rule above and the active profile's `baseline_n` and `cusum_h`. | Must | contract §20 R3 | Test |
+| API-057 | Every list, detail and analytics response body shall include a `meta` object `{facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile}` built by the `get_meta()` dependency from `facilities.name` (`facility_name`; the FACILITY_NAME env var is used only by `bootstrap`/`seed` to create the facility row), FACILITY_TZ, DATA_SOURCE_LABEL, the as-of rule above and the active profile's `baseline_n` and `cusum_h`. | Must | contract §20 R3 | Test |
 
 ### 4.6 Read endpoints: validation, filtering, sorting
 
@@ -476,7 +476,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Owner decisions D-OWNER-2 (test_v0_1 never in production), D-OWNER-3 (AWS target) and D-OWNER-4 (interim stack synthetic/test data only; go-live on AWS only) from the shared contract §18.
 - Note: the current `backend/requirements.txt` lists `psycopg2-binary`; it shall be replaced by `psycopg[binary]` 3.x (contract §21 R24).
 - DATABASE_URL (role `echowell_app`) for the API and nightly job; DATABASE_MIGRATION_URL (role `echowell_migrator`) for Alembic only (contract §21 R20); DATABASE_READONLY_URL (role `echowell_readonly`) for the alarm-timing read only (contract R27).
-- `database/seeds/load_evaluation_ground_truth.py` loads the answer key into `evaluation_ground_truth` (test_v0_1 only).
+- `python database/seeds/load_evaluation_ground_truth.py <csv_path>` loads the DS-10 CSV fixture into `evaluation_ground_truth` (refuses when APP_ENV=production or PIPELINE_PROFILE is not test_v0_1); it is run directly, not wrapped by `backend/cli.py`, which never references that table.
 - OpenAPI artefact `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` (TRD 19, contract §21 R22).
 
 ## 7. Acceptance Criteria
@@ -549,3 +549,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

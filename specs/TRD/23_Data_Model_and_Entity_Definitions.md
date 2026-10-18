@@ -84,12 +84,12 @@ pipeline stage (stage numbers of TRD 07: 1 duplicate detection, 2 quality gate, 
 5 context adjustment, 6 personal baseline, 7 daily deviation score, 8 CUSUM, 9 alert generation, 10 day ledger).
 
 #### 4.2.1 Facility (`facilities`)
-Reference entity. Written by seed / admin CLI. Read by: header subline (FACILITY_NAME env is the display name), pipeline (timezone).
+Reference entity. Written by seed / admin CLI. Read by: header subline (`meta.facility_name` = `facilities.name`; env FACILITY_NAME only seeds the row), pipeline (timezone).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
-| `name` | text | no | Facility name. Test seed: `Edgewood test`; study site: Edgewood (never Edge4Care). UI shows env FACILITY_NAME | Admin CLI / seed |
+| `name` | text | no | Facility name. Test seed and study site: `Edgewood` (never Edge4Care); test data is marked by DATA_SOURCE_LABEL. Returned as `meta.facility_name`; created from env FACILITY_NAME by bootstrap/seed | Admin CLI / seed |
 | `timezone` | text | no | IANA time zone for local dates and morning rule; default `America/Chicago` (ASM-01) | Admin CLI / seed |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
@@ -460,12 +460,12 @@ Future arm (experimental): per-feature facility range. Read by `/api/v1/facility
 | `pipeline_run_id` | uuid | no | Run | Same |
 
 #### 4.2.22 Config parameter (`config_parameters`)
-Algorithm, data-alert and review parameters per profile (contract sections 7 and 19; 21 keys). Read by `analytics.config.PipelineConfig.from_rows()`, snapshot into `pipeline_runs`. Primary key (profile, key).
+Algorithm, data-alert and review parameters per profile (contract sections 7 and 19 plus 2 ingest keys of TRD 10; 23 keys). Read by `analytics.config.PipelineConfig.from_rows()`, snapshot into `pipeline_runs`. Primary key (profile, key).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
 | `profile` | text | no | `production` or `test_v0_1` | Migration 0002 / admin |
-| `key` | text | no | Parameter key (21 keys: 16 of contract section 7, 5 of section 19) | Migration 0002 |
+| `key` | text | no | Parameter key (23 keys: 16 of contract section 7, 5 of section 19, 2 ingest keys `supported_schema_versions` and `feature_name_map`) | Migration 0002 |
 | `value` | jsonb | no | JSON value (number, string, or object for morning_offsets) | Migration 0002 / admin (audited `config.changed`) |
 | `description` | text | no | Plain-language meaning | Migration 0002 |
 | `updated_by` | uuid | yes | User who last changed it; NULL for migration | Admin |
@@ -494,7 +494,7 @@ Answer-key facts for the Analytics "Alarm timing check" (SRC-19), loaded only in
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
 | `resident_code` | text | no | Test resident (R01–R10); deliberately no FK | `database/seeds/load_evaluation_ground_truth.py` (test_v0_1 only) |
-| `planted_change` | text | no | `None`, `Sudden step` (R09), `Slow drift` (R10) | `database/seeds/load_evaluation_ground_truth.py` from SRC-03 Test_plan / SRC-04 |
+| `planted_change` | text | no | `None`, `Sudden step` (R09), `Slow drift` (R10) | `database/seeds/load_evaluation_ground_truth.py` from the CSV fixture DS-10 (derived from SRC-03 Test_plan / SRC-04) |
 | `true_onset_date` | date | yes | Planted change start: R09 2026-10-21, R10 2026-10-17; NULL when None | Same |
 | `source_file` | text | no | `EchoWell_pipeline_test_v0_1.xlsx` | Same |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
@@ -693,7 +693,7 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | `processed_sessions.adjusted_features` | object, 19 feature keys → float | `{"loudness_dbfs": -30.67, …, "mfcc4": -8.71}` |
 | `scores.z` | object, 7 keys `z_<feature>` → float (unsigned z) | `{"z_loudness_dbfs": -0.082559, …}` |
 | `pipeline_runs.scope` | `{"type": "all"}` or `{"type": "residents", "resident_codes": [...]}` | `{"type": "residents", "resident_codes": ["R04"]}` |
-| `pipeline_runs.config_snapshot` | object, 21 keys → JSON value | `{"baseline_n": 16, "cusum_h": 5.0, …}` |
+| `pipeline_runs.config_snapshot` | object, 23 keys → JSON value | `{"baseline_n": 16, "cusum_h": 5.0, …}` |
 | `pipeline_runs.counts` | object of integers | `{"usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2, "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "alerts_opened": 2}` |
 | `pipeline_runs.warnings` | array of objects with `type`, `resident_code` + detail | `[{"type": "late_arrival", "resident_code": "R01", "epoch_number": 1, "session_id": "R01-20261005-02"}]` |
 | `ingest_rejections.errors` | non-empty array of objects with `field`, `message` (TRD 10) | `[{"field": "audio_quality_flag", "message": "must be ok or poor"}]` |
@@ -708,7 +708,7 @@ imports every model. Pydantic modules are in `backend/schemas/`; DTO field lists
 
 | Entity / table | Model file : class | Pydantic module : schemas | Endpoints (base `/api/v1`) |
 |---|---|---|---|
-| facilities | `facility.py` : `Facility` | — (name from FACILITY_NAME) | — |
+| facilities | `facility.py` : `Facility` | `Meta.facility_name` (from `facilities.name`) | header subline |
 | users | `user.py` : `User` | `user.py` : `UserOut`, `UserCreate`, `UserUpdate`; `auth.py` : `LoginRequest`, `TokenResponse`, `MeResponse` | `/auth/login`, `/auth/me`, `/users` |
 | residents | `resident.py` : `Resident` | `resident.py` : `ResidentOverviewRow`, `SummaryTiles`, `ResidentOverviewResponse`, `ResidentDetail` | `/residents`, `/residents/{resident_code}` |
 | devices | `device.py` : `Device` | `device.py` : `DevicePanelRow` | `/devices` |
@@ -910,3 +910,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

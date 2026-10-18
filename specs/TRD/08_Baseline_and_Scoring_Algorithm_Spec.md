@@ -333,3 +333,4 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |

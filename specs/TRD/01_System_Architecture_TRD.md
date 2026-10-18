@@ -181,7 +181,7 @@ flowchart TB
 | Set-aside log | `processed_sessions` rows with status `duplicate`, `set_aside`, `quarantined` and their `reasons` | PipelineService only | Yes |
 | Baseline store | `baselines` | PipelineService only | Frozen rows are preserved (ARC-043) |
 | Daily scores and flags | `scores`, `cusum_state`, `alerts`, `data_alerts` | PipelineService (alerts: status and snooze changed also by alarm review; data alerts of kind `review_flagged_data_problem` created by alarm review) | Yes, preserving human-entered fields (ARC-044) |
-| Answer key | `tests/fixtures/` copy of SRC-03; `evaluation_ground_truth` table (resident_code, planted_change, true_onset_date, source_file), loaded only in the `test_v0_1` profile | Test loader / seed command only | n/a (never derived, never read by the pipeline) |
+| Answer key | `tests/fixtures/` copy of SRC-03; `evaluation_ground_truth` table (resident_code, planted_change, true_onset_date, source_file), loaded only in the `test_v0_1` profile | Loader script `database/seeds/load_evaluation_ground_truth.py` only (run directly; not via the CLI) | n/a (never derived, never read by the pipeline) |
 
 Human-entered and operational data outside SRC-02's diagram: `alert_reviews`, `alerts.snoozed_until`/`snoozed_by`, `staff_notes`, `users`, `api_keys`, `audit_logs`, `config_parameters`, `facilities`, `residents`, `devices`, `device_assignments`, `facility_reference_ranges`, `pipeline_runs`.
 
@@ -277,7 +277,7 @@ echowell/
 │                             morning_offset.py, baseline_builder.py, zscore_calculator.py,
 │                             composite_score.py, cusum_engine.py, alert_generator.py,
 │                             day_ledger.py, data_alerts.py, pipeline.py
-├── database/                 schema.sql (generated reference DDL), seeds/
+├── database/                 schema.sql (generated reference DDL), seeds/, roles/provision_login_roles.sql (local/CI)
 ├── tests/                    unit/, integration/, validation/ (R01–R10), fixtures/ (SRC-03, SRC-05)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md,
 │                             deployment.md, team_workflow.md, design/
@@ -376,7 +376,7 @@ flowchart LR
 | Frontend hosting | Netlify | AWS Amplify Hosting | Standard Next.js build; no Netlify-specific runtime APIs (Netlify Functions, Edge Functions, Netlify Identity) |
 | Backend hosting | Railway | AWS App Runner | Containerized via `backend/Dockerfile`; listens on `$PORT`; stateless |
 | Database | Neon / Railway PostgreSQL 16 | AWS RDS PostgreSQL 16 | Standard PostgreSQL only; no Neon-specific SQL; connection via `DATABASE_URL` |
-| Scheduler | Separate Railway Cron Job service running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler running the same command as an ECS/App Runner job, or calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` | Trigger calls the same `PipelineService` entry |
+| Scheduler | Separate Railway Cron Job service running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (D-47) | Trigger calls the same `pipeline_runner` entry |
 | Region | Neon `aws-us-east-1`, Railway US East | AWS `us-east-1` | Region set only in hosting configuration (R25) |
 | Secrets | Netlify/Railway env vars, GitHub secrets | AWS Secrets Manager injected as App Runner environment variables | Read only from environment variables |
 | Encryption at rest | Provider-managed storage encryption (Neon/Railway) | RDS storage encryption with AWS KMS key; encrypted automated backups and snapshots; any S3 objects encrypted (SSE-KMS) | No application-level dependency on the mechanism |
@@ -461,3 +461,4 @@ flowchart LR
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
