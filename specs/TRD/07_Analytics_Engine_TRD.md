@@ -25,7 +25,7 @@ In scope:
 - Configuration profiles `production` and `test_v0_1` (`analytics/config.py::PipelineConfig`).
 - The backend persistence service that loads inputs, calls the engine and writes derived tables.
 - Triggers (after ingest, nightly 02:00 facility local time, manual), performance, error handling, logging.
-- Data-alert generation (stage 11, rules in TRD 09 section 4.8) and Analytics page aggregates (stage 12: KPIs, daily
+- Data-alert generation (stage 11, rules in TRD 09 section 4.9) and Analytics page aggregates (stage 12: KPIs, daily
   series, funnel, by-resident shares), and the "Leaning most" computation for the Alert review page (SRC-18, SRC-19).
 - Extension points: morning offset estimation (OQ-09), EWMA display (OQ-18), facility norms (BR-14, OQ-08).
 
@@ -123,6 +123,9 @@ flowchart LR
   I --> L[PipelineResult]
   J --> L
   K --> L
+  K -->|generate_data_alerts| M[DataAlert]
+  M --> L
+  L -->|build_analytics_summary| N[AnalyticsSummary]
   G --> L
   F --> L
 ```
@@ -389,7 +392,7 @@ resident's `enrolled_on` (contract §20 R10); for SRC-05 with as_of 2026-10-30 1
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ANL-059 | Stage 11 shall compute data alerts with `analytics/data_alerts.py::generate_data_alerts` using exactly the rules, texts, suppression and ordering of TRD 09 section 4.8, recomputed on every run. | Must | SRC-18, §19, TRD 09 | Test |
+| ANL-059 | Stage 11 shall compute data alerts with `analytics/data_alerts.py::generate_data_alerts` using exactly the rules, texts, suppression and ordering of TRD 09 section 4.9, recomputed on every run. | Must | SRC-18, §19, TRD 09 | Test |
 | ANL-060 | The runner shall upsert `data_alerts` on the natural key `(kind, resident_id, device_id)`: a new alert is inserted with `status = open`, `first_detected_at` = `last_detected_at` = run time; a re-detected alert updates `title`, `detail`, `last_detected_at`, `pipeline_run_id` and reopens if resolved; an open rule-based alert no longer produced is set to `resolved`; alerts of kind `review_flagged_data_problem` (created by reviews, TRD 09) are never modified by the pipeline. | Must | §19, R15 | Test |
 | ANL-061 | Stage 12 shall compute `AnalyticsSummary` with `analytics/aggregates.py::build_analytics_summary` using the window, definitions and shapes of this section. | Must | SRC-19, §19 | Test |
 | ANL-062 | All aggregate counts shall be derived from the same `PipelineResult` (sessions, ledger, epochs, alerts) so that they equal the status counts of the pipeline (SRC-03 Exp_status_counts) without separate SQL recomputation. | Must | BR-15, SRC-19 | Test |
@@ -437,7 +440,7 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 - AC-ANL-07: The engine completes on SRC-05 in ≤ 5 s in CI and the DS-08 full rebuild in ≤ 120 s.
 - AC-ANL-08: A run with a deliberately failing write (fault injection) leaves previously persisted derived tables unchanged and the run row `failed` with an `exception` warning.
 - AC-ANL-09: The `pipeline_runs` row of every run contains `config_snapshot` with `config_hash`, `code_version`, `counts` and `warnings`.
-- AC-ANL-10: On SRC-05 the `AnalyticsSummary` equals every expected value in the section 4.13 table, and `data_alerts` equals exactly the four alerts of TRD 09 section 4.8 in that order.
+- AC-ANL-10: On SRC-05 the `AnalyticsSummary` equals every expected value in the section 4.13 table, and `data_alerts` equals exactly the four alerts of TRD 09 section 4.9 in that order.
 - AC-ANL-11: A full rebuild with an R09 alert that has a saved review and a snooze keeps the alert id, its `alert_reviews` rows, `status = acknowledged` and `snoozed_until` (natural-key upsert, R15).
 - AC-ANL-12: Starting the backend with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` fails with a configuration error.
 

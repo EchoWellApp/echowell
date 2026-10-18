@@ -12,7 +12,8 @@ includes an OpenAPI 3.1 skeleton with `components/schemas` for every DTO. The Fa
 
 ## 2. Scope
 
-In scope: every endpoint in the shared contract §10 plus `POST /api/v1/auth/logout` (TRD 05 API-025);
+In scope: every endpoint in the shared contract §10 as amended by §19–§21 (alert reviews and snooze, data alerts,
+full analytics payload, pipeline run list, CSV export, logout; no acknowledge endpoint);
 all request/response DTOs; enums aligned with the database enums (TRD 06/20); the error (Problem) schema
 and error code catalogue (owned by TRD 05 §4.7, repeated here per endpoint); security schemes; contract tests.
 
@@ -27,6 +28,8 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
 | SRC-05 | Pipeline test input CSV v0.1 (field order of `IngestRecord`; CSV header for `POST /ingest`) |
 | SRC-09, SRC-10, SRC-11 | UI wireframes (fields the dashboard needs) |
 | SRC-17 | Implement_Feature_Batches.md ("Match OpenAPI specification exactly") |
+| SRC-18 | Alert review wireframe (specs/UI-wireframe/Alerts.dc.html) |
+| SRC-19 | Analytics wireframe (specs/UI-wireframe/Analytics.dc.html) |
 | TRD 05 | Backend API TRD (behaviour, error catalogue, pagination, rate limits) |
 | TRD 06 / TRD 20 / TRD 23 | Database design, PostgreSQL schema, entity definitions (enum sources) |
 | TRD 08 / TRD 09 | Baseline/scoring and CUSUM/alerting (meaning of z, composite, tally) |
@@ -41,20 +44,22 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | OAS-001 | The API shall be versioned in the path as `/api/v1`; a breaking change (removed/renamed field, changed type, new required request field, removed enum value) shall require a new path version `/api/v2`. | Must | BR-17 | Inspection |
-| OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the servers `/api/v1`-relative paths defined in §4.4. | Must | SRC-17 | Test |
+| OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the servers `/api/v1`-relative paths defined in §4.4. The generated document shall be committed as `docs/api_reference/openapi.json`, produced by `python -m backend.cli export-openapi`. | Must | SRC-17, contract §21 R22 | Test |
 | OAS-003 | Every path, method, parameter (name, location, type, required flag, constraints), request body and response status code in this document shall appear in the generated document, and no other paths shall appear. | Must | SRC-17 | Test |
 | OAS-004 | Every schema in `components/schemas` of §4.5 shall exist in the generated document with the same property names, types, `required` lists and enum values; additional optional response properties are a contract change and shall be added here first. | Must | SRC-17 | Test |
-| OAS-005 | A contract test (`tests/integration/test_openapi_contract.py`) shall load `docs/api_reference/openapi.yaml` (the §4.5 YAML, committed by the build) and the generated `/api/v1/openapi.json`, and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13 | Test |
+| OAS-005 | CI shall regenerate the schema with `python -m backend.cli export-openapi` and fail when it differs from the committed `docs/api_reference/openapi.json`. A contract test (`tests/integration/test_openapi_contract.py`) shall also compare the generated document with the §4.5 skeleton (stored verbatim as `tests/fixtures/trd19_openapi_skeleton.yaml`) and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13, contract §21 R22 | Test |
 | OAS-006 | Response-validation tests shall validate every response body produced by the integration test suite against the declared response schema for its status code (using `openapi-core` or `jsonschema` with the 3.1 dialect). | Must | TRD 13 | Test |
-| OAS-007 | Enum values in DTOs shall equal the database enum values in TRD 20: `ProcessedStatus`, `DayStatus`, `AlarmState`, `AlertStatus`, `NoteType`, `Role`, `Cohort`, `ResidentStatus`, `PipelineTrigger`, `PipelineStatus`, `IngestSource`; a test shall compare them with `pg_enum`. | Must | TRD 20, TRD 23 | Test |
+| OAS-007 | Enum values in DTOs shall equal the database enum values in TRD 20: `ProcessedStatus`, `DayStatus`, `AlarmState`, `AlertStatus`, `NoteType`, `Role`, `Cohort`, `ResidentStatus`, `PipelineTrigger`, `PipelineStatus`, `IngestSource`, `ReviewOutcome`, `DataAlertKind`, `DataAlertStatus`; a test shall compare them with `pg_enum`. | Must | TRD 20, TRD 23 | Test |
 | OAS-008 | Property names shall be snake_case, identical to the database column names where a column exists (for example `resident_code`, `cusum_tally`, `alarm_state`). | Must | TRD 06 | Inspection |
 | OAS-009 | All non-2xx responses shall use media type `application/problem+json` and the `Problem` schema; all other responses `application/json`, except 204. | Must | contract §10 | Test |
 | OAS-010 | Every response shall declare the `X-Request-ID` header (string). | Must | contract §10 | Test |
 | OAS-011 | Floating-point values shall be serialised as JSON numbers in full float64 precision (no rounding in the API); rounding is a presentation concern (TRD 04). | Must | BR-15 | Test |
 | OAS-012 | Nullable fields shall be declared with `type: [<type>, "null"]` and shall always be present in responses (never omitted). | Must | — | Test |
 | OAS-013 | Security schemes shall be `bearerAuth` (`type: http`, `scheme: bearer`, `bearerFormat: JWT`) and `apiKeyAuth` (`type: apiKey`, `in: header`, `name: X-API-Key`); each operation shall list the schemes in §4.3. | Must | TRD 12 | Test |
-| OAS-014 | The frontend TypeScript types in `frontend/lib/api-types.ts` shall be generated from the §4.5 YAML with `openapi-typescript` 7.x, and CI shall fail if regeneration produces a diff. | Should | TRD 04, TRD 16 | Test |
+| OAS-014 | The frontend TypeScript types in `frontend/lib/api-types.ts` shall be generated from `docs/api_reference/openapi.json` with `openapi-typescript` 7.x, and CI shall fail if regeneration produces a diff. | Must | TRD 04, TRD 16, contract §21 R22 | Test |
 | OAS-015 | Examples in this document shall be included as `examples` in the YAML and the contract test shall validate each example against its schema. | Should | BR-15 | Test |
+| OAS-017 | Every paged list response and the `ResidentDetail`, `FeaturesResponse`, `AdmissionComparison` and `AnalyticsResponse` bodies shall contain the `Meta` object; single-object action responses (`Token`, `User`, `IngestResult`, `IngestBatchAccepted`, `IngestBatch`, `Alert`, `AlertReview`, `StaffNote`, `PipelineRun`, `PipelineRunAccepted`, `Health`) shall not. | Must | contract §20 R3 | Test |
+| OAS-018 | `GET /scores` and `GET /analytics/baselines` shall declare a `text/csv` response alternative in addition to `application/json`, selected by the `Accept` header (researcher, admin only). | Must | contract §20 R4 | Test |
 | OAS-016 | No schema shall contain a property for audio data, audio URLs, resident names, dates of birth or any free-text identifier other than study IDs (`resident_code`, `device_code`, `session_id`). | Must | BR-01, BR-16 | Inspection |
 
 ### 4.2 Common conventions
@@ -64,8 +69,17 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
   `*_on`, `*_since`, `from`, `to` = `YYYY-MM-DD` facility-local calendar dates.
 - Pagination query: `limit` integer 1..500 default 50, `offset` integer ≥ 0 default 0. Paged responses:
   `{"items": [...], "total": int, "limit": int, "offset": int}` plus endpoint-specific top-level fields.
-- `as_of`: date-time of the most recent succeeded pipeline run (TRD 05 API-069), present on every read
-  response that uses a 30-day window.
+- `meta`: every paged list and every resident/analytics detail response carries
+  `meta {facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile}`;
+  `meta.as_of` is the as-of of the most recent succeeded pipeline run (TRD 05 API-069, API-135). Test-data value:
+
+```json
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"}}
+```
+
+- CSV export: `GET /scores` and `GET /analytics/baselines` with `Accept: text/csv` (researcher, admin) return
+  `text/csv; charset=utf-8`, header row = DTO field names (`z` flattened to `z_<feature>` columns), all matching rows.
 - Error codes listed per endpoint are in addition to the universal ones: 401 `NOT_AUTHENTICATED`/`TOKEN_EXPIRED`/
   `TOKEN_INVALID` (bearer endpoints) or `API_KEY_INVALID` (key endpoints), 403 `FORBIDDEN`, 413 `PAYLOAD_TOO_LARGE`,
   429 `RATE_LIMITED`, 500 `INTERNAL_ERROR`, 503 `SERVICE_UNAVAILABLE`.
@@ -201,7 +215,8 @@ Example (test_v0_1, as of 2026-10-30 15:00 CDT; first rows shown, `total` 10):
 
 ```json
 {
-  "as_of": "2026-10-30T20:00:00Z",
+  "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
   "window": {"from": "2026-10-01", "to": "2026-10-30"},
   "summary": {"alarm_on": 2, "no_alarm": 7, "baseline_forming": 1, "missed_last_30_days": 19},
   "items": [
@@ -245,7 +260,8 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
 {
   "resident_code": "R09", "cohort": "longitudinal", "resident_status": "active", "sex": "F",
   "enrolled_on": "2026-10-01", "admitted_on": null, "withdrawn_on": null,
-  "as_of": "2026-10-30T20:00:00Z",
+  "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
   "status": "alarm_on",
   "device": {"device_code": "D09", "shared": false, "shared_with": [], "previous_device_code": null},
   "current_epoch": {"epoch_number": 1, "device_code": "D09", "device_firmware_version": "fw-1.0.0",
@@ -259,7 +275,6 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
   "alarm_since": "2026-10-21",
   "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
   "current_tally": 26.830256,
-  "cusum_h": 5.0,
   "last_checkin_at": "2026-10-30T19:28:04Z",
   "last_checkin_local": "2026-10-30T14:28:04-05:00",
   "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0},
@@ -273,7 +288,9 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
 - 200 `CheckinEventList` (newest first). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"as_of": "2026-10-30T20:00:00Z", "items": [
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "items": [
   {"local_date": "2026-10-21", "event_type": "alarm_on", "epoch_number": 1, "session_id": "R09-20261021-01",
    "detail": "tally crossed 5.0", "cusum_tally": 5.431965},
   {"local_date": "2026-10-17", "event_type": "watching_started", "epoch_number": 1, "session_id": "R09-20261017-01",
@@ -293,7 +310,9 @@ have no record"; R07 2026-10-13 `baseline_restarted` detail "new epoch 2 on devi
 - 200 `FeaturesResponse`. Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"resident_code": "R09", "epoch_number": 1, "as_of": "2026-10-30T20:00:00Z",
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "resident_code": "R09", "epoch_number": 1,
  "scored_features": [
   {"feature_key": "loudness_dbfs", "label": "Quieter (loudness)", "unit": "dBFS", "composite_sign": -1,
    "baseline_median": -22.405, "baseline_robust_spread": 2.14977,
@@ -315,10 +334,13 @@ have no record"; R07 2026-10-13 `baseline_restarted` detail "new epoch 2 on devi
 #### E-12 GET /api/v1/scores
 - Auth: bearer (A, C, Rs). Query `resident_code` (optional), `epoch` (integer ≥ 1, requires `resident_code`),
   `from`, `to`, `limit`, `offset`.
-- 200 `ScoresResponse`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown resident_code), 422 `INVALID_QUERY_PARAMETER`.
+- 200 `ScoresResponse` (`application/json`), or `text/csv` when `Accept: text/csv` (researcher, admin; clinician → 403 `FORBIDDEN`).
+  Errors: 404 `RESIDENT_NOT_FOUND` (unknown resident_code), 413 `PAYLOAD_TOO_LARGE` (> 100,000 CSV rows), 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"cusum_h": 5.0, "cusum_k": 0.5,
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "cusum_k": 0.5,
  "baseline_periods": [{"resident_code": "R09", "epoch_number": 1, "first_local_date": "2026-10-01",
    "frozen_after_local_date": "2026-10-16", "frozen_after_session_id": "R09-20261016-01", "n_sessions": 16}],
  "items": [
@@ -353,24 +375,89 @@ Oct 29 23.126702, Oct 30 26.830256 (all `on` after Oct 21).
 #### E-13 GET /api/v1/alerts
 - Auth: bearer (A, C, Rs). Query `status` enum [open, acknowledged, closed] (optional), `resident_code` (optional), `limit`, `offset`.
 - 200 `AlertList` (ordered by `triggered_at` ascending). Errors: 422 `INVALID_QUERY_PARAMETER`.
+- `status` `open` = "Not reviewed", `acknowledged` = "Reviewed" (alarm still on; OQ-05). The nav count "Alerts (<n>)" is
+  `total` of `GET /alerts?status=open`.
 
 ```json
-{"items": [
-  {"id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "resident_code": "R09", "epoch_number": 1,
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "items": [
+  {"id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "resident_code": "R09", "device_code": "D09", "epoch_number": 1,
    "session_id": "R09-20261021-01", "triggered_at": "2026-10-21T19:07:50Z", "local_date": "2026-10-21",
-   "cusum_value": 5.431965, "status": "open", "closed_reason": null, "acknowledged_by": null, "acknowledged_at": null},
-  {"id": "4e3d2c1b-0a9f-4e8d-b7c6-5a4f3e2d1c0b", "resident_code": "R10", "epoch_number": 1,
+   "cusum_value": 5.431965, "current_tally": 26.830256, "open_days": 9, "status": "open", "reviewed": false,
+   "review_count": 0, "last_reviewed_at": null, "snoozed_until": null, "snoozed_by": null,
+   "leaning_most": ["number_of_pauses", "loudness_dbfs", "voiced_fraction"], "closed_reason": null},
+  {"id": "4e3d2c1b-0a9f-4e8d-b7c6-5a4f3e2d1c0b", "resident_code": "R10", "device_code": "D10", "epoch_number": 1,
    "session_id": "R10-20261024-01", "triggered_at": "2026-10-24T19:25:37Z", "local_date": "2026-10-24",
-   "cusum_value": 5.97205, "status": "open", "closed_reason": null, "acknowledged_by": null, "acknowledged_at": null}
+   "cusum_value": 5.97205, "current_tally": 13.418183, "open_days": 6, "status": "open", "reviewed": false,
+   "review_count": 0, "last_reviewed_at": null, "snoozed_until": null, "snoozed_by": null,
+   "leaning_most": ["number_of_pauses", "articulation_rate_syl_per_s", "speech_rate_syl_per_s"], "closed_reason": null}
  ], "total": 2, "limit": 50, "offset": 0}
 ```
 
-`triggered_at` is the `timestamp_utc` of the first-crossing session (deterministic under rebuild); alert `id`
-values are illustrative.
+`triggered_at` is the `timestamp_utc` of the first-crossing session (deterministic under rebuild; alerts are upserted by
+(epoch_id, session_id) so ids survive rebuilds); alert `id` values are illustrative. `leaning_most` = up to 3 composite
+feature keys with the highest mean signed z over scored sessions from the alarm session onward (only mean > 0); for R09 the
+means are 2.158 (pauses), 2.133 (loudness), 2.092 (voiced fraction); the frontend renders them with the lower-cased §6
+labels ("more pauses, quieter, less voiced sound"). `current_tally` is shown to 1 dp in the UI (26.8, 13.4).
 
-#### E-14 POST /api/v1/alerts/{id}/acknowledge
-- Auth: bearer (A, C). Path `id` uuid. Body: none.
-- 200 `Alert` (status `acknowledged`). Errors: 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`.
+#### E-14 POST /api/v1/alerts/{id}/reviews
+- Auth: bearer (A, C). Path `id` uuid. Body `AlertReviewCreate`.
+- 201 `AlertReview`; side effects: alert status `open` → `acknowledged`; outcome `data_problem` also creates a `DataAlert`
+  of kind `review_flagged_data_problem`. CUSUM tally, alarm state and resident display status are unchanged (OQ-05).
+- Errors: 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`, 422 `VALIDATION_ERROR` (missing outcome, unknown explanation code,
+  duplicate codes, note > 2000 characters).
+
+```json
+{"explanations": ["cold_cough_sore_throat"], "outcome": "known_cause", "note": "Resident has a cold; nurse notified."}
+```
+```json
+{"id": "2d4f6a8c-1b3e-4c5d-8e7f-9a0b1c2d3e4f", "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+ "reviewer": {"id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f", "display_name": "Clinician One"},
+ "explanations": ["cold_cough_sore_throat"], "outcome": "known_cause",
+ "note": "Resident has a cold; nurse notified.", "created_at": "2026-10-30T20:10:00Z"}
+```
+
+Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_sore_throat`, `dental_dentures`,
+`medication_change`, `poor_sleep_unusual_day`, `room_device_moved`. Outcomes: `no_concern`, `known_cause`, `referred`,
+`data_problem`. There is no `POST /alerts/{id}/acknowledge` endpoint.
+
+#### E-28 GET /api/v1/alerts/{id}/reviews
+- Auth: bearer (A, C, Rs). Query `limit`, `offset`. 200 `AlertReviewList` newest first. Errors: 404 `ALERT_NOT_FOUND`.
+
+#### E-29 POST /api/v1/alerts/{id}/snooze
+- Auth: bearer (A, C). Body `SnoozeRequest` `{hours?: integer 1..168}` (default config `alert_snooze_hours` = 24).
+- 200 `Alert` with `snoozed_until` = now + hours, `snoozed_by` = caller. Status and alarm unchanged.
+- Errors: 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`, 422 `VALIDATION_ERROR`.
+
+#### E-30 GET /api/v1/data-alerts
+- Auth: bearer (A, C, Rs). Query `status` enum [open, resolved] default open; `kind` (optional `DataAlertKind`); `limit`, `offset`.
+- 200 `DataAlertList` ordered by kind (enum order) then resident/device code. Errors: 422 `INVALID_QUERY_PARAMETER`.
+
+```json
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "items": [
+  {"id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "kind": "baseline_stalled", "resident_code": "R08", "device_code": null,
+   "title": "R08 · baseline stuck at 13 of 16", "detail": "12 missed and 5 set aside in 30 days", "status": "open",
+   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
+  {"id": "7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e", "kind": "possible_other_speaker", "resident_code": "R05", "device_code": null,
+   "title": "R05 · possible other speaker", "detail": "2 check-ins quarantined: Oct 8, Oct 22", "status": "open",
+   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
+  {"id": "8c3d4e5f-6a7b-4c8d-ae9f-1a2b3c4d5e6f", "kind": "high_set_aside", "resident_code": "R03", "device_code": null,
+   "title": "R03 · many check-ins set aside", "detail": "7 of 29 received: noise, quality flag, too short", "status": "open",
+   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
+  {"id": "9d4e5f6a-7b8c-4d9e-bf0a-2b3c4d5e6f7a", "kind": "device_silent", "resident_code": null, "device_code": "D02",
+   "title": "D02 · device silent all day", "detail": "Oct 12 · affects R02 and R03", "status": "open",
+   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
+ ], "total": 4, "limit": 50, "offset": 0}
+```
+
+(ids and detection times illustrative; titles, details and the list are the SRC-18 expected test values.)
 
 #### E-15 GET /api/v1/residents/{resident_code}/notes
 - Auth: bearer (A, C, Rs). Query `include_superseded` boolean default false, `limit`, `offset`.
@@ -378,19 +465,19 @@ values are illustrative.
 
 #### E-16 POST /api/v1/residents/{resident_code}/notes
 - Auth: bearer (A, C). Body `StaffNoteCreate`.
-- 201 `StaffNote`. Errors: 404 `RESIDENT_NOT_FOUND`, 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`,
-  422 `VALIDATION_ERROR`, `ALERT_ID_REQUIRED`, `ALERT_RESIDENT_MISMATCH`.
+- 201 `StaffNote`. Notes never change alert status (reviews use E-14). Errors: 404 `RESIDENT_NOT_FOUND`, 404 `ALERT_NOT_FOUND`,
+  422 `VALIDATION_ERROR`, `ALERT_RESIDENT_MISMATCH`.
 
 ```json
 {"note_type": "observation", "body": "Resident has a cold; nurse notified.",
- "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "mark_reviewed": true, "supersedes_id": null}
+ "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "supersedes_id": null}
 ```
 
 ```json
 {"id": "8c7b6a59-4d3e-4f2a-9b1c-0d9e8f7a6b5c", "resident_code": "R09",
  "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
  "author": {"id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f", "display_name": "Clinician One"},
- "note_type": "observation", "body": "Resident has a cold; nurse notified.", "marked_reviewed": true,
+ "note_type": "observation", "body": "Resident has a cold; nurse notified.",
  "supersedes_id": null, "created_at": "2026-10-30T20:10:00Z"}
 ```
 
@@ -398,7 +485,9 @@ values are illustrative.
 - Auth: bearer (A, C, Rs). Query `limit`, `offset`. 200 `DeviceList` ordered by `device_code` (natural).
 
 ```json
-{"as_of": "2026-10-30T20:00:00Z", "items": [
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "items": [
   {"device_code": "D02", "room_label": null, "active": true, "resident_codes": ["R02", "R03"], "shared": true,
    "replaces_device_code": null, "replaced_by_device_code": null, "in_use_since": "2026-10-01",
    "last_upload_at": "2026-10-30T19:55:23Z", "last_upload_local": "2026-10-30T14:55:23-05:00",
@@ -415,45 +504,71 @@ the device. For D02 only 2026-10-12 qualifies: on R02's other missed days (4, 9,
 record from D02. For D08 (single resident R08) the 12 missed days are silent days but not device-gap days.
 
 #### E-18 GET /api/v1/analytics
-- Auth: bearer (A, Rs). 200 `AnalyticsSummary`.
+- Auth: bearer (A, Rs). Clinicians receive 403 `FORBIDDEN`. 200 `AnalyticsResponse`.
+- Exactly one of `alarm_timing` (PIPELINE_PROFILE `test_v0_1`; from view `evaluation_alarm_timing`, TRD 05 API-136) and
+  `review_outcomes` (production) is non-null. Percentages are rounded half-up to integers.
 
 ```json
-{"as_of": "2026-10-30T20:00:00Z",
- "pipeline_run": {"id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "trigger": "ingest", "scope": "all",
-   "config_profile": "test_v0_1", "code_version": "3f2c9ab", "as_of": "2026-10-30T20:00:00Z",
-   "started_at": "2026-10-30T20:01:06Z", "finished_at": "2026-10-30T20:01:14Z", "status": "succeeded",
-   "counts": {"arrivals": 283, "usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2,
-              "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "baseline_rows": 180, "alerts": 2},
-   "warnings": []},
- "window": {"from": "2026-10-01", "to": "2026-10-30"},
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "period": {"from": "2026-10-01", "to": "2026-10-30", "days": 30},
+ "kpis": {
+   "checkins_received": {"count": 281, "expected": 300, "percent": 94},
+   "used_for_scoring": {"count": 267, "expected": 300, "percent": 89},
+   "baselines_formed": {"formed": 9, "residents": 10, "forming_resident_codes": ["R08"],
+                        "restarts": [{"resident_code": "R07", "restart_count": 1}]},
+   "alarms_raised": {"count": 2, "resident_codes": ["R09", "R10"], "not_reviewed_count": 2}},
+ "daily_series": [
+   {"local_date": "2026-10-12", "used": 8, "set_aside": 0, "quarantined": 0, "missed": 2, "silent_device_codes": ["D02"]}],
+ "funnel": {"expected": 300, "residents": 10, "days": 30, "received": 281, "missed": 19, "duplicates_removed": 2,
+            "passed_quality": 269, "set_aside": 12,
+            "set_aside_reasons": {"quality_flag_poor": 5, "noise_above_limit": 5, "speech_too_short": 3},
+            "set_aside_multi_reason": 1, "quarantined": 2, "used": 267},
+ "by_resident": [
+   {"resident_code": "R08", "days": 30, "used_days": 13, "set_aside_or_quarantined_days": 5, "missed_days": 12, "used_percent": 43},
+   {"resident_code": "R03", "days": 30, "used_days": 22, "set_aside_or_quarantined_days": 7, "missed_days": 1, "used_percent": 73},
+   {"resident_code": "R02", "days": 30, "used_days": 24, "set_aside_or_quarantined_days": 0, "missed_days": 6, "used_percent": 80},
+   {"resident_code": "R05", "days": 30, "used_days": 28, "set_aside_or_quarantined_days": 2, "missed_days": 0, "used_percent": 93},
+   {"resident_code": "R01", "days": 30, "used_days": 30, "set_aside_or_quarantined_days": 0, "missed_days": 0, "used_percent": 100}],
+ "alarm_timing": [
+   {"resident_code": "R09", "planted_change": "Sudden step", "change_began": "2026-10-21", "alarm_rang": "2026-10-21",
+    "delay_days": 0, "result": "detected"},
+   {"resident_code": "R10", "planted_change": "Slow drift", "change_began": "2026-10-17", "alarm_rang": "2026-10-24",
+    "delay_days": 7, "result": "detected"},
+   {"resident_code": "R01", "planted_change": "None", "change_began": null, "alarm_rang": null,
+    "delay_days": null, "result": "correct_no_alarm"}],
+ "review_outcomes": null,
  "status_totals": {"usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2,
                    "missing_resident": 17, "missing_device_gap": 2},
- "funnel": {"expected": 300, "received": 281, "duplicates_removed": 2, "missed": 19, "passed_quality": 269, "used": 267},
- "set_aside_reasons": {"quality_flag_poor": 5, "noise_above_limit": 5, "speech_too_short": 3},
- "daily_counts": [{"local_date": "2026-10-12", "used": 8, "set_aside": 0, "quarantined": 0, "missed": 2}],
  "status_counts": [
    {"resident_code": "R02", "usable": 24, "set_aside": 0, "quarantined": 0, "duplicate": 0,
     "missing_resident": 5, "missing_device_gap": 1}],
  "resident_outcomes": [
-   {"resident_code": "R07", "epoch_number": 1, "device_code": "D07", "usable_in_epoch": 12, "baseline_formed": false,
-    "baseline_frozen_after": null, "scored_sessions": null, "first_alarm_session": null,
-    "note": "Too few usable sessions: baseline pending, nothing scored"},
    {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "usable_in_epoch": 30, "baseline_formed": true,
     "baseline_frozen_after": "R09-20261016-01", "scored_sessions": 14, "first_alarm_session": "R09-20261021-01",
-    "note": null}]}
+    "note": null}],
+ "pipeline_run": {"id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "trigger": "manual", "scope": "all",
+   "config_profile": "test_v0_1", "code_version": "3f2c9ab", "as_of": "2026-10-30T20:00:00Z",
+   "started_at": "2026-10-30T20:01:06Z", "finished_at": "2026-10-30T20:01:14Z", "status": "succeeded",
+   "counts": {"arrivals": 283, "usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2,
+              "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "baseline_rows": 180, "alerts": 2},
+   "warnings": []}}
 ```
 
-(`status_counts` has one row per resident (10 for test data), `resident_outcomes` one row per resident-epoch
-(11) and `daily_counts` one row per local date in the window (30); abbreviated; on Oct 12 the 2 missed are R02 and R03
-(D02 device gap). `funnel` and `set_aside_reasons` feed the Analytics
-wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null when no alarm, which SRC-03 writes as "none".)
+Abbreviated arrays: `daily_series` has 30 rows (Oct 12 shown: R02 and R03 missed via the D02 device gap),
+`by_resident` 10 rows ordered by `used_percent` ascending then resident code (R08 43, R03 73, R02 80, R05 93, then R01,
+R04, R06, R07, R09, R10 at 100), `alarm_timing` 10 rows (the 8 residents with planted change "None" all
+`correct_no_alarm`; the UI groups them as "Other 8"), `status_counts` 10 rows, `resident_outcomes` 11 rows.
+In production `alarm_timing` is null and `review_outcomes` is
+`{"alarms_raised": n, "reviewed": n, "by_outcome": {"no_concern": n, "known_cause": n, "referred": n, "data_problem": n}}`.
 
 #### E-19 GET /api/v1/analytics/baselines
 - Auth: bearer (A, Rs). Query `resident_code`, `epoch` (requires resident_code), `limit` (default 50, max 500), `offset`.
-- 200 `BaselineRowList`. Test data total = 180.
+- 200 `BaselineRowList`, or `text/csv` with `Accept: text/csv`. Test data total = 180.
 
 ```json
-{"items": [
+{"meta": {"...": "as above"},
+ "items": [
   {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "loudness_dbfs", "n_sessions": 16,
    "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
    "median": -22.405, "mad": 1.45, "robust_spread": 2.14977, "floor_applied": false},
@@ -464,7 +579,7 @@ wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null 
 ```
 
 #### E-20 POST /api/v1/pipeline/run
-- Auth: bearer (A). Body `PipelineRunRequest`.
+- Auth: bearer (A) or apiKeyAuth with scope `pipeline:run` (scheduler). Body `PipelineRunRequest`.
 - 202 `PipelineRunAccepted`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown code in scope), 409 `PIPELINE_RUN_IN_PROGRESS`,
   422 `VALIDATION_ERROR`, `PROFILE_NOT_ALLOWED` (production with `test_v0_1` or a profile other than PIPELINE_PROFILE).
 
@@ -475,12 +590,16 @@ wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null 
 {"pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
 ```
 
+#### E-31 GET /api/v1/pipeline/runs
+- Auth: bearer (A, Rs). Query `trigger` (optional `PipelineTrigger`), `status` (optional `PipelineStatus`), `limit`, `offset`.
+- 200 `PipelineRunList` newest first.
+
 #### E-21 GET /api/v1/pipeline/runs/{id}
 - Auth: bearer (A, Rs). 200 `PipelineRun`. Errors: 404 `PIPELINE_RUN_NOT_FOUND`.
 
 #### E-22 GET /api/v1/admissions (experimental)
 - Auth: bearer (A, C, Rs). Query `limit`, `offset`. Header `X-EchoWell-Experimental: true`.
-- 200 `AdmissionList`. Test data: `{"items": [], "total": 0, "limit": 50, "offset": 0, "as_of": "2026-10-30T20:00:00Z"}`.
+- 200 `AdmissionList`. Test data: `{"meta": {...}, "items": [], "total": 0, "limit": 50, "offset": 0}`.
 
 #### E-23 GET /api/v1/admissions/{resident_code}/comparison (experimental)
 - Auth: bearer (A, C, Rs). 200 `AdmissionComparison`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown or not new_admission).
@@ -510,15 +629,15 @@ wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null 
 | E-09 | GET | /residents/{resident_code} | bearer | A C Rs | 200 | 404 RESIDENT_NOT_FOUND |
 | E-10 | GET | /residents/{resident_code}/checkins | bearer | A C Rs | 200 | 404, 422 |
 | E-11 | GET | /residents/{resident_code}/features | bearer | A C Rs | 200 | 404, 422 |
-| E-12 | GET | /scores | bearer | A C Rs | 200 | 404, 422 |
+| E-12 | GET | /scores | bearer | A C Rs (CSV: A Rs) | 200 | 404, 413, 422 |
 | E-13 | GET | /alerts | bearer | A C Rs | 200 | 422 |
-| E-14 | POST | /alerts/{id}/acknowledge | bearer | A C | 200 | 404 ALERT_NOT_FOUND, 409 ALERT_CLOSED |
+| E-14 | POST | /alerts/{id}/reviews | bearer | A C | 201 | 404 ALERT_NOT_FOUND, 409 ALERT_CLOSED, 422 |
 | E-15 | GET | /residents/{resident_code}/notes | bearer | A C Rs | 200 | 404 |
-| E-16 | POST | /residents/{resident_code}/notes | bearer | A C | 201 | 404, 409, 422 ALERT_ID_REQUIRED, ALERT_RESIDENT_MISMATCH |
+| E-16 | POST | /residents/{resident_code}/notes | bearer | A C | 201 | 404, 422 ALERT_RESIDENT_MISMATCH |
 | E-17 | GET | /devices | bearer | A C Rs | 200 | — |
 | E-18 | GET | /analytics | bearer | A Rs | 200 | — |
-| E-19 | GET | /analytics/baselines | bearer | A Rs | 200 | 422 |
-| E-20 | POST | /pipeline/run | bearer | A | 202 | 409 PIPELINE_RUN_IN_PROGRESS, 422 PROFILE_NOT_ALLOWED |
+| E-19 | GET | /analytics/baselines | bearer | A Rs | 200 (JSON or CSV) | 413, 422 |
+| E-20 | POST | /pipeline/run | bearer or apiKey | A, key `pipeline:run` | 202 | 409 PIPELINE_RUN_IN_PROGRESS, 422 PROFILE_NOT_ALLOWED |
 | E-21 | GET | /pipeline/runs/{id} | bearer | A Rs | 200 | 404 PIPELINE_RUN_NOT_FOUND |
 | E-22 | GET | /admissions | bearer | A C Rs | 200 | — |
 | E-23 | GET | /admissions/{resident_code}/comparison | bearer | A C Rs | 200 | 404 |
@@ -526,14 +645,20 @@ wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null 
 | E-25 | GET | /users | bearer | A | 200 | — |
 | E-26 | POST | /users | bearer | A | 201 | 409 EMAIL_ALREADY_EXISTS, 422 PASSWORD_POLICY_VIOLATION |
 | E-27 | PATCH | /users/{id} | bearer | A | 200 | 404 USER_NOT_FOUND, 409 LAST_ADMIN |
+| E-28 | GET | /alerts/{id}/reviews | bearer | A C Rs | 200 | 404 ALERT_NOT_FOUND |
+| E-29 | POST | /alerts/{id}/snooze | bearer | A C | 200 | 404, 409 ALERT_CLOSED, 422 |
+| E-30 | GET | /data-alerts | bearer | A C Rs | 200 | 422 |
+| E-31 | GET | /pipeline/runs | bearer | A Rs | 200 | 422 |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| OAS-020 | Each endpoint E-01..E-27 shall return exactly the success status codes listed in the endpoint/role summary and only error codes from the TRD 05 catalogue. | Must | TRD 05 | Test |
+| OAS-020 | Each endpoint E-01..E-31 shall return exactly the success status codes listed in the endpoint/role summary and only error codes from the TRD 05 catalogue. | Must | TRD 05 | Test |
 | OAS-021 | The E-08 example values (summary 2/7/1/19, order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06, R08 13 of 16 with 13·5·0·12) shall be asserted by an integration test on the test_v0_1 data. | Must | BR-12, SRC-09 | Test |
 | OAS-022 | The E-12 R09 series (14 rows, Oct 21 tally 5.431965 `rings`, Oct 30 tally 26.830256 `on`) shall be asserted with absolute tolerance 1e-6. | Must | BR-15, SRC-03 | Test |
 | OAS-023 | The E-19 response for the test data shall contain 180 rows whose values equal SRC-03 Exp_baselines within 1e-6, with Exp_baselines feature "COMPOSITE (raw signed mean of 7 z)" mapped to `feature_key`="composite". | Must | BR-09, BR-15 | Test |
-| OAS-024 | The E-18 `status_totals` for the test data shall be usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2; `funnel` shall be expected 300, received 281, duplicates_removed 2, missed 19, passed_quality 269, used 267; `set_aside_reasons` shall be 5 / 5 / 3. | Must | BR-15 | Test |
+| OAS-027 | On the test data, E-30 shall return exactly the four data alerts shown (kinds, codes, titles, details) and E-13 shall return R09 (open_days 9, current_tally 26.830256, leaning_most [number_of_pauses, loudness_dbfs, voiced_fraction]) and R10 (open_days 6, current_tally 13.418183). | Must | SRC-18 | Test |
+| OAS-028 | On the test data, E-18 `kpis`, `funnel`, `by_resident` and `alarm_timing` shall equal the values in the E-18 example and notes. | Must | SRC-19, BR-15 | Test |
+| OAS-024 | The E-18 `status_totals` for the test data shall be usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2 | Must | BR-15 | Test |
 | OAS-025 | `IngestRecord` property order in the YAML shall equal the SRC-05 CSV header order. | Must | SRC-05 | Inspection |
 | OAS-026 | `ScoredFeatureKey` shall list the 7 composite features in contract §6 order and `FeatureKey` all 19; `BaselineFeatureKey` shall be `FeatureKey` plus `composite`. | Must | contract §6 | Test |
 

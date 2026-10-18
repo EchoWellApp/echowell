@@ -15,6 +15,7 @@ TRD 04 (Frontend) defines how these screens are built (components, API client, s
 - Residents overview (`/residents`), including the Devices panel (`/residents#devices`).
 - Resident detail (`/residents/[residentCode]`): header and baseline information, "What this means", running change tally chart, the 7 scored measurements, the "12 other measurements" card, staff review, check-in log.
 - New admissions (`/admissions`), marked as future/experimental.
+- Alert review (`/alerts`, SRC-18) and Analytics (`/analytics`, SRC-19), in MVP scope per contract §19.
 - Login (`/login`) and a minimal Admin page (`/admin`).
 - Global header, footer, loading/empty/error states, plain-language and clinical wording rules, accessibility (WCAG 2.1 AA), responsive behaviour, design tokens.
 - Wireframe → requirement traceability and expected rendering with the test data.
@@ -36,6 +37,9 @@ TRD 04 (Frontend) defines how these screens are built (components, API client, s
 | SRC-10 | specs/UI-wireframe/Resident.dc.html — Resident detail (R09 alarm) |
 | SRC-11 | specs/UI-wireframe/Admission.dc.html — New admission check |
 | SRC-12 | specs/prompts/TRD_Generation_Prompt.md — "Frontend Requirements" |
+| SRC-18 | specs/UI-wireframe/Alerts.dc.html — Alert review (charge nurse or clinical lead) |
+| SRC-19 | specs/UI-wireframe/Analytics.dc.html — Analytics (study team) |
+| Contract §19–§21 | New wireframes, reconciliation decisions R1–R26 (18 Oct 2026) |
 | SRC-02 | Daily Data Storage and Processing Flowcharts (alerts are flags for clinician review) |
 | TRD 00 | BR-01..BR-18 |
 | TRD 02 | Functional requirements (FR-xxx) tracing to the same BR-xx |
@@ -61,6 +65,10 @@ flowchart TD
   NA -->|"← Back to all residents"| O
   O -->|"Admin (admin role only)"| AD["Admin /admin"]
   NA -. "own baseline formed: resident moves" .-> O
+  O -->|"Alerts (n)"| AL["Alert review /alerts"]
+  AL -->|"Open full resident view →"| RD
+  RD -->|"Mark as reviewed (dialog)"| RV["Review form (same as /alerts)"]
+  O -->|"Analytics (admin, researcher)"| AN["Analytics /analytics"]
 ```
 
 ### 4.1 Global conventions
@@ -71,25 +79,27 @@ flowchart TD
 | UX-002 | All dates and times shall be shown in the facility time zone delivered by the API (`meta.facility_tz`, America/Chicago per ASM-01), never in the viewer's browser time zone. | Must | ASM-01, contract §7 | T |
 | UX-003 | Date-time values shall use the format "Oct 30, 2:28 PM"; date-only values "Oct 21"; date ranges "Oct 1–16"; the year shall be added only when it differs from the year of the as-of date (formats defined in TRD 04 section 4.11). | Must | SRC-09, SRC-10 | T |
 | UX-004 | Status, alarm and outside-range information shall never be conveyed by colour alone: every accent-coloured status shall also carry the "▲" glyph and a text label, and status variants shall also differ by border style (2px solid accent / 1px solid / 1px dashed). | Must | WCAG 1.4.1, contract §11 | T |
-| UX-005 | Every page shall end with a footer in IBM Plex Mono 13px, colour `--color-text-secondary`, reading "No audio is stored or played here — only extracted voice measurements."; on the Residents overview the footer shall read "No audio is stored or played here — only extracted voice measurements. Duplicate records are removed quietly and not shown." | Must | SRC-09, SRC-10, SRC-11, BR-01, BR-03 | T |
+| UX-005 | Every page shall end with a footer in IBM Plex Mono 13px, colour `--color-text-secondary`. Default text (Resident detail, New admissions, Login, Admin): "No audio is stored or played here — only extracted voice measurements."; Residents overview: "No audio is stored or played here — only extracted voice measurements. Duplicate records are removed quietly and not shown."; Alert review: "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here."; Analytics: "Counts only — no audio, no resident names." | Must | SRC-09, SRC-10, SRC-11, SRC-18, SRC-19, BR-01, BR-03 | T |
 | UX-006 | No page shall contain an audio player, recording control, waveform, spectrogram or any link to audio. | Must | BR-01, BR-16 | I, T |
 | UX-007 | The UI shall show N (baseline length), h (alarm line) and the facility time zone from API values; the same build shall show "13 of 16" on the test_v0_1 profile and "of 30" on the production profile. | Must | ASM-04, D-OWNER-2, contract §7 | T |
 | UX-008 | Numbers of the running change tally shall be shown with one decimal ("5.4", "26.8"). | Must | SRC-10 | T |
 | UX-009 | The UI shall offer no control to edit, recompute, reset or delete a resident's baseline, score, tally, alarm or any received record. | Must | BR-02, BR-09, OQ-05 | I |
 
-### 4.2 Global header (Residents overview and Admin)
+### 4.2 Global header (Residents overview, Alert review, Analytics, Admin)
 
 Wireframe SRC-09 header: a row with, on the left, "EchoWell" (28px, weight 600) above a subline (15px, `--color-text-secondary`); on the right, three navigation buttons; a 2px solid ink bottom border with 16px padding below.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| UX-010 | The header shall show the product name "EchoWell" at 28px, weight 600, as the page's first heading text (in an element with `role="banner"`), with the page `<h1>` being visually hidden "Residents" on the overview and "Admin" on the admin page. | Must | SRC-09 | T |
-| UX-011 | The header subline shall read "Voice check-ins · <FACILITY_NAME> · Showing <data source label> as of <as-of>", e.g. with test data "Voice check-ins · Edgewood · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT", where `<as-of>` uses the format "Mon D, YYYY, h:mm AM/PM TZ". | Must | SRC-09, contract §11, §13 | T |
+| UX-010 | The header (`role="banner"`) shall show a 28px, weight-600 page title: "EchoWell" on `/residents`, "Alert review" on `/alerts`, "Analytics" on `/analytics`, "Admin" on `/admin`; on `/residents` the page `<h1>` shall be the visually hidden text "Residents", on the other pages the title itself shall be the `<h1>`. | Must | SRC-09, SRC-18, SRC-19, contract §20 R2 | T |
+| UX-011 | The Residents overview subline shall read "Voice check-ins · <FACILITY_NAME> · Showing <data source label> as of <as-of>", e.g. with test data "Voice check-ins · Edgewood · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT", where `<as-of>` is `meta.as_of` (the as-of of the latest succeeded pipeline run, contract §21 R21) in the format "Mon D, YYYY, h:mm AM/PM TZ". | Must | SRC-09, contract §11, §13, §21 R21 | T |
 | UX-012 | The facility name shall be rendered from `meta.facility_name` (FACILITY_NAME) and shall never be hard-coded; the UI shall never display the word "Edge4Care" as a facility name. | Must | contract §2, RSK-10 | T |
-| UX-013 | The navigation shall contain, in order, the links "Residents" (`/residents`), "New admissions" (`/admissions`) and "Devices" (`/residents#devices`), each with padding 12px 16px on a white background; the link for the current page shall have a 2px solid ink border and weight 600, the others a 1px solid `--color-border` border. | Must | SRC-09 | T |
-| UX-014 | For users with role `admin` the navigation shall show a fourth link "Admin" (`/admin`); it shall not be shown to other roles. | Should | contract §10, §11 | T |
+| UX-013 | The navigation (on `/residents`, `/alerts`, `/analytics`, `/admin`) shall contain, in order, the links "Residents" (`/residents`), "Alerts (<n>)" (`/alerts`), "Analytics" (`/analytics`) and "New admissions" (`/admissions`), each with padding 12px 16px on a white background; the link for the current page shall have a 2px solid ink border and weight 600, the others a 1px solid `--color-border` border. | Must | SRC-09, SRC-18, SRC-19, contract §20 R2 | T |
+| UX-014 | For users with role `admin` the navigation shall show a fifth link "Admin" (`/admin`) after "New admissions"; it shall not be shown to other roles. | Must | contract §10, §20 R2 | T |
 | UX-015 | The header shall show the signed-in user's display name in 14px `--color-text-secondary` and a button "Sign out" (min-height 44px, 1px solid `--color-border`). | Must | BR-16 | T |
-| UX-016 | Activating "Devices" shall scroll to the Devices panel and move keyboard focus to its heading "Devices". | Must | SRC-09 | T |
+| UX-016 | (Retired by contract §20 R2: the navigation has no "Devices" link.) Opening `/residents#devices` shall scroll to the Devices panel and move keyboard focus to its heading "Devices". | Must | SRC-09, contract §20 R2 | T |
+| UX-017 | The Alert review subline shall read "For the charge nurse or clinical lead · <data source label> as of <Mon D, YYYY>" (test data: "For the charge nurse or clinical lead · pipeline test data v0.1 as of Oct 30, 2026"); the Analytics subline shall read "For the study team · <data source label>, <period> · numbers match the pipeline answer key", where the clause " · numbers match the pipeline answer key" appears only when `meta.pipeline_profile` is `test_v0_1` and `<period>` is the 30-day window as a date range with year (test data: "For the study team · pipeline test data v0.1, Oct 1–30, 2026 · numbers match the pipeline answer key"). | Must | SRC-18, SRC-19, contract §19 | T |
+| UX-018 | In "Alerts (<n>)", n shall be the number of change alarms not yet reviewed (alert status `open`); data alerts are not counted (test data: "Alerts (2)"; after one review "Alerts (1)"). The "Analytics" link shall be shown only to roles `admin` and `researcher`. | Must | SRC-18, contract §19 | T |
 
 ### 4.3 Residents overview (`/residents`)
 
@@ -223,7 +233,7 @@ Layout order (SRC-10): Back link → header → "What this means" → "Running c
 | Situation | Template | Example |
 |---|---|---|
 | Frozen, scored sessions exist | "Baseline: first <N> usable check-ins, <first date>–<frozen-after date> (then frozen) · watched since <first scored date>" | "Baseline: first 16 usable check-ins, Oct 1–16 (then frozen) · watched since Oct 17" |
-| Frozen, no scored session yet | "Baseline: first <N> usable check-ins, <range> (then frozen) · watching starts with the next usable check-in" | — |
+| Frozen, no scored session yet | "Baseline: first <N> usable check-ins, <range> (then frozen) · watched since <local date after the freeze session>" (contract §20 R9) | — |
 | Forming | "Baseline: forming · <n> of <N> usable check-ins so far (frozen when <N> are reached)" | "Baseline: forming · 13 of 16 usable check-ins so far (frozen when 16 are reached)" |
 | Restart suffix (epoch > 1), cause device | " · restarted <Mon D> (new device <D>, was <old D>)" | " · restarted Oct 13 (new device D07B, was D07)" |
 | Restart suffix, cause firmware | " · restarted <Mon D> (device firmware changed to <version>)" | — |
@@ -301,21 +311,24 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | UX-120 | The "Staff review" section shall be the left column of a 2-column row (gap 16px) next to "Check-in log". | Must | SRC-10 | T |
-| UX-121 | The section shall contain, in order: heading "Staff review"; a select labelled "Type of note" with options "Observation", "Action taken", "Follow-up" (default "Observation"); a textarea labelled "Note (what staff saw or did)" (3 rows, vertical resize, padding 10px) with placeholder text "e.g. “Resident has a cold; nurse notified.”"; a character counter "<count> / 2000"; the buttons "Mark as reviewed" and "Save note"; and the open-question note. | Must | SRC-10, SRC-12, contract §9, §11 | T |
+| UX-121 | The section shall contain, in order: heading "Staff review"; a select labelled "Type of note" with options "Observation", "Action taken", "Follow-up" (default "Observation"); a textarea labelled "Note (what staff saw or did)" (3 rows, vertical resize, padding 10px) with placeholder text "e.g. “Resident has a cold; nurse notified.”"; a character counter "<count> / 2000"; the buttons "Mark as reviewed" (only when the resident has a change alarm in the current epoch) and "Save note"; and the open-question note. | Must | SRC-10, SRC-12, contract §9, §11, §20 R5 | T |
 | UX-122 | "Mark as reviewed" shall be the primary button (min-height 44px, padding 0 18px, 2px solid ink border, weight 600); "Save note" shall be secondary (min-height 44px, 1px solid `--color-border`). | Must | SRC-10 | T |
-| UX-123 | "Save note" shall store the note with the chosen type; "Mark as reviewed" shall store the note with the chosen type and mark it as reviewed, linking it to the resident's open alert when one exists. | Must | BR-13, contract §10 | T |
-| UX-124 | Both buttons shall be disabled while the note is empty (after trimming) or longer than 2000 characters; when the user attempts to submit an empty note the message "Write a short note before saving." shall appear under the textarea and be associated via `aria-describedby`. | Must | contract §9 | T |
-| UX-125 | The open-question note (13px, secondary) shall read "Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — marking as reviewed records the review only; the alarm and the tally stay as they are." | Must | SRC-10, OQ-05 | T |
-| UX-126 | After "Mark as reviewed", the status badge, chart and alarm wording shall remain as returned by the API (alarm unchanged in v0.1). | Must | OQ-05 | T |
-| UX-127 | When the open alert has been acknowledged, a line under the heading shall read "Reviewed by <display name>, <Mon D, h:mm AM/PM>. The alarm stays on (open question OQ-05)." | Must | BR-13, OQ-05 | T |
+| UX-123 | "Save note" shall store a free staff note with the chosen type (separate from alarm reviews); "Mark as reviewed" shall open the alarm review dialog of UX-136 and shall not save the note text (contract §20 R5). | Must | BR-13, contract §20 R5 | T |
+| UX-124 | "Save note" shall be disabled while the note is empty (after trimming) or longer than 2000 characters; when the user attempts to save an empty note the message "Write a short note before saving." shall appear under the textarea and be associated via `aria-describedby`. | Must | contract §9 | T |
+| UX-125 | The open-question note (13px, secondary) shall read "Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are." | Must | SRC-10, OQ-05 | T |
+| UX-126 | After a review is saved, the status badge, chart and alarm wording shall remain as returned by the API (alarm unchanged in v0.1). | Must | OQ-05 | T |
+| UX-127 | When the change alarm has at least one saved review, a line under the heading shall read "Reviewed by <display name>, <Mon D, h:mm AM/PM> · <outcome label>. The alarm stays on (open question OQ-05)." using the latest review. | Must | BR-13, OQ-05, contract §19 | T |
 | UX-128 | The note text shall be stored and shown exactly as typed (plain text, line breaks preserved); no formatting or links shall be rendered from it. | Must | BR-16 | T |
 | UX-129 | The UI shall not offer editing or deleting of saved notes (notes are append-only). | Must | contract §9 | I |
-| UX-130 | After a successful save, a polite status message shall read "Note saved." or, for "Mark as reviewed", "Note saved and marked as reviewed."; the textarea shall be cleared and the note type kept. | Must | BR-13 | T |
+| UX-130 | After a successful "Save note", a polite status message shall read "Note saved."; the textarea shall be cleared and the note type kept. | Must | BR-13 | T |
 | UX-131 | When a save fails, the message "Could not save the note. Your text is kept — try again." shall appear and the typed text shall remain. | Must | BR-13 | T |
 | UX-132 | For users with role `researcher`, the form controls shall be replaced by "Only clinicians and admins can add notes." while previous notes remain visible. | Must | contract §10 | T |
 | UX-133 | Notes shall document observations, actions taken and follow-up activity through the three note types; the type shall be shown with every saved note. | Must | SRC-12, BR-13 | T |
 | UX-134 | Under the form, a list headed "Previous notes" (h3, 16px) shall show the resident's notes newest first, each as "<Mon D, h:mm AM/PM> · <Type> · <display name>" (+ " · Marked as reviewed" when applicable) followed by the note text; with no notes it shall read "No notes yet." | Must | SRC-12, BR-13 | T |
 | UX-135 | The notes list shall show at most 10 notes initially and a button "Show all notes (<count>)" when more exist. | Should | BR-13 | T |
+| UX-136 | "Mark as reviewed" shall open a modal dialog titled "Review alarm · <R> · alarm since <Mon D>" containing exactly the review form of the Alert review page (UX-313–UX-318) and a "Cancel" button; Escape and "Cancel" close it without saving and return focus to "Mark as reviewed". | Must | contract §19, §20 R5, WCAG 2.4.3 | T |
+| UX-137 | Saving in the dialog shall create an alarm review (same record as on `/alerts`), close the dialog, and announce "Review saved." (or the data-problem variant of UX-318). | Must | contract §19 | T |
+| UX-138 | For users without the clinician or admin role, "Mark as reviewed" shall not be shown. | Must | contract §19 (OQ-26) | T |
 
 #### 4.5.6 "Check-in log"
 
@@ -390,13 +403,13 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | Baseline forming · n of N | fewer than N usable sessions in current epoch | contract §7 step 6 |
 | Baseline (then frozen) | first N usable sessions of the epoch; never updated afterwards | BR-09, ASM-07 |
 | Baseline restarted | a new epoch began (device, firmware or extraction software changed); count restarts at 0, tally restarts at 0 | BR-08, ASM-06 |
-| Watched since | local date of the first scored session of the current epoch | contract §4 |
+| Watched since | local date of the first scored session of the current epoch; before any scored session exists, the local date after the freeze session | contract §20 R9 |
 | Used | usable session | contract §4 |
 | Set aside | failed quality gate; never scored, never in baseline | BR-04 |
 | Quarantined | possible other speaker; never scored, never in baseline | BR-05 |
 | Missed | resident-day with no record (missing_resident or missing_device_gap) | BR-06 |
 | Device silent | missing_device_gap: shared device, no resident on it had a record that day | BR-06 |
-| Last check-in | most recent non-duplicate record, any status | this TRD (UX-038) |
+| Last check-in | most recent non-duplicate record, any status (local time) | contract §20 R10 |
 
 ### 4.9 Login (`/login`)
 
@@ -416,11 +429,13 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 |---|---|---|---|---|
 | UX-210 | The Admin page shall show the global header and three tabs (ARIA tabs pattern, arrow-key navigation): "Users", "Pipeline runs", "Upload data"; the selected tab shall be kept in `?tab=`. | Must | contract §11 | T |
 | UX-211 | "Users" shall list users with columns "Email", "Display name", "Role", "Active", "Last sign-in", and provide a form "Add user" (Email, Display name, Role select "Admin"/"Clinician"/"Researcher", Temporary password) and per-row "Deactivate"/"Reactivate" buttons with a confirmation dialog "Deactivate <email>? They will not be able to sign in." | Must | contract §10, §12 | T |
-| UX-212 | "Pipeline runs" shall show the latest run (status, trigger, profile, started, finished, counts) and a button "Run pipeline now" with a profile select whose options are those allowed by the backend for the environment, followed by the run status, refreshed every 5 seconds until it is "succeeded" or "failed". | Must | contract §7, §10 | T |
+| UX-212 | "Pipeline runs" shall list recent runs from GET /pipeline/runs (columns "Started", "Finished", "Trigger", "Profile", "Status", "As of", "Counts") newest first, and provide a button "Run pipeline now" with a profile select whose options are those allowed by the backend for the environment; a started run shall be shown with its status refreshed every 5 seconds until it is "succeeded" or "failed". | Must | contract §7, §10, §20 R4 | T |
 | UX-213 | "Upload data" shall provide a file input accepting `.csv` labelled "CSV file (pipeline input format v0.1)" and a button "Upload", then show "Accepted <a> · Rejected <r> · Duplicates <d>" and a table of rejections with columns "Row", "Errors". | Must | BR-01, contract §10 | T |
+| UX-217 | When an upload is rejected as a whole (for example the legacy SRC-06 file, 422 schema mismatch, contract §20 R12), the Upload tab shall show "The file was not accepted: <detail>. Nothing was stored." and list `errors[]` messages. | Must | contract §20 R12, §21 R19 | T |
+| UX-218 | The Admin page shall not offer creation or editing of residents, devices, device assignments or API keys (managed by CLI and seed files in the MVP, contract §20 R4). | Must | contract §20 R4 | I |
 | UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Railway/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
 | UX-215 | Users without the admin role shall see "You do not have access to this page." and the link "Back to all residents". | Must | BR-16 | T |
-| UX-216 | The Admin page footer area shall show "API status: <ok/unavailable> · version <version>" from GET /health. | Should | TRD 17 | T |
+| UX-216 | The Admin page footer area shall show "API status: ok · version <version>" when GET /health returns 200, "API status: degraded (database unavailable) · version <version>" when it returns 503 with status "degraded", and "API status: unavailable" when unreachable. | Should | TRD 17, contract §21 R19 | T |
 
 ### 4.11 Loading, empty and error states
 
@@ -430,6 +445,7 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | UX-201 | While the overview refreshes after a sort change, the previous rows shall stay visible. | Must | SRC-09 | T |
 | UX-202 | Sections that fail independently shall not blank other sections of the page. | Must | BR-13 | T |
 | UX-203 | A failed section shall show "Could not load <section name>. Check your connection and try again.", a "Try again" button, and "Reference: <request_id>" in IBM Plex Mono 12px when available. | Must | TRD 17 | T |
+| UX-207 | Field-level API errors (`errors[]` items `{field, code, message}`, contract §21 R19) shall be shown under the matching form field; other API errors shall be shown above the submit button. | Must | contract §21 R19 | T |
 | UX-204 | Empty states: overview table "No residents are enrolled yet."; devices "No devices are registered yet."; check-in log UX-149; notes UX-134; admissions UX-194; feature section for a resident with no scored session "Not scored yet" per card (UX-104). | Must | BR-12, BR-13, BR-14 | T |
 | UX-205 | An unknown resident code shall show "Resident <code> was not found." with the Back link, and no other sections. | Must | BR-13 | T |
 | UX-206 | When cached data is shown after a failed refresh, the notice "Could not refresh. Showing data as of <as-of>." shall appear at the top of the page. | Should | NFR | T |
@@ -444,6 +460,7 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | UX-243 | At every width ≥ 320px the page shall not scroll horizontally; only the residents table (min 900px), the admissions table (min 760px) and the tally chart (min 700px) may scroll horizontally inside their own containers, which shall be keyboard-focusable (`tabindex="0"`) with an accessible name. | Must | contract §11, WCAG 1.4.10 | T |
 | UX-244 | Text shall remain readable and functional at 200% browser zoom without loss of content. | Must | WCAG 1.4.4 | T |
 | UX-245 | The heading row of the residents section and of the tally section shall wrap (flex-wrap) so that "Sort by" and the chart subtitle move below the heading on narrow screens. | Must | SRC-09, SRC-10 | T |
+| UX-246 | Below 1024px the Alert review page shall stack its columns (queues first, review panel second) and the Analytics page shall stack the funnel and by-resident sections; the daily chart (min 760px) and timing table (min 640px) shall scroll inside their own containers. | Must | SRC-18, SRC-19 | T |
 
 ### 4.13 Expected rendering with test data (as of Oct 30, 2026, 3:00 PM CT)
 
@@ -554,7 +571,10 @@ The token values are fixed by contract §11 and implemented in TRD 04 section 4.
 | accent | #9A4508 | Alarm badge/tile/bars, alarm line, outside-range — always with ▲ or text |
 | baseline/below-line bars | #BDBDB8 | Baseline slot, tally bars before alarm |
 | muted panel | #FAFAF8 | "stored, not scored" card, chart placeholder |
-| range band | #E2E2DE | Facility range band (SRC-11) |
+| range band | #E2E2DE | Facility range band (SRC-11, contract §20 R13) |
+| used (analytics) | #4A4A47 | "Used" segments in analytics charts (SRC-19) |
+| funnel shades | #8A8A85, #6E6E6A, #5A5A57, #4A4A47 | Funnel steps 1–4 (SRC-19) |
+| missed (analytics) | #FFFFFF with 1px dashed #8A8A85 | "Missed" segments and legend swatch (SRC-19) |
 | Sizes | h1 28px; h2 20px; body 15–16px; labels 14px; footer 13px; captions 12px; tile values 32px | |
 | Spacing | max width 1200px; page padding 32px 24px; section gap 24px; card padding 16px; inner card 12px; touch min 44px | |
 
@@ -588,6 +608,24 @@ The token values are fixed by contract §11 and implemented in TRD 04 section 4.
 | Admissions table and badges | SRC-11 | UX-183–UX-188 |
 | "[Study ID] compared with facility range" chart, caption, transition sentence | SRC-11 | UX-189–UX-195 |
 | Footer (default) | SRC-10, SRC-11 | UX-005 |
+| Alert review header "Alert review", subline, nav "Residents / Alerts (2) / Analytics" | SRC-18 | UX-010, UX-013, UX-017, UX-018 |
+| "Change alarms · need a nurse review" cards R09, R10 with "Not reviewed" | SRC-18 | UX-300–UX-305, UX-330 |
+| "Data alerts · go to the study team" cards R08, R05, R03, D02 | SRC-18 | UX-306–UX-309, UX-331 |
+| "R09 · alarm since Oct 21" + "Open full resident view →" | SRC-18 | UX-310 |
+| Mini chart "Change tally since watching began (alarm line 5.0)", Oct 17–Oct 30 | SRC-18 | UX-311 |
+| "Leaning most" | SRC-18 | UX-312 |
+| "Anything that could explain it?" checklist | SRC-18 | UX-313 |
+| "Review outcome" radio | SRC-18 | UX-314 |
+| "Note", "Save review", "Remind me in [24 h]" | SRC-18 | UX-315–UX-318 |
+| Open-questions note | SRC-18 | UX-321 |
+| Footer (alert review) | SRC-18 | UX-005 |
+| Analytics header, subline, nav | SRC-19 | UX-010, UX-013, UX-017 |
+| KPI tiles 94% / 89% / 9 of 10 / 2 | SRC-19 | UX-351–UX-355, UX-380 |
+| "Check-ins per day" stacked chart and legend, "Oct 12 · D02 silent" | SRC-19 | UX-356–UX-361, UX-381 |
+| "Where check-ins are lost" funnel 300 → 281 → 269 → 267 | SRC-19 | UX-362–UX-366, UX-382 |
+| "Usable check-ins by resident" R08 43% … R10 100% | SRC-19 | UX-367–UX-370, UX-383 |
+| "Alarm timing check · test data only…" table and caption | SRC-19 | UX-371–UX-375, UX-384 |
+| Footer (analytics) | SRC-19 | UX-005 |
 
 Prompt (SRC-12) coverage: Residents overview (UX-020–UX-048), sort controls (UX-030–UX-033), statuses Alarm On / No Alarm / Baseline Still Forming (section 4.3.4), 30-day counts and missing days (UX-039, UX-047, UX-048), Device Monitoring Panel (UX-050–UX-058), CUSUM chart with alarm line 5.0 showing baseline period, score progression, alarm triggers and persistence (UX-081–UX-085), 7 scored features in plain language and 12 stored (UX-100–UX-108), baseline status/progress/freeze (UX-063–UX-066), check-in log (UX-140–UX-150), staff review (UX-120–UX-135), New admissions experimental with facility comparison and transition (UX-180–UX-195).
 
@@ -626,6 +664,8 @@ Prompt (SRC-12) coverage: Residents overview (UX-020–UX-048), sort controls (U
 | AC-UX-07 | `/admissions` shows the experimental banner text of UX-181 and the empty state of UX-194. |
 | AC-UX-08 | No rendered page contains the words listed in UX-161 (except "not a diagnosis"), "Edge4Care" or "[Facility name]". |
 | AC-UX-09 | axe reports no serious/critical violations; keyboard-only navigation reaches every control with visible focus; at 390px width there is no page-level horizontal scroll. |
+| AC-UX-11 | On the test environment, `/alerts` renders exactly section 4.17.6 and the nav reads "Alerts (2)"; after a review of R09 the card shows "Reviewed", the nav "Alerts (1)", and R09's badge still reads "▲ Alarm since Oct 21". |
+| AC-UX-12 | A researcher sees `/analytics` exactly as section 4.18.7; a clinician gets "You do not have access to this page."; with the production profile the timing panel is replaced by the review outcomes panel. |
 | AC-UX-10 | Switching the backend to the production profile (N = 30) changes "of 16" to "of 30" on all screens without a frontend change. |
 
 ## 8. Implementation Notes
@@ -650,9 +690,13 @@ Prompt (SRC-12) coverage: Residents overview (UX-020–UX-048), sort controls (U
 | OQ-12 | Final clinical wording; marker UX-073 stays until closed. |
 | OQ-13 | Alarm-limit calibration; the alarm line value is rendered from the API. |
 | OQ-18 | EWMA trend / baseline band display is not built. |
+| OQ-24 | Data-alert thresholds are provisional defaults reproducing SRC-18; copy templates do not change if thresholds change. |
+| OQ-25 | The explanation checklist is provisional and comes from the configured list; the hint line of UX-313 stays until closed. |
+| OQ-26 | Who may review alarms and how soon; the MVP allows clinicians and admins and enforces no review time. |
 
 ## Revision History
 
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
+| 0.1 (rev. b) | 18 Oct 2026 | Contract §19–§21: Alert review (§4.17) and Analytics (§4.18) from SRC-18/19; unified navigation (R2, UX-016 retired); review model (R5: UX-121–UX-127, UX-130, UX-136–UX-138); watched-since/last check-in (R9, R10); admin runs list, legacy rejection, CLI-managed entities (R4, R12); problem+json field errors and degraded health (R19); as-of (R21); tokens (R13) | — |

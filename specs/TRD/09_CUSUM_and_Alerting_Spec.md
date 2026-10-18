@@ -7,7 +7,9 @@ Document ID: ECHOWELL-TRD-09 · Version 0.1 (draft for review) · Date: 18 Octob
 This document specifies the EchoWell persistence rule and alerting: the one-sided upper CUSUM ("running change tally")
 over composite z, the alarm threshold, which sessions update the tally, the alarm states written per scored session,
 the alert record and its lifecycle, closure when an epoch ends, how alerts are surfaced in the dashboard, the known
-false-alarm behaviour of the v0.1 settings and the plan to calibrate them. The alarm is a flag "for clinician review"
+false-alarm behaviour of the v0.1 settings and the plan to calibrate them. It also specifies the Alert review
+page logic (SRC-18): alarm reviews and snooze, the "Leaning most" summary, and the rule-based data alerts that go to
+the study team, plus the after-the-run "Alarm timing check" against evaluation ground truth (SRC-19). The alarm is a flag "for clinician review"
 (SRC-02): it detects a persistent change against the resident's own frozen baseline; it is a prompt to check in, not a
 diagnosis (BR-11, BR-18).
 
@@ -15,7 +17,9 @@ diagnosis (BR-11, BR-18).
 
 In scope: `analytics/cusum_engine.py`, `analytics/alert_generator.py`, the `scores.cusum_tally` / `scores.alarm_state`
 values, the `cusum_state` and `alerts` tables' derived content and lifecycle, alert acknowledgement semantics, UI surfacing
-rules for alarms, the R09/R10 reference tables, the calibration plan (OQ-13).
+rules for alarms, the R09/R10 reference tables, the calibration plan (OQ-13), alarm reviews (`alert_reviews`) and
+snooze, "Leaning most", data alerts (`data_alerts`, `analytics/data_alerts.py`), the alarm timing check
+(`evaluation_ground_truth`, test_v0_1 only).
 
 Out of scope: the computation of `composite_z` (TRD 08); push notification channels (SMS, email, pager) — not in MVP (OQ-06);
 clinician reset of the tally (OQ-05); EWMA trend display (OQ-18); clinical interpretation wording (OQ-12, TRD 11).
@@ -28,6 +32,8 @@ clinician reset of the tally (OQ-05); EWMA trend display (OQ-18); clinical inter
 | SRC-03 | Workbook: Parameters (CUSUM, alarm), Exp_scores (cusum_tally, alarm), Exp_resident_outcomes (first_alarm_session), README note 5 (false alarms) |
 | SRC-04 | Generator script, CUSUM loop |
 | SRC-09 / SRC-10 | Wireframes: Residents overview (status badge "▲ Alarm since <date>"), Resident detail (tally chart, "alarm line 5.0", staff review, OQ-05 note) |
+| SRC-18 | UI wireframe: Alert review (`specs/UI-wireframe/Alerts.dc.html`) |
+| SRC-19 | UI wireframe: Analytics (`specs/UI-wireframe/Analytics.dc.html`) — alarm timing check |
 | SRC-13 | Dataset specification §5 (Team 1 50-resident, 120-day dataset with inserted changes and separate answer key) |
 | TRD 07 | Analytics engine (persistence, reconciliation ANL-039) |
 | TRD 08 | Baseline and scoring (composite_z) |
@@ -71,7 +77,7 @@ run_cusum(score_rows, config):
 | CUS-005 | Each epoch shall have its own tally; when a new epoch begins the tally of the new epoch starts at 0 after its own baseline freezes, and no value is carried over. | Must | BR-08, ASM-06 | Test |
 | CUS-006 | The alarm condition shall be `S_i ≥ h` (inclusive). | Must | SRC-03 Parameters "alarm" | Test |
 | CUS-007 | Each scored session shall carry `alarm_state` "off" before the first crossing, "rings" on the first crossing, and "on" for every later scored session of the same epoch regardless of whether S later falls below h. | Must | SRC-03 Exp_scores "alarm", contract §7 step 8 | Test |
-| CUS-008 | The engine shall not reset the tally or the alarm state for any reason other than a new epoch; staff acknowledgement shall not change `cusum_tally` or `alarm_state` in v0.1 (OQ-05). | Must | OQ-05, SRC-03 README | Test |
+| CUS-008 | The engine shall not reset the tally or the alarm state for any reason other than a new epoch; a saved review (`alert_reviews`, status `acknowledged`) or a snooze shall never reset or change `cusum_tally` or `alarm_state` in v0.1 (OQ-05). | Must | OQ-05, SRC-03 README | Test |
 | CUS-009 | `cusum_state` shall hold, per epoch, `current_tally` (S of the last scored session, 0.0 if none), `last_scored_session_id`, `alarm_on` (true if a crossing occurred in the epoch) and `updated_at`. | Must | TRD 06 | Test |
 | CUS-010 | Because the tally is a pure function of the ordered composite_z sequence, a rebuild shall reproduce every `cusum_tally` and `alarm_state` exactly (TRD 07 ANL-023). | Must | SRC-02 | Test |
 
@@ -97,28 +103,34 @@ Alert table fields (TRD 06; derived fields set by the pipeline, review fields se
 | local_date | date | pipeline | facility-local date of that session (badge "Alarm since <Mon D>") |
 | cusum_value | double precision | pipeline | tally at first crossing (e.g. 5.431965) |
 | status | enum(open, acknowledged, closed) | pipeline / staff | initial `open` |
-| closed_reason | text null | pipeline / admin | "epoch ended" (pipeline) or "closed by admin" (reserved) |
+| closed_reason | text null | pipeline / admin | "epoch ended", "superseded by rebuild" (pipeline) or "admin" (reserved) |
 | acknowledged_by | uuid FK users null | staff | user who marked reviewed |
-| acknowledged_at | timestamptz null | staff | time of review |
+| acknowledged_at | timestamptz null | staff | time of the first saved review |
+| snoozed_until | timestamptz null | staff | "Remind me in 24 h" (CUS-039) |
+| snoozed_by | uuid FK users null | staff | user who snoozed |
 | created_at / updated_at | timestamptz | system | |
 
 ```mermaid
 stateDiagram-v2
   [*] --> open: first crossing S >= 5.0 (pipeline)
-  open --> acknowledged: POST /alerts/{id}/acknowledge or note with mark_reviewed (clinician/admin)
+    open --> acknowledged: POST /alerts/{id}/reviews (clinician/admin, first saved review)
+  acknowledged --> acknowledged: further reviews (history)
+
   open --> closed: new epoch started (pipeline, "epoch ended")
-  acknowledged --> closed: new epoch started (pipeline, "epoch ended")
+    acknowledged --> closed: new epoch started (pipeline, "epoch ended")
+  open --> closed: rebuild no longer produces this first crossing ("superseded by rebuild")
+
   closed --> [*]
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CUS-014 | The persistence service shall insert one `alerts` row with `status = open` for each `AlertEvent` that has no existing alert for the same `(resident_id, epoch_id)`; at most one alert shall exist per resident-epoch (unique constraint on `epoch_id`). | Must | contract §7 step 9, TRD 06 | Test |
-| CUS-015 | An existing alert shall never be deleted or have its `session_id`, `triggered_at`, `local_date` or `cusum_value` rewritten by a later run; if a rebuild computes a different first crossing (possible only after an out-of-order post-freeze record, TRD 07 ANL-027), the existing row shall be kept and `RunWarning(code="alert_first_crossing_changed")` recorded; if a rebuild computes no crossing for an epoch that has an alert, the alert shall be kept with the same warning code. | Must | BR-02, ASM-07 | Test |
-| CUS-016 | `POST /api/v1/alerts/{id}/acknowledge` (roles clinician, admin) shall set `status = acknowledged`, `acknowledged_by`, `acknowledged_at` on an `open` alert, write an `audit_logs` row (action `alert_acknowledged`), and shall not change the tally, `alarm_state`, `cusum_state.alarm_on` or the resident's display status. Acknowledging an already acknowledged alert shall return 200 without changes; acknowledging a closed alert shall return 409. | Must | OQ-05, BR-16, TRD 05 | Test |
-| CUS-017 | Creating a staff note with `alert_id` and `mark_reviewed = true` shall acknowledge that alert exactly as CUS-016. | Must | contract §9 staff_notes, SRC-10 | Test |
+| CUS-014 | The persistence service shall upsert alerts on the natural key `(epoch_id, session_id)` (contract §20 R15): an `AlertEvent` without a matching row inserts one with `status = open`; at most one non-closed alert shall exist per epoch. | Must | contract §7 step 9, R15, TRD 06 DB-018 | Test |
+| CUS-015 | An existing alert shall never be deleted and its `session_id`, `triggered_at`, `local_date` and `cusum_value` shall never be rewritten; its reviews and snooze survive every rebuild. If a rebuild produces a different first crossing for the epoch (possible only after an out-of-order post-freeze record, TRD 07 ANL-027) or none, the existing non-closed alert shall be set to `closed` with `closed_reason = 'superseded by rebuild'`, a new alert is inserted for the new first crossing (if any), and `RunWarning(code="alert_first_crossing_changed")` is recorded. | Must | BR-02, ASM-07, R15 | Test |
+| CUS-016 | `POST /api/v1/alerts/{id}/reviews` (roles clinician, admin; body `{explanations: [code, ...], outcome, note?}`) shall insert one `alert_reviews` row (`alert_id`, `reviewer_user_id`, `explanations` text[], `outcome`, `note` ≤ 2000 chars, `created_at`), set the alert `status = acknowledged` (and `acknowledged_by`/`acknowledged_at` on the first review), write `audit_logs` (action `alert_reviewed`), and shall not change the tally, `alarm_state`, `cusum_state.alarm_on` or the resident's display status (OQ-05). A review of a closed alert returns 409; `POST /api/v1/alerts/{id}/acknowledge` does not exist (contract §20 R5). | Must | OQ-05, BR-16, SRC-18 | Test |
+| CUS-017 | Multiple reviews per alert shall be allowed and kept as history (`GET /api/v1/alerts/{id}/reviews`, newest first); the Resident detail "Mark as reviewed" button shall open the same review form (single review model); staff notes remain a separate free-note feature and do not change alert status. | Must | SRC-18, R5 | Test |
 | CUS-018 | When a resident has an epoch newer than an alert's epoch, the persistence service shall set that alert's `status = closed` and `closed_reason = "epoch ended"` (if not already closed), and write an `audit_logs` row (actor_type `system`, action `alert_closed`); closure time is `updated_at`. | Must | ASM-06, contract §7 step 8 | Test |
-| CUS-019 | The value `closed_reason = "closed by admin"` is reserved; the v0.1 API (contract section 10) has no endpoint that closes an alert manually, so manual closure is not implemented in the MVP (OQ-05). | Must | OQ-05 | Inspection |
+| CUS-019 | The value `closed_reason = 'admin'` is reserved; the v0.1 API has no endpoint that closes an alert manually, so manual closure is not implemented in the MVP (OQ-05). | Must | OQ-05, TRD 20 | Inspection |
 | CUS-020 | A resident's display status shall be `alarm_on` when an alert of the resident's current epoch has status `open` or `acknowledged` (acknowledgement does not turn the alarm off in v0.1); the badge text shall be "▲ Alarm since <Mon D>" using the alert's `local_date`. | Must | SRC-09, SRC-10, contract §8 | Test |
 | CUS-021 | After an epoch ends, the resident's display status shall follow the new epoch (`baseline_forming` until its baseline forms, then `no_alarm` with " · baseline restarted <Mon D>" or `alarm_on` if the new epoch alarms). | Must | BR-08, contract §8 | Test |
 
@@ -126,8 +138,8 @@ stateDiagram-v2
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CUS-022 | Alerts shall be surfaced only inside the authenticated dashboard: overview status badge and "Alarm on" summary tile, alarms-first sort, resident detail status badge, tally chart and check-in log event "alarm"; the system shall not send SMS, email or push notifications in the MVP (OQ-06). | Must | OQ-06, SRC-09, SRC-10 | Inspection, Demo |
-| CUS-023 | The resident detail tally chart shall plot `cusum_tally` per scored session of the current epoch, mark baseline-period sessions as grey bars without a tally value, draw a dashed horizontal line at `cusum_h` labelled "alarm line 5.0", and label the x-axis date of the first crossing; the caption shall state "Set-aside, quarantined and missed days leave the tally unchanged." | Must | BR-13, SRC-10 | Demo, Test |
+| CUS-022 | Alerts shall be surfaced only inside the authenticated dashboard: nav item "Alerts (<n>)" (n = non-closed change alarms of current epochs), Alert review page queues (SRC-18), overview status badge and "Alarm on" summary tile, alarms-first sort, resident detail status badge, tally chart and check-in log event "alarm"; the system shall not send SMS, email or push notifications in the MVP (OQ-06). | Must | OQ-06, SRC-09, SRC-10, SRC-18 | Inspection, Demo |
+| CUS-023 | The tally chart (Resident detail and the Alert review mini chart "Change tally since watching began (alarm line 5.0)") shall draw one bar per scored session of the current epoch with height `cusum_tally`, colour #BDBDB8 with a 1px #8A8A85 outline while `alarm_state = off` and #9A4508 when `rings`/`on`, a leading grey slot labelled "Baseline <Mon D>–<Mon D>", a dashed line at `cusum_h` labelled "alarm line 5.0", and the caption "Set-aside, quarantined and missed days leave the tally unchanged." (contract §20 R1). | Must | BR-13, SRC-10, SRC-18, R1 | Demo, Test |
 | CUS-024 | `GET /api/v1/scores` shall return per scored session `session_id`, `local_date`, `is_morning`, the 7 `z_*` values, `composite_raw`, `composite_z`, `cusum_tally`, `alarm_state`, plus the epoch's `frozen_after_session_id` and baseline session dates so the chart can draw the baseline period. | Must | TRD 05, SRC-03 Exp_scores | Test |
 | CUS-025 | `GET /api/v1/alerts?status=&resident_code=` shall list alerts with all fields of section 4.3 and the resident_code; the list shall be ordered by `triggered_at` ascending. | Must | TRD 05 | Test |
 | CUS-026 | All alarm wording shall describe detection of a change and a prompt to check in ("Alarm on", "Running change tally"); it shall never state a diagnosis or severity; the "What this means" text comes from a PI-reviewed configuration string (OQ-12). | Must | BR-18, RSK-09, OQ-12 | Inspection |
@@ -206,14 +218,82 @@ an inserted change, 0.994 below the alarm line.
 | CUS-031 | The calibration shall evaluate the grid `baseline_n` ∈ {16, 20, 30, 45, 60}, `cusum_k` ∈ {0.25, 0.5, 0.75, 1.0}, `cusum_h` ∈ {3, 4, 5, 6, 7, 8, 10} by running `run_pipeline` (CLI, TRD 07 ANL-007) once per combination with all other parameters at production values. | Must | OQ-13 | Analysis |
 | CUS-032 | For each combination the calibration shall report: (a) false-alarm proportion = share of no-change residents with ≥ 1 alert, plus alerts raised before the true onset in change residents; (b) false alerts per 100 scored sessions; (c) detection proportion = share of change residents whose first alert falls on or after the true onset and within 30 days of it; (d) detection delay in scored sessions and in days (median and interquartile range); (e) share of residents whose baseline never forms. | Must | OQ-13, SRC-13 | Analysis |
 | CUS-033 | The answer key shall be read only by the calibration evaluation code after the pipeline run, never by `analytics/` or the backend (SRC-02 "the answer key never touches the analytics"). | Must | SRC-02, SRC-13 §5 | Inspection |
-| CUS-034 | The selection rule shall be: among combinations whose false-alarm proportion is ≤ the target set by the PI, choose the highest detection proportion, then the shortest median delay; the chosen values shall be written to `config_parameters` profile `production` and applied by an admin full rebuild (TRD 07 ANL-032), and the calibration report (grid results, chosen values, dataset version, code_version) shall be stored in `docs/algorithm.md`. | Must | OQ-13, BR-15 | Inspection |
+| CUS-034 | The selection rule shall be: among combinations whose false-alarm proportion is ≤ the target set by the PI, choose the highest detection proportion, then the shortest median delay; the chosen values shall be written to `config_parameters` profile `production` and applied by an admin manual run with scope `all` (TRD 07 ANL-032), and the calibration report (grid results, chosen values, dataset version, code_version) shall be stored in `docs/reports/CALIBRATION_REPORT.md` with machine-readable results in `docs/reports/calibration_results.json`. | Must | OQ-13, BR-15, R6 | Inspection |
 | CUS-035 | The SRC-03 validation (profile test_v0_1) shall remain unchanged by calibration; calibrated values apply only to the `production` profile. | Must | BR-15, ASM-04 | Test |
+
 
 ### 4.7 EWMA display (deferred)
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | CUS-036 | The EWMA trend against a baseline band shown in the final box of SRC-02 shall not be implemented in v0.1 (it is absent from SRC-09/SRC-10 wireframes); if added later (OQ-18) it shall be display-only and shall not influence alarms (TRD 07 ANL-056). | Must | OQ-18, SRC-02 | Inspection |
+
+
+### 4.8 Alert review page logic (SRC-18)
+
+Alarm queue card (one per non-closed change alarm of a current epoch, ordered by `local_date` ascending then resident_code):
+line 1 "<resident_code> · <device_code>" + badge "Not reviewed" (status open) or "Reviewed" (status acknowledged);
+line 2 "Alarm since <Mon D> · open <d> days · tally <t>" where d = (local date of as_of − alert `local_date`) in days and
+t = `cusum_state.current_tally` of the epoch formatted with 1 decimal, half-up. SRC-05 expected: "R09 · D09", "Alarm since
+Oct 21 · open 9 days · tally 26.8"; "R10 · D10", "Alarm since Oct 24 · open 6 days · tally 13.4".
+
+"Leaning most" (`alert_generator.leaning_most`): over the scored sessions of the alert's epoch with `local_date` ≥ the
+alert's `local_date` (the ringing session included) up to as_of, compute for each of the 7 composite features the mean of
+the signed z (`s_f × z_f`); keep features with mean > 0; sort by mean descending, ties by canonical feature order; take
+the first 3; render each as the §6 plain-language label with the parenthetical removed, lowercased, joined ", ".
+
+| Alert | sessions | mean signed z (loudness, phrase dur., speech rate, artic. rate, pauses, pause frac., voiced frac.) | Leaning most |
+|---|---|---|---|
+| R09 (since Oct 21) | 10 | 2.133, 1.952, 0.753, 1.453, 2.158, 0.997, 2.092 | "more pauses, quieter, less voiced sound" |
+| R10 (since Oct 24) | 7 | 1.441, 1.248, 2.196, 3.418, 3.429, 1.405, 1.511 | "more pauses, slower while talking, fewer syllables per second" |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| CUS-037 | The alarm queue shall show one card per non-closed change alarm of a current epoch with the texts and ordering defined above. | Must | SRC-18 | Test |
+| CUS-038 | The review form shall offer the explanation checklist from config key `review_explanations` (codes and labels: cold_cough_sore_throat "Cold, cough or sore throat"; dental_dentures "Dental problem or dentures out"; medication_change "New or changed medication"; poor_sleep_unusual_day "Poor sleep or unusual day"; room_device_moved "Room or device moved"; multi-select, optional; provisional, OQ-25) and a required single outcome: no_concern "Checked on resident, no concern"; known_cause "Explained by a known cause"; referred "Referred to nurse or provider"; data_problem "Looks like a data problem: send to study team". Unknown codes return 422. | Must | SRC-18, OQ-25 | Test |
+| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; while `snoozed_until` is in the future the card shall not show the "Not reviewed" emphasis; snoozing shall not change alert status, tally or alarm state, and is audit-logged (action `alert_snoozed`). | Must | SRC-18, §19 | Test |
+| CUS-040 | A review with outcome `data_problem` shall create (or, if one is open for the resident, link to) a `data_alerts` row of kind `review_flagged_data_problem`, title "<resident_code> · review flagged a data problem", detail "From alarm review on <Mon D>"; the pipeline never creates, modifies or resolves this kind (TRD 07 ANL-060). | Must | SRC-18, §19 | Test |
+| CUS-041 | "Leaning most" shall be computed as defined above and returned with each alarm on `GET /api/v1/alerts`; it shall be absent (empty list) when no feature has a positive mean. | Must | SRC-18, §19 | Test |
+| CUS-042 | Who may review and the required review time are not enforced in the MVP (roles clinician and admin may review; no SLA; OQ-26); the page footer shall read "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | Must | OQ-26, BR-18 | Inspection |
+
+### 4.9 Data alerts (`analytics/data_alerts.py`, SRC-18)
+
+Data alerts are data-quality findings for the study team, not health alarms. They are recomputed on every run over the
+30-day window of TRD 07 section 4.13 (local days ending on the as_of local date, not before enrolment). Thresholds are
+`config_parameters` keys with equal values in both profiles (provisional, OQ-24): `data_alert_baseline_stalled_enabled`
+= true, `data_alert_set_aside_fraction` = 0.20, `data_alert_min_received` = 10, `data_alert_device_silent_days` = 2.
+
+| Kind | Rule (per resident or device, window = last 30 local days) | Title / detail |
+|---|---|---|
+| baseline_stalled | resident's current epoch has no formed baseline AND (as_of local date − current epoch start local date) + 1 ≥ `baseline_n` days | "<R> · baseline stuck at <n> of <N>" / "<missed> missed and <set_aside> set aside in 30 days" (n = usable in current epoch; missed = missing_resident + missing_device_gap ledger days) |
+| possible_other_speaker | ≥ 1 quarantined record in the window | "<R> · possible other speaker" / "<q> check-ins quarantined: <Mon D>, <Mon D>" ("1 check-in quarantined: <Mon D>" when q = 1) |
+| high_set_aside | received ≥ `data_alert_min_received` AND set_aside / received ≥ `data_alert_set_aside_fraction`, and the resident has no baseline_stalled alert (suppression) | "<R> · many check-ins set aside" / "<s> of <received> received: <kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occur |
+| device_silent | a device-day is silent when the device has ≥ 1 resident assigned that day (TRD 10 ING-045) and every such resident's ledger day is missing; it is flagged when the device is shared that day (≥ 2 residents) or it belongs to a run of ≥ `data_alert_device_silent_days` consecutive silent days of a single-resident device | one alert per device: "<D> · device silent all day" (1 flagged day) or "<D> · device silent on <k> days" / "<Mon D>[, <Mon D> …] · affects <R list>" (list joined ", " with " and " before the last) |
+
+Each resident appears at most once per kind and each device at most once. Output order: kind (baseline_stalled,
+possible_other_speaker, high_set_aside, device_silent), then resident_code or device_code.
+
+Verification performed for this TRD (independent implementation on SRC-05, as_of 2026-10-30 15:00): exactly four alerts —
+"R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"; "R05 · possible other speaker" / "2 check-ins
+quarantined: Oct 8, Oct 22"; "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short"
+(7/29 = 0.241); "D02 · device silent all day" / "Oct 12 · affects R02 and R03". Non-triggers checked: R08 set-aside 5/18 =
+0.278 is suppressed by baseline_stalled; R02 (24 received, 0 set aside, 6 missed) and all other residents have no data
+alert; D08's 12 silent days are never consecutive, so no device_silent alert for D08; no other device has a silent day.
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| CUS-043 | `generate_data_alerts` shall implement the four rules, texts, suppression and ordering of this section exactly. | Must | SRC-18, §19 | Test |
+| CUS-044 | On SRC-05 (test_v0_1, as_of 2026-10-30 15:00 America/Chicago) the engine shall produce exactly the four data alerts listed above, in that order, and no other. | Must | SRC-18, BR-15 | Test |
+| CUS-045 | `GET /api/v1/data-alerts?status=open` shall list data alerts (kind, resident_code, device_code, title, detail, first_detected_at, last_detected_at, status) in the order of this section; data alerts shall never appear in the change-alarm queue, badges or alarm counts. | Must | SRC-18, §19 | Test |
+| CUS-046 | Data-alert thresholds shall be read from `config_parameters` only; changing them shall need no code change and shall not require a full rebuild (data alerts are recomputed every run). | Must | OQ-24 | Test |
+
+### 4.10 Alarm timing check and review outcomes (SRC-19)
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| CUS-047 | In profile test_v0_1 only, the backend analytics service shall compare persisted alerts with `evaluation_ground_truth` (resident_code, planted_change, true_onset_date, source_file) AFTER the pipeline run and return `alarm_timing` rows: Resident, Planted change, Change began, Alarm rang (alert local_date or "No alarm"), Delay (alarm − onset in days); residents without a planted change are summarised as one row "Other <n>" with "None — No alarm Correct" when none of them has an alert (else listing them as false alarms). SRC-05 expected: R09 Sudden step Oct 21 → Oct 21, 0 days; R10 Slow drift Oct 17 → Oct 24, 7 days; Other 8 None — No alarm, Correct. | Must | SRC-19, SRC-02, BR-15 | Test |
+| CUS-048 | `evaluation_ground_truth` shall be loaded only by a test/seed loader in profile test_v0_1, shall never be read by `analytics/` or the pipeline runner, and shall never influence any derived table (SRC-02 "the answer key never touches the analytics"). | Must | SRC-02, SRC-13 §5 | Inspection, Test |
+| CUS-049 | In profile production the alarm timing panel shall be replaced by `review_outcomes`: alarms raised in the period, number reviewed, and counts by review outcome from `alert_reviews` (latest review per alert). | Must | SRC-19, §19 | Test |
 
 ## 5. Assumptions
 
@@ -222,7 +302,9 @@ an inserted change, 0.994 below the alarm line.
 - ASM-07 Frozen baselines are never recomputed; therefore the tally reference never drifts.
 - ASM-08 Small team of dashboard users; in-dashboard surfacing is sufficient for the MVP.
 - Note for lead (TRD-local): contract section 8 says `alarm_on` = "open alert in current epoch"; this TRD reads "open" as
-  "not closed" (status `open` or `acknowledged`), because contract section 10 states acknowledgement does not reset the alarm.
+  "not closed" (status `open` or `acknowledged`), because a saved review does not reset the alarm (§19, OQ-05).
+- Note for lead (TRD-local): config key `data_alert_min_received` (10), the device_silent multi-day title, the singular
+  quarantine text and the "Alerts (<n>)" count definition are defined here.
 
 ## 6. Dependencies
 
@@ -237,7 +319,10 @@ an inserted change, 0.994 below the alarm line.
 - AC-CUS-03: Exactly two alert rows exist after processing SRC-05; both `open`.
 - AC-CUS-04: Unit test: composite_z sequence [6.0, −10.0, 0.0] yields tallies [5.5, 0.0, 0.0] and states [rings, on, on].
 - AC-CUS-05: Unit test: inserting set-aside, quarantined and duplicate records and missing days between scored sessions leaves every tally unchanged.
-- AC-CUS-06: Acknowledging the R09 alert sets status `acknowledged`, records the user and time, writes an audit row, and the resident still shows "Alarm on" with unchanged tallies.
+- AC-CUS-06: Saving a review of the R09 alert (outcome known_cause, explanations [poor_sleep_unusual_day]) creates one `alert_reviews` row, sets status `acknowledged` (badge "Reviewed"), writes an audit row, and the resident still shows "Alarm on" with unchanged tallies; a second review adds a second row.
+- AC-CUS-09: The four SRC-05 data alerts and the two alarm cards (texts in sections 4.8–4.9) are produced exactly; "Leaning most" for R09 is "more pauses, quieter, less voiced sound".
+- AC-CUS-10: Snoozing the R10 alert sets `snoozed_until` 24 h ahead and leaves status, tally and alarm state unchanged.
+- AC-CUS-11: The alarm timing check on SRC-05 returns R09 0 days, R10 7 days, Other 8 correct; a static check confirms no module under `analytics/` references `evaluation_ground_truth`.
 - AC-CUS-07: Unit/integration test: a resident with an open alert in epoch 1 who gets a record with a new device starts epoch 2; the epoch 1 alert becomes `closed` with `closed_reason = "epoch ended"`, epoch 2 tally starts at 0 after its baseline forms, and the resident shows "Baseline forming".
 - AC-CUS-08: No code path sends email, SMS or push messages (inspection of dependencies and code).
 
@@ -257,6 +342,9 @@ an inserted change, 0.994 below the alarm line.
 - OQ-12 Final clinical wording of "What this means".
 - OQ-13 Production baseline length and alarm limit calibration on Team 1's 50-resident/120-day dataset.
 - OQ-18 EWMA trend versus baseline band display.
+- OQ-24 Data-alert thresholds (study team).
+- OQ-25 Explanation checklist list (clinical team).
+- OQ-26 Who may review alarms and how soon.
 
 ## Revision History
 

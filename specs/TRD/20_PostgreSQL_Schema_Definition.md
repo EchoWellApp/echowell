@@ -136,9 +136,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'echowell_readonly') THEN
     CREATE ROLE echowell_readonly NOLOGIN;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'echowell_evaluation_reader') THEN
-    CREATE ROLE echowell_evaluation_reader NOLOGIN;
-  END IF;
 END
 $$;
 
@@ -336,7 +333,7 @@ CREATE TABLE api_keys (
   CONSTRAINT api_keys_key_hash_uq UNIQUE (key_hash),
   CONSTRAINT api_keys_key_hash_ck CHECK (key_hash ~ '^[0-9a-f]{64}$'),
   CONSTRAINT api_keys_name_ck CHECK (char_length(name) BETWEEN 1 AND 120),
-  CONSTRAINT api_keys_scopes_ck CHECK (cardinality(scopes) >= 1 AND scopes <@ ARRAY['ingest:write']::text[])
+  CONSTRAINT api_keys_scopes_ck CHECK (cardinality(scopes) >= 1 AND scopes <@ ARRAY['ingest:write', 'pipeline:run']::text[])
 );
 ```
 
@@ -899,7 +896,7 @@ CREATE TRIGGER config_parameters_set_updated_at  BEFORE UPDATE ON config_paramet
 
 ```sql
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO echowell_app, echowell_readonly, echowell_evaluation_reader;
+GRANT USAGE ON SCHEMA public TO echowell_app, echowell_readonly;
 GRANT USAGE, CREATE ON SCHEMA public TO echowell_migrator;
 
 -- echowell_app: append-only tables (INSERT + SELECT only)
@@ -911,12 +908,9 @@ GRANT SELECT, INSERT, UPDATE ON facilities, residents, devices, device_assignmen
 GRANT SELECT, INSERT, UPDATE, DELETE ON epochs, processed_sessions, day_ledger, scores, cusum_state,
   facility_reference_ranges TO echowell_app;
 GRANT USAGE, SELECT ON SEQUENCE raw_sessions_arrival_seq_seq, audit_logs_id_seq TO echowell_app;
--- echowell_app: NO privilege on evaluation_ground_truth (the pipeline never reads the answer key, SRC-02)
+-- echowell_app: NO privilege on evaluation_ground_truth (the pipeline never reads the answer key, SRC-02; contract R20)
 
--- echowell_evaluation_reader: only the answer key; assumed with SET LOCAL ROLE by the analytics read path (test_v0_1)
-GRANT SELECT ON evaluation_ground_truth TO echowell_evaluation_reader;
-
--- echowell_readonly: everything except credential columns
+-- echowell_readonly: everything except credential columns (incl. evaluation_ground_truth, which holds rows only in test_v0_1)
 GRANT SELECT ON facilities, residents, devices, device_assignments, ingest_batches, ingest_rejections,
   raw_sessions, epochs, processed_sessions, day_ledger, baselines, scores, cusum_state, alerts, alert_reviews,
   data_alerts, staff_notes, facility_reference_ranges, pipeline_runs, config_parameters, audit_logs,

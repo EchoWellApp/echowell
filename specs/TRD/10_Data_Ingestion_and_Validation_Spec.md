@@ -51,8 +51,8 @@ Out of scope:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ING-001 | `POST /api/v1/sessions` shall accept one record as a JSON object (`Content-Type: application/json`, body ≤ 16 KB) authenticated by header `X-API-Key` with scope `ingest:write`. | Must | BR-01, ASM-05, contract §10 | Test |
-| ING-002 | For a valid record that is not a duplicate, `POST /api/v1/sessions` shall store it, run the pipeline for the resident synchronously (TRD 07 ANL-043) and return 201 `{raw_session_id, arrival_seq, status_after_processing}` where `status_after_processing` ∈ {usable, set_aside, quarantined}; if the stored record could not be processed because the pipeline run failed, it shall return 201 with `status_after_processing = "pending"` (the record stays stored and is processed by the next run). | Must | contract §10 | Test |
-| ING-003 | For a valid record whose `session_id` was already received, `POST /api/v1/sessions` shall store the arrival and return 200 `{raw_session_id, arrival_seq, status_after_processing: "duplicate"}`. | Must | BR-03, contract §10 | Test |
+| ING-002 | For a valid record that is not a duplicate, `POST /api/v1/sessions` shall store it, run the pipeline for the resident synchronously (TRD 07 ANL-043, `as_of` = request time) and return 201 `{raw_session_id, arrival_seq, session_id, status_after_processing, reasons, pipeline_run_id}` where `status_after_processing` ∈ {usable, set_aside, quarantined} and `reasons` lists the gate or screen reasons; if the pipeline run failed, it shall return 201 with `status_after_processing = "pending"` (the record stays stored and is processed by the next run; TRD 05 API-047, TRD 17 LOG-054). | Must | contract §10, TRD 05 API-046 | Test |
+| ING-003 | For a valid record whose `session_id` was already received, `POST /api/v1/sessions` shall store the arrival and return 200 with `status_after_processing = "duplicate"`, `reasons = ["session_id already received"]` and `pipeline_run_id = null`. | Must | BR-03, contract §10, TRD 05 API-044 | Test |
 | ING-004 | For an invalid record `POST /api/v1/sessions` shall return 422 with an RFC 7807 body whose `errors` array lists every violation as `{field, code, message, value}`, shall write one `ingest_rejections` row and shall not write to `raw_sessions`. | Must | BR-02, contract §7 step 1 | Test |
 | ING-005 | `POST /api/v1/ingest` shall accept either `Content-Type: application/json` with body `{"records": [ … ]}` (≤ 5,000 records, ≤ 5 MB) or `multipart/form-data` with one part named `file` holding a CSV (≤ 5 MB, ≤ 5,000 data rows), authenticated by `X-API-Key` (scope `ingest:write`) or by a JWT of role `admin`. | Must | BR-01, contract §10 | Test |
 | ING-006 | `POST /api/v1/ingest` shall validate every record synchronously, store accepted records, write one `ingest_rejections` row per invalid record, create one `ingest_batches` row (`source` = `api_batch` for JSON, `csv_upload` for CSV, `seed` for the seeding script; `filename`; `record_count`; `accepted_count`; `rejected_count`; `uploaded_by` = admin user id or null for API keys; `received_at`), enqueue the background pipeline run (TRD 07 ANL-044) and return 202 `{ingest_batch_id, accepted, rejected, duplicates}`. | Must | contract §10 | Test |
@@ -82,7 +82,7 @@ Out of scope:
 ### 4.4 Field-by-field validation (schema v0.1)
 
 Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warning code stored in
-`raw_sessions.ingest_warnings` (jsonb array of `{field, code, message}`) and returned in the response `warnings` array.
+`raw_sessions.ingest_warnings` (jsonb array of `{field, code, message}`) and counted in the batch result (`GET /api/v1/ingest/batches/{id}`).
 
 | Field | Type / format | Reject if | Warn if |
 |---|---|---|---|
@@ -188,7 +188,8 @@ Fixture check: 12 set-aside records — R03 days 3, 14 (noise), 7, 22 (flag), 10
 | ING-046 | A device shall be shared on date d when at least `shared_device_min_residents` (2) distinct residents who are enrolled on d (`enrolled_on ≤ d` and not withdrawn before d) have an assignment to it covering d. | Must | SRC-03 Parameters, contract §7 | Test |
 | ING-047 | Epochs shall use the `device_id` carried by each record, not the assignment table; assignments are used only for the day ledger, the "(shared)" / "(was D07)" labels and the `device_assignment_mismatch` warning. | Must | BR-08, SRC-04 | Inspection, Test |
 
-Test fixture (seeded by `database/seeds/`, used by TRD 14) — facility Edgewood (`FACILITY_NAME`), all residents cohort
+Residents, devices and device assignments have no API endpoints in the MVP; they are managed by the CLI
+(`python -m backend.cli ...`) and seed files (contract §20 R4). Test fixture (seeded by `database/seeds/`, used by TRD 14) — facility Edgewood (`FACILITY_NAME`), all residents cohort
 `longitudinal`, `enrolled_on` 2026-10-01, status active:
 
 | resident | sex | assignments |
@@ -242,7 +243,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ING-053 | The answer key shall never be ingested: a CSV whose header contains any of `expected_status`, `expected_reason`, `expected_morning`, `expected_epoch`, `in_baseline`, `error_mode_tested`, `test_case`, `arrival_order` shall be rejected as a whole with 422 `answer_key_columns_present`; `.xlsx` files shall be rejected with 415. | Must | SRC-02, SRC-03 README, SRC-13 §5 | Test |
-| ING-054 | No backend or analytics code shall read `EchoWell_pipeline_test_v0_1.xlsx` or any answer-key file; only tests under `tests/validation/` may read it. | Must | SRC-02 | Inspection |
+| ING-054 | No backend or analytics code shall read `EchoWell_pipeline_test_v0_1.xlsx` or any answer-key file, except the test-only loader that fills `evaluation_ground_truth` (resident_code, planted_change, true_onset_date, source_file) in profile test_v0_1, which writes nothing to `raw_sessions` and whose table the pipeline never reads (TRD 09 CUS-047, CUS-048); tests under `tests/validation/` may read it. | Must | SRC-02, §19 | Inspection |
 | ING-055 | The legacy SRC-06 file (`echowell_mock_data_500.csv`, columns entry_id, resident_id (integer), datetime "YYYYMMDD_HHMMSS", health_wifi, health_ping, health_mic_noise, device_id (integer), speech_len, speech_feature_1..3) is not compatible with schema 0.1; an upload of it shall be rejected as a whole with 422 `missing_columns` and nothing stored. | Must | SRC-06, contract §1 | Test |
 | ING-056 | A converter from the SRC-06 schema is out of scope: its features `speech_feature_1..3` do not correspond to any of the 19 canonical features, its timestamps carry no time zone, and its integer resident/device IDs have no mapping to study codes; SRC-06 shall not be used as pipeline input. | Must | SRC-06, SRC-13 | Inspection |
 
@@ -261,6 +262,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 - ASM-03 Single facility (Edgewood); resident and device codes are unique facility-wide.
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's.
 - ASM-08 Volumes below 100 residents and 1 session per resident per day.
+- D-OWNER-4: the interim Netlify/Railway/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.
 - Note for lead (TRD-local definitions): config keys `supported_schema_versions` and `feature_name_map`; column
   `raw_sessions.ingest_warnings` (jsonb); `status_after_processing = "pending"`; size limits (16 KB single, 5 MB / 5,000
   records batch); rejection and warning code lists (ING-023); `row_number` inside `ingest_rejections.errors`.
