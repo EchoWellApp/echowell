@@ -32,7 +32,7 @@ procedures Phase 14B must execute.
 
 - CI workflow content (TRD 16), logging and alerting design (TRD 17), every environment variable definition
   (TRD 21), vendor plan details (TRD 22), security controls beyond deployment hardening (TRD 12).
-- Team 1 device provisioning, wake word, feature extraction and transport (interface only, ASM-05, OQ-07).
+- Team 1 device provisioning, wake word, feature extraction and transport (interface only, ASM-05).
 - Custom domain names (no UND domain decision exists; OQ-07). Platform default domains are used.
 
 ## 3. References
@@ -357,12 +357,15 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | `bootstrap` | Idempotent: creates the facility row from FACILITY_NAME and FACILITY_TZ if missing; inserts missing `config_parameters` rows for profiles `production` and `test_v0_1` from `analytics/config.py` defaults (never overwrites existing rows). | all |
 | `create-user --email E --role R` | Creates a user; password read from an interactive prompt (`getpass`) or from stdin with `--password-stdin`. | all |
 | `create-api-key --name N [--device D] [--scope S]` | Creates an API key (default scope `ingest:write`); prints the key once. | all |
-| `deactivate-api-key --name N` | Sets `api_keys.active = false` (audited). | all |
+| `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024). | all |
 | `import-master-data --dir D` | Idempotent upsert of residents, devices and device assignments from CSV files `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format in TRD 14/TRD 06); master data has no API endpoints in the MVP (contract R4). | all |
 | `withdraw-resident --code R --date YYYY-MM-DD` | Sets resident status `withdrawn` (audited). | all |
 | `seed test_v0_1 [--reset]` | Imports `database/seeds/test_v0_1/` master data (as `import-master-data`), loads `evaluation_ground_truth` from the answer key (never read by the pipeline), then loads the `test_v0_1` dataset (TRD 14) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`; `--reset` truncates all tables except `users`, `api_keys`, `audit_logs` and `config_parameters` first. | local, staging, test |
 | `run-pipeline --scope all [--profile P]` | Runs the full pipeline and records a `pipeline_runs` row with trigger `manual`. | all |
 | `export-openapi` | Prints the OpenAPI JSON (used by CI, TRD 16). | all |
+| `reset-test-db` | Removes all rows and re-applies migrations and seeds (TRD 06 DB-024). | local, test |
+| `purge-resident <code> --confirm <code>` | IRB-directed deletion of a withdrawn resident's data (TRD 06 DB-064, OQ-11). | all |
+| `resolve-data-alert` | Resolves a `review_flagged_data_problem` data alert (TRD 02 FR-297, TRD 23). | all |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|

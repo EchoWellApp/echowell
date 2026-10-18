@@ -55,9 +55,9 @@ echowell/
 │                             Dockerfile, requirements.txt, requirements-dev.txt
 ├── analytics/                pure-Python engine (contract §3 module list)
 ├── database/                 schema.sql (generated reference DDL), seeds/
-├── tests/                    unit/, integration/, validation/, smoke/, fixtures/
+├── tests/                    unit/, integration/, contract/, security/, validation/, performance/, smoke/, fixtures/ (TRD 13 §4.2)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
-│                             team_workflow.md, openapi.json, design/, reports/
+│                             team_workflow.md, api_reference/openapi.json, design/, reports/
 ├── specs/                    requirement sources, TRD/, prompts/, TEMPLATES/
 ├── alembic.ini  pyproject.toml  netlify.toml  railway.toml  docker-compose.yml  .dockerignore
 ├── .env.example  .env.development.example  .env.production.example
@@ -251,7 +251,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | GIT-070 | The labels above shall exist in the repository (created via `gh label create` script in `docs/team_workflow.md`). | Should | — | Inspection |
-| GIT-071 | Each open question OQ-01 to OQ-23 that is still open shall have exactly one GitHub issue labelled `open-question` whose title starts with its ID; closing the issue requires a TRD 24 update PR. | Should | TRD 24 | Inspection |
+| GIT-071 | Each open question OQ-01 to OQ-26 that is still open shall have exactly one GitHub issue labelled `open-question` whose title starts with its ID; closing the issue requires a TRD 24 update PR. | Should | TRD 24 | Inspection |
 | GIT-072 | Issue templates `bug_report.yml` (fields: what happened, expected, steps, environment, request reference) and `feature_request.yml` (fields: requirement IDs, user need, acceptance) shall exist; blank issues shall be disabled. | Should | — | Inspection |
 | GIT-073 | Issues and PRs shall never contain secrets, real resident data, staff names linked to residents, or log extracts beyond IDs and timestamps. | Must | BR-16, TRD 17 LOG-122 | Inspection |
 

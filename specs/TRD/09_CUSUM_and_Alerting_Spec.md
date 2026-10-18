@@ -138,7 +138,7 @@ stateDiagram-v2
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CUS-022 | Alerts shall be surfaced only inside the authenticated dashboard: nav item "Alerts (<n>)" (n = non-closed change alarms of current epochs), Alert review page queues (SRC-18), overview status badge and "Alarm on" summary tile, alarms-first sort, resident detail status badge, tally chart and check-in log event "alarm"; the system shall not send SMS, email or push notifications in the MVP (OQ-06). | Must | OQ-06, SRC-09, SRC-10, SRC-18 | Inspection, Demo |
+| CUS-022 | Alerts shall be surfaced only inside the authenticated dashboard: nav item "Alerts (<n>)" (n = change alarms with status `open`, i.e. not yet reviewed; data alerts not counted), Alert review page queues (SRC-18), overview status badge and "Alarm on" summary tile, alarms-first sort, resident detail status badge, tally chart and check-in log event "alarm"; the system shall not send SMS, email or push notifications in the MVP (OQ-06). | Must | OQ-06, SRC-09, SRC-10, SRC-18 | Inspection, Demo |
 | CUS-023 | The tally chart (Resident detail and the Alert review mini chart "Change tally since watching began (alarm line 5.0)") shall draw one bar per scored session of the current epoch with height `cusum_tally`, colour #BDBDB8 with a 1px #8A8A85 outline while `alarm_state = off` and #9A4508 when `rings`/`on`, a leading grey slot labelled "Baseline <Mon D>–<Mon D>", a dashed line at `cusum_h` labelled "alarm line 5.0", and the caption "Set-aside, quarantined and missed days leave the tally unchanged." (contract §20 R1). | Must | BR-13, SRC-10, SRC-18, R1 | Demo, Test |
 | CUS-024 | `GET /api/v1/scores` shall return per scored session `session_id`, `local_date`, `is_morning`, the 7 `z_*` values, `composite_raw`, `composite_z`, `cusum_tally`, `alarm_state`, plus the epoch's `frozen_after_session_id` and baseline session dates so the chart can draw the baseline period. | Must | TRD 05, SRC-03 Exp_scores | Test |
 | CUS-025 | `GET /api/v1/alerts?status=&resident_code=` shall list alerts with all fields of section 4.3 and the resident_code; the list shall be ordered by `triggered_at` ascending. | Must | TRD 05 | Test |
@@ -261,13 +261,13 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 Data alerts are data-quality findings for the study team, not health alarms. They are recomputed on every run over the
 30-day window of TRD 07 section 4.13 (local days ending on the as_of local date, not before enrolment). Thresholds are
 `config_parameters` keys with equal values in both profiles (provisional, OQ-24): `data_alert_baseline_stalled_enabled`
-= true, `data_alert_set_aside_fraction` = 0.20, `data_alert_min_received` = 10, `data_alert_device_silent_days` = 2.
+= true, `data_alert_set_aside_fraction` = 0.20, `data_alert_device_silent_days` = 2; the minimum of 10 received records for high_set_aside is a fixed rule constant (contract §19), not a config key (TRD 20 seeds 21 keys).
 
 | Kind | Rule (per resident or device, window = last 30 local days) | Title / detail |
 |---|---|---|
 | baseline_stalled | resident's current epoch has no formed baseline AND (as_of local date − current epoch start local date) + 1 ≥ `baseline_n` days | "<R> · baseline stuck at <n> of <N>" / "<missed> missed and <set_aside> set aside in 30 days" (n = usable in current epoch; missed = missing_resident + missing_device_gap ledger days) |
 | possible_other_speaker | ≥ 1 quarantined record in the window | "<R> · possible other speaker" / "<q> check-ins quarantined: <Mon D>, <Mon D>" ("1 check-in quarantined: <Mon D>" when q = 1) |
-| high_set_aside | received ≥ `data_alert_min_received` AND set_aside / received ≥ `data_alert_set_aside_fraction`, and the resident has no baseline_stalled alert (suppression) | "<R> · many check-ins set aside" / "<s> of <received> received: <kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occur |
+| high_set_aside | received ≥ 10 AND set_aside / received ≥ `data_alert_set_aside_fraction`, and the resident has no baseline_stalled alert (suppression) | "<R> · many check-ins set aside" / "<s> of <received> received: <kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occur |
 | device_silent | a device-day is silent when the device has ≥ 1 resident assigned that day (TRD 10 ING-045) and every such resident's ledger day is missing; it is flagged when the device is shared that day (≥ 2 residents) or it belongs to a run of ≥ `data_alert_device_silent_days` consecutive silent days of a single-resident device | one alert per device: "<D> · device silent all day" (1 flagged day) or "<D> · device silent on <k> days" / "<Mon D>[, <Mon D> …] · affects <R list>" (list joined ", " with " and " before the last) |
 
 Each resident appears at most once per kind and each device at most once. Output order: kind (baseline_stalled,
@@ -303,7 +303,7 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 - ASM-08 Small team of dashboard users; in-dashboard surfacing is sufficient for the MVP.
 - Note for lead (TRD-local): contract section 8 says `alarm_on` = "open alert in current epoch"; this TRD reads "open" as
   "not closed" (status `open` or `acknowledged`), because a saved review does not reset the alarm (§19, OQ-05).
-- Note for lead (TRD-local): config key `data_alert_min_received` (10), the device_silent multi-day title, the singular
+- Note for lead (TRD-local): the fixed minimum of 10 received records for high_set_aside (not a config key), the device_silent multi-day title, the singular
   quarantine text and the "Alerts (<n>)" count definition are defined here.
 
 ## 6. Dependencies
@@ -340,7 +340,7 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 - OQ-05 Does staff review reset the CUSUM tally or turn the alarm off?
 - OQ-06 Alert delivery: who is told, how and how fast (in-dashboard only in MVP).
 - OQ-12 Final clinical wording of "What this means".
-- OQ-13 Production baseline length and alarm limit calibration on Team 1's 50-resident/120-day dataset.
+- OQ-13 Alarm limit calibration (production baseline_n = 30 is decided, D-01) on Team 1's 50-resident/120-day dataset.
 - OQ-18 EWMA trend versus baseline band display.
 - OQ-24 Data-alert thresholds (study team).
 - OQ-25 Explanation checklist list (clinical team).

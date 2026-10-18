@@ -22,7 +22,7 @@ In scope:
 - Idempotency and concurrency rules of ingestion.
 
 Out of scope:
-- Device capture, wake word, feature extraction, transport to the endpoint, store-and-forward (Team 1; OQ-07, OQ-15).
+- Device capture, wake word, feature extraction, transport to the endpoint (Team 1; ASM-05), store-and-forward (Team 1; OQ-15).
 - A converter for the legacy SRC-06 mock file (not provided; section 4.11).
 - Authentication mechanics and key management (TRD 12), endpoint OpenAPI schemas (TRD 19), DDL (TRD 20).
 - Speaker screen, morning adjustment, baselines, scores, CUSUM (TRD 08, TRD 09).
@@ -50,8 +50,8 @@ Out of scope:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ING-001 | `POST /api/v1/sessions` shall accept one record as a JSON object (`Content-Type: application/json`, body ≤ 16 KB) authenticated by header `X-API-Key` with scope `ingest:write`. | Must | BR-01, ASM-05, contract §10 | Test |
-| ING-002 | For a valid record that is not a duplicate, `POST /api/v1/sessions` shall store it, run the pipeline for the resident synchronously (TRD 07 ANL-043, `as_of` = request time) and return 201 `{raw_session_id, arrival_seq, session_id, status_after_processing, reasons, pipeline_run_id}` where `status_after_processing` ∈ {usable, set_aside, quarantined} and `reasons` lists the gate or screen reasons; if the pipeline run failed, it shall return 201 with `status_after_processing = "pending"` (the record stays stored and is processed by the next run; TRD 05 API-047, TRD 17 LOG-054). | Must | contract §10, TRD 05 API-046 | Test |
+| ING-001 | `POST /api/v1/sessions` shall accept one record as a JSON object (`Content-Type: application/json`, body ≤ 64 KB, TRD 05 API-104) authenticated by header `X-API-Key` with scope `ingest:write`. | Must | BR-01, ASM-05, contract §10 | Test |
+| ING-002 | For a valid record that is not a duplicate, `POST /api/v1/sessions` shall store it, run the pipeline for the resident synchronously (TRD 07 ANL-043, `as_of` per contract R21 precedence: request → PIPELINE_AS_OF (non-production) → current time) and return 201 `{raw_session_id, arrival_seq, session_id, status_after_processing, reasons, pipeline_run_id}` where `status_after_processing` ∈ {usable, set_aside, quarantined} and `reasons` lists the gate or screen reasons; if the pipeline run failed, it shall return 201 with `status_after_processing = "pending"` (the record stays stored and is processed by the next run; TRD 05 API-047, TRD 17 LOG-054). | Must | contract §10, TRD 05 API-046 | Test |
 | ING-003 | For a valid record whose `session_id` was already received, `POST /api/v1/sessions` shall store the arrival and return 200 with `status_after_processing = "duplicate"`, `reasons = ["session_id already received"]` and `pipeline_run_id = null`. | Must | BR-03, contract §10, TRD 05 API-044 | Test |
 | ING-004 | For an invalid record `POST /api/v1/sessions` shall return 422 `application/problem+json` with `type` = `urn:echowell:error:<CODE>`, where CODE is `UNSUPPORTED_SCHEMA_VERSION`, `UNKNOWN_RESIDENT`, `UNKNOWN_DEVICE`, `RESIDENT_WITHDRAWN` or `SESSION_ID_MISMATCH` when that is a violation (first in this order), else `VALIDATION_ERROR`; the `errors` array lists every violation as `{field, code, message}` (codes of ING-023); it shall write one `ingest_rejections` row (whose `errors` additionally keep the offending `value`) and shall not write to `raw_sessions`. | Must | BR-02, contract §7 step 1, §21 R19, TRD 05 §4.7 | Test |
 | ING-005 | `POST /api/v1/ingest` shall accept either `Content-Type: application/json` with body `{"records": [ … ]}` (≤ 5,000 records, ≤ 5 MB) or `multipart/form-data` with one part named `file` holding a CSV (≤ 5 MB, ≤ 5,000 data rows), authenticated by `X-API-Key` (scope `ingest:write`) or by a JWT of role `admin`. | Must | BR-01, contract §10 | Test |
@@ -264,7 +264,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 - ASM-08 Volumes below 100 residents and 1 session per resident per day.
 - D-OWNER-4: the interim Netlify/Railway/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.
 - Note for lead (TRD-local definitions): config keys `supported_schema_versions` and `feature_name_map`; column
-  `raw_sessions.ingest_warnings` (jsonb); `status_after_processing = "pending"` (now contract §21 R23); size limits (16 KB single, 5 MB / 5,000
+  `raw_sessions.ingest_warnings` (jsonb); `status_after_processing = "pending"` (now contract §21 R23); size limits (64 KB single per TRD 05 API-104, 5 MB / 5,000
   records batch); rejection and warning code lists (ING-023); `row_number` inside `ingest_rejections.errors`.
 
 ## 6. Dependencies
@@ -302,7 +302,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 
 - OQ-03 Final feature column names from Team 1's extractor (mapping config ING-016).
 - OQ-04 Whether `phrase_id` is kept.
-- OQ-07 Transport mechanism from device to cloud and AWS status.
+- OQ-07 AWS budget approval timing and account ownership (UND IT); device-to-cloud transport is Team 1's (ASM-05).
 - OQ-10 Late-arriving records (handled in TRD 07/08).
 - OQ-11 Data handling on participant withdrawal (ingestion stops with 422 "resident withdrawn").
 - OQ-14 Speaker verification output (not a v0.1 field).

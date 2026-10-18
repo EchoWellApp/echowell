@@ -107,7 +107,7 @@ Jobs (run in parallel unless noted):
 |---|---|---|---|
 | `repo-hygiene` | Policy checks | audio-file check, `.env` check, file size check, Conventional Commit title check (PR only) | 1 min |
 | `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend` | 3 min |
-| `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest tests/unit tests/integration tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
+| `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest tests/unit tests/integration tests/contract tests/security tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
 | `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/api_reference/openapi.json /tmp/openapi.json`; regenerate `frontend/lib/api-types.ts` with `openapi-typescript` and `git diff --exit-code` | 2 min |
 | `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test -- --coverage`, `npm run build` | 6 min |
 | `security-audit` | Known vulnerabilities | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev` | 2 min |
@@ -197,7 +197,7 @@ jobs:
       - run: alembic upgrade head
       - run: alembic downgrade base && alembic upgrade head   # migrations reversible in test
       - run: >
-          pytest tests/unit tests/integration tests/validation
+          pytest tests/unit tests/integration tests/contract tests/security tests/validation
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
           --cov-report=html:build/htmlcov --junitxml=build/junit.xml
           --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md

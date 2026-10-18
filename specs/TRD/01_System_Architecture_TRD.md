@@ -72,7 +72,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Netlify
-        NX["Next.js 14.2 App Router (TypeScript, React 18.3)<br/>routes: /login, /residents, /residents/[residentCode],<br/>/alerts, /analytics, /admissions, /admin<br/>lib/services/api.ts = only HTTP client"]
+        NX["Next.js 14.2 App Router (TypeScript, React 18.3)<br/>routes: /login, /residents, /residents/[residentCode],<br/>/alerts, /analytics, /admissions, /admin<br/>services/api.ts = only HTTP client"]
     end
     subgraph Railway
         API["FastAPI 0.115 (Python 3.12)<br/>backend/api routers -> services -> repositories -> models"]
@@ -191,7 +191,7 @@ Human-entered and operational data outside SRC-02's diagram: `alert_reviews`, `a
 | ARC-031 | `raw_sessions.payload` shall hold the record exactly as received (JSON object; for CSV, the row as a header-keyed object of strings). | Must | BR-02, SRC-02 | Test |
 | ARC-032 | Every derived table (processed_sessions, epochs, day_ledger, baselines, scores, cusum_state, alerts, data_alerts, facility_reference_ranges) shall be writable only by the PipelineService code path, except alert status and snooze fields and `review_flagged_data_problem` data alerts written by the alarm review service. | Must | BR-02, SRC-02, SRC-18 | Inspection |
 | ARC-033 | The answer key files (SRC-03) shall be stored only under `tests/fixtures/` and shall not be importable or readable by `analytics/` or `backend/` runtime code. | Must | BR-15, SRC-02 ("answer key never touches the analytics"), SRC-03 README | Inspection (import-lint in CI) |
-| ARC-034 | The `evaluation_ground_truth` table shall be populated only when the active profile is `test_v0_1`, by a dedicated loader command, and shall be read only by the Analytics read service for the alarm timing check after the run, through the `echowell_readonly` role; the `echowell_app` role shall have no SELECT on it, and `analytics/` and PipelineService shall never query it. | Must | BR-15, SRC-02, SRC-19, R17, R20 | Inspection, Test (privilege test; pipeline run with the table populated vs empty gives identical outputs) |
+| ARC-034 | The `evaluation_ground_truth` table shall be populated only when the active profile is `test_v0_1`, by the loader `database/seeds/load_evaluation_ground_truth.py` (contract R27), and shall be read only by `backend/services/analytics_summary.py` for the alarm timing check after the run, through a second connection `DATABASE_READONLY_URL` (role `echowell_readonly`); the `echowell_app` role shall have no SELECT on it, and `analytics/` and PipelineService shall never query it. | Must | BR-15, SRC-02, SRC-19, R17, R20 | Inspection, Test (privilege test; pipeline run with the table populated vs empty gives identical outputs) |
 | ARC-035 | In the `production` profile the `evaluation_ground_truth` table shall be empty and the Analytics page shall show review outcomes instead of the alarm timing check. | Must | BR-15, SRC-19 | Test |
 
 ### 4.5 Processing flow (SRC-02 diagram 2) and stage mapping
@@ -315,7 +315,7 @@ echowell/
 | ARC-063 | Pipeline executions that touch the same resident shall be serialized using a PostgreSQL advisory lock keyed on the resident; a full-scope run shall hold a global advisory lock that excludes resident-scoped runs. | Must | BR-02, BR-15 | Test (concurrent ingest) |
 | ARC-064 | The derived-table writes of one pipeline execution shall commit in a single database transaction per resident, so that readers never observe a partially processed resident. | Must | BR-12, BR-13 | Test |
 | ARC-065 | A resident-scoped run shall include all residents sharing a device with that resident on any affected local date, because `missing_device_gap` depends on all of them. | Must | BR-06, SRC-03 (R02/R03 day 12) | Test |
-| ARC-066 | The pipeline shall be runnable from the command line (`python -m backend.cli pipeline-run --scope all --profile <profile>`) for local use, CI and the demo fallback. | Should | BR-15, RSK-12 | Demo, Test |
+| ARC-066 | The pipeline shall be runnable from the command line (`python -m backend.cli run-pipeline --scope all --profile <profile>` (TRD 15 §4.8)) for local use, CI and the demo fallback. | Should | BR-15, RSK-12 | Demo, Test |
 | ARC-067 | API keys, residents, devices and device assignments shall be managed only through `python -m backend.cli ...` commands and seed files in the MVP; no HTTP endpoints shall exist for them. | Must | BR-16, R4 | Inspection |
 | ARC-068 | The `as_of` of a pipeline run shall be, in order of precedence: the explicit `as_of` in `POST /api/v1/pipeline/run`; the `PIPELINE_AS_OF` environment variable (refused when `APP_ENV=production`); the current time. Read endpoints shall use the `as_of` of the latest succeeded run as `meta.as_of`. In-process tests freeze the clock (time-machine). | Must | BR-06, BR-15, R11, R21 | Test |
 
@@ -412,7 +412,7 @@ flowchart LR
 
 ## 6. Dependencies
 
-- Team 1 transport to the cloud endpoint and device API key provisioning (OQ-07, ASM-05).
+- Team 1 transport to the cloud endpoint and device API key provisioning (ASM-05).
 - Hosting accounts: Netlify, Railway, Neon (TRD 22) for the current stack; AWS account and budget for the target stack (OQ-07); GitHub organisation `EchoWellApp`.
 - AWS approval before any real resident data is loaded (D-OWNER-4, OQ-07, RSK-14).
 - Railway Cron Job service for the nightly run (R18, TRD 15).
@@ -450,7 +450,7 @@ flowchart LR
 | ID | Relevance |
 |---|---|
 | OQ-03 | Feature names → feature-name mapping (ARC-054). |
-| OQ-07 | AWS budget approval timing and account ownership (UND IT); device transport mechanism (ARC-001, 4.10). |
+| OQ-07 | AWS budget approval timing and account ownership (UND IT) (4.10); device transport is Team 1's (ASM-05, ARC-001). |
 | OQ-10 | Late records predating a frozen baseline (ARC-043). |
 | OQ-15 | Store-and-forward not available; gaps become missing days. |
 | OQ-18 | EWMA trend display deferred (4.5). |

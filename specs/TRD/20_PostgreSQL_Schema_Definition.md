@@ -80,7 +80,7 @@ Out of scope:
 | PGS-023 | Constraint and index names shall follow section 4.9 and shall be declared explicitly in SQLAlchemy models (`name=`), so Alembic autogenerate produces no diff on a migrated database. | Must | TRD 06 DB-012 | Test (`alembic check` exits 0 in CI) |
 | PGS-024 | Migration `0002_seed_config_parameters` shall insert the 42 rows of section 4.11 (21 keys × 2 profiles: the 16 keys of contract §7 and the 5 keys of contract §19/§20 R17) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 21 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
-| PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, OQ-23 | Test (CLI with APP_ENV=production writes nothing) |
+| PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Test (CLI with APP_ENV=production writes nothing) |
 | PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
 | PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 `application/problem+json` response (error code from the TRD 05 catalogue, contract R19) and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
 | PGS-029 | `alerts` shall have at most one non-closed row per `epoch_id` (partial unique index `alerts_one_active_per_epoch_uq`) and at most one row per `(epoch_id, session_id)`. | Must | BR-11, TRD 09 | Test |
@@ -97,7 +97,7 @@ Out of scope:
 | PGS-041 | `data_alerts` shall enforce by CHECK that `device_silent` rows reference a device and no resident; `baseline_stalled`, `possible_other_speaker` and `high_set_aside` rows reference a resident and no device; `review_flagged_data_problem` rows reference a resident and an `alert_reviews` row and have no `pipeline_run_id`; all other kinds have a `pipeline_run_id`; and at most one `open` row per `(kind, resident_id, device_id)` for the rule kinds (partial unique index `data_alerts_open_subject_uq`, NULLS NOT DISTINCT). | Must | Contract §19, BR-12 | Test |
 | PGS-042 | `alert_reviews` shall be append-only for the application (SELECT, INSERT), shall require an `outcome` of enum `review_outcome`, shall store `explanations` as an array of 0–20 lower-case codes, and `note` NULL or 1–2000 characters. | Must | Contract §19, R5 | Test |
 | PGS-043 | `alerts.snoozed_until` and `alerts.snoozed_by` shall be both NULL or both set. | Must | Contract §19 | Test |
-| PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Railway provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, OQ-23 | Inspection (provider settings recorded in TRD 22) |
+| PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Railway provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Inspection (provider settings recorded in TRD 22) |
 
 ### 4.2 Extensions
 
@@ -382,6 +382,7 @@ CREATE TABLE raw_sessions (
   ingest_batch_id              uuid             NULL REFERENCES ingest_batches (id) ON DELETE RESTRICT,
   api_key_id                   uuid             NULL REFERENCES api_keys (id) ON DELETE RESTRICT,
   payload                      jsonb            NOT NULL,
+  ingest_warnings              jsonb            NOT NULL DEFAULT '[]'::jsonb,  -- TRD 10 plausibility warnings {field, code, message}
   resident_id                  uuid             NOT NULL REFERENCES residents (id) ON DELETE RESTRICT,
   device_id                    uuid             NOT NULL REFERENCES devices (id) ON DELETE RESTRICT,
   -- typed copies of the ingest record schema v0.1 fields (TRD 10), in SRC-05 column order
@@ -954,7 +955,7 @@ The contract lists key columns; the following columns were added in this TRD set
 | api_keys | `updated_at` | mutable (active, last_used_at) |
 | ingest_batches | `duplicate_count`, `api_key_id`, `created_at`, `updated_at` | `POST /api/v1/ingest` returns `duplicates`; provenance of key-authenticated batches |
 | ingest_rejections | `api_key_id`, `row_number` | provenance of single-record rejections; CSV row number for the batch report |
-| raw_sessions | `resident_id uuid`, `device_id uuid` (resolved FKs), `resident_code`, `device_code` (typed copies of the ingest fields `resident_id`, `device_id`), `api_key_id` | in the database `resident_id`/`device_id` are UUID FKs; the received study codes are kept verbatim in `*_code` and in `payload` |
+| raw_sessions | `resident_id uuid`, `device_id uuid` (resolved FKs), `resident_code`, `device_code` (typed copies of the ingest fields `resident_id`, `device_id`), `api_key_id`, `ingest_warnings` (jsonb array, TRD 10 §4.4) | in the database `resident_id`/`device_id` are UUID FKs; the received study codes are kept verbatim in `*_code` and in `payload` |
 | pipeline_runs | `as_of`, `error_message`, `created_at`, `updated_at` | reproducible ledger end date (test as-of 2026-10-30 15:00 America/Chicago); failure detail |
 | epochs, day_ledger, baselines, scores, cusum_state, alerts | `pipeline_run_id` | every derived row names the run that wrote it |
 | processed_sessions | `timestamp_utc`, `created_at` | ordering and "last check-in" without joining raw_sessions |
@@ -1148,7 +1149,7 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 - OQ-10 Late records before a frozen baseline.
 - OQ-11 Data handling on withdrawal.
 - OQ-13 Alarm-limit calibration (values of `cusum_h`, `cusum_k` may change through `config_parameters`, not DDL).
-- OQ-23 Whether live PHI-derived feature data may be stored on the interim Neon/Railway stack.
+- OQ-23 (closed by D-OWNER-4 / D-28): live PHI-derived feature data is never stored on the interim Neon/Railway stack.
 - OQ-24 Data-alert thresholds (`data_alert_*` keys) confirmation by the study team.
 - OQ-25 Explanation checklist (`review_explanations`) confirmation by the clinical team.
 - OQ-26 Who may review alarms and how soon (affects `alert_reviews` writers, not schema).

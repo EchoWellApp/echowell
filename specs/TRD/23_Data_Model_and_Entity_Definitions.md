@@ -210,6 +210,7 @@ Immutable copy of every accepted arrival, including duplicates (SRC-02 raw store
 | `ingest_batch_id` | uuid | yes | Batch the record arrived in; NULL for single POST | Ingestion |
 | `api_key_id` | uuid | yes | Key that submitted it; NULL for admin CSV/seed | Ingestion |
 | `payload` | jsonb | no | Exact received record (JSON object); never modified | Ingestion |
+| `ingest_warnings` | jsonb | no | Array of plausibility warnings `{field, code, message}` written at insert (TRD 10 §4.4); default `[]` | Ingestion |
 | `resident_id` | uuid | no | FK to residents resolved from field `resident_id` (resident_code) | Ingestion |
 | `device_id` | uuid | no | FK to devices resolved from field `device_id` (device_code) | Ingestion |
 | `schema_version` | text | no | Ingest schema version, `0.1` in v0.1 | Device field |
@@ -899,7 +900,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 - OQ-10 Late records before a frozen baseline.
 - OQ-11 Data handling on withdrawal.
 - OQ-14 Speaker verification output (would add a raw_sessions column, schema_version change).
-- OQ-23 Live PHI-derived data on the interim stack.
+- OQ-23 (closed by D-OWNER-4 / D-28): no live PHI-derived data on the interim stack.
 - OQ-24 Data-alert thresholds.
 - OQ-25 Explanation checklist codes (`alert_reviews.explanations`).
 - OQ-26 Who may review alarms and how soon.

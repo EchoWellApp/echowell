@@ -738,7 +738,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 - Do not compute the overview order client-side (FE-084); the API implements the contract §8 sort rules. Test fixtures must be captured per sort value.
 - MSW: register handlers for every endpoint in section 4.6.2; unhandled requests must fail the test (`onUnhandledRequest: "error"`).
 - Playwright: set `timezoneId: "America/Los_Angeles"` in the browser context to prove the UI uses the facility zone, not the browser zone.
-- Netlify: `netlify.toml` in `frontend/` sets `base = "frontend"`, `command = "npm run build"`, `publish = ".next"`; details in TRD 15.
+- Netlify: `netlify.toml` at the repository root (TRD 15) sets `base = "frontend"`, `command = "npm run build"`, `publish = ".next"`; details in TRD 15.
 
 ## 9. Open Questions
 

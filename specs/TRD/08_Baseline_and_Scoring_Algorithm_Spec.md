@@ -325,7 +325,7 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 - OQ-03 Final feature column names (mapping is configured; formulas unchanged).
 - OQ-09 Morning offset estimation method.
 - OQ-10 Late-arriving records that predate a frozen baseline.
-- OQ-13 Production baseline length (30 vs 90-day criteria) and calibration.
+- OQ-13 Alarm-limit calibration on the larger dataset and the participant-criteria 90-day minimum stay question (production baseline_n = 30 is decided, D-01).
 - OQ-14 Speaker verification (the screen is a heuristic substitute; RSK-01).
 
 ## Revision History

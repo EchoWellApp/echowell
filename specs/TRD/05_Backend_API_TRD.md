@@ -67,7 +67,7 @@ Out of scope:
 ```
 backend/
   main.py                    create_app(): FastAPI instance, middleware, exception handlers, routers
-  cli.py                     admin CLI: create-user, create-api-key, revoke-api-key, export-openapi
+  cli.py                     admin CLI: create-user, create-api-key, revoke-api-key, export-openapi, seed, … (full list TRD 15 §4.8)
   jobs/nightly_run.py        nightly pipeline entry point (Railway cron service)
   api/                       routers (thin: parse, authorise, call one service, map DTO)
     health.py                GET /health
@@ -79,13 +79,13 @@ backend/
     alarms.py                /alerts, /alerts/{id}/reviews, /alerts/{id}/snooze, /data-alerts   (existing skeleton file kept)
     devices.py               GET /devices
     analytics.py             GET /analytics, GET /analytics/baselines
-    pipeline.py              POST /pipeline/run, GET /pipeline/runs/{id}
+    pipeline.py              POST /pipeline/run, GET /pipeline/runs, GET /pipeline/runs/{id}
     admissions.py            /admissions, /admissions/{code}/comparison, /facility/reference-ranges
     users.py                 /users
     deps.py                  shared dependencies (db session, settings, auth, pagination, meta)
   schemas/                   Pydantic v2 DTOs (one module per router; names as TRD 19 components)
   services/                  orchestration and business rules (no FastAPI imports)
-    ingestion.py, validation.py, pipeline_service.py, resident_service.py, checkin_service.py,
+    ingestion.py, validation.py, pipeline_runner.py, resident_service.py, checkin_service.py,
     feature_service.py, scoring.py, alert_service.py, review_service.py, data_alert_service.py, export_service.py, note_service.py, device_service.py,
     analytics_service.py, analytics_summary.py, admission_service.py, auth_service.py, user_service.py, audit_service.py,
     baseline.py, cusum.py, morning_adjustment.py, speaker_screen.py  (existing skeletons: thin adapters
@@ -148,10 +148,9 @@ sequenceDiagram
     participant R as sessions.py / ingest.py router
     participant S as services.ingestion
     participant DB as PostgreSQL
-    participant P as services.pipeline_service
+    participant P as services.pipeline_runner
     D->>R: POST /api/v1/sessions (X-API-Key)
     R->>S: ingest_single(raw_body, principal)
-    S->>DB: INSERT ingest_batches (source=api_single)
     S->>S: map feature names, validate IngestRecord
     alt invalid
         S->>DB: INSERT ingest_rejections (raw_body, errors)
@@ -174,7 +173,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | API-030 | `POST /api/v1/sessions` shall accept exactly one ingest record (contract §5 fields) as `application/json`, authenticated by `X-API-Key` with scope `ingest:write`. | Must | BR-01, contract §10 | Test |
 | API-031 | The ingest handlers shall read the raw request body themselves (not through FastAPI body-model binding) so that invalid bodies can be stored verbatim in `ingest_rejections` before the 422 is returned; the OpenAPI document shall still reference the `IngestRecord` schema via `openapi_extra`. | Must | BR-02, TRD 10 | Test |
-| API-032 | Every call to `POST /sessions` shall create one `ingest_batches` row with `source`=`api_single`, `record_count`=1 and the actor recorded in audit (`uploaded_by` is null for API-key callers). | Must | BR-02 | Test |
+| API-032 | A call to `POST /sessions` shall create no `ingest_batches` row: the stored `raw_sessions.ingest_batch_id` (or `ingest_rejections.ingest_batch_id`) is null, provenance is kept in `api_key_id` and the audit log (TRD 10 ING-010; enum value `api_single` is reserved). | Must | BR-02 | Test |
 | API-033 | Before validation, the ingestion service shall apply the configured feature-name mapping (TRD 10) so that renamed extractor columns (OQ-03) need no code change. | Must | contract §5, OQ-03 | Test |
 | API-034 | The ingest record shall be validated with `extra="forbid"`: unknown fields, missing required fields, wrong types, non-finite numbers, `audio_quality_flag` not in {ok, poor}, `number_of_pauses` not a non-negative integer, `pause_fraction` or `voiced_fraction` outside [0, 1], `speech_duration_s` or `total_phrase_duration_s` negative, and `timestamp_utc` not matching `YYYY-MM-DD HH:MM:SS` shall each produce 422 `VALIDATION_ERROR` with one `errors[]` entry per failing field. | Must | BR-01, TRD 10 | Test |
 | API-035 | A `schema_version` not in the configured supported list (v0.1: `["0.1"]`) shall produce 422 `UNSUPPORTED_SCHEMA_VERSION`. | Must | contract §5 | Test |
@@ -217,7 +216,7 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 | API-060 | `backend/jobs/nightly_run.py` shall exit 0 without running when the current hour in FACILITY_TZ is not NIGHTLY_RUN_HOUR_LOCAL. | Must | contract §7 Trigger, §13 | Test |
 | API-061 | The nightly job shall exit 0 without running when a `pipeline_runs` row with trigger `nightly` and status `succeeded` already exists whose `started_at` falls on the same facility-local date. | Must | contract §7 | Test |
 | API-062 | The nightly job shall run the full pipeline (scope `all`) with trigger `nightly`, profile PIPELINE_PROFILE and as-of resolved by API-135, and shall exit non-zero when the run fails. | Must | contract §7, §21 R18 | Test |
-| API-063 | Every pipeline invocation (ingest, nightly, manual) shall be executed by `services.pipeline_service.run(scope, trigger, profile, as_of)`, which creates the `pipeline_runs` row, stores `config_snapshot` (including `as_of`), `code_version`=GIT_SHA, `counts`, `warnings`, and writes audit actions `pipeline.run.started` and `pipeline.run.finished`. | Must | contract §9, BR-15 | Test |
+| API-063 | Every pipeline invocation (ingest, nightly, manual) shall be executed by `services.pipeline_runner.run(scope, trigger, profile, as_of)`, which creates the `pipeline_runs` row, stores `config_snapshot` (including `as_of`), `code_version`=GIT_SHA, `counts`, `warnings`, and writes audit actions `pipeline.run.started` and `pipeline.run.finished`. | Must | contract §9, BR-15 | Test |
 | API-064 | A full-scope run shall hold the PostgreSQL advisory lock `pg_advisory_lock(hashtext('echowell:pipeline:all'))`; a resident-scoped run shall hold `pg_advisory_xact_lock(hashtext('echowell:pipeline:resident:'||resident_code))` for each resident in ascending code order, and shall wait while a full run holds its lock. | Must | BR-15 | Test |
 | API-065 | `POST /api/v1/pipeline/run` shall be authorised for admin users (JWT) and for API keys with scope `pipeline:run` (used by the AWS EventBridge Scheduler target), shall accept `{scope: "all" | [resident_code, ...], profile?: "production" | "test_v0_1", as_of?: date-time}`, start the run as a background task, and return 202 `{pipeline_run_id}`; it shall return 409 `PIPELINE_RUN_IN_PROGRESS` when a full-scope run is running. | Must | contract §10, §21 R18 | Test |
 | API-135 | The `as_of` of every pipeline run shall be resolved in this order: explicit `as_of` in `POST /pipeline/run`; else the PIPELINE_AS_OF environment variable (the backend refuses to start when PIPELINE_AS_OF is set and APP_ENV is `production`); else the current time. The resolved value is stored in `pipeline_runs.config_snapshot.as_of`. | Must | contract §21 R21 | Test |
@@ -257,7 +256,7 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 | API-133 | `GET /api/v1/data-alerts` (all user roles) shall accept `status` ∈ {open, resolved} (default open), `kind` ∈ {baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem} and pagination, and return `DataAlert` items ordered by kind in that enum order, then resident/device code. For the test_v0_1 data the open list shall be exactly: R08 baseline_stalled ("R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"), R05 possible_other_speaker ("2 check-ins quarantined: Oct 8, Oct 22"), R03 high_set_aside ("7 of 29 received: noise, quality flag, too short"), D02 device_silent ("Oct 12 · affects R02 and R03"). Data alerts are computed by the pipeline (TRD 09); the API only reads them. | Must | SRC-18, contract §19, OQ-24 | Test |
 | API-086 | `GET /api/v1/devices` shall return one `Device` item per device with assigned resident codes valid on the as-of date, `shared` flag, `replaces_device_code` / `replaced_by_device_code`, `in_use_since`, `last_upload_at`, `firmware_version`, `silent_days_last_30` (local dates with zero arrivals from the device) and `device_gap_days_last_30` (local dates where the ledger recorded `missing_device_gap` for its residents). For test_v0_1, D02 shall report residents [R02, R03], shared=true, device_gap_days_last_30=[2026-10-12]. | Must | BR-12, BR-06, SRC-09 | Test |
 | API-087 | `GET /api/v1/analytics` (researcher, admin) shall return `AnalyticsResponse` with `meta`, `period`, `kpis` (checkins_received, used_for_scoring, baselines_formed, alarms_raised), `daily_series`, `funnel`, `by_resident`, and exactly one of `alarm_timing` (when PIPELINE_PROFILE is `test_v0_1`; read by `backend/services/analytics_summary.py` through the read-only engine, see API-136) or `review_outcomes` (production; counts by outcome from `alert_reviews`), plus `status_totals`, `status_counts`, `resident_outcomes` and the latest `pipeline_run`. Percentages are rounded half-up to integers. Test values: received 281 of 300 (94%), used 267 of 300 (89%), baselines formed 9 of 10, alarms raised 2 (R09, R10); funnel 300 → 281 → 269 → 267; set-aside reasons quality flag 5, noise 5, too short 3; by_resident R08 43%, R03 73%, R02 80%, R05 93%, others 100%; alarm timing R09 0 days, R10 7 days. | Must | BR-15, SRC-19, contract §19 | Test |
-| API-136 | `echowell_app` has no privilege on `evaluation_ground_truth` (contract §21 R20). The alarm-timing block of `GET /analytics` shall be read only by `backend/services/analytics_summary.py`, only when PIPELINE_PROFILE is `test_v0_1`, through a second SQLAlchemy engine built from DATABASE_READONLY_URL (login role `echowell_readonly`, `pool_size=1`, read-only transactions); no `SET ROLE` is used. All other code, including `pipeline_service` and the `analytics/` package, uses DATABASE_URL only, and an import-boundary test fails if any other module references the read-only engine or `evaluation_ground_truth`. When PIPELINE_PROFILE is `production` the read-only engine is not created. | Must | contract §19, §21 R20, R27, SRC-02 | Test |
+| API-136 | `echowell_app` has no privilege on `evaluation_ground_truth` (contract §21 R20). The alarm-timing block of `GET /analytics` shall be read only by `backend/services/analytics_summary.py`, only when PIPELINE_PROFILE is `test_v0_1`, through a second SQLAlchemy engine built from DATABASE_READONLY_URL (login role `echowell_readonly`, `pool_size=1`, read-only transactions); no `SET ROLE` is used. All other code, including `pipeline_runner` and the `analytics/` package, uses DATABASE_URL only, and an import-boundary test fails if any other module references the read-only engine or `evaluation_ground_truth`. When PIPELINE_PROFILE is `production` the read-only engine is not created. | Must | contract §19, §21 R20, R27, SRC-02 | Test |
 | API-134 | `GET /api/v1/pipeline/runs` (admin, researcher) shall list pipeline runs newest first with optional `trigger` and `status` filters and pagination. | Must | contract §20 R4 | Test |
 | API-088 | `GET /api/v1/analytics/baselines` (researcher, admin) shall return `BaselineRow` items (Exp_baselines shape) filtered by optional `resident_code` and `epoch`, ordered by resident_code, epoch, then contract §6 feature order with `composite` last. | Must | BR-09, BR-15 | Test |
 | API-089 | `GET /api/v1/admissions`, `GET /api/v1/admissions/{resident_code}/comparison` and `GET /api/v1/facility/reference-ranges` shall be available to all user roles, shall set response header `X-EchoWell-Experimental: true`, and shall return empty `items` (not an error) when no new-admission residents or reference ranges exist. | Must | BR-14, SRC-11, OQ-08 | Test |
@@ -279,7 +278,7 @@ All errors use `Content-Type: application/problem+json` and the contract §10 sh
   "detail": "resident_id 'R11' is not enrolled.",
   "request_id": "6c1f3f5e-2b7d-4a7e-9a39-1f0d2f8a4c11",
   "errors": [
-    {"field": "resident_id", "code": "UNKNOWN_RESIDENT", "message": "resident_id 'R11' is not enrolled."}
+    {"field": "resident_id", "code": "unknown_resident", "message": "resident_id 'R11' is not enrolled."}
   ]
 }
 ```
@@ -293,7 +292,7 @@ Error code catalogue (complete; no other codes may be emitted):
 
 | Code | HTTP | Title | Raised when |
 |---|---|---|---|
-| VALIDATION_ERROR | 422 | Validation failed | body/field fails schema rules (API-034); `errors[].code` carries the Pydantic error type (e.g. `missing`, `float_parsing`, `extra_forbidden`, `json_invalid`) |
+| VALIDATION_ERROR | 422 | Validation failed | body/field fails schema rules (API-034); `errors[].code` carries, on the ingest endpoints, the field-level codes of TRD 10 ING-023 (e.g. `missing_field`, `invalid_type`, `extra_forbidden`, `unknown_resident`) and, on other endpoints, the Pydantic error type (e.g. `missing`, `float_parsing`, `json_invalid`) |
 | INVALID_QUERY_PARAMETER | 422 | Invalid query parameter | bad `limit`, `offset`, `sort`, enum, date or date range |
 | UNSUPPORTED_SCHEMA_VERSION | 422 | Unsupported schema version | schema_version not supported |
 | UNKNOWN_RESIDENT | 422 | Unknown resident | ingest resident_id not enrolled |
@@ -372,7 +371,7 @@ Cold start after the service sleeps (RSK-07) is excluded and handled in TRD 15.
 | API-121 | Read endpoints (`GET /residents`, `/residents/{code}`, `/checkins`, `/features`, `/scores` for one resident, `/alerts`, `/data-alerts`, `/devices`, `/analytics`, `/analytics/baselines`) p95 latency shall each be ≤ 500 ms with 100 residents (scale dataset DS-08). | Must | TRD 03, contract §20 R8 | Test |
 | API-122 | `POST /sessions` including the synchronous resident-scoped pipeline run shall have p95 latency ≤ 1,000 ms. | Must | TRD 03, contract §20 R8 | Test |
 | API-123 | `POST /ingest` with the SRC-05 file (283 records) shall respond 202 within 2 s, and the background pipeline run shall reach `succeeded` within 30 s. | Must | TRD 03, SRC-05, contract §20 R8 | Test |
-| API-124 | A full rebuild (`POST /pipeline/run {scope: "all"}`) shall complete within 5 s on the SRC-05 test input and within 120 s on scale dataset DS-08 (100 residents, 10,800 records, generated by `tests/performance/make_load_dataset.py`). | Must | TRD 03, contract §20 R8 | Test |
+| API-124 | A full rebuild (`POST /pipeline/run {scope: "all"}`) shall complete within 30 s on the SRC-05 test input including database writes (TRD 03 NFR-006; the in-memory engine alone ≤ 5 s, NFR-005) and within 120 s on scale dataset DS-08 (100 residents, 10,800 records, generated by `tests/performance/make_load_dataset.py`). | Must | TRD 03, contract §20 R8 | Test |
 | API-125 | The SQLAlchemy engine shall use `pool_size=5`, `max_overflow=5`, `pool_pre_ping=True`, `pool_recycle=300` so that the total connection count stays within free-tier Neon limits. | Must | RSK-07, TRD 22 | Inspection |
 
 ### 4.11 Request lifecycle
@@ -420,8 +419,8 @@ the BR IDs shown here.
 | POST /auth/login | none | auth.py | auth_service.login | R users; W users.last_login_at, audit_logs | BR-16 | `/login` |
 | POST /auth/logout | user | auth.py | auth_service.logout | W audit_logs | BR-16 | header "Sign out" |
 | GET /auth/me | user | auth.py | auth_service.me | R users | BR-16 | app shell (role-based nav) |
-| POST /sessions | api key | sessions.py | ingestion.ingest_single, pipeline_service.run | R residents, devices, device_assignments, api_keys; W ingest_batches, ingest_rejections, raw_sessions, all derived tables, pipeline_runs, audit_logs | BR-01..BR-11 | none (device) |
-| POST /ingest | api key, admin | ingest.py | ingestion.ingest_batch, pipeline_service.run (background) | as POST /sessions | BR-01..BR-11, BR-15 | `/admin` ingest upload |
+| POST /sessions | api key | sessions.py | ingestion.ingest_single, pipeline_runner.run | R residents, devices, device_assignments, api_keys; W ingest_batches, ingest_rejections, raw_sessions, all derived tables, pipeline_runs, audit_logs | BR-01..BR-11 | none (device) |
+| POST /ingest | api key, admin | ingest.py | ingestion.ingest_batch, pipeline_runner.run (background) | as POST /sessions | BR-01..BR-11, BR-15 | `/admin` ingest upload |
 | GET /ingest/batches/{id} | admin, researcher | ingest.py | ingestion.get_batch | R ingest_batches, ingest_rejections, pipeline_runs | BR-02 | `/admin` upload result |
 | GET /residents | user | residents.py | resident_service.overview | R residents, device_assignments, devices, processed_sessions, day_ledger, epochs, baselines, alerts, cusum_state, pipeline_runs | BR-12 | `/residents` table + tiles |
 | GET /residents/{code} | user | residents.py | resident_service.detail | as above + scores | BR-13 | `/residents/[code]` header, "What this means", baseline line |
@@ -438,9 +437,9 @@ the BR IDs shown here.
 | GET /devices | user | devices.py | device_service.panel | R devices, device_assignments, raw_sessions, day_ledger | BR-06, BR-12 | `/residents#devices` |
 | GET /analytics | researcher, admin | analytics.py | analytics_summary.build (alarm timing via DATABASE_READONLY_URL engine) | R processed_sessions, day_ledger, epochs, baselines, scores, alerts, alert_reviews, evaluation_ground_truth (test_v0_1 only), pipeline_runs | BR-15 | `/analytics` page |
 | GET /analytics/baselines | researcher, admin | analytics.py | analytics_service.baselines (JSON or CSV) | R baselines, epochs, devices, residents; W audit_logs (CSV) | BR-09, BR-15 | `/analytics` export |
-| POST /pipeline/run | admin, api key (pipeline:run) | pipeline.py | pipeline_service.start | W pipeline_runs and derived tables, audit_logs | BR-15 | `/admin` "Run pipeline" |
-| GET /pipeline/runs | admin, researcher | pipeline.py | pipeline_service.list | R pipeline_runs | BR-15 | `/admin` |
-| GET /pipeline/runs/{id} | admin, researcher | pipeline.py | pipeline_service.get | R pipeline_runs | BR-15 | `/admin` |
+| POST /pipeline/run | admin, api key (pipeline:run) | pipeline.py | pipeline_runner.start | W pipeline_runs and derived tables, audit_logs | BR-15 | `/admin` "Run pipeline" |
+| GET /pipeline/runs | admin, researcher | pipeline.py | pipeline_runner.list | R pipeline_runs | BR-15 | `/admin` |
+| GET /pipeline/runs/{id} | admin, researcher | pipeline.py | pipeline_runner.get | R pipeline_runs | BR-15 | `/admin` |
 | GET /admissions | user | admissions.py | admission_service.list | R residents, processed_sessions, facility_reference_ranges, baselines | BR-14 | `/admissions` table |
 | GET /admissions/{code}/comparison | user | admissions.py | admission_service.comparison | R processed_sessions, facility_reference_ranges | BR-14 | `/admissions` chart |
 | GET /facility/reference-ranges | user | admissions.py | admission_service.ranges | R facility_reference_ranges | BR-14 | `/admissions` chart band |
@@ -504,7 +503,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 ## 8. Implementation Notes
 
 - Build order: `core/` (settings, db, errors, middleware) → models → repositories → `auth` → ingest
-  (`sessions.py`, `ingest.py`) → pipeline_service → read endpoints → users/admin.
+  (`sessions.py`, `ingest.py`) → pipeline_runner → read endpoints → users/admin.
 - Ingest handlers: use `request: Request` and `await request.body()` inside an `async def` wrapper only for
   reading the body, then call the sync service with `run_in_threadpool`; or declare `body: dict = Body(...)`
   — but do not declare `IngestRecord` as the body parameter type, otherwise FastAPI returns 422 before the

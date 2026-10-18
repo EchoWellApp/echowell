@@ -374,7 +374,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | Dependency | Needed for | Owner |
 |---|---|---|
 | Team 1 record schema v0.1 conformance and final feature names (OQ-03) | Live ingest (demo step 3) | Team 1 |
-| Team 1 transport mechanism to the cloud endpoint (OQ-07) | Live ingest | Team 1 |
+| Team 1 transport mechanism to the cloud endpoint (ASM-05) | Live ingest | Team 1 |
 | Ann and Lovette interview findings | Confirming personas and user needs | Team 2 customer discovery |
 | PI review of clinical wording (OQ-12) | Final "What this means" text | PI |
 | IRB decisions on retention (OQ-01) and withdrawal (OQ-11) | Data lifecycle features | Faculty |
@@ -415,7 +415,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | OQ-03 | Final feature column names | Live ingest readiness |
 | OQ-05 | Does staff review reset the tally? | Staff review scope |
 | OQ-06 | Alert delivery | X-08, VIS-013 |
-| OQ-07 | AWS budget approval timing and account ownership (UND IT); device transport mechanism | Target platform timing, VIS-018 |
+| OQ-07 | AWS budget approval timing and account ownership (UND IT) | Target platform timing, VIS-018 |
 | OQ-08 | Facility norm definition | Second arm (BR-14) |
 | OQ-09 | Morning offset estimation | X-10 |
 | OQ-11 | Withdrawal handling | Data lifecycle |

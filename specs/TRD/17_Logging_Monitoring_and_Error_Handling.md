@@ -171,7 +171,7 @@ RFC 7807-style body (contract §10):
   "status": 422,
   "detail": "1 field failed validation",
   "request_id": "6b1e0f9c-6a43-4d61-9a2e-3d0f7f0e2a11",
-  "errors": [{"field": "mic_noise_level_dbfs", "code": "FLOAT_PARSING", "message": "Input should be a valid number"}]
+  "errors": [{"field": "mic_noise_level_dbfs", "code": "invalid_type", "message": "Input should be a valid number"}]
 }
 ```
 
@@ -222,7 +222,7 @@ stateDiagram-v2
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-070 | An unhandled exception in a request shall be logged once at ERROR `unhandled_exception` with `exc_type`, sanitised `exc_message`, `stack`, `request_id`, and reported to Sentry when SENTRY_DSN is set. | Must | — | Test |
-| LOG-071 | `GET /api/v1/health` shall return 200 `{status:"ok", database:"ok", version, time}` when `SELECT 1` succeeds within 3 s, and 503 `{status:"degraded", database:"unreachable", version, time}` otherwise; it shall not require authentication and shall not reveal any other configuration. | Must | contract §10, TRD 15 DEP-041 | Test |
+| LOG-071 | `GET /api/v1/health` shall return 200 `{status:"ok", database:"ok", version, time}` when `SELECT 1` succeeds within 3 s, and 503 `{status:"degraded", database:"unavailable", version, time}` otherwise; it shall not require authentication and shall not reveal any other configuration. | Must | contract §10, TRD 15 DEP-041 | Test |
 | LOG-072 | Startup shall fail fast (exit code 1, CRITICAL `startup_config_invalid` listing invalid variable names but not values) when settings validation fails (TRD 21). | Must | TRD 21 | Test |
 
 #### 4.6.4 Frontend
@@ -335,7 +335,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 - AC-LOG-07 With no nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs `nightly_run_missing` and `/admin` shows the banner.
 - AC-LOG-08 A forced 500 returns `application/problem+json` with `type` `urn:echowell:error:INTERNAL_ERROR`, no stack trace and a `request_id`.
 - AC-LOG-09 With SENTRY_DSN empty, a network-isolated test shows no outbound connection attempts during a forced 500.
-- AC-LOG-10 Stopping the database makes `/api/v1/health` return 503 with `database: "unreachable"` within 5 s.
+- AC-LOG-10 Stopping the database makes `/api/v1/health` return 503 with `database: "unavailable"` within 5 s.
 
 ## 8. Implementation Notes
 

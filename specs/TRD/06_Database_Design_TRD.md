@@ -425,7 +425,7 @@ layer persists its output per resident:
 
 ```mermaid
 sequenceDiagram
-  participant S as backend/services/pipeline_service
+  participant S as backend/services/pipeline_runner
   participant DB as PostgreSQL
   participant A as analytics.pipeline (pure)
   S->>DB: INSERT pipeline_runs (status running, config_snapshot, code_version, as_of)
@@ -470,7 +470,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | DB-026 | Alembic migrations under `backend/alembic/versions/` shall be the only mechanism that changes the schema of staging and production; `database/schema.sql` shall be a generated reference (TRD 20 PGS-016, PGS-017). | Must | SRC-01, contract §3 | Inspection; Test |
 | DB-027 | Migration files shall be named `NNNN_<snake_case_summary>.py` with a four-digit sequential revision id (`0001`, `0002`, …) and a linear history (exactly one head). | Must | TRD 18 | Test (`alembic heads` returns one revision) |
-| DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall read only that variable and fail when it is unset), in the deploy pipeline before the new backend version receives traffic (Railway pre-deploy command `alembic upgrade head`; TRD 15), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
+| DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall use `DATABASE_MIGRATION_URL`, falling back to `DATABASE_URL` only where TRD 21 leaves it unset: local and CI), before the new backend version receives traffic (Railway start command `alembic upgrade head && uvicorn ...`; TRD 15 DEP-040), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
 | DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments. Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
 | DB-030 | No migration shall UPDATE or DELETE rows of `raw_sessions` or `audit_logs`; a schema change to `raw_sessions` shall be additive (new nullable column or new CHECK validated `NOT VALID` then `VALIDATE`). | Must | BR-02, SRC-02 | Inspection; Test (migration test greps for UPDATE/DELETE on those tables) |
 | DB-031 | Before every production migration the deploy job shall create a Neon branch named `pre-migration-<git sha>` (on AWS RDS: a manual snapshot with the same name). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
@@ -522,7 +522,7 @@ lookup indexes for `resident_code`, `device_code`, `(resident_id, local_date)` o
 | Scores series / tally chart (`GET /scores`) | `scores WHERE epoch_id = :e ORDER BY local_date` or `WHERE resident_id = :r AND local_date BETWEEN :from AND :to` | `scores_epoch_date_idx`, `scores_resident_date_idx` |
 | Check-in log (`GET /residents/{code}/checkins`) | union of `processed_sessions` (non-duplicate, non-usable), `day_ledger` (missing), `alerts`, `epochs`, `baselines` by resident and date range | `processed_sessions_resident_date_idx`, `day_ledger_missing_idx`, `alerts_resident_triggered_idx` |
 | Features sparklines (`GET /residents/{code}/features`) | `processed_sessions WHERE epoch_id = :e AND status = 'usable' ORDER BY timestamp_utc` + `scores` | `processed_sessions_epoch_idx` |
-| Alerts list and nav count "Alerts (<n>)" (`GET /alerts?status=`) | `alerts WHERE status = :s ORDER BY triggered_at DESC`; `count(*) WHERE status <> 'closed'` | `alerts_status_triggered_idx` |
+| Alerts list and nav count "Alerts (<n>)" (`GET /alerts?status=`) | `alerts WHERE status = :s ORDER BY triggered_at ASC` (TRD 19 order; the DESC index is scanned backwards); `count(*) WHERE status = 'open'` (nav counts not-yet-reviewed alarms only) | `alerts_status_triggered_idx` |
 | Review history / "Reviewed" badge (`GET /alerts/{id}/reviews`) | `alert_reviews WHERE alert_id = :a ORDER BY created_at DESC` | `alert_reviews_alert_created_idx` |
 | Data alerts queue (`GET /data-alerts`) | `data_alerts WHERE status = 'open' ORDER BY last_detected_at DESC` | `data_alerts_status_detected_idx` |
 | Data alert reconciliation | `data_alerts WHERE kind = :k AND resident_id = :r AND status = 'open'` | `data_alerts_open_subject_uq` |
@@ -579,7 +579,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | DB-051 | A restore drill shall be run once per calendar month and before the 1 Dec 2026 demo: restore production to a new Neon branch (or RDS instance) at a chosen timestamp, run the schema diff test and compare row counts of `raw_sessions` and `audit_logs` with the source at that timestamp; the result shall be recorded in `docs/database_design.md`. | Should | BR-02 | Demo; Inspection |
 | DB-052 | All database storage and backups holding non-synthetic data shall be encrypted at rest (provider-managed encryption on Neon/Railway; RDS storage and snapshot encryption with a customer-managed KMS key on AWS). | Must | D-OWNER-3, BR-16 | Inspection |
 | DB-053 | Every connection to a non-local database shall use TLS (`sslmode=require` or `verify-full`) (TRD 20 PGS-027). | Must | D-OWNER-3, BR-16 | Test |
-| DB-054 | Logical exports (`pg_dump`) of a database holding non-synthetic data shall be written only to storage approved under OQ-23/OQ-01 and never to GitHub Actions artifacts, the repository or personal devices. | Must | D-OWNER-3, BR-16 | Inspection |
+| DB-054 | Logical exports (`pg_dump`) of a database holding non-synthetic data shall be written only to storage approved for that data (D-28; retention OQ-01) and never to GitHub Actions artifacts, the repository or personal devices. | Must | D-OWNER-3, BR-16 | Inspection |
 
 ### 4.10 Seeding
 
@@ -589,8 +589,8 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | DB-056 | `python -m backend.cli seed test_v0_1` shall create, in one transaction: facility `Edgewood test` (timezone America/Chicago); residents R01–R10 (cohort `longitudinal`, `enrolled_on` 2026-10-01, sex R01 F, R02 M, R03 F, R04 M, R05 F, R06 M, R07 F, R08 M, R09 F, R10 M per SRC-04); devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (`firmware_version_last` fw-1.0.0; D07 `active = false`); the 11 assignments of TRD 20 section 4.12 including R02 and R03 sharing D02 from 2026-10-01 and R07 on D07 2026-10-01..2026-10-12 then D07B from 2026-10-13; users `admin@echowell.test` (admin), `clinician@echowell.test` (clinician), `researcher@echowell.test` (researcher); API key `test-ingest`; and, by calling `database/seeds/load_evaluation_ground_truth.py`, the 10 `evaluation_ground_truth` rows of TRD 20 section 4.12 (R09 `Sudden step` 2026-10-21, R10 `Slow drift` 2026-10-17, others `None`). | Must | SRC-04, BR-15, contract §19 | Test (counts 1/10/10/11/3/1/10) |
 | DB-057 | The seed command shall generate user passwords and the API key with `secrets.token_urlsafe(24)`, print them once to standard output, and store only their argon2id / SHA-256 hashes; no credential shall be committed to the repository. | Must | BR-16, TRD 12 | Inspection; Test |
 | DB-058 | `python -m backend.cli seed test_v0_1 --with-input` shall additionally ingest SRC-05 through the ingestion service as one `ingest_batches` row with `source = 'seed'` and then run the pipeline with trigger `test` and explicit `as_of` 2026-10-30 15:00 America/Chicago (2026-10-30T20:00:00Z), as POST /api/v1/pipeline/run `{as_of}` would (contract R21). | Must | BR-15, SRC-05 | Test (283 raw rows; counts of DB-020) |
-| DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Railway/Neon stack only synthetic or test data shall be loaded until OQ-23 is resolved. | Must | D-OWNER-3, OQ-23 | Test |
-| DB-060 | The production roster (residents, devices, assignments) shall be loaded by `python -m backend.cli load-roster <file.csv>` with header `resident_code,sex,cohort,enrolled_on,admitted_on,device_code,valid_from,valid_to`, as one transaction, writing one `audit_logs` row `action = 'roster.loaded'` with row counts; the file shall contain study IDs only. | Should | BR-16, ASM-03 | Test |
+| DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Railway/Neon stack only synthetic or test data shall ever be loaded (OQ-23 closed by D-OWNER-4 / D-28). | Must | D-OWNER-3, OQ-23 | Test |
+| DB-060 | The production roster (residents, devices, assignments) shall be loaded by `python -m backend.cli import-master-data --dir D` (TRD 15 §4.8) from `residents.csv` (`resident_code,sex,cohort,enrolled_on,admitted_on`), `devices.csv` (`device_code,room_label,active`) and `device_assignments.csv` (`resident_code,device_code,valid_from,valid_to`), as one transaction, writing one `audit_logs` row `action = 'roster.loaded'` with row counts; the file shall contain study IDs only. | Should | BR-16, ASM-03 | Test |
 
 ### 4.11 Retention and withdrawal
 
@@ -639,7 +639,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 ## 8. Implementation Notes
 
 - File paths: models in `backend/models/` (mapping in TRD 23 section 4.6), repositories in `backend/repositories/`,
-  pipeline persistence in `backend/services/pipeline_service.py`, CLI in `backend/cli.py`, migrations in
+  pipeline persistence in `backend/services/pipeline_runner.py`, CLI in `backend/cli.py`, migrations in
   `backend/alembic/versions/`, reference DDL in `database/schema.sql`, seed helpers in `database/seeds/`
   (`test_v0_1_roster.sql` = TRD 20 section 4.12), schema dump script `scripts/dump_schema.sh`.
 - Use SQLAlchemy 2.0 `Session` with `session.begin()` per resident; never share a session across residents.
@@ -671,7 +671,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 - OQ-10 Handling of late records that predate a frozen baseline (DB-016, DB-017 implement the interim rule).
 - OQ-11 Data handling on withdrawal (DB-062..DB-064).
 - OQ-13 Alarm-limit calibration on the larger dataset (changes `config_parameters`, not schema).
-- OQ-23 May live PHI-derived feature data be stored on the interim Netlify/Railway/Neon stack before AWS approval.
+- OQ-23 (closed by D-OWNER-4 / D-28): no live PHI-derived feature data on the interim Netlify/Railway/Neon stack; DB-059 enforces it.
 - OQ-24 Data-alert thresholds (config keys `data_alert_*`) — provisional values seeded.
 - OQ-25 Explanation checklist (`review_explanations`) — provisional list seeded.
 - OQ-26 Who may review alarms and how soon — no SLA column or job in the MVP.

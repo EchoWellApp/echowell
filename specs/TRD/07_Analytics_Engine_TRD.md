@@ -378,7 +378,7 @@ resident's `enrolled_on` (contract §20 R10); for SRC-05 with as_of 2026-10-30 1
 Σ over active residents of the days they were enrolled in the period. Percentages are rounded half-up to an integer:
 `pct(n, d) = (200·n + d) // (2·d)` (integer arithmetic, no float rounding).
 
-`AnalyticsSummary` shapes (returned unchanged by `GET /api/v1/analytics`, TRD 05):
+Internal `AnalyticsSummary` shapes (engine output; `backend/services/analytics_summary.py` maps them to the `AnalyticsResponse` DTO of TRD 19 E-18, whose field names are authoritative for the API, e.g. `count`/`resident_codes`/`not_reviewed_count` for `alarms_raised`):
 
 | Part | Shape | SRC-05 expected value |
 |---|---|---|
@@ -462,7 +462,7 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 - OQ-05 Whether staff review resets the tally or alarm (affects alert reconciliation; v0.1: no reset).
 - OQ-09 Morning offset estimation method (extension point ANL-055).
 - OQ-10 Handling of late-arriving records that predate a frozen baseline (MVP default ANL-024..ANL-027).
-- OQ-13 Production baseline length and alarm limit calibration (config values only; no code change).
+- OQ-13 Alarm-limit calibration on the larger dataset and the participant-criteria minimum stay (production baseline_n = 30 is decided, D-01; config values only; no code change).
 - OQ-18 EWMA trend display (extension point ANL-056).
 - OQ-08 Facility norm definition (extension point ANL-057).
 - OQ-24 Data-alert thresholds (provisional defaults reproduce SRC-18).

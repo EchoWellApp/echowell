@@ -21,7 +21,7 @@ Amplify target), the PostgreSQL database (Neon now, AWS RDS target), GitHub repo
 CLI, and operational security procedures run by Team 2.
 
 Out of scope: device hardware security, on-device audio handling, wake word and device-to-cloud transport
-security beyond the API contract (Team 1; OQ-07, OQ-16); UND institutional policies themselves (referenced,
+security beyond the API contract (Team 1; ASM-05, OQ-16); UND institutional policies themselves (referenced,
 not defined); the offline mixed-effects research analysis environment (governed by the IRB protocol).
 
 ## 3. References
@@ -211,7 +211,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 ### 4.9 Browser security (frontend)
 
-`frontend/netlify.toml` (excerpt, binding):
+`netlify.toml` at the repository root (TRD 15; excerpt, binding):
 
 ```toml
 [[headers]]
@@ -302,18 +302,18 @@ Audit events (`audit_logs.action`):
 
 | Role | Purpose | Privileges |
 |---|---|---|
-| echowell_migrator | Alembic migrations (CI deploy step only), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
-| echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `alert_reviews`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE, DELETE on derived and mutable tables (`processed_sessions`, `day_ledger`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `data_alerts`, `facility_reference_ranges`, `pipeline_runs`, `ingest_batches`, `users`, `api_keys`, `config_parameters`, `residents`, `devices`, `device_assignments`, `facilities`); USAGE on sequences; no DDL, no TRUNCATE |
+| echowell_migrator | Alembic migrations (backend start command, TRD 15 DEP-040) and seed CLI, connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
+| echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`, `alert_reviews`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE (no DELETE) on `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `ingest_batches`, `pipeline_runs`, `config_parameters`, `alerts`, `data_alerts`; SELECT, INSERT, UPDATE, DELETE on rebuildable derived tables (`epochs`, `processed_sessions`, `day_ledger`, `scores`, `cusum_state`, `facility_reference_ranges`); USAGE on sequences; no DDL, no TRUNCATE (exact grants: TRD 20 §4.8) |
 | echowell_readonly | Researchers' offline analysis, audit review, exports; login used by DATABASE_READONLY_URL (alarm-timing read in `analytics_summary.py`, test_v0_1 only) | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-110 | The three roles above shall be created by the first Alembic migration (or a bootstrap SQL script run by the database owner) with the listed privileges, in every environment. | Must | contract §12 | Test |
-| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only the CI migration step shall use DATABASE_MIGRATION_URL as `echowell_migrator`; DATABASE_MIGRATION_URL shall not be set on the Railway web or cron services. | Must | contract §12, §21 R20 | Inspection |
+| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as `alembic upgrade head` in the backend web service start command, TRD 15 DEP-040) and the seed CLI shall use DATABASE_MIGRATION_URL as `echowell_migrator`; application request and pipeline code shall never use it, and it shall not be set on the Railway cron (`nightly`) service. | Must | contract §12, §21 R20 | Inspection |
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
 | SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` fail and that `SELECT * FROM evaluation_ground_truth` fails with a permission error. | Must | T-04, contract §21 R20 | Test |
-| SEC-116 | DATABASE_READONLY_URL (role `echowell_readonly`) shall be set only where PIPELINE_PROFILE is `test_v0_1`, shall be stored as a platform secret, shall use `sslmode=require`, and shall be referenced only by `backend/services/analytics_summary.py`; no code shall use `SET ROLE` to switch database roles. | Must | contract R27, §21 R20 | Test |
+| SEC-116 | DATABASE_READONLY_URL (role `echowell_readonly`) shall be set only where PIPELINE_PROFILE is `test_v0_1`, shall be stored as a platform secret, shall use `sslmode=require`, and shall be referenced only by `backend/services/analytics_summary.py`; no application code shall use `SET ROLE` to reach `echowell_readonly` or `evaluation_ground_truth` (the only `SET ROLE` in the codebase is Alembic `env.py` switching to `echowell_migrator` for object ownership, TRD 20). | Must | contract R27, §21 R20 | Test |
 | SEC-115 | The Neon/RDS owner (superuser-equivalent) credentials shall be held only by the Team 2 DevOps lead and the PI's designated deputy and shall not be used by applications. | Must | T-09 | Inspection |
 
 ### 4.14 Privacy and data minimisation

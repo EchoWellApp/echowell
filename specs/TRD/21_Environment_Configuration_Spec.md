@@ -93,7 +93,7 @@ the AWS target.
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
 | ENV-015 | FACILITY_NAME shall be rejected if it contains the string `Edge4Care` (case-insensitive). | Must | RSK-10, contract §2 | Test |
 | ENV-016 | The backend shall expose FACILITY_NAME (`meta.facility_name`), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
-| ENV-017 | As-of resolution (contract R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
+| ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
 
 ### 4.4 Config parameters (database) vs environment
@@ -126,6 +126,7 @@ Frontend variables are inlined at build time by Next.js and are therefore **publ
 | `SMOKE_API_BASE_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_EXPECTED_SHA`, `SMOKE_ENV` | Smoke test targets (TRD 15 §4.11) | smoke runs | — | `https://…/api/v1` | CI | No | `SMOKE_ENV` ∈ `staging`, `production` |
 | `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` | Staging smoke user | staging smoke | — | — | CI (staging) | Yes | never set for production |
 | `E2E_BASE_URL`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Playwright targets (TRD 16 §4.3) | E2E runs | `http://localhost:3001` | — | CI, local | ephemeral | — |
+| `STAGING_DATABASE_URL`, `STAGING_SMOKE_EMAIL`, `STAGING_SMOKE_PASSWORD` (secrets); `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` (variables); `PYTHON_VERSION`, `NODE_VERSION` (workflow env) | GitHub Actions secrets/variables; defined in TRD 16 §4.9 and mapped by the workflows onto `DATABASE_URL`, `SMOKE_*` above | CI workflows | — | — | CI | secrets: Yes | never read by application code |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|

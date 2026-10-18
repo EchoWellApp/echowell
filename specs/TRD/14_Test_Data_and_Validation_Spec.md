@@ -93,7 +93,7 @@ flowchart LR
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-010 | The answer key (DS-02 and any future answer key) shall never be placed in a pipeline input folder; it shall live only in `specs/business-requirements/` and `tests/fixtures/answer_key/`. A test shall fail if any `.xlsx` file or any file name containing `answer_key` or `Exp_` exists under `tests/fixtures/pipeline_input/`. | Must | SRC-03 README, SRC-13 §5 | Test |
-| TDV-011 | Only code under `tests/` shall read `tests/fixtures/answer_key/`. A test shall scan `analytics/`, `backend/`, `frontend/app`, `frontend/components`, `frontend/lib`, `frontend/services` and `database/` and fail on any occurrence of `answer_key`, `Exp_`, `EchoWell_pipeline_test_v0_1.xlsx` or `openpyxl`. The ground-truth loader (`backend/cli` command `load-ground-truth`) reads only the DS-10 CSV path given on its command line. | Must | SRC-03 README, contract §3 (openpyxl tests only) | Test |
+| TDV-011 | Only code under `tests/` and the test_v0_1-only loader `database/seeds/load_evaluation_ground_truth.py` shall read `tests/fixtures/answer_key/`. A test shall scan `analytics/`, `backend/` (excluding `backend/services/analytics_summary.py`), `frontend/app`, `frontend/components`, `frontend/lib`, `frontend/services` and `database/` (excluding `database/seeds/`) and fail on any occurrence of `answer_key`, `Exp_`, `EchoWell_pipeline_test_v0_1.xlsx` or `openpyxl`. The ground-truth loader `database/seeds/load_evaluation_ground_truth.py` reads only the DS-10 CSV path given on its command line (contract R27). | Must | SRC-03 README, contract §3 (openpyxl tests only) | Test |
 | TDV-012 | `tests/fixtures/pipeline_input/` shall contain only `EchoWell_pipeline_test_input_v0_1.csv`; DS-10 shall live in `tests/fixtures/answer_key/`. | Must | SRC-03 README | Test |
 | TDV-013 | `tests/fixtures/answer_key/SHA256SUMS` shall list the SHA-256 of the fixture workbook and the fixture CSV; at baseline v0.1 these are `ddbc03ea6fef37388d2f0265902096cc0fe28559d36cb2855f63ec51ec482257` (workbook) and `78e77faad423f305dfb83429ccd21978f089e843c181b5d244a5d7d4f5fabe28` (CSV). | Must | BR-15 | Test |
 | TDV-014 | The fixture copies shall be byte-identical to the `specs/` files (TRD 13 TST-071). | Must | BR-15 | Test |
@@ -151,7 +151,7 @@ sequenceDiagram
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-030 | Tier A shall run `analytics.pipeline` in-process on the DS-01 records with profile `test_v0_1`, facility timezone America/Chicago, enrollment start 2026-10-01 for R01–R10 and as-of 2026-10-30 15:00 America/Chicago, with the device assignments of §4.9, and compare its result with DS-02. | Must | BR-15 | Test |
-| TDV-031 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry of §4.9, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token), wait for the batch's pipeline run to finish, then call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s), and compare API responses and database rows with DS-02. The explicit as-of run is required because ingest-triggered runs use the request time as as-of and exclude records after it (TRD 07 ANL-015, ANL-043). | Must | BR-15, BR-01 | Test |
+| TDV-031 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry of §4.9, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token), wait for the batch's pipeline run to finish, then call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s), and compare API responses and database rows with DS-02. The explicit as-of run is required because ingest-triggered runs use the R21 as-of (PIPELINE_AS_OF when set, otherwise the current time) and exclude records after it (TRD 07 ANL-015, ANL-043). | Must | BR-15, BR-01 | Test |
 | TDV-032 | Floating-point values (median, MAD, robust_spread, z, composite_raw, composite_z, cusum_tally, adjusted and raw feature values) shall be computed in float64 and compared with absolute tolerance 1e-6: pass iff `abs(actual − expected) ≤ 1e-6`. NaN or missing actual where a number is expected fails. | Must | contract §7 | Test |
 | TDV-033 | Strings (statuses, reasons, session_ids, device_ids, alarm labels, feature keys after mapping) shall compare exactly (case-sensitive, no trimming other than the workbook-blank rule in TDV-035). | Must | contract §7 | Test |
 | TDV-034 | Integers and counts (epoch, n_sessions, usable_in_epoch, scored_sessions, status counts, row counts) and booleans (morning, floor_applied, baseline_formed) shall compare exactly. | Must | contract §7 | Test |
@@ -608,7 +608,7 @@ Per-day check-ins (used/set aside/quarantined/missed), days 1–30: 1 10/0/0/0; 
 | TDV-069 | The R09 and R10 "Leaning most" strings shall equal §4.9.1. | Should | SRC-18 | Test |
 | TDV-074 | With DS-07 and DS-10 loaded, `GET /api/v1/analytics` (researcher) shall return kpis, daily_series, funnel, by_resident and alarm_timing equal to Table 4.9-E and the per-day list (integers exact; percentages as integers after half-up rounding). | Must | BR-15, SRC-19 | Test |
 | TDV-075 | Every Analytics figure in Table 4.9-E shall also be recomputed by the validation harness from DS-02 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes) and compared with the API, so that the page "matches the pipeline answer key". | Must | SRC-19 subline | Test |
-| TDV-076 | After a review is saved on R09 (TRD 13 TST-056), the R09 card badge shall be "Reviewed", the R10 badge "Not reviewed", "Alerts (2)" unchanged, the "Alarms raised" tile note shall no longer say "both not yet reviewed" (exact wording per TRD 11), and all tallies shall be unchanged. | Should | contract §19, OQ-05 | Test |
+| TDV-076 | After a review is saved on R09 (TRD 13 TST-056), the R09 card badge shall be "Reviewed", the R10 badge "Not reviewed", the nav "Alerts (1)" (only not-yet-reviewed alarms are counted), the "Alarms raised" tile note shall no longer say "both not yet reviewed" (exact wording per TRD 11), and all tallies shall be unchanged. | Should | contract §19, OQ-05 | Test |
 
 ### 4.9.3 Evaluation ground truth isolation
 
@@ -623,9 +623,9 @@ DS-10 content (exact):
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-100 | DS-10 shall agree with SRC-03 Test_plan (R09 step from day 21, R10 drift from day 17, no inserted change for R01–R08); a test shall check this. | Must | SRC-03 Test_plan | Test |
-| TDV-101 | The pipeline shall never read `evaluation_ground_truth`: a static scan of `analytics/` and of the backend pipeline runner, its repositories and the ingest service shall fail on any reference to `evaluation_ground_truth`, `true_onset` or `planted_change`; only the analytics summary read service may reference the table, and it reads it through the `echowell_readonly` connection; the `echowell_app` role used by the pipeline has no SELECT privilege on it (contract R20), verified by an integration test that runs the pipeline under `echowell_app` and asserts that a direct SELECT raises `permission denied`. | Must | contract §19, SRC-02 "answer key never touches the analytics" | Test |
+| TDV-101 | The pipeline shall never read `evaluation_ground_truth`: a static scan of `analytics/` and of the backend pipeline runner (`backend/services/pipeline_runner.py`), its repositories and the ingest service (excluding `backend/services/analytics_summary.py` and `database/seeds/`) shall fail on any reference to `evaluation_ground_truth`, `true_onset` or `planted_change`; only the analytics summary read service may reference the table, and it reads it through the `echowell_readonly` connection; the `echowell_app` role used by the pipeline has no SELECT privilege on it (contract R20), verified by an integration test that runs the pipeline under `echowell_app` and asserts that a direct SELECT raises `permission denied`. | Must | contract §19, SRC-02 "answer key never touches the analytics" | Test |
 | TDV-102 | Tier A and Tier B outputs (all compared values plus alerts and data alerts) shall be identical with `evaluation_ground_truth` empty and with DS-10 loaded; the Tier B check loads DS-10 between two full runs and compares. | Must | contract §19 | Test |
-| TDV-103 | `python -m backend.cli load-ground-truth <csv>` shall refuse (non-zero exit, no rows written) when the active profile is `production`; with `test_v0_1` it shall replace the table contents. | Must | contract §19, D-OWNER-2 | Test |
+| TDV-103 | `python database/seeds/load_evaluation_ground_truth.py <csv>` (also called by `python -m backend.cli seed test_v0_1`) shall refuse (non-zero exit, no rows written) when the active profile is `production`; with `test_v0_1` it shall replace the table contents. | Must | contract §19, D-OWNER-2 | Test |
 | TDV-104 | Under profile `production`, `GET /api/v1/analytics` shall omit `alarm_timing` and return `review_outcomes` (counts by outcome from `alert_reviews`), and the page shall show the review-outcomes panel. | Must | contract §19 | Test |
 
 ### 4.10 Validation report format
@@ -733,7 +733,7 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 - ASM-04 `test_v0_1` baseline_n 16.
 - ASM-06 New epoch restarts CUSUM (R07 epoch 2 starts at 0).
 - ASM-07 Frozen baselines never recomputed (VC-R10-FRZ).
-- Contract R11: production as-of = request time; tests set it with `POST /api/v1/pipeline/run {as_of}` or freeze the clock in-process.
+- Contract R21 (supersedes R11): run as-of precedence = explicit `as_of` in `POST /api/v1/pipeline/run` → PIPELINE_AS_OF (non-production) → current time; read endpoints use the as_of of the latest succeeded run; in-process tests may freeze the clock.
 - Note for lead (TRD-local): the R07 device move date (2026-10-13) is pre-registered in the DS-07 registry as a device assignment; epoch detection itself uses only the record's device/firmware/software fields.
 
 ## 6. Dependencies
@@ -775,7 +775,7 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 - OQ-03 Final feature column names: comparator mapping must follow the configurable feature-name mapping.
 - OQ-09 Morning offset estimation: evaluated only on DS-04.
 - OQ-10 Late-arriving records before a frozen baseline: DS-01 contains none that predate a frozen baseline (the late R04 copy is a duplicate); a dedicated unit test covers it (TRD 13 PIP-04).
-- OQ-13 Production baseline length and alarm calibration: DS-04 metrics informational until closed.
+- OQ-13 Alarm-limit calibration on the larger dataset (production baseline_n = 30 decided, D-01): DS-04 metrics informational until closed.
 - OQ-14 Speaker verification output: not in DS-01; no validation case until defined.
 - OQ-15 Store-and-forward: gaps in DS-01/DS-04 are treated as missing data.
 - OQ-24 Data-alert thresholds (0.20 set-aside fraction, 10 received, 2 silent days): Table 4.9-D is the expected output of the provisional defaults.

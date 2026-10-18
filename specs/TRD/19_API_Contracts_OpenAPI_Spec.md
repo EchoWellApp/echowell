@@ -47,7 +47,7 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
 | OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the servers `/api/v1`-relative paths defined in §4.4. The generated document shall be committed as `docs/api_reference/openapi.json`, produced by `python -m backend.cli export-openapi`. | Must | SRC-17, contract §21 R22 | Test |
 | OAS-003 | Every path, method, parameter (name, location, type, required flag, constraints), request body and response status code in this document shall appear in the generated document, and no other paths shall appear. | Must | SRC-17 | Test |
 | OAS-004 | Every schema in `components/schemas` of §4.5 shall exist in the generated document with the same property names, types, `required` lists and enum values; additional optional response properties are a contract change and shall be added here first. | Must | SRC-17 | Test |
-| OAS-005 | CI shall regenerate the schema with `python -m backend.cli export-openapi` and fail when it differs from the committed `docs/api_reference/openapi.json`. A contract test (`tests/integration/test_openapi_contract.py`) shall also compare the generated document with the §4.5 skeleton (stored verbatim as `tests/fixtures/trd19_openapi_skeleton.yaml`) and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13, contract §21 R22 | Test |
+| OAS-005 | CI shall regenerate the schema with `python -m backend.cli export-openapi` and fail when it differs from the committed `docs/api_reference/openapi.json`. A contract test (`tests/contract/test_openapi_contract.py`, TRD 13 TST-060) shall also compare the generated document with the §4.5 skeleton (stored verbatim as `tests/fixtures/trd19_openapi_skeleton.yaml`) and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13, contract §21 R22 | Test |
 | OAS-006 | Response-validation tests shall validate every response body produced by the integration test suite against the declared response schema for its status code (using `openapi-core` or `jsonschema` with the 3.1 dialect). | Must | TRD 13 | Test |
 | OAS-007 | Enum values in DTOs shall equal the database enum values in TRD 20: `ProcessedStatus`, `DayStatus`, `AlarmState`, `AlertStatus`, `NoteType`, `Role`, `Cohort`, `ResidentStatus`, `PipelineTrigger`, `PipelineStatus`, `IngestSource`, `ReviewOutcome`, `DataAlertKind`, `DataAlertStatus`; a test shall compare them with `pg_enum`. | Must | TRD 20, TRD 23 | Test |
 | OAS-008 | Property names shall be snake_case, identical to the database column names where a column exists (for example `resident_code`, `cusum_tally`, `alarm_state`). | Must | TRD 06 | Inspection |
@@ -178,7 +178,7 @@ Response 422 (unknown resident):
 ```json
 {"type": "urn:echowell:error:UNKNOWN_RESIDENT", "title": "Unknown resident", "status": 422,
  "detail": "resident_id 'R11' is not enrolled.", "request_id": "0e4b2f7a-9c1d-4e8b-a3f6-5d2c7b1e9a40",
- "errors": [{"field": "resident_id", "code": "UNKNOWN_RESIDENT", "message": "resident_id 'R11' is not enrolled."}]}
+ "errors": [{"field": "resident_id", "code": "unknown_resident", "message": "resident_id 'R11' is not enrolled."}]}
 ```
 
 (`arrival_seq` and UUID values in examples are illustrative; all other values are from SRC-05/SRC-03.)
@@ -1201,7 +1201,7 @@ components:
       required: [field, code, message]
       properties:
         field: {type: string, examples: ["records.3.loudness_dbfs"]}
-        code: {type: string, examples: ["float_parsing", "UNKNOWN_RESIDENT"]}
+        code: {type: string, description: "ingest endpoints: TRD 10 ING-023 field codes; other endpoints: Pydantic error type", examples: ["invalid_type", "unknown_resident", "float_parsing"]}
         message: {type: string}
     Problem:
       type: object

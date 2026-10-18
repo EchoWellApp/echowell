@@ -24,7 +24,7 @@ the services that are explicitly excluded.
 
 **Out of scope**
 
-- Team 1 services (device connectivity, wake word engine, feature extractor such as openSMILE) — interface only (ASM-05, OQ-07 transport).
+- Team 1 services (device connectivity, wake word engine, feature extractor such as openSMILE) — interface only (ASM-05).
 - University systems (UND IT identity, storage for backups) — referenced only (OQ-01, OQ-07).
 
 ## 3. References
