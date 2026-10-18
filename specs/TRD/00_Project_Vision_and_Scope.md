@@ -215,7 +215,7 @@ Note on BR-17 and BR-16 (D-OWNER-3, 18 Oct 2026): the hosting named in BR-17 is 
 | C-07 | Mixed-effects regression is the primary method; ML exploratory | MVP pipeline uses deterministic robust statistics and CUSUM only | SRC-14 B.2 |
 | C-08 | Cloud/edge split accepted; Team 1 owns device side | Team 1 parts described only as interfaces | SRC-14 B.2, B.3 |
 | C-09 | Public datasets for development only | Validation uses SRC-03 synthetic data, never DAIC-WOZ/E-DAIC as ground truth | SRC-14 B.2 |
-| C-10 | Architecture fixed by SRC-01 and D-OWNER-3 | Current (interim): Next.js/Netlify, FastAPI/Railway, PostgreSQL Neon/Railway, GitHub Actions. Target: AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) once the budget is approved (OQ-07) | SRC-01, D-OWNER-3 |
+| C-10 | Architecture fixed by SRC-01 and D-OWNER-3 | Current (interim): Next.js/Netlify, FastAPI/Railway, PostgreSQL Neon/Railway, GitHub Actions. Target: AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) once the budget is approved (OQ-07). Regions: Neon aws-us-east-1 and Railway US East (current), AWS us-east-1 (target) | SRC-01, D-OWNER-3, R25 |
 | C-11 | Research system, not FDA-cleared; IRB handled by faculty | Design-control-style traceability as good practice; no regulatory claims | SRC-14 |
 | C-12 | Low cost until AWS budget approval | Free or trial tiers for the interim stack (RSK-07) | SRC-01, D-OWNER-3 |
 | C-13 | Live feature data is potentially PHI-derived | Encryption in transit (TLS 1.2+ everywhere, including `sslmode=require` to PostgreSQL) and at rest (provider-managed on Neon/Railway; RDS with KMS and encrypted backups on AWS); least privilege; audit logging; no PII in logs | D-OWNER-3 |

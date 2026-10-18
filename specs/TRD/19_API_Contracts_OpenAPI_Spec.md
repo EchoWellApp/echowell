@@ -674,7 +674,9 @@ servers:
 
 ### 4.5 OpenAPI 3.1 skeleton
 
-The YAML below is committed as `docs/api_reference/openapi.yaml` and is the reference for OAS-005.
+The YAML below is the design skeleton; it is stored verbatim as `tests/fixtures/trd19_openapi_skeleton.yaml` for the
+OAS-005 contract test. The committed artefact is the generated `docs/api_reference/openapi.json`
+(`python -m backend.cli export-openapi`, contract §21 R22).
 Response components for errors are shared via `components/responses`.
 
 ```yaml
@@ -881,7 +883,9 @@ paths:
         - {$ref: "#/components/parameters/Limit"}
         - {$ref: "#/components/parameters/Offset"}
       responses:
-        "200": {description: Scored sessions, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ScoresResponse"}}}}
+        "200": {description: Scored sessions (JSON) or CSV export when Accept is text/csv (researcher, admin), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ScoresResponse"}}, text/csv: {schema: {type: string}}}}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "413": {$ref: "#/components/responses/PayloadTooLarge"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
         "422": {$ref: "#/components/responses/Unprocessable"}
@@ -899,18 +903,57 @@ paths:
         "200": {description: Alerts, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AlertList"}}}}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "422": {$ref: "#/components/responses/Unprocessable"}
-  /alerts/{id}/acknowledge:
+  /alerts/{id}/reviews:
+    get:
+      tags: [alerts]
+      operationId: listAlertReviews
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}, {$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Offset"}]
+      responses:
+        "200": {description: Reviews newest first, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AlertReviewList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
     post:
       tags: [alerts]
-      operationId: acknowledgeAlert
+      operationId: createAlertReview
       security: [{bearerAuth: []}]
       parameters: [{$ref: "#/components/parameters/IdPath"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/AlertReviewCreate"}}}}
       responses:
-        "200": {description: Acknowledged (tally and alarm unchanged), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Alert"}}}}
+        "201": {description: Review saved; alert acknowledged; tally and alarm unchanged, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AlertReview"}}}}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /alerts/{id}/snooze:
+    post:
+      tags: [alerts]
+      operationId: snoozeAlert
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}]
+      requestBody: {required: false, content: {application/json: {schema: {$ref: "#/components/schemas/SnoozeRequest"}}}}
+      responses:
+        "200": {description: Snoozed, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Alert"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /data-alerts:
+    get:
+      tags: [alerts]
+      operationId: listDataAlerts
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/DataAlertStatus"}}
+        - {name: kind, in: query, schema: {$ref: "#/components/schemas/DataAlertKind"}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Data-quality alerts for the study team, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/DataAlertList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
   /devices:
     get:
       tags: [devices]
@@ -926,7 +969,7 @@ paths:
       operationId: getAnalytics
       security: [{bearerAuth: []}]
       responses:
-        "200": {description: Summary, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AnalyticsSummary"}}}}
+        "200": {description: Summary, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AnalyticsResponse"}}}}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
   /analytics/baselines:
@@ -940,7 +983,8 @@ paths:
         - {$ref: "#/components/parameters/Limit"}
         - {$ref: "#/components/parameters/Offset"}
       responses:
-        "200": {description: Baselines, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/BaselineRowList"}}}}
+        "200": {description: Baselines (JSON) or CSV export when Accept is text/csv, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/BaselineRowList"}}, text/csv: {schema: {type: string}}}}
+        "413": {$ref: "#/components/responses/PayloadTooLarge"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "422": {$ref: "#/components/responses/Unprocessable"}
@@ -948,7 +992,7 @@ paths:
     post:
       tags: [pipeline]
       operationId: startPipelineRun
-      security: [{bearerAuth: []}]
+      security: [{bearerAuth: []}, {apiKeyAuth: []}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRunRequest"}}}}
       responses:
         "202": {description: Run started, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRunAccepted"}}}}
@@ -956,6 +1000,21 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /pipeline/runs:
+    get:
+      tags: [pipeline]
+      operationId: listPipelineRuns
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: trigger, in: query, schema: {$ref: "#/components/schemas/PipelineTrigger"}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/PipelineStatus"}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Runs newest first, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRunList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
         "422": {$ref: "#/components/responses/Unprocessable"}
   /pipeline/runs/{id}:
     get:
@@ -1086,6 +1145,24 @@ components:
     IngestSource: {type: string, enum: [api_single, api_batch, csv_upload, seed]}
     CheckinEventType: {type: string, enum: [alarm_on, watching_started, baseline_complete, baseline_restarted, set_aside, quarantined, missed, device_silent]}
     ComparisonStatus: {type: string, enum: [outside_range, within_range, not_enough_checkins]}
+    ReviewOutcome: {type: string, enum: [no_concern, known_cause, referred, data_problem]}
+    ReviewExplanationCode:
+      type: string
+      pattern: "^[a-z_]{1,40}$"
+      description: "code from config list review_explanations (OQ-25); v0.1 values cold_cough_sore_throat, dental_dentures, medication_change, poor_sleep_unusual_day, room_device_moved"
+    DataAlertKind: {type: string, enum: [baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem]}
+    DataAlertStatus: {type: string, enum: [open, resolved]}
+    Meta:
+      type: object
+      required: [facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile]
+      properties:
+        facility_name: {type: string, examples: ["Edgewood"]}
+        facility_tz: {type: string, examples: ["America/Chicago"]}
+        data_source_label: {type: string, examples: ["pipeline test data v0.1"]}
+        as_of: {type: [string, "null"], format: date-time, description: as-of of the latest succeeded pipeline run}
+        baseline_n: {type: integer, minimum: 1}
+        cusum_h: {type: number}
+        pipeline_profile: {$ref: "#/components/schemas/ConfigProfile"}
     ScoredFeatureKey:
       type: string
       enum: [loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction]
@@ -1099,8 +1176,9 @@ components:
              mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4, composite]
     PageMeta:
       type: object
-      required: [total, limit, offset]
+      required: [meta, total, limit, offset]
       properties:
+        meta: {$ref: "#/components/schemas/Meta"}
         total: {type: integer, minimum: 0}
         limit: {type: integer, minimum: 1, maximum: 500}
         offset: {type: integer, minimum: 0}
@@ -1322,9 +1400,8 @@ components:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
         - type: object
-          required: [as_of, window, summary, items]
+          required: [window, summary, items]
           properties:
-            as_of: {type: [string, "null"], format: date-time}
             window: {$ref: "#/components/schemas/DateWindow"}
             summary: {$ref: "#/components/schemas/OverviewSummary"}
             items: {type: array, items: {$ref: "#/components/schemas/ResidentOverviewRow"}}
@@ -1370,8 +1447,8 @@ components:
         baseline_n_required: {type: integer}
     ResidentDetail:
       type: object
-      required: [resident_code, cohort, resident_status, sex, enrolled_on, admitted_on, withdrawn_on, as_of, status, device,
-                 current_epoch, epoch_count, baseline, watching_since, alarm_since, open_alert_id, current_tally, cusum_h,
+      required: [meta, resident_code, cohort, resident_status, sex, enrolled_on, admitted_on, withdrawn_on, status, device,
+                 current_epoch, epoch_count, baseline, watching_since, alarm_since, open_alert_id, current_tally,
                  last_checkin_at, last_checkin_local, last_30_days, explanation]
       properties:
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
@@ -1381,18 +1458,17 @@ components:
         enrolled_on: {type: string, format: date}
         admitted_on: {type: [string, "null"], format: date}
         withdrawn_on: {type: [string, "null"], format: date}
-        as_of: {type: [string, "null"], format: date-time}
+        meta: {$ref: "#/components/schemas/Meta"}
         status: {$ref: "#/components/schemas/DisplayStatus"}
         device: {$ref: "#/components/schemas/DeviceRef"}
         current_epoch: {oneOf: [{$ref: "#/components/schemas/EpochInfo"}, {type: "null"}]}
         epoch_count: {type: integer, minimum: 0}
         baseline: {$ref: "#/components/schemas/BaselineInfo"}
-        watching_since: {type: [string, "null"], format: date, description: local date of first scored session in current epoch}
+        watching_since: {type: [string, "null"], format: date, description: "local date of first scored session in current epoch; before any, the local date after the freeze session"}
         alarm_since: {type: [string, "null"], format: date}
         open_alert_id: {type: [string, "null"], format: uuid}
         current_tally: {type: [number, "null"]}
-        cusum_h: {type: number}
-        last_checkin_at: {type: [string, "null"], format: date-time}
+        last_checkin_at: {type: [string, "null"], format: date-time, description: latest non-duplicate record of any status}
         last_checkin_local: {type: [string, "null"], format: date-time}
         last_30_days: {$ref: "#/components/schemas/Last30Days"}
         explanation: {$ref: "#/components/schemas/Explanation"}
@@ -1409,7 +1485,7 @@ components:
     CheckinEventList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
-        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/CheckinEvent"}}}}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/CheckinEvent"}}}}
     FeaturePoint:
       type: object
       required: [session_id, local_date, is_morning, raw_value, adjusted_value, z, in_baseline]
@@ -1434,11 +1510,11 @@ components:
         points: {type: array, items: {$ref: "#/components/schemas/FeaturePoint"}}
     FeaturesResponse:
       type: object
-      required: [resident_code, epoch_number, as_of, scored_features, stored_feature_keys]
+      required: [meta, resident_code, epoch_number, scored_features, stored_feature_keys]
       properties:
+        meta: {$ref: "#/components/schemas/Meta"}
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
         epoch_number: {type: [integer, "null"]}
-        as_of: {type: [string, "null"], format: date-time}
         scored_features: {type: array, minItems: 7, maxItems: 7, items: {$ref: "#/components/schemas/FeatureSeries"}}
         stored_feature_keys: {type: array, minItems: 12, maxItems: 12, items: {$ref: "#/components/schemas/FeatureKey"}}
 
@@ -1483,31 +1559,87 @@ components:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
         - type: object
-          required: [cusum_h, cusum_k, baseline_periods, items]
+          required: [cusum_k, baseline_periods, items]
           properties:
-            cusum_h: {type: number, examples: [5.0]}
             cusum_k: {type: number, examples: [0.5]}
             baseline_periods: {type: array, items: {$ref: "#/components/schemas/BaselinePeriod"}}
             items: {type: array, items: {$ref: "#/components/schemas/ScoreRow"}}
     Alert:
       type: object
-      required: [id, resident_code, epoch_number, session_id, triggered_at, local_date, cusum_value, status, closed_reason, acknowledged_by, acknowledged_at]
+      required: [id, resident_code, device_code, epoch_number, session_id, triggered_at, local_date, cusum_value, current_tally, open_days,
+                 status, reviewed, review_count, last_reviewed_at, snoozed_until, snoozed_by, leaning_most, closed_reason]
       properties:
-        id: {type: string, format: uuid}
+        id: {type: string, format: uuid, description: stable across rebuilds (upsert key epoch_id + session_id)}
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        device_code: {type: [string, "null"]}
         epoch_number: {type: integer}
         session_id: {$ref: "#/components/schemas/SessionId"}
         triggered_at: {type: string, format: date-time}
         local_date: {type: string, format: date}
-        cusum_value: {type: number}
+        cusum_value: {type: number, description: tally at first crossing}
+        current_tally: {type: [number, "null"], description: cusum_state.current_tally of the alert's epoch}
+        open_days: {type: integer, minimum: 0, description: as-of local date minus local_date}
         status: {$ref: "#/components/schemas/AlertStatus"}
+        reviewed: {type: boolean, description: true when status is acknowledged}
+        review_count: {type: integer, minimum: 0}
+        last_reviewed_at: {type: [string, "null"], format: date-time}
+        snoozed_until: {type: [string, "null"], format: date-time}
+        snoozed_by: {type: [string, "null"], format: uuid}
+        leaning_most: {type: array, maxItems: 3, items: {$ref: "#/components/schemas/ScoredFeatureKey"}}
         closed_reason: {type: [string, "null"], examples: ["epoch ended"]}
-        acknowledged_by: {type: [string, "null"], format: uuid}
-        acknowledged_at: {type: [string, "null"], format: date-time}
     AlertList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
         - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/Alert"}}}}
+    AlertReviewCreate:
+      type: object
+      additionalProperties: false
+      required: [outcome]
+      properties:
+        explanations: {type: array, maxItems: 5, uniqueItems: true, default: [], items: {$ref: "#/components/schemas/ReviewExplanationCode"}}
+        outcome: {$ref: "#/components/schemas/ReviewOutcome"}
+        note: {type: [string, "null"], maxLength: 2000}
+    AlertReview:
+      type: object
+      required: [id, alert_id, reviewer, explanations, outcome, note, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        alert_id: {type: string, format: uuid}
+        reviewer:
+          type: object
+          required: [id, display_name]
+          properties: {id: {type: string, format: uuid}, display_name: {type: string}}
+        explanations: {type: array, items: {$ref: "#/components/schemas/ReviewExplanationCode"}}
+        outcome: {$ref: "#/components/schemas/ReviewOutcome"}
+        note: {type: [string, "null"]}
+        created_at: {type: string, format: date-time}
+    AlertReviewList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/AlertReview"}}}}
+    SnoozeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        hours: {type: integer, minimum: 1, maximum: 168, default: 24}
+    DataAlert:
+      type: object
+      required: [id, kind, resident_code, device_code, title, detail, status, first_detected_at, last_detected_at, pipeline_run_id]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {$ref: "#/components/schemas/DataAlertKind"}
+        resident_code: {type: [string, "null"]}
+        device_code: {type: [string, "null"]}
+        title: {type: string, examples: ["R08 · baseline stuck at 13 of 16"]}
+        detail: {type: string, examples: ["12 missed and 5 set aside in 30 days"]}
+        status: {$ref: "#/components/schemas/DataAlertStatus"}
+        first_detected_at: {type: string, format: date-time}
+        last_detected_at: {type: string, format: date-time}
+        pipeline_run_id: {type: [string, "null"], format: uuid}
+    DataAlertList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/DataAlert"}}}}
     StaffNoteCreate:
       type: object
       additionalProperties: false
@@ -1516,11 +1648,10 @@ components:
         note_type: {$ref: "#/components/schemas/NoteType"}
         body: {type: string, minLength: 1, maxLength: 2000}
         alert_id: {type: [string, "null"], format: uuid}
-        mark_reviewed: {type: boolean, default: false}
         supersedes_id: {type: [string, "null"], format: uuid}
     StaffNote:
       type: object
-      required: [id, resident_code, alert_id, author, note_type, body, marked_reviewed, supersedes_id, created_at]
+      required: [id, resident_code, alert_id, author, note_type, body, supersedes_id, created_at]
       properties:
         id: {type: string, format: uuid}
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
@@ -1531,7 +1662,6 @@ components:
           properties: {id: {type: string, format: uuid}, display_name: {type: string}}
         note_type: {$ref: "#/components/schemas/NoteType"}
         body: {type: string}
-        marked_reviewed: {type: boolean}
         supersedes_id: {type: [string, "null"], format: uuid}
         created_at: {type: string, format: date-time}
     StaffNoteList:
@@ -1561,7 +1691,7 @@ components:
     DeviceList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
-        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/Device"}}}}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/Device"}}}}
 
     # ---------- analytics and pipeline ----------
     StatusCountsRow:
@@ -1640,46 +1770,128 @@ components:
       type: object
       required: [pipeline_run_id]
       properties: {pipeline_run_id: {type: string, format: uuid}}
-    AnalyticsSummary:
+    PipelineRunList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/PipelineRun"}}}}
+    CountOfExpected:
       type: object
-      required: [as_of, window, pipeline_run, status_totals, status_counts, resident_outcomes, funnel, set_aside_reasons, daily_counts]
+      required: [count, expected, percent]
       properties:
-        as_of: {type: [string, "null"], format: date-time}
-        window: {$ref: "#/components/schemas/DateWindow"}
-        pipeline_run: {oneOf: [{$ref: "#/components/schemas/PipelineRun"}, {type: "null"}]}
-        status_totals: {$ref: "#/components/schemas/StatusTotals"}
-        funnel:
+        count: {type: integer}
+        expected: {type: integer}
+        percent: {type: integer, minimum: 0, maximum: 100, description: rounded half-up}
+    AnalyticsKpis:
+      type: object
+      required: [checkins_received, used_for_scoring, baselines_formed, alarms_raised]
+      properties:
+        checkins_received: {$ref: "#/components/schemas/CountOfExpected"}
+        used_for_scoring: {$ref: "#/components/schemas/CountOfExpected"}
+        baselines_formed:
           type: object
-          description: check-in funnel over the window (Analytics wireframe "Where check-ins are lost")
-          required: [expected, received, duplicates_removed, missed, passed_quality, used]
+          required: [formed, residents, forming_resident_codes, restarts]
           properties:
-            expected: {type: integer, description: resident-days in window for enrolled residents}
-            received: {type: integer, description: non-duplicate arrivals}
-            duplicates_removed: {type: integer}
-            missed: {type: integer, description: missing_resident + missing_device_gap}
-            passed_quality: {type: integer, description: received minus set_aside}
-            used: {type: integer, description: usable}
+            formed: {type: integer}
+            residents: {type: integer}
+            forming_resident_codes: {type: array, items: {$ref: "#/components/schemas/ResidentCode"}}
+            restarts:
+              type: array
+              items:
+                type: object
+                required: [resident_code, restart_count]
+                properties: {resident_code: {$ref: "#/components/schemas/ResidentCode"}, restart_count: {type: integer, minimum: 1}}
+        alarms_raised:
+          type: object
+          required: [count, resident_codes, not_reviewed_count]
+          properties:
+            count: {type: integer}
+            resident_codes: {type: array, items: {$ref: "#/components/schemas/ResidentCode"}}
+            not_reviewed_count: {type: integer}
+    DailySeriesPoint:
+      type: object
+      required: [local_date, used, set_aside, quarantined, missed, silent_device_codes]
+      properties:
+        local_date: {type: string, format: date}
+        used: {type: integer}
+        set_aside: {type: integer}
+        quarantined: {type: integer}
+        missed: {type: integer}
+        silent_device_codes: {type: array, items: {$ref: "#/components/schemas/DeviceCode"}}
+    Funnel:
+      type: object
+      required: [expected, residents, days, received, missed, duplicates_removed, passed_quality, set_aside, set_aside_reasons, set_aside_multi_reason, quarantined, used]
+      properties:
+        expected: {type: integer, description: sum over residents of enrolled days in period}
+        residents: {type: integer}
+        days: {type: integer}
+        received: {type: integer, description: non-duplicate records}
+        missed: {type: integer}
+        duplicates_removed: {type: integer}
+        passed_quality: {type: integer}
+        set_aside: {type: integer}
         set_aside_reasons:
           type: object
-          description: count of set-aside sessions per reason; one session may count under several reasons
           required: [quality_flag_poor, noise_above_limit, speech_too_short]
           properties:
             quality_flag_poor: {type: integer}
             noise_above_limit: {type: integer}
             speech_too_short: {type: integer}
-        daily_counts:
-          type: array
-          items:
-            type: object
-            required: [local_date, used, set_aside, quarantined, missed]
-            properties:
-              local_date: {type: string, format: date}
-              used: {type: integer}
-              set_aside: {type: integer}
-              quarantined: {type: integer}
-              missed: {type: integer}
+        set_aside_multi_reason: {type: integer, description: set-aside sessions with more than one reason}
+        quarantined: {type: integer}
+        used: {type: integer}
+    ByResidentRow:
+      type: object
+      required: [resident_code, days, used_days, set_aside_or_quarantined_days, missed_days, used_percent]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        days: {type: integer}
+        used_days: {type: integer}
+        set_aside_or_quarantined_days: {type: integer}
+        missed_days: {type: integer}
+        used_percent: {type: integer, minimum: 0, maximum: 100}
+    AlarmTimingRow:
+      type: object
+      required: [resident_code, planted_change, change_began, alarm_rang, delay_days, result]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        planted_change: {type: string, examples: ["Sudden step", "Slow drift", "None"]}
+        change_began: {type: [string, "null"], format: date}
+        alarm_rang: {type: [string, "null"], format: date}
+        delay_days: {type: [integer, "null"]}
+        result: {type: string, enum: [detected, missed, correct_no_alarm, false_alarm]}
+    ReviewOutcomes:
+      type: object
+      required: [alarms_raised, reviewed, by_outcome]
+      properties:
+        alarms_raised: {type: integer}
+        reviewed: {type: integer}
+        by_outcome:
+          type: object
+          required: [no_concern, known_cause, referred, data_problem]
+          properties:
+            no_concern: {type: integer}
+            known_cause: {type: integer}
+            referred: {type: integer}
+            data_problem: {type: integer}
+    AnalyticsResponse:
+      type: object
+      required: [meta, period, kpis, daily_series, funnel, by_resident, alarm_timing, review_outcomes, status_totals, status_counts, resident_outcomes, pipeline_run]
+      properties:
+        meta: {$ref: "#/components/schemas/Meta"}
+        period:
+          type: object
+          required: [from, to, days]
+          properties: {from: {type: string, format: date}, to: {type: string, format: date}, days: {type: integer}}
+        kpis: {$ref: "#/components/schemas/AnalyticsKpis"}
+        daily_series: {type: array, items: {$ref: "#/components/schemas/DailySeriesPoint"}}
+        funnel: {$ref: "#/components/schemas/Funnel"}
+        by_resident: {type: array, items: {$ref: "#/components/schemas/ByResidentRow"}}
+        alarm_timing: {type: [array, "null"], items: {$ref: "#/components/schemas/AlarmTimingRow"}, description: test_v0_1 profile only}
+        review_outcomes: {oneOf: [{$ref: "#/components/schemas/ReviewOutcomes"}, {type: "null"}], description: production profile only}
+        status_totals: {$ref: "#/components/schemas/StatusTotals"}
         status_counts: {type: array, items: {$ref: "#/components/schemas/StatusCountsRow"}}
         resident_outcomes: {type: array, items: {$ref: "#/components/schemas/ResidentOutcome"}}
+        pipeline_run: {oneOf: [{$ref: "#/components/schemas/PipelineRun"}, {type: "null"}]}
     BaselineRow:
       type: object
       required: [resident_code, epoch_number, device_code, feature_key, n_sessions, first_session_id, frozen_after_session_id, median, mad, robust_spread, floor_applied]
@@ -1713,7 +1925,7 @@ components:
     AdmissionList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
-        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/AdmissionRow"}}}}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/AdmissionRow"}}}}
     ReferenceRange:
       type: object
       required: [feature_key, low, high, method, n_residents, computed_at, pipeline_run_id]
@@ -1731,8 +1943,9 @@ components:
         - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/ReferenceRange"}}}}
     AdmissionComparison:
       type: object
-      required: [resident_code, comparison_status, features]
+      required: [meta, resident_code, comparison_status, features]
       properties:
+        meta: {$ref: "#/components/schemas/Meta"}
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
         comparison_status: {$ref: "#/components/schemas/ComparisonStatus"}
         features:
@@ -1766,8 +1979,8 @@ components:
 
 ## 7. Acceptance Criteria
 
-- AC-OAS-01: `docs/api_reference/openapi.yaml` validates with `openapi-spec-validator` as OpenAPI 3.1.
-- AC-OAS-02: The contract test (OAS-005) passes with zero differences between the committed YAML and `/api/v1/openapi.json`.
+- AC-OAS-01: `docs/api_reference/openapi.json` and the §4.5 skeleton both validate with `openapi-spec-validator` as OpenAPI 3.1.
+- AC-OAS-02: The contract test (OAS-005) passes: the regenerated schema equals the committed `docs/api_reference/openapi.json`, and it matches the §4.5 skeleton.
 - AC-OAS-03: Every response captured by the integration suite validates against its declared schema (OAS-006), including all Problem responses.
 - AC-OAS-04: Each JSON example in §4.3 validates against its schema (OAS-015).
 - AC-OAS-05: On the test_v0_1 data, the assertions OAS-021..OAS-024 pass with tolerance 1e-6 for numbers and exact match for strings/enums.
@@ -1786,13 +1999,16 @@ components:
   `openapi_extra={"requestBody": {...}}` so the generated document still matches.
 - `ScoreRow.z` holds unsigned z as in SRC-03 Exp_scores; do not multiply by sign before returning.
 - The SRC-03 Exp_scores `alarm` column values map: "off" → `off`, "RINGS (first crossing)" → `rings`, "on" → `on`.
-- Keep the YAML in `docs/api_reference/openapi.yaml` and the human summary in `docs/api_reference.md`.
+- Commit the generated `docs/api_reference/openapi.json` (via `python -m backend.cli export-openapi`) and the human summary in `docs/api_reference.md`; the skeleton YAML lives in `tests/fixtures/trd19_openapi_skeleton.yaml`.
+- CSV export: implement with `StreamingResponse` and `csv.writer`; choose the representation in the handler from `request.headers["accept"]` and declare both media types via `responses=` so the generated schema matches OAS-018.
+- `meta` is produced by one `get_meta()` dependency (TRD 05 API-057) and injected into every DTO listed in OAS-017.
 
 ## 9. Open Questions
 
 - OQ-03 Feature key names are placeholders; renaming will change `FeatureKey` values only through a v2 or a mapping (see TRD 10).
 - OQ-04 `phrase_id` required status.
-- OQ-05 Review/tally reset: `POST /alerts/{id}/acknowledge` documents that tally and alarm are unchanged.
+- OQ-05 Review/tally reset: `POST /alerts/{id}/reviews` documents that tally and alarm are unchanged.
+- OQ-24 Data-alert thresholds; OQ-25 review explanation list (`ReviewExplanationCode` is config-driven); OQ-26 who may review and how soon.
 - OQ-08 Facility norm definition (`ReferenceRange.method`, `ComparisonStatus` thresholds).
 - OQ-12 Final "What this means" wording (only structured `Explanation` facts are returned).
 - OQ-14 Speaker verification confidence field (not in schema v0.1; adding it is a schema_version change).

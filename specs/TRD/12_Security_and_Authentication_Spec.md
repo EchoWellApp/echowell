@@ -33,7 +33,7 @@ not defined); the offline mixed-effects research analysis environment (governed 
 | SRC-05 | Pipeline test input CSV (synthetic data permitted on the interim stack) |
 | SRC-07 | Preprint (https://preprints.jmir.org/preprint/113062): device captures a short fixed phrase; features only |
 | SRC-14 | Team 2 PRD Guide Part B (raw audio never leaves the room; no LLMs) |
-| Contract §12, §18 | Security baseline; owner decisions D-OWNER-2, D-OWNER-3, D-OWNER-4 |
+| Contract §12, §18–§21 | Security baseline; owner decisions D-OWNER-1..4; wireframe additions (SRC-18 Alert review, SRC-19 Analytics); reconciliation R1–R26 |
 | TRD 05 | Backend API (dependencies, error codes, rate limits, middleware) |
 | TRD 06 / TRD 20 | Database design and DDL (roles, triggers) |
 | TRD 15 / TRD 16 | Deployment and CI/CD (secrets, scanning jobs) |
@@ -61,7 +61,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | T-04 | Tampering | Modification or deletion of raw records to alter results | B4 / A1, A7 | Immutable `raw_sessions` (trigger + grants), app role without UPDATE/DELETE (SEC-110..SEC-114) |
 | T-05 | Tampering | Data altered in transit | B1–B4 | TLS 1.2+ everywhere incl. `sslmode=require`, HSTS (SEC-060..SEC-066) |
 | T-06 | Tampering | Malicious dependency or CI workflow change | B5 | Dependabot, pip-audit, npm audit, pinned actions, protected `main` (SEC-150..SEC-156) |
-| T-07 | Repudiation | Staff deny acknowledging an alert or writing a note | A5 | Append-only audit log with actor, request ID, IP (SEC-100..SEC-108) |
+| T-07 | Repudiation | Staff deny reviewing an alarm or writing a note | A5 | Append-only audit log with actor, request ID, IP (SEC-100..SEC-108) |
 | T-08 | Information disclosure | Resident data exposed to unauthorised users | B3 / A1, A2 | Authentication on every data endpoint, role matrix, CORS allow-list, no PII (SEC-040..SEC-046, SEC-120..SEC-127) |
 | T-09 | Information disclosure | Secrets committed to the repository or printed in logs | A3, A4, A6 | Platform secret stores, gitignored `.env`, secret scanning, log redaction (SEC-050..SEC-058, SEC-107) |
 | T-10 | Information disclosure | Verbose errors reveal internals | B3 | Problem responses without stack traces (SEC-085) |
@@ -70,6 +70,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | T-13 | Denial of service | Request floods or oversized bodies exhaust free-tier resources (RSK-07) | B1, B3 | Rate limits, body-size limits, batch limits (SEC-090..SEC-094) |
 | T-14 | Elevation of privilege | Clinician/researcher calls admin endpoints, or API key reads data | B3 | Server-side role checks from DB, API keys limited to `ingest:write` (SEC-040..SEC-046) |
 | T-15 | Elevation of privilege | SQL injection | B4 | SQLAlchemy bound parameters only; no string-built SQL (SEC-083) |
+| T-17 | Tampering | Pipeline tuned against the answer key (evaluation data leaks into the analytics) | A7 | `evaluation_ground_truth` not readable by `echowell_app`; only the `evaluation_alarm_timing` view is exposed to the analytics endpoint (SEC-114) |
 | T-16 | Information disclosure | Audio smuggled into the cloud via extra fields | B1 | `extra="forbid"`, 64 KB body limit, no audio media types, no audio endpoints (SEC-080..SEC-082, SEC-121) |
 
 ### 4.2 Data classification and hosting (owner decisions D-OWNER-3, D-OWNER-4)
@@ -86,6 +87,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | SEC-003 | Team 2 shall not issue interim-stack API keys to devices deployed at Edgewood; interim-stack API keys shall be bound to test devices or used only by test harnesses. | Must | D-OWNER-4 | Inspection |
 | SEC-004 | On the interim stack, DATA_SOURCE_LABEL shall name the synthetic/test source (for example "pipeline test data v0.1") and the frontend header shall display it on every page. | Must | D-OWNER-4, contract §11 | Demo |
 | SEC-005 | The go-live checklist (TRD 15) shall include a signed-off item "hosting approved for PHI-derived data (AWS)" by the PI and UND IT before any live device is pointed at the API. | Must | D-OWNER-3, D-OWNER-4 | Inspection |
+| SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Railway US East, AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
 | SEC-006 | Application code shall remain portable to AWS (App Runner, Amplify, RDS PostgreSQL, KMS, Secrets Manager, CloudWatch) with configuration changes only: no Railway-, Netlify- or Neon-specific SDKs in application code. | Must | D-OWNER-3, SRC-01 | Inspection |
 
 ### 4.3 Authentication: dashboard users
@@ -105,14 +107,14 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> [--device <device_code>]`. | Must | contract §12 | Test |
+| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> --scope <ingest:write|pipeline:run> [--device <device_code>]`. | Must | contract §12, §21 R18 | Test |
 | SEC-021 | Only the SHA-256 hex digest of the key shall be stored (`api_keys.key_hash`, unique); the plaintext key shall be printed once by the CLI and never stored, logged or retrievable. | Must | contract §12 | Test |
-| SEC-022 | Every API key shall have `scopes` = `["ingest:write"]`; no other scope exists in the MVP. | Must | contract §9 | Inspection |
+| SEC-022 | Every API key shall carry exactly one scope: `ingest:write` (devices, test harnesses) or `pipeline:run` (the AWS EventBridge scheduler calling `POST /pipeline/run`); a key used on an endpoint outside its scope receives 403 `FORBIDDEN`. No other scopes exist in the MVP. | Must | contract §9, §21 R18 | Test |
 | SEC-023 | A key used by a device in a deployment shall be bound to that device (`api_keys.device_id`), and a record from another device shall be refused with 403 `DEVICE_KEY_MISMATCH` (TRD 05 API-040). Unbound keys are permitted only for test harnesses and the seed/CI pipeline. | Must | T-01 | Test |
 | SEC-024 | `python -m backend.cli revoke-api-key --name <name>` shall set `active=false`; revoked keys shall be rejected with 401 `API_KEY_INVALID` on the next request. | Must | T-01 | Test |
 | SEC-025 | `api_keys.last_used_at` shall be updated at most once per minute per key. | Should | TRD 17 | Test |
 | SEC-026 | API keys shall be accepted only in the `X-API-Key` header, never in query strings or bodies. | Must | T-09 | Test |
-| SEC-027 | API keys shall be rejected on every endpoint except `POST /api/v1/sessions` and `POST /api/v1/ingest`. | Must | T-14 | Test |
+| SEC-027 | API keys shall be rejected (401) on every endpoint except `POST /api/v1/sessions`, `POST /api/v1/ingest` (scope `ingest:write`) and `POST /api/v1/pipeline/run` (scope `pipeline:run`). | Must | T-14, contract §21 R18 | Test |
 
 ### 4.5 Tokens and session expiry
 
@@ -121,7 +123,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | SEC-030 | Access tokens shall be JWTs signed with HS256 using JWT_SECRET via PyJWT 2.x; decoding shall pass `algorithms=["HS256"]` explicitly so `none` and other algorithms are rejected. | Must | contract §12 | Test |
 | SEC-031 | Token claims shall be `sub` (user UUID), `role`, `iat`, `exp`, `jti` (UUID4), `iss`="echowell-api", `aud`="echowell-dashboard"; `iss`, `aud`, `exp` shall be verified on every request. | Must | T-03 | Test |
 | SEC-032 | Token lifetime shall be JWT_EXPIRES_MINUTES (default 60, maximum 60 in staging and production); there shall be no refresh tokens in the MVP; after expiry the user logs in again. | Must | contract §12, §13 | Test |
-| SEC-033 | The backend shall refuse to start when APP_ENV is `staging` or `production` and JWT_SECRET is shorter than 32 bytes or equals any value found in the repository (e.g. `.env.example`). | Must | T-03 | Test |
+| SEC-033 | The backend shall refuse to start when APP_ENV is `staging` or `production` and JWT_SECRET is shorter than 32 bytes or equals any value found in the repository (e.g. `.env.example`), and when APP_ENV is `production` and PIPELINE_PROFILE is `test_v0_1` or PIPELINE_AS_OF is set. | Must | T-03, D-OWNER-2, contract §21 R21 | Test |
 | SEC-034 | Authorisation decisions shall use the role and `active` flag read from the `users` table on each request, so role changes and deactivation take effect on the next request; the `role` claim is informational only. | Must | T-14 | Test |
 | SEC-035 | Rotating JWT_SECRET shall invalidate all issued tokens; this is the emergency revocation mechanism (SEC-170). | Must | T-03 | Test |
 | SEC-036 | `POST /auth/logout` shall be audited; the frontend shall delete the token on logout and on any 401 response. | Must | contract §12 | Test |
@@ -141,22 +143,27 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 | POST /auth/login | Y | Y | Y | Y | — |
 | POST /auth/logout | — | Y | Y | Y | — |
 | GET /auth/me | — | Y | Y | Y | — |
-| POST /sessions | — | — | — | — | Y |
-| POST /ingest | — | Y | — | — | Y |
+| POST /sessions | — | — | — | — | Y (scope `ingest:write`) |
+| POST /ingest | — | Y | — | — | Y (scope `ingest:write`) |
 | GET /ingest/batches/{id} | — | Y | — | Y | — |
 | GET /residents | — | Y | Y | Y | — |
 | GET /residents/{resident_code} | — | Y | Y | Y | — |
 | GET /residents/{resident_code}/checkins | — | Y | Y | Y | — |
 | GET /residents/{resident_code}/features | — | Y | Y | Y | — |
-| GET /scores | — | Y | Y | Y | — |
+| GET /scores (JSON) | — | Y | Y | Y | — |
+| GET /scores (`Accept: text/csv`) | — | Y | — | Y | — |
 | GET /alerts | — | Y | Y | Y | — |
-| POST /alerts/{id}/acknowledge | — | Y | Y | — | — |
+| POST /alerts/{id}/reviews | — | Y | Y | — | — |
+| GET /alerts/{id}/reviews | — | Y | Y | Y | — |
+| POST /alerts/{id}/snooze | — | Y | Y | — | — |
+| GET /data-alerts | — | Y | Y | Y | — |
 | GET /residents/{resident_code}/notes | — | Y | Y | Y | — |
 | POST /residents/{resident_code}/notes | — | Y | Y | — | — |
 | GET /devices | — | Y | Y | Y | — |
 | GET /analytics | — | Y | — | Y | — |
-| GET /analytics/baselines | — | Y | — | Y | — |
-| POST /pipeline/run | — | Y | — | — | — |
+| GET /analytics/baselines (JSON or `Accept: text/csv`) | — | Y | — | Y | — |
+| POST /pipeline/run | — | Y | — | — | Y (scope `pipeline:run` only) |
+| GET /pipeline/runs | — | Y | — | Y | — |
 | GET /pipeline/runs/{id} | — | Y | — | Y | — |
 | GET /admissions | — | Y | Y | Y | — |
 | GET /admissions/{resident_code}/comparison | — | Y | Y | Y | — |
@@ -171,9 +178,9 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 | SEC-040 | Every endpoint shall enforce the role matrix above on the server through the TRD 05 dependencies; frontend hiding of controls is a convenience, not a control. | Must | BR-16, T-14 | Test |
 | SEC-041 | An automated test shall exercise every (endpoint × credential type) cell of the matrix and assert the allowed status or 401/403. | Must | BR-16 | Test |
 | SEC-042 | A route without an explicit auth dependency shall fail the test `tests/integration/test_auth_coverage.py`, which enumerates `app.routes` and allows only `/health`, `/auth/login` and `/openapi.json` (plus `/docs` outside production) to be anonymous. | Must | T-14 | Test |
-| SEC-043 | The frontend shall show the `/admin` route and admin navigation only to admins, and the "Mark as reviewed" control and note form only to clinicians and admins. | Must | TRD 04 | Test |
+| SEC-043 | The frontend shall show the `/admin` route only to admins, the "Analytics" navigation and `/analytics` page only to researchers and admins, and the alarm review form ("Save review", "Remind me in 24 h", Resident detail "Mark as reviewed") and the staff-note form only to clinicians and admins. | Must | TRD 04, SRC-18, SRC-19 | Test |
 | SEC-044 | Users shall not be able to change their own role or deactivate themselves via `PATCH /users/{id}`; the request returns 403 `FORBIDDEN`. | Must | T-14 | Test |
-| SEC-045 | Researchers shall have read-only access in the API; no researcher action shall create, update or acknowledge any record. | Must | BR-16 | Test |
+| SEC-045 | Researchers shall have read-only access in the API (including CSV export); no researcher action shall create, update, review or snooze any record. | Must | BR-16 | Test |
 | SEC-046 | Accounts shall be granted only to personnel listed on the IRB-approved protocol (verified by the admin before `POST /users`), and accounts of people leaving the study shall be deactivated within 1 working day of notice. | Must | BR-16, OQ-11 | Inspection |
 
 ### 4.7 Secrets management
@@ -266,9 +273,11 @@ Audit events (`audit_logs.action`):
 | auth.login.failed | system | user / user id or null | {"email": "<as entered, lower-cased>", "reason": "invalid_credentials" \| "locked" \| "rate_limited"} |
 | auth.logout | user | user / user id | {} |
 | ingest.batch.received | api_key or user | ingest_batch / batch id | {"source", "record_count", "accepted", "rejected", "duplicates"} |
-| note.created | user | staff_note / note id | {"resident_code", "note_type", "alert_id", "marked_reviewed", "supersedes_id"} |
-| alert.acknowledged | user | alert / alert id | {"resident_code", "previous_status"} |
-| pipeline.run.started | user or system | pipeline_run / run id | {"trigger", "scope", "profile"} |
+| note.created | user | staff_note / note id | {"resident_code", "note_type", "alert_id", "supersedes_id"} (never the note body) |
+| alert.reviewed | user | alert / alert id | {"resident_code", "review_id", "outcome", "explanation_count", "previous_status"} (never the note text) |
+| alert.snoozed | user | alert / alert id | {"resident_code", "hours", "snoozed_until"} |
+| export.csv | user | route / route template | {"filters": {...}, "row_count"} |
+| pipeline.run.started | user, api_key or system | pipeline_run / run id | {"trigger", "scope", "profile"} |
 | pipeline.run.finished | system | pipeline_run / run id | {"status", "duration_ms", "warning_count"} |
 | config.changed | user or system | config_parameter / "<profile>:<key>" or secret name | {"old": value, "new": value} for parameters; {"rotated": true} for secrets |
 | user.created | user | user / user id | {"role"} |
@@ -281,7 +290,7 @@ Audit events (`audit_logs.action`):
 |---|---|---|---|---|
 | SEC-100 | Every event in the table above shall write exactly one `audit_logs` row with `occurred_at` (UTC), `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `details`, `ip`, `request_id`. | Must | contract §9, §12, BR-16 | Test |
 | SEC-101 | The audit row shall be written in the same database transaction as the change it records, so that a rolled-back change leaves no audit row and a committed change always has one. | Must | T-07 | Test |
-| SEC-102 | `audit_logs` shall be append-only: a trigger `audit_logs_no_update_delete` shall raise an exception on UPDATE or DELETE, and `echowell_app` shall have only INSERT and SELECT on it. TRUNCATE shall be revoked from all non-owner roles. | Must | contract §12, T-04, T-07 | Test |
+| SEC-102 | `audit_logs` shall be append-only: a trigger `audit_logs_no_update_delete` shall raise an exception on UPDATE or DELETE, and `echowell_app` shall have only INSERT and SELECT on it. TRUNCATE shall be revoked from all non-owner roles. The same trigger and grants apply to `raw_sessions`, `alert_reviews` and `staff_notes`. | Must | contract §12, §21 R20, T-04, T-07 | Test |
 | SEC-103 | CLI actions (create-user, create-api-key, revoke-api-key) shall write audit rows with `actor_type`=`system` and `details.operator` = the OS user name running the CLI. | Must | T-07 | Test |
 | SEC-104 | Audit `details` shall never contain passwords, password hashes, tokens, API keys, DATABASE_URL, request bodies of ingest calls, or feature values. | Must | BR-16, T-09 | Test |
 | SEC-105 | Admins and researchers shall be able to read audit logs only through the `echowell_readonly` database role in the MVP; there is no audit-log API endpoint. | Must | BR-16 | Inspection |
@@ -293,17 +302,17 @@ Audit events (`audit_logs.action`):
 
 | Role | Purpose | Privileges |
 |---|---|---|
-| echowell_migrator | Alembic migrations (CI deploy step only) | Owner of schema `public` and all objects; DDL |
-| echowell_app | FastAPI backend and nightly job | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`; SELECT, INSERT, UPDATE, DELETE on derived and mutable tables (`processed_sessions`, `day_ledger`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `facility_reference_ranges`, `pipeline_runs`, `ingest_batches`, `users`, `api_keys`, `config_parameters`, `residents`, `devices`, `device_assignments`, `facilities`); USAGE on sequences; no DDL, no TRUNCATE |
-| echowell_readonly | Researchers' offline analysis, audit review | SELECT on all tables except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
+| echowell_migrator | Alembic migrations (CI deploy step only), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL; owner of view `evaluation_alarm_timing` |
+| echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `alert_reviews`; SELECT on view `evaluation_alarm_timing`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE, DELETE on derived and mutable tables (`processed_sessions`, `day_ledger`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `data_alerts`, `facility_reference_ranges`, `pipeline_runs`, `ingest_batches`, `users`, `api_keys`, `config_parameters`, `residents`, `devices`, `device_assignments`, `facilities`); USAGE on sequences; no DDL, no TRUNCATE |
+| echowell_readonly | Researchers' offline analysis, audit review, exports | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-110 | The three roles above shall be created by the first Alembic migration (or a bootstrap SQL script run by the database owner) with the listed privileges, in every environment. | Must | contract §12 | Test |
-| SEC-111 | The backend and nightly job DATABASE_URL shall use `echowell_app`; only the CI migration step shall use `echowell_migrator`. | Must | contract §12 | Inspection |
+| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only the CI migration step shall use DATABASE_MIGRATION_URL as `echowell_migrator`; DATABASE_MIGRATION_URL shall not be set on the Railway web or cron services. | Must | contract §12, §21 R20 | Inspection |
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
-| SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions` and `audit_logs` fail. | Must | T-04 | Test |
+| SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` fail and that `SELECT * FROM evaluation_ground_truth` fails with a permission error. | Must | T-04, contract §21 R20 | Test |
 | SEC-115 | The Neon/RDS owner (superuser-equivalent) credentials shall be held only by the Team 2 DevOps lead and the PI's designated deputy and shall not be used by applications. | Must | T-09 | Inspection |
 
 ### 4.14 Privacy and data minimisation
@@ -340,7 +349,7 @@ Audit events (`audit_logs.action`):
 | SEC-160 | On the interim stack, Neon point-in-time restore (history retention as provided by the Neon plan in use, recorded in TRD 22) shall be the backup mechanism; because the interim stack holds synthetic/test data only (SEC-001), data can also be regenerated from the SRC-05 input and seeds. | Must | D-OWNER-4, SRC-02 | Inspection |
 | SEC-161 | On AWS, RDS automated backups shall be enabled with at least 7 days retention, encrypted with the KMS key (SEC-063), and deletion protection enabled. | Must | D-OWNER-3 | Inspection |
 | SEC-162 | A restore drill (restore to a new branch/instance, run `GET /health` and the R01–R10 validation against it) shall be performed before go-live and every 6 months thereafter. | Should | TRD 13 | Demo |
-| SEC-163 | Because derived tables are rebuildable from `raw_sessions` (SRC-02), recovery shall restore `raw_sessions`, reference tables, `staff_notes`, `alerts` acknowledgements, `users`, `api_keys` and `audit_logs`, then run a full pipeline. | Must | BR-02, SRC-02 | Demo |
+| SEC-163 | Because derived tables are rebuildable from `raw_sessions` (SRC-02), recovery shall restore `raw_sessions`, reference tables, `staff_notes`, `alerts` (status, snoozes), `alert_reviews`, `users`, `api_keys` and `audit_logs`, then run a full pipeline. | Must | BR-02, SRC-02 | Demo |
 
 ### 4.17 Incident response
 
@@ -381,15 +390,15 @@ Audit events (`audit_logs.action`):
 
 ## 7. Acceptance Criteria
 
-- AC-SEC-01: The role-matrix test (SEC-041) passes for all 28 rows × 5 credential types.
+- AC-SEC-01: The role-matrix test (SEC-041) passes for all 33 rows × 5 credential types (API keys tested with both scopes).
 - AC-SEC-02: The auth-coverage test (SEC-042) passes; adding an unprotected route makes it fail.
 - AC-SEC-03: Connected as `echowell_app`, `UPDATE raw_sessions SET resident_id='X'` and `DELETE FROM audit_logs` both fail (SEC-114).
 - AC-SEC-04: A JWT with `alg: none`, a JWT signed with a different secret, and an expired JWT are each rejected with 401 (`TOKEN_INVALID`, `TOKEN_INVALID`, `TOKEN_EXPIRED`).
 - AC-SEC-05: Creating a user with password "short" or "password1234" returns 422 `PASSWORD_POLICY_VIOLATION`; the stored hash of a valid password starts with `$argon2id$v=19$m=65536,t=3,p=4$`.
 - AC-SEC-06: An API key printed by `create-api-key` works once stored on a test device; after `revoke-api-key` the next `POST /sessions` returns 401 `API_KEY_INVALID`; the `api_keys` table contains only the SHA-256 digest.
 - AC-SEC-07: The staging frontend response headers include the CSP, HSTS, `X-Frame-Options: DENY`, `Permissions-Policy` with `microphone=()`; the staging API rejects a TLS 1.1 handshake.
-- AC-SEC-08: The backend refuses to start with APP_ENV=production and (a) a 16-byte JWT_SECRET, (b) DATABASE_URL without `sslmode=require`, (c) PIPELINE_PROFILE=test_v0_1.
-- AC-SEC-09: After login, note creation, alert acknowledgement and a pipeline run, `audit_logs` contains one row per event with request_id matching the response `X-Request-ID`, and no row contains a password, token or feature value.
+- AC-SEC-08: The backend refuses to start with APP_ENV=production and (a) a 16-byte JWT_SECRET, (b) DATABASE_URL without `sslmode=require`, (c) PIPELINE_PROFILE=test_v0_1, (d) PIPELINE_AS_OF set.
+- AC-SEC-09: After login, note creation, an alarm review, a snooze, a CSV export and a pipeline run, `audit_logs` contains one row per event with request_id matching the response `X-Request-ID`, and no row contains a password, token or feature value.
 - AC-SEC-10: CI fails when a test commit adds a fake secret (gitleaks), when `openai` is added to requirements (SEC-128), and when a known-vulnerable package version is pinned (pip-audit / npm audit).
 - AC-SEC-11: The go-live checklist contains the signed item from SEC-005, and the interim stack's header shows the synthetic/test DATA_SOURCE_LABEL.
 
@@ -400,7 +409,8 @@ Audit events (`audit_logs.action`):
   `options={"require": ["exp","iat","sub","aud","iss","jti"]}`), `hash_api_key` (hashlib.sha256).
 - Startup checks live in `backend/core/config.py` (`Settings.validate_for_env()`): JWT_SECRET length, `sslmode`,
   PIPELINE_PROFILE vs APP_ENV, CORS_ORIGINS non-empty and without `*` in staging/production.
-- Trigger SQL (in the migration): `CREATE FUNCTION forbid_mutation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '% is append-only', TG_TABLE_NAME; END $$;` attached `BEFORE UPDATE OR DELETE` to `raw_sessions`, `audit_logs`, `staff_notes`.
+- Trigger SQL (in the migration): `CREATE FUNCTION forbid_mutation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '% is append-only', TG_TABLE_NAME; END $$;` attached `BEFORE UPDATE OR DELETE` to `raw_sessions`, `audit_logs`, `staff_notes`, `alert_reviews`.
+- Note: the pipeline's natural-key upserts (contract §20 R15) never touch `alert_reviews` or `staff_notes`, so append-only enforcement does not conflict with rebuilds.
 - Audit writes go through `services/audit_service.record(session, action, entity_type, entity_id, details)` which
   reads actor, IP and request_id from the request context var; never call it after commit.
 - Failed-login rows are written in their own short transaction because the login request itself does not commit other changes.
@@ -415,6 +425,7 @@ Audit events (`audit_logs.action`):
 - OQ-11 Data handling on participant withdrawal (IRB) — affects SEC-126.
 - OQ-14 Speaker verification timing/output — wrong-speaker records remain a data-integrity risk (RSK-01).
 - OQ-16 Smart-home wake phrase vs no-raw-audio rule (Team 1 / PI).
+- OQ-26 Who may review alarms and how soon (clinician and admin in MVP; no SLA enforced).
 - Closed by owner decision D-OWNER-4 (formerly OQ-23): live data on the interim stack — not permitted; now requirements SEC-001..SEC-005. Residual risk RSK-14 (interim providers may not offer a BAA / HIPAA-eligible plan on the tiers used) is mitigated by SEC-001 and the AWS migration path (SEC-006).
 
 ## Revision History

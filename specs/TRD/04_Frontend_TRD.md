@@ -162,13 +162,13 @@ flowchart LR
   N -->|no| R
   R -->|"Open"| D["/residents/[residentCode]"]
   D -->|"← Back to all residents"| R
-  R -->|nav "New admissions"| M["/admissions"]
+  R -->|"nav 'New admissions'"| M["/admissions"]
   M -->|"← Back to all residents"| R
-  R -->|nav "Alerts (n)"| AL["/alerts"]
+  R -->|"nav 'Alerts (n)'"| AL["/alerts"]
   AL -->|"Open full resident view →"| D
-  R -->|nav "Analytics" (admin, researcher)| AN["/analytics"]
-  R -->|"Devices" panel in page| V["/residents#devices"]
-  R -->|nav "Admin" (admin only)| Z["/admin"]
+  R -->|"nav 'Analytics' (admin, researcher)"| AN["/analytics"]
+  R -->|"'Devices' panel in page"| V["/residents#devices"]
+  R -->|"nav 'Admin' (admin only)"| Z["/admin"]
   G["any protected route without valid token"] -->|redirect| L
 ```
 
@@ -448,12 +448,12 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 
 | Component | Props (TypeScript) | Responsibility | UX ref |
 |---|---|---|---|
-| `AppHeader` | `{ meta: Meta \| undefined; active: "residents" \| "admissions" \| "devices" \| "admin" }` | Title "EchoWell", subline, nav, user name, Sign out | UX-010..UX-016 |
+| `AppHeader` | `{ meta: Meta \|" undefined; active: 'residents' \"| "admissions" \|" 'devices' \"| "admin" }` | Title "EchoWell", subline, nav, user name, Sign out | UX-010..UX-016 |
 | `BackLink` | `{ href?: string /* default "/residents" */ }` | "← Back to all residents" | UX-060, UX-180 |
 | `SummaryTiles` | `{ summary: ResidentsResponse["summary"] }` | Four tiles in fixed order | UX-020..UX-024 |
-| `SortSelect` | `{ value: "alarm" \| "resident_id" \| "last_checkin"; onChange(v): void; disabled?: boolean }` | Labelled native `<select id="sort">` | UX-030..UX-033 |
+| `SortSelect` |" `{ value: 'alarm' \"| "resident_id" \| "last_checkin"; onChange(v): void; disabled?: boolean }` | Labelled native `<select id="sort">` | UX-030..UX-033 |
 | `ResidentsTable` | `{ rows: ResidentRow[]; meta: Meta; isFetching: boolean }` | Overview table, horizontal scroll container | UX-034..UX-046 |
-| `StatusBadge` | `{ status: DisplayStatus; alarmSinceDate?: string \| null; baselineRestartedOn?: string \| null; progress?: { n: number; N: number }; size?: "sm" \| "lg" }` | Status text + border style + glyph | UX-036, UX-062, TRD 11 §4.3.4 |
+| `StatusBadge` | `{ status: DisplayStatus; alarmSinceDate?: string \| null; baselineRestartedOn?: string \|" null; progress?: { n: number; N: number }; size?: 'sm' \"| "lg" }` | Status text + border style + glyph | UX-036, UX-062, TRD 11 §4.3.4 |
 | `DeviceCell` | `{ deviceCode: string; shared: boolean; previousDeviceCode: string \| null }` | "D02 (shared)" / "D07B (was D07)" | UX-035 |
 | `DevicePanel` | `{ devices: DeviceItem[]; meta: Meta }` | Device cards, grouped card, details disclosure | UX-050..UX-058 |
 | `ResidentHeader` | `{ resident: ResidentDetail; meta: Meta }` | H1 "<R> · Device <D>", baseline line, large badge | UX-061..UX-066 |
@@ -469,7 +469,7 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 | `AdmissionsTable` | `{ rows: AdmissionRow[]; meta: Meta; selected: string \| null; onSelect(code): void }` | New admissions table | UX-182..UX-188 |
 | `FacilityRangeChart` | `{ comparison: AdmissionComparison; residentCode: string; N: number }` | One row per feature: resident dot vs grey band | UX-189..UX-194 |
 | `ExperimentalBanner` | `{ children?: React.ReactNode }` | Dashed accent banner "Future / experimental study arm" | UX-181 |
-| `Footer` | `{ variant: "overview" \| "default" \| "alerts" \| "analytics" }` | Footer statement per page variant | UX-005 |
+| `Footer` |" `{ variant: 'overview' \"| "default" \|" 'alerts' \"| "analytics" }` | Footer statement per page variant | UX-005 |
 | `AlertQueue` | `{ alarms: ChangeAlarm[]; selectedId: string \| null; onSelect(id): void; meta: Meta }` | "Change alarms · need a nurse review" list of `AlertCard`s | UX-300–UX-305 |
 | `AlertCard` | `{ alarm: ChangeAlarm; selected: boolean; onSelect(): void; meta: Meta }` | "R09 · D09", review badge, "Alarm since … · open … days · tally …" | UX-301–UX-304 |
 | `DataAlertQueue` | `{ alerts: DataAlert[]; meta: Meta }` | "Data alerts · go to the study team" list | UX-306–UX-309 |
@@ -485,8 +485,8 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 | `UsableByResidentChart` | `{ rows: { resident_code: string; days: number; used: number; set_aside: number; quarantined: number; missed: number; usable_pct: number }[] }` | Horizontal stacked bars, lowest first | UX-367–UX-370 |
 | `AlarmTimingTable` | `{ rows: { label: string; planted_change: string; change_began: string \| null; alarm_rang: string \| null; delay: string }[] }` | Test-profile panel | UX-371–UX-374 |
 | `ReviewOutcomesTable` | `{ outcomes: { raised: number; reviewed: number; by_outcome: Record<ReviewOutcome, number> } }` | Production-profile panel | UX-375 |
-| `SectionState` | `{ state: "loading" \| "empty" \| "error"; message: string; onRetry?: () => void; requestId?: string }` | Uniform loading/empty/error rendering inside a section | UX-200..UX-206 |
-| `LoginForm` | `{ next: string \| null; reason: "expired" \| null }` | Email, password, Sign in | UX-170..UX-176 |
+| `SectionState` |" `{ state: 'loading' \"| "empty" \| "error"; message: string; onRetry?: () => void; requestId?: string }` | Uniform loading/empty/error rendering inside a section | UX-200..UX-206 |
+| `LoginForm` | `{ next: string \|" null; reason: 'expired' \"| null }` | Email, password, Sign in | UX-170..UX-176 |
 | `AdminPanel` | `{}` (reads role from `useAuth`) | Tabs Users / Pipeline runs / Upload data | UX-210..UX-216 |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -682,7 +682,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | AlertQueue, AlertCard | GET /alerts | BR-11, BR-13 | UX-300–UX-305 | FE-036, FE-139, FE-193 |
 | DataAlertQueue | GET /data-alerts | BR-04, BR-05, BR-06, BR-12 | UX-306–UX-309 | FE-193 |
 | AlertReviewPanel, MiniTallyChart, LeaningMost, AlertReviewForm, ReviewHistory | GET /scores, GET /alerts/{id}/reviews, POST /alerts/{id}/reviews, POST /alerts/{id}/snooze | BR-11, BR-13, BR-18 | UX-310–UX-322 | FE-093, FE-136–FE-139, FE-193 |
-| KpiTiles, DailyCheckinsChart, LossFunnel, UsableByResidentChart, AlarmTimingTable, ReviewOutcomesTable | GET /analytics; CSV via GET /scores, GET /analytics/baselines (`Accept: text/csv`) | BR-03, BR-04, BR-05, BR-06, BR-15 | UX-350–UX-378 | FE-037, FE-194, FE-195 |
+| KpiTiles, DailyCheckinsChart, LossFunnel, UsableByResidentChart, AlarmTimingTable, ReviewOutcomesTable | GET /analytics; CSV via GET /scores, GET /analytics/baselines (`Accept: text/csv`) | BR-03, BR-04, BR-05, BR-06, BR-15 | UX-350–UX-384 | FE-037, FE-194, FE-195 |
 | CheckinLog | GET /residents/{code}/checkins | BR-13, BR-04, BR-05, BR-06, BR-08 | UX-140–UX-150 | FE-101 |
 | ExperimentalBanner, AdmissionsTable | GET /admissions | BR-14 | UX-180–UX-188 | FE-189 |
 | FacilityRangeChart | GET /admissions/{code}/comparison, GET /facility/reference-ranges | BR-14 | UX-189–UX-194 | FE-100 |

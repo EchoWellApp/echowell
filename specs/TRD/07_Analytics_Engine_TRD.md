@@ -24,7 +24,7 @@ In scope:
 - Determinism and full-rebuild guarantees, late-arrival handling (ASM-07, OQ-10).
 - Configuration profiles `production` and `test_v0_1` (`analytics/config.py::PipelineConfig`).
 - The backend persistence service that loads inputs, calls the engine and writes derived tables.
-- Triggers (after ingest, nightly 02:00 facility local time, manual), performance, error handling, logging.
+- Triggers (after ingest, nightly 02:xx facility local time via the Railway Cron Job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
 - Data-alert generation (stage 11, rules in TRD 09 section 4.9) and Analytics page aggregates (stage 12: KPIs, daily
   series, funnel, by-resident shares), and the "Leaning most" computation for the Alert review page (SRC-18, SRC-19).
 - Extension points: morning offset estimation (OQ-09), EWMA display (OQ-18), facility norms (BR-14, OQ-08).
@@ -55,7 +55,7 @@ Out of scope:
 | TRD 10 | Data Ingestion and Validation Spec (ING) |
 | TRD 13 / TRD 14 | Testing strategy / test data and validation (R01–R10) |
 | TRD 17 | Logging, monitoring and error handling |
-| TRD 21 | Environment configuration (PIPELINE_PROFILE, FACILITY_TZ, NIGHTLY_RUN_HOUR_LOCAL) |
+| TRD 21 | Environment configuration (DATABASE_URL, DATABASE_READONLY_URL, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_TZ) |
 | TRD 24 | Risks, assumptions, open questions |
 
 ## 4. Requirements
@@ -305,7 +305,7 @@ The backend service `backend/services/pipeline_runner.py` (new orchestration mod
 
 ```mermaid
 sequenceDiagram
-  participant T as Trigger (ingest / nightly 02:00 / admin)
+  participant T as Trigger (ingest / Railway cron nightly_run / admin or pipeline:run key)
   participant S as pipeline_runner
   participant DB as PostgreSQL
   participant E as analytics.run_pipeline
@@ -338,10 +338,10 @@ sequenceDiagram
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ANL-043 | After a successful single-record ingest (`POST /api/v1/sessions`) the backend shall run the pipeline synchronously for that record's resident (scope = that resident plus device-sharing residents for the ledger) with `trigger = ingest` and `as_of` = request time, before returning the response. | Must | contract §7, §20 R11, TRD 10 | Test |
+| ANL-043 | After a successful single-record ingest (`POST /api/v1/sessions`) the backend shall run the pipeline synchronously for that record's resident (scope = that resident plus device-sharing residents for the ledger) with `trigger = ingest` and `as_of` per ANL-046 precedence (request time in production), before returning the response; if that run fails, the record stays stored and the response carries `status_after_processing = "pending"` (contract §21 R23), and the next ingest or nightly run processes it. | Must | contract §7, §21 R21, R23, TRD 10 ING-002 | Test |
 | ANL-044 | After a batch ingest (`POST /api/v1/ingest`) the backend shall enqueue one background run (FastAPI `BackgroundTasks`) scoped to all residents with accepted records in the batch, with `trigger = ingest`. | Must | contract §7 | Test |
-| ANL-045 | A full run (scope `all`, `trigger = nightly`) shall start daily at `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:00) in `FACILITY_TZ`, with `as_of` = run start time; the scheduling mechanism is specified in TRD 15/17. | Must | contract §7, TRD 15 | Test |
-| ANL-046 | An admin shall be able to start a run via `POST /api/v1/pipeline/run {scope, profile?, as_of?}`; `as_of` defaults to the request time and is the only way to set a fixed as-of (tests use 2026-10-30T15:00:00-05:00); in-process tests freeze the clock (time-machine); the `test` trigger value shall be used only by the automated validation suite. | Must | TRD 05 API-065, §20 R11 | Test |
+| ANL-045 | The nightly full run (scope `all`, `trigger = nightly`) shall be started by a separate Railway Cron Job service executing `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` (UTC); the job shall proceed only when the facility-local time (`FACILITY_TZ`) is 02:xx and no nightly run has succeeded for that local night (DST-safe), and shall otherwise exit 0; there is no in-process scheduler. On AWS the same command runs from EventBridge Scheduler, or the scheduler calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`. | Must | contract §21 R18, TRD 15 | Test |
+| ANL-046 | `POST /api/v1/pipeline/run {scope, profile?, as_of?}` shall accept an admin JWT or an API key with scope `pipeline:run`. The run's `as_of` shall be chosen by precedence: explicit `as_of` in the request → env `PIPELINE_AS_OF` (refused, run not started, when `APP_ENV = production`) → current time; ingest and nightly runs use `PIPELINE_AS_OF` if set (non-production only), else the current time. Tests use 2026-10-30T15:00:00-05:00; in-process tests freeze the clock (time-machine). Read endpoints shall use the `as_of` of the latest succeeded run. The `test` trigger value is used only by the automated validation suite. | Must | TRD 05 API-065, §21 R18, R21 | Test |
 
 ### 4.10 Performance
 
@@ -397,7 +397,7 @@ resident's `enrolled_on` (contract §20 R10); for SRC-05 with as_of 2026-10-30 1
 | ANL-061 | Stage 12 shall compute `AnalyticsSummary` with `analytics/aggregates.py::build_analytics_summary` using the window, definitions and shapes of this section. | Must | SRC-19, §19 | Test |
 | ANL-062 | All aggregate counts shall be derived from the same `PipelineResult` (sessions, ledger, epochs, alerts) so that they equal the status counts of the pipeline (SRC-03 Exp_status_counts) without separate SQL recomputation. | Must | BR-15, SRC-19 | Test |
 | ANL-063 | Percentages shall use the integer half-up formula `pct(n, d)`; for d = 0 the percent shall be null. | Must | SRC-19 | Test |
-| ANL-064 | The engine shall never read `evaluation_ground_truth` or any answer-key data; the "Alarm timing check" panel is assembled by the backend after the run from `alerts` and `evaluation_ground_truth` (TRD 09 CUS-047). | Must | SRC-02, §19 | Inspection |
+| ANL-064 | The engine and the pipeline runner shall never read `evaluation_ground_truth` or any answer-key data; they connect only through `DATABASE_URL` (role `echowell_app`, which has no SELECT on that table). The "Alarm timing check" is assembled after the run solely by `backend/services/analytics_summary.py` through a second connection `DATABASE_READONLY_URL` (role `echowell_readonly`), in profile test_v0_1 only (TRD 09 CUS-047). | Must | SRC-02, §19, §21 R20, R27 | Inspection, Test |
 | ANL-065 | `alerts_raised.not_reviewed` shall be computed by the backend from persisted alert status (`open` = not reviewed) at response time, because reviews are human state that the pure engine does not receive; the engine supplies the alert list. | Must | §19 | Test |
 
 Verification performed for this TRD (independent implementation of these rules on SRC-05, as_of 2026-10-30 15:00
@@ -426,7 +426,7 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
   `baselines`, `scores`, `cusum_state`, `alerts`, `day_ledger`, `pipeline_runs`, `config_parameters`, `audit_logs`.
 - numpy 2.x, Python 3.12 `zoneinfo` with system tzdata (the backend image shall install the `tzdata` package so
   `America/Chicago` resolves on slim images).
-- Backend env vars: `PIPELINE_PROFILE`, `FACILITY_TZ`, `NIGHTLY_RUN_HOUR_LOCAL`, `GIT_SHA`, `LOG_FORMAT`, `LOG_LEVEL` (TRD 21).
+- Backend env vars: `DATABASE_URL` (role echowell_app), `DATABASE_READONLY_URL` (analytics summary only), `PIPELINE_PROFILE`, `PIPELINE_AS_OF` (non-production only), `FACILITY_TZ`, `GIT_SHA`, `LOG_FORMAT`, `LOG_LEVEL` (TRD 21); Railway Cron Job service for `backend.jobs.nightly_run` (TRD 15).
 - Test fixtures: SRC-03 workbook and SRC-05 CSV copied to `tests/fixtures/` (TRD 14); the workbook is read only by tests.
 
 ## 7. Acceptance Criteria
@@ -442,7 +442,9 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 - AC-ANL-09: The `pipeline_runs` row of every run contains `config_snapshot` with `config_hash`, `code_version`, `counts` and `warnings`.
 - AC-ANL-10: On SRC-05 the `AnalyticsSummary` equals every expected value in the section 4.13 table, and `data_alerts` equals exactly the four alerts of TRD 09 section 4.9 in that order.
 - AC-ANL-11: A full rebuild with an R09 alert that has a saved review and a snooze keeps the alert id, its `alert_reviews` rows, `status = acknowledged` and `snoozed_until` (natural-key upsert, R15).
-- AC-ANL-12: Starting the backend with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` fails with a configuration error.
+- AC-ANL-12: Starting the backend with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` fails with a configuration error; with `APP_ENV=production` and `PIPELINE_AS_OF` set, no run starts.
+- AC-ANL-13: `python -m backend.jobs.nightly_run` at 07:30 UTC in CDT (02:30 local) starts one nightly run; a second invocation the same night exits 0 without a run; at 08:30 UTC in CDT (03:30 local) it exits 0 without a run.
+- AC-ANL-14: As role `echowell_app`, `SELECT * FROM evaluation_ground_truth` fails with a permission error.
 
 ## 8. Implementation Notes
 

@@ -324,7 +324,7 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 | UX-131 | When a save fails, the message "Could not save the note. Your text is kept — try again." shall appear and the typed text shall remain. | Must | BR-13 | T |
 | UX-132 | For users with role `researcher`, the form controls shall be replaced by "Only clinicians and admins can add notes." while previous notes remain visible. | Must | contract §10 | T |
 | UX-133 | Notes shall document observations, actions taken and follow-up activity through the three note types; the type shall be shown with every saved note. | Must | SRC-12, BR-13 | T |
-| UX-134 | Under the form, a list headed "Previous notes" (h3, 16px) shall show the resident's notes newest first, each as "<Mon D, h:mm AM/PM> · <Type> · <display name>" (+ " · Marked as reviewed" when applicable) followed by the note text; with no notes it shall read "No notes yet." | Must | SRC-12, BR-13 | T |
+| UX-134 | Under the form, a list headed "Previous notes" (h3, 16px) shall show the resident's notes newest first, each as "<Mon D, h:mm AM/PM> · <Type> · <display name>" followed by the note text; with no notes it shall read "No notes yet." | Must | SRC-12, BR-13 | T |
 | UX-135 | The notes list shall show at most 10 notes initially and a button "Show all notes (<count>)" when more exist. | Should | BR-13 | T |
 | UX-136 | "Mark as reviewed" shall open a modal dialog titled "Review alarm · <R> · alarm since <Mon D>" containing exactly the review form of the Alert review page (UX-313–UX-318) and a "Cancel" button; Escape and "Cancel" close it without saving and return focus to "Mark as reviewed". | Must | contract §19, §20 R5, WCAG 2.4.3 | T |
 | UX-137 | Saving in the dialog shall create an alarm review (same record as on `/alerts`), close the dialog, and announce "Review saved." (or the data-problem variant of UX-318). | Must | contract §19 | T |
@@ -464,7 +464,7 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 
 ### 4.13 Expected rendering with test data (as of Oct 30, 2026, 3:00 PM CT)
 
-Conditions: PIPELINE_PROFILE `test_v0_1` (N = 16, h = 5.0), SRC-05 ingested, FACILITY_TZ America/Chicago, DATA_SOURCE_LABEL "pipeline test data v0.1", as-of 2026-10-30 15:00 local. Values derive from SRC-03 (Exp_status_counts, Exp_resident_outcomes, Exp_scores) and SRC-05 timestamps.
+Conditions: PIPELINE_PROFILE `test_v0_1` (N = 16, h = 5.0), SRC-05 ingested, pipeline run with `as_of` 2026-10-30 15:00 America/Chicago via POST /api/v1/pipeline/run (contract §21 R21), FACILITY_TZ America/Chicago, DATA_SOURCE_LABEL "pipeline test data v0.1", as-of 2026-10-30 15:00 local. Values derive from SRC-03 (Exp_status_counts, Exp_resident_outcomes, Exp_scores) and SRC-05 timestamps.
 
 #### 4.13.1 Overview rows
 
@@ -629,6 +629,169 @@ The token values are fixed by contract §11 and implemented in TRD 04 section 4.
 
 Prompt (SRC-12) coverage: Residents overview (UX-020–UX-048), sort controls (UX-030–UX-033), statuses Alarm On / No Alarm / Baseline Still Forming (section 4.3.4), 30-day counts and missing days (UX-039, UX-047, UX-048), Device Monitoring Panel (UX-050–UX-058), CUSUM chart with alarm line 5.0 showing baseline period, score progression, alarm triggers and persistence (UX-081–UX-085), 7 scored features in plain language and 12 stored (UX-100–UX-108), baseline status/progress/freeze (UX-063–UX-066), check-in log (UX-140–UX-150), staff review (UX-120–UX-135), New admissions experimental with facility comparison and transition (UX-180–UX-195).
 
+### 4.17 Alert review (`/alerts`) — SRC-18
+
+Purpose: one place for the charge nurse or clinical lead to review change alarms, and for the study team to see data-quality alerts. Roles: all signed-in roles may view; only `clinician` and `admin` may save reviews or set reminders (OQ-26). Layout (SRC-18): global header → two-column grid (left 5fr: two queue sections stacked; right 7fr: review panel; gap 24px, top-aligned) → footer "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here."
+
+#### 4.17.1 Change-alarm queue
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-300 | The left column shall start with a white section (1px `--color-border`) headed "Change alarms · need a nurse review" (18px, padding 14px 16px, 1px `--color-rule` bottom border). | Must | SRC-18, BR-13 | T |
+| UX-301 | The queue shall contain one card per change alarm that is on in a resident's current epoch (alert status `open` or `acknowledged`), ordered: not reviewed and not snoozed (alarm date ascending), then snoozed, then reviewed; ties by resident code. Closed alerts (epoch ended) shall not be listed. | Must | SRC-18, contract §19, ASM-06 | T |
+| UX-302 | Each card (padding 12px 16px, 1px `--color-rule` top border) shall show line 1 (weight 600) "<R> · <D>" with the review badge right-aligned, and line 2 (14px, secondary) "Alarm since <Mon D> · open <d> days · tally <tally>", where d = as-of local date − alarm local date ("open 1 day" for 1, "opened today" for 0) and tally = current tally with one decimal. | Must | SRC-18, contract §19 | T |
+| UX-303 | The review badge shall read "Not reviewed" (accent text, weight 600) for status `open` without an active reminder; "Not reviewed · reminder <Mon D, h:mm AM/PM>" (secondary text, weight 400) while `snoozed_until` is in the future; "Reviewed" (secondary text) for status `acknowledged`. A reminder never changes the alarm itself. | Must | SRC-18, contract §19 | T |
+| UX-304 | Each card shall be a button (full card, min-height 44px) that selects the alarm for the review panel and sets `?alert=<id>`; the selected card shall have a 2px solid ink left border and `aria-current="true"`. With no selection in the URL, the first card shall be selected. | Must | SRC-18 | T |
+| UX-305 | With no change alarms, the section shall read "No change alarms right now." | Must | SRC-18 | T |
+
+#### 4.17.2 Data-alert queue
+
+Data alerts are data-quality signals for the study team, not health alarms: they never use the "▲" glyph or accent colour.
+
+| Kind | Title (line 1) | Detail (line 2) | Rule (contract §19, last 30 days, thresholds provisional OQ-24) |
+|---|---|---|---|
+| baseline_stalled | "<R> · baseline stuck at <n> of <N>" | "<missed> missed and <set aside> set aside in 30 days" | baseline forming and days since current epoch start ≥ N |
+| possible_other_speaker | "<R> · possible other speaker" | "<k> check-ins quarantined: <Mon D>, <Mon D>" (k = 1: "1 check-in quarantined: <Mon D>") | ≥ 1 quarantined session |
+| high_set_aside | "<R> · many check-ins set aside" | "<set aside> of <received> received: <reason kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occurred | set aside / received ≥ 0.20 and received ≥ 10; suppressed when baseline_stalled is listed for the resident |
+| device_silent | "<D> · device silent all day" | "<Mon D>[, <Mon D>] · affects <R> and <R>" (one resident: "affects <R>"; three or more: "affects R01, R02 and R03") | shared device with no record from any resident that day, or ≥ 2 consecutive silent days on a single-resident device |
+| review_flagged_data_problem | "<R> · review flagged a data problem" | "Reviewed <Mon D> by <display name>" | a saved review with outcome `data_problem` |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-306 | Below the change-alarm queue a second section (same style as UX-300) headed "Data alerts · go to the study team" shall list one card per open data alert with line 1 (weight 600) the title and line 2 (14px, secondary) the detail of the table above, as returned by the API. | Must | SRC-18, contract §19 | T |
+| UX-307 | Data-alert cards shall be ordered by kind in the table's order, then by resident or device code. | Must | SRC-18 | T |
+| UX-308 | A resident data-alert card shall link to `/residents/<R>` and a device data-alert card to `/residents#devices`; the link's accessible name shall be the title. | Must | SRC-18, BR-12 | T |
+| UX-309 | With no open data alerts the section shall read "No data alerts in the last 30 days." | Must | SRC-18 | T |
+
+#### 4.17.3 Review panel
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-310 | The right column shall be a white section with a 2px solid ink border, padding 20px and gap 18px, starting with a row containing the heading "<R> · alarm since <Mon D>" (h2) and the link "Open full resident view →" (15px) to `/residents/<R>`. | Must | SRC-18 | T |
+| UX-311 | Below, the label "Change tally since watching began (alarm line <h>)" shall head a mini tally chart (plot height 90px) that follows contract §20 R1 exactly like UX-081–UX-085: a leading grey slot labelled "Baseline <Mon D>–<Mon D>", one bar per scored session of the current epoch, #BDBDB8 with #8A8A85 outline while `off`, #9A4508 when `rings`/`on`, dashed accent line at h; x labels show the first and last scored dates ("Oct 17", "Oct 30"); the chart has an accessible name in the form of UX-091. | Must | SRC-18, contract §20 R1 | T |
+| UX-312 | A block "Leaning most" (label weight 600) shall list up to 3 of the 7 scored measurements whose mean signed z since the alarm date is greater than 0, highest first (ties in the §4.5.4 order), as their plain-language labels in lower case joined by ", " (e.g. "more pauses, quieter, less voiced sound"); with none it shall read "No single measurement stands out." | Must | SRC-18, contract §19, BR-18 | T |
+| UX-313 | A fieldset with legend "Anything that could explain it?" (weight 600, 1px `--color-rule` border, padding 14px) shall list one checkbox per configured explanation (provisional list, OQ-25): "Cold, cough or sore throat", "Dental problem or dentures out", "New or changed medication", "Poor sleep or unusual day", "Room or device moved"; a hint line (13px, secondary) shall read "Provisional list — to be confirmed with the clinical team (OQ-25)." Any number may be checked. | Must | SRC-18, contract §19, OQ-25 | T |
+| UX-314 | A fieldset with legend "Review outcome" shall offer exactly one required radio choice among "Checked on resident, no concern", "Explained by a known cause", "Referred to nurse or provider", "Looks like a data problem: send to study team"; no option is preselected. | Must | SRC-18, contract §19 | T |
+| UX-315 | A textarea labelled "Note" (3 rows, optional, at most 2000 characters, counter "<count> / 2000") with placeholder "What you saw or did" shall follow. | Must | SRC-18, contract §19 | T |
+| UX-316 | The button "Save review" (min-height 44px, padding 0 20px, weight 600, ink background, white text, 2px ink border) shall save the review; without an outcome it shall not save and shall show "Choose a review outcome." linked to the outcome fieldset and move focus to the first radio. | Must | SRC-18, contract §19 | T |
+| UX-317 | The button "Remind me in <h> h" (h = configured snooze hours, 24; secondary style, 1px `--color-border`) shall set a reminder and announce "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on."; it shall not save a review. | Must | SRC-18, contract §19 | T |
+| UX-318 | After "Save review" succeeds, the form shall reset, the message "Review saved." (outcome data problem: "Review saved and sent to the study team as a data alert.") shall be announced politely, the card badge shall read "Reviewed", and the alarm state, tally and badge on other pages shall stay as returned by the API (no reset, OQ-05). | Must | SRC-18, contract §19, OQ-05 | T |
+| UX-319 | When no alarm is selected the panel shall read "Select an alarm to review."; when the queue is empty it shall read "No change alarms to review." | Must | SRC-18 | T |
+| UX-320 | Under the buttons, a list headed "Previous reviews" (h3) shall show the alarm's reviews newest first as "<Mon D, h:mm AM/PM> · <display name> · <outcome label>", followed by "Possible explanations: <labels joined by ', '>" when any were checked and the note text; with none it shall read "Not reviewed yet." Several reviews per alarm are allowed. | Must | contract §19 | T |
+| UX-321 | The panel shall end with the note (13px, secondary) "Open questions (OQ-05, OQ-26): Does a saved review reset the tally or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | Must | SRC-18, OQ-05, OQ-26 | T |
+| UX-322 | For the researcher role, the checklist, outcome, note and buttons shall be replaced by "Only clinicians and admins can review alarms."; the chart, "Leaning most" and "Previous reviews" stay visible. | Must | contract §19 | T |
+
+#### 4.17.4 Review wording rules
+
+The outcome and explanation labels are shown exactly as listed; stored values are the codes of contract §19 (`no_concern`, `known_cause`, `referred`, `data_problem`; `cold_cough_sore_throat`, `dental_dentures`, `medication_change`, `poor_sleep_unusual_day`, `room_device_moved`). Labels shown for codes not in the current configured list (after a list change) are the API-supplied labels.
+
+#### 4.17.5 Accessibility of the Alert review page
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-323 | Selecting a card shall not move focus; the review panel shall be an `aria-live="polite"` region announcing "Reviewing <R>, alarm since <Mon D>." on selection change. | Must | WCAG 4.1.3 | T |
+| UX-324 | Checkbox and radio controls shall each have a 44px-high clickable label row. | Must | contract §11 | T |
+
+#### 4.17.6 Expected rendering with test data (as of Oct 30, 2026)
+
+| Element | Expected |
+|---|---|
+| Nav | "Residents" · "Alerts (2)" (current) · "Analytics" (researcher/admin) · "New admissions" |
+| Subline | "For the charge nurse or clinical lead · pipeline test data v0.1 as of Oct 30, 2026" |
+| Change alarm 1 | "R09 · D09" · "Not reviewed" / "Alarm since Oct 21 · open 9 days · tally 26.8" |
+| Change alarm 2 | "R10 · D10" · "Not reviewed" / "Alarm since Oct 24 · open 6 days · tally 13.4" |
+| Data alert 1 | "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days" |
+| Data alert 2 | "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22" |
+| Data alert 3 | "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short" |
+| Data alert 4 | "D02 · device silent all day" / "Oct 12 · affects R02 and R03" |
+| Panel (R09 selected) | "R09 · alarm since Oct 21"; mini chart "Baseline Oct 1–16" + 14 bars (Oct 17–20 grey; Oct 21–30 accent), x labels "Oct 17", "Oct 30"; "Leaning most": "more pauses, quieter, less voiced sound"; "Not reviewed yet." |
+| Panel (R10 selected) | "R10 · alarm since Oct 24"; 14 bars (Oct 17–23 grey; Oct 24–30 accent); "Leaning most": "more pauses, slower while talking, fewer syllables per second" |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-330 | With the test conditions of section 4.13, the change-alarm queue and review panel shall render exactly the values of section 4.17.6. | Must | SRC-18, SRC-03, BR-15 | T |
+| UX-331 | With the test conditions of section 4.13, the data-alert queue shall contain exactly the four cards of section 4.17.6 in that order (R03 is listed as high_set_aside; R08 is not, because baseline_stalled suppresses it). | Must | SRC-18, contract §19 | T |
+
+### 4.18 Analytics (`/analytics`) — SRC-19
+
+Purpose: counts for the study team. Roles: `researcher`, `admin` (clinicians: access-denied state). Period: the 30 facility-local days ending on the as-of date. Layout (SRC-19): global header → 4 KPI tiles → "Check-ins per day" (full width) → two columns "Where check-ins are lost" | "Usable check-ins by resident" → "Alarm timing check" (test profile) or "Alarms and review outcomes" (production profile) → footer "Counts only — no audio, no resident names." No resident names, notes or audio appear on this page.
+
+#### 4.18.1 KPI tiles
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-350 | The page shall be available to `researcher` and `admin` only; other roles shall see "You do not have access to this page." and "Back to all residents". | Must | contract §19 | T |
+| UX-351 | Four tiles (white, 1px `--color-border`, padding 16px, gap 6px; label 14px secondary, value 30px weight 600, note 13px secondary) shall appear in the order "Check-ins received", "Used for scoring", "Baselines formed", "Alarms raised". | Must | SRC-19 | T |
+| UX-352 | "Check-ins received" shall show value "<p>%" and note "<received> of <expected> expected", where received = non-duplicate records in the period and expected = sum over active residents of days enrolled in the period; "Used for scoring" shall show "<p>%" and "<usable> of <expected> expected". | Must | SRC-19, contract §19 | T |
+| UX-353 | Percentages shall be rounded half-up to whole numbers. | Must | contract §19 | T |
+| UX-354 | "Baselines formed" shall show "<formed> of <active residents>" and a note listing forming residents ("R08 still forming"; several: "R03, R08 still forming") and restarts ("; R07 restarted once", "twice", "<k> times"); with nothing to note: "All baselines formed". | Must | SRC-19, contract §19 | T |
+| UX-355 | "Alarms raised" shall show the number of alarms first raised in the period and a note "<codes> · <review state>" where review state is "not yet reviewed" (1 alarm), "both not yet reviewed" (2), "none reviewed yet" (≥ 3), "<k> not yet reviewed" (some), "reviewed" / "both reviewed" / "all reviewed" (none outstanding); with 0 alarms the note reads "none in this period". | Must | SRC-19, contract §19 | T |
+
+#### 4.18.2 "Check-ins per day"
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-356 | A section "Check-ins per day" shall show, right of the heading, a legend in the order Used (#4A4A47), Set aside (#BDBDB8), Quarantined (#9A4508), Missed (white with 1px dashed #8A8A85), each a 14px swatch with its text label. | Must | SRC-19 | T |
+| UX-357 | The chart shall show one stacked bar per local day of the period (plot height 160px, gap 4px, min width 760px in a scrolling container), stacked bottom to top Used, Set aside, Quarantined, Missed, each segment proportional to the number of residents with that day status; duplicates shall be excluded. | Must | SRC-19, BR-03, BR-06 | T |
+| UX-358 | The x-axis shall label the first day, every day with a device-silent gap as "<Mon D> · <D> silent" (several devices: "<Mon D> · D02, D05 silent"), and the last day (13px, secondary). | Must | SRC-19 | T |
+| UX-359 | A disclosure "Show daily counts as a table" shall reveal columns "Date", "Used", "Set aside", "Quarantined", "Missed", "Note" (device-silent text). | Must | WCAG 1.1.1 | T |
+| UX-360 | The chart shall have an accessible name "Check-ins per day, <period>: <used> used, <set aside> set aside, <quarantined> quarantined, <missed> missed." | Must | WCAG 1.1.1 | T |
+| UX-361 | The Quarantined colour is a data category, not an alarm; the "▲" glyph shall not be used in analytics charts. | Must | UX-004 | I |
+
+#### 4.18.3 "Where check-ins are lost"
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-362 | The funnel shall show four rows (grid: 200px label, bar, 60px right-aligned bold value; bar height 26px, width proportional to Expected) labelled "Expected check-ins", "Received", "Passed quality checks", "Same speaker, used", with bar colours #8A8A85, #6E6E6A, #5A5A57, #4A4A47, each followed by a 13px secondary note. | Must | SRC-19 | T |
+| UX-363 | The Expected note shall read "<residents> residents × <days> days" when every resident was enrolled for the whole period, otherwise "sum of days enrolled across <residents> residents". | Must | SRC-19 | T |
+| UX-364 | The Received note shall read "<missed> missed · <duplicates> duplicate copies removed" ("1 duplicate copy removed" for 1). | Must | SRC-19, BR-03, BR-06 | T |
+| UX-365 | The Passed-quality-checks note shall read "<set aside> set aside: quality flag <a>, noise <b>, too short <c>", counting each reason occurrence, followed by " (<k> had two reasons)" or " (<k> had more than one reason)" when some sessions had several. | Must | SRC-19, BR-04 | T |
+| UX-366 | The Same-speaker note shall read "<quarantined> quarantined as possible other speaker". | Must | SRC-19, BR-05 | T |
+
+#### 4.18.4 "Usable check-ins by resident"
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-367 | The section shall show the subtitle "Share of <days> days, lowest first" and one row per active resident (grid: 48px bold code, 20px-high bar with 1px `--color-rule` border, 56px right-aligned percentage). | Must | SRC-19 | T |
+| UX-368 | Each bar shall be stacked left to right: used (#4A4A47), set aside (#BDBDB8), quarantined (#9A4508), with the missed share left unfilled; widths are shares of the resident's days enrolled in the period. | Must | SRC-19, BR-06 | T |
+| UX-369 | The percentage shall be used ÷ days enrolled in the period, rounded half-up; rows shall be ordered by percentage ascending, ties by natural resident-code order. | Must | SRC-19, contract §19 | T |
+| UX-370 | Each row shall have the accessible name "<R>: <used> of <days> days usable (<p>%); <set aside> set aside; <quarantined> quarantined; <missed> missed." | Must | WCAG 1.1.1 | T |
+
+#### 4.18.5 "Alarm timing check" (test profile) / "Alarms and review outcomes" (production)
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-371 | When `meta.pipeline_profile` is `test_v0_1`, a section headed "Alarm timing check" with the inline secondary text "· test data only, where the true change date is known" shall show a table (min width 640px) with columns "Resident", "Planted change", "Change began", "Alarm rang", "Delay". | Must | SRC-19, contract §19 | T |
+| UX-372 | The table shall have one row per resident with a planted change (resident-code order), then one row "Other <k>" with "None", "—", "No alarm" and "Correct" when none of them alarmed (otherwise "<n> alarms" and "<n> false alarms"). | Must | SRC-19 | T |
+| UX-373 | "Delay" shall be "<d> days" ("1 day") from change began to alarm rang; a planted change without alarm shall show "No alarm" and "Missed". | Must | SRC-19 | T |
+| UX-374 | Under the table a caption (IBM Plex Mono 12px, secondary) shall read "With real residents the true change date is unknown, so this panel becomes: alarms raised, reviewed, and the review outcomes." | Must | SRC-19 | T |
+| UX-375 | When `meta.pipeline_profile` is `production`, the section shall instead be headed "Alarms and review outcomes" with a two-column table ("", "Count") and rows "Alarms raised", "Reviewed", "Checked on resident, no concern", "Explained by a known cause", "Referred to nurse or provider", "Looks like a data problem: send to study team" for the period. | Must | SRC-19, contract §19 | T |
+| UX-376 | The timing data comes from evaluation data the pipeline never reads; the UI shall label it "test data only" and shall never show it in the production profile. | Must | SRC-02, contract §19 | T |
+| UX-377 | A "Downloads" row at the end of the page shall offer "Scores (CSV)" and "Baselines (CSV)" buttons that download the CSV exports of GET /scores and GET /analytics/baselines. | Should | contract §20 R4 | T |
+
+#### 4.18.6 Analytics wording
+
+Counts only. The page shall not use alarm wording other than "Alarms raised", shall not rank residents by health state, and the by-resident chart describes data completeness, not health.
+
+#### 4.18.7 Expected rendering with test data (period Oct 1–30, 2026)
+
+| Element | Expected |
+|---|---|
+| Subline | "For the study team · pipeline test data v0.1, Oct 1–30, 2026 · numbers match the pipeline answer key" |
+| Tiles | "Check-ins received" 94% / "281 of 300 expected"; "Used for scoring" 89% / "267 of 300 expected"; "Baselines formed" "9 of 10" / "R08 still forming; R07 restarted once"; "Alarms raised" 2 / "R09, R10 · both not yet reviewed" |
+| Daily chart | 30 bars, each totalling 10 residents; totals used 267, set aside 12, quarantined 2, missed 19; e.g. Oct 1: 10 used; Oct 8: 8 used, 1 quarantined, 1 missed; Oct 12: 8 used, 2 missed; Oct 22: 8 used, 1 set aside, 1 quarantined; x labels "Oct 1", "Oct 12 · D02 silent", "Oct 30" |
+| Funnel | Expected check-ins 300 ("10 residents × 30 days") → Received 281 ("19 missed · 2 duplicate copies removed") → Passed quality checks 269 ("12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)") → Same speaker, used 267 ("2 quarantined as possible other speaker"); bar widths 100%, 93.7%, 89.7%, 89.0% |
+| By resident | R08 43%, R03 73%, R02 80%, R05 93%, R01 100%, R04 100%, R06 100%, R07 100%, R09 100%, R10 100%; R08 bar 43.3% used, 16.7% set aside, 40% unfilled; R05 93.3% used, 6.7% quarantined |
+| Alarm timing | R09 · Sudden step · Oct 21 · Oct 21 · 0 days; R10 · Slow drift · Oct 17 · Oct 24 · 7 days; Other 8 · None · — · No alarm · Correct |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| UX-380 | With the test conditions of section 4.13, the KPI tiles shall render the values of section 4.18.7. | Must | SRC-19, SRC-03, BR-15 | T |
+| UX-381 | With the test conditions of section 4.13, the daily chart and its table shall render the values of section 4.18.7. | Must | SRC-19, SRC-03 | T |
+| UX-382 | With the test conditions of section 4.13, the funnel shall render the values of section 4.18.7. | Must | SRC-19, SRC-03 | T |
+| UX-383 | With the test conditions of section 4.13, the by-resident rows shall render in the order and with the percentages of section 4.18.7. | Must | SRC-19, SRC-03 | T |
+| UX-384 | With the test conditions of section 4.13, the alarm timing table shall render the rows of section 4.18.7. | Must | SRC-19, SRC-03 | T |
+
 ## 5. Assumptions
 
 - ASM-01: facility time zone America/Chicago (rendered from the API).
@@ -646,7 +809,10 @@ Prompt (SRC-12) coverage: Residents overview (UX-020–UX-048), sort controls (U
 | GET /residents (meta, summary, rows incl. counts_30d, previous_device_code) | Overview |
 | GET /devices (silent_days_30d, no_activity_days_30d, replaced/replaced-by, firmware, last upload) | Devices panel |
 | GET /residents/{code}, /checkins, /features, /notes; GET /scores; GET /alerts | Resident detail |
-| POST /residents/{code}/notes (acknowledges the open alert when `mark_reviewed` is true) | Staff review |
+| POST /residents/{code}/notes (free staff notes) | Staff review |
+| GET /alerts, GET /data-alerts, GET/POST /alerts/{id}/reviews, POST /alerts/{id}/snooze | Alert review, Resident detail review dialog |
+| GET /analytics (kpis, daily_series, funnel, by_resident, alarm_timing or review_outcomes); CSV via GET /scores and GET /analytics/baselines | Analytics |
+| GET /pipeline/runs; POST /pipeline/run with `as_of` | Admin; test conditions of §4.13 |
 | GET /admissions, /admissions/{code}/comparison, /facility/reference-ranges | New admissions |
 | PI wording approval (OQ-12) | Final "What this means" copy |
 | TRD 14 seeded test environment | Section 4.13 checks |
