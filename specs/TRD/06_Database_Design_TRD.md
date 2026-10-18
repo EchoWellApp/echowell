@@ -1,2 +1,616 @@
-# 06_Database_Design_TRD
+# 06 Database Design TRD
 
+Document ID: ECHOWELL-TRD-06 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+
+## 1. Purpose
+
+This document defines how EchoWell stores data in PostgreSQL 16: the layering from the immutable raw store to
+processed and derived tables, how immutability is enforced, how derived data is rebuilt without disturbing frozen
+baselines, how the schema is migrated, which indexes serve which API queries, expected data volumes, backups,
+seeding, retention and withdrawal. It is the design rationale; the executable DDL is TRD 20 and the meaning of each
+entity and column is TRD 23. The three documents use identical table names, column names and types.
+
+The governing source fact (SRC-02, storage flowchart): "Only the raw store receives data from Team 1. Every other table
+can be rebuilt from it, and the answer key never touches the analytics."
+
+## 2. Scope
+
+In scope:
+- Logical layering and table responsibilities for the 21 tables of contract section 9.
+- Entity-relationship model (section 4.2).
+- Immutability of `raw_sessions` and `audit_logs`; append-only behaviour of `ingest_rejections`, `staff_notes`, `baselines`.
+- Rebuild strategy, transactions and locking for the pipeline writers.
+- Migration policy (Alembic as source of truth, `database/schema.sql` generated reference).
+- Indexing strategy derived from the REST API query patterns of contract section 10.
+- Constraints, enumerations and naming conventions (summary; exact DDL in TRD 20).
+- Data volumes, backups and point-in-time recovery, encryption, seeding, retention and participant withdrawal.
+
+Out of scope:
+- The algorithms that compute derived values (TRD 07, TRD 08, TRD 09) and the ingest validation rules (TRD 10).
+- Endpoint request/response formats (TRD 05, TRD 19).
+- Hosting plan selection and costs (TRD 22); environment variables (TRD 21).
+- Offline research analysis (mixed-effects regression) performed outside the MVP application.
+
+## 3. References
+
+| ID | Reference |
+|---|---|
+| SRC-01 | Deployment Architecture: PostgreSQL on Neon (preferred) or Railway; future AWS RDS |
+| SRC-02 | Daily Data Storage and Processing Flowcharts (raw store never edited; every other table rebuildable; answer key separate) |
+| SRC-03 | Pipeline test workbook v0.1 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes, Exp_baselines, Exp_scores) |
+| SRC-04 | Pipeline test generator v0.1 (residents, sex, devices, D02 sharing, R07 move) |
+| SRC-05 | Pipeline test input CSV v0.1 (283 arrivals) |
+| SRC-09 / SRC-10 | Wireframes: Residents overview, Resident detail (query patterns) |
+| TRD 05 / TRD 19 | Backend API, OpenAPI contracts (endpoints whose queries the indexes serve) |
+| TRD 07 / 08 / 09 / 10 | Analytics engine, Baseline and Scoring, CUSUM and Alerting, Ingestion (table writers) |
+| TRD 12 | Security (roles, audit actions, API keys) |
+| TRD 15 / TRD 21 / TRD 22 | Deployment, Environment configuration, Hosting |
+| TRD 20 | PostgreSQL Schema Definition (PGS-xxx, executable DDL) |
+| TRD 23 | Data Model and Entity Definitions (DME-xxx) |
+| Owner decisions D-OWNER-2, D-OWNER-3 (18 Oct 2026) | Production baseline_n = 30; feature data treated as potentially PHI-derived; AWS target, interim Neon/Railway |
+
+## 4. Requirements
+
+### 4.1 Layering
+
+```mermaid
+flowchart LR
+  T1[Team 1 device / CSV upload] -->|POST /api/v1/sessions, /api/v1/ingest| V{Schema valid?}
+  V -- no --> REJ[(ingest_rejections)]
+  V -- yes --> RAW[(raw_sessions<br/>IMMUTABLE)]
+  REF[(reference: facilities, residents,<br/>devices, device_assignments,<br/>config_parameters)] --> P
+  RAW --> P[pipeline run<br/>analytics/ pure functions]
+  P --> L1[(processed layer:<br/>epochs, processed_sessions, day_ledger)]
+  P --> L2[(derived layer:<br/>baselines FROZEN, scores, cusum_state,<br/>alerts, facility_reference_ranges)]
+  P --> RUN[(pipeline_runs)]
+  STAFF[Staff in dashboard] --> HN[(staff_notes, alert acknowledgement)]
+  ALL[every privileged action] --> AUD[(audit_logs<br/>IMMUTABLE)]
+  KEY[SRC-03 answer key] -. tests only, never loaded .-> TESTS[tests/validation]
+```
+
+| Layer | Tables | Written by | Mutability | Rebuildable from raw? |
+|---|---|---|---|---|
+| L0 Raw | `raw_sessions` | Ingestion service (TRD 10) | INSERT only (trigger + grants) | Source of truth |
+| Intake log | `ingest_batches`, `ingest_rejections` | Ingestion service | `ingest_rejections` INSERT only; `ingest_batches` counts updated once at batch end | No (operational record) |
+| Reference | `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `config_parameters` | Admin CLI / admin endpoints / pipeline (cohort transition only) | INSERT, UPDATE; no DELETE by app | No (master data) |
+| L1 Processed | `epochs`, `processed_sessions`, `day_ledger` | Pipeline service | Replaced per resident on each run | Yes |
+| L2 Derived | `scores`, `cusum_state`, `facility_reference_ranges` | Pipeline service | Replaced per resident (ranges: per facility run) | Yes |
+| L2 Derived, frozen | `baselines` | Pipeline service | INSERT only (grants) | Reproduced identically; never overwritten (ASM-07) |
+| L2 Derived + human state | `alerts` | Pipeline (identity, cusum) + staff (acknowledgement) | Upserted; human fields preserved | Identity yes; acknowledgement no |
+| Human | `staff_notes` | Clinician/admin via API | INSERT only (edits = new row with `supersedes_id`) | No |
+| Run log / audit | `pipeline_runs`, `audit_logs` | Pipeline / every service | `pipeline_runs` status updated once; `audit_logs` INSERT only (trigger + grants) | No |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-001 | `raw_sessions` shall be the only table that receives record content from Team 1 devices or CSV uploads; every accepted arrival, including duplicates of an earlier `session_id`, shall be inserted as one new row before any processing. | Must | BR-01, BR-02, BR-03, SRC-02 | Test (ingest SRC-05: 283 rows in raw_sessions, 2 sharing a session_id with an earlier row) |
+| DB-002 | `raw_sessions.payload` shall hold the record exactly as received: for JSON the parsed object with the sender's keys and values unchanged; for CSV a JSON object mapping each SRC-05 header name to the cell's string value. | Must | BR-02, SRC-02 | Test (round-trip: payload of each SRC-05 row equals the CSV row as strings) |
+| DB-003 | The typed columns of `raw_sessions` shall be copies of the payload values converted to the TRD 20 column types; a typed column shall never contain a value that is not derivable from `payload`. | Must | BR-02 | Test (for every row, typed columns equal parsed payload values) |
+| DB-004 | No row of `raw_sessions` or `audit_logs` shall be updatable or deletable by the application: the trigger `reject_mutation()` and the absence of UPDATE/DELETE/TRUNCATE grants for `echowell_app` shall each independently block it. | Must | BR-02, BR-16, SRC-02 | Test (AC-PGS-01..03 of TRD 20) |
+| DB-005 | Records that fail schema validation shall be written only to `ingest_rejections` (with the raw body and the error list) and shall never be inserted into `raw_sessions`. | Must | BR-01, TRD 10 | Test (invalid record → 0 new raw rows, 1 rejection row) |
+| DB-006 | Every row of `epochs`, `processed_sessions`, `day_ledger`, `scores`, `cusum_state`, `alerts` (identity and CUSUM fields) and `facility_reference_ranges` shall be computable solely from `raw_sessions`, the reference tables and the `config_parameters` profile in use. | Must | BR-02, SRC-02 | Test (DB-009) |
+| DB-007 | No table shall store the SRC-03 workbook expected values; they shall be read only by tests under `tests/validation/` and shall never be readable by `analytics/` or `backend/` code. | Must | SRC-02, BR-15 | Inspection (import-linter rule in CI: `analytics` and `backend` may not import `tests`); Test |
+
+### 4.2 Entity-relationship model
+
+```mermaid
+erDiagram
+  facilities ||--o{ residents : "facility_id"
+  facilities ||--o{ devices : "facility_id"
+  facilities ||--o{ facility_reference_ranges : "facility_id"
+  residents ||--o{ device_assignments : "resident_id"
+  devices ||--o{ device_assignments : "device_id"
+  devices ||--o{ api_keys : "device_id (optional)"
+  users ||--o{ ingest_batches : "uploaded_by"
+  api_keys ||--o{ ingest_batches : "api_key_id"
+  api_keys ||--o{ raw_sessions : "api_key_id"
+  api_keys ||--o{ ingest_rejections : "api_key_id"
+  ingest_batches ||--o{ raw_sessions : "ingest_batch_id"
+  ingest_batches ||--o{ ingest_rejections : "ingest_batch_id"
+  residents ||--o{ raw_sessions : "resident_id"
+  devices ||--o{ raw_sessions : "device_id"
+  raw_sessions ||--|| processed_sessions : "raw_session_id"
+  residents ||--o{ epochs : "resident_id"
+  devices ||--o{ epochs : "device_id"
+  epochs ||--o{ processed_sessions : "epoch_id (null for duplicates)"
+  residents ||--o{ processed_sessions : "resident_id"
+  residents ||--o{ day_ledger : "resident_id"
+  devices ||--o{ day_ledger : "device_id"
+  epochs ||--o{ baselines : "epoch_id (20 rows when frozen)"
+  processed_sessions ||--o| scores : "processed_session_id"
+  epochs ||--o{ scores : "epoch_id"
+  epochs ||--o| cusum_state : "epoch_id (PK)"
+  epochs ||--o{ alerts : "epoch_id"
+  residents ||--o{ alerts : "resident_id"
+  users ||--o{ alerts : "acknowledged_by"
+  residents ||--o{ staff_notes : "resident_id"
+  alerts ||--o{ staff_notes : "alert_id (optional)"
+  users ||--o{ staff_notes : "author_user_id"
+  staff_notes ||--o| staff_notes : "supersedes_id"
+  pipeline_runs ||--o{ processed_sessions : "pipeline_run_id"
+  pipeline_runs ||--o{ epochs : "pipeline_run_id"
+  pipeline_runs ||--o{ day_ledger : "pipeline_run_id"
+  pipeline_runs ||--o{ baselines : "pipeline_run_id"
+  pipeline_runs ||--o{ scores : "pipeline_run_id"
+  pipeline_runs ||--o{ cusum_state : "pipeline_run_id"
+  pipeline_runs ||--o{ alerts : "pipeline_run_id"
+  pipeline_runs ||--o{ facility_reference_ranges : "pipeline_run_id"
+  users ||--o{ config_parameters : "updated_by"
+
+  facilities {
+    uuid id PK
+    text name UK
+    text timezone }
+  residents {
+    uuid id PK
+    uuid facility_id FK
+    text resident_code UK
+    text sex
+    resident_cohort cohort
+    date enrolled_on
+    date admitted_on
+    date withdrawn_on
+    resident_status status }
+  devices {
+    uuid id PK
+    uuid facility_id FK
+    text device_code UK
+    text room_label
+    text firmware_version_last
+    boolean active }
+  device_assignments {
+    uuid id PK
+    uuid resident_id FK
+    uuid device_id FK
+    date valid_from
+    date valid_to }
+  raw_sessions {
+    uuid id PK
+    bigint arrival_seq UK
+    timestamptz received_at
+    uuid ingest_batch_id FK
+    uuid api_key_id FK
+    jsonb payload
+    uuid resident_id FK
+    uuid device_id FK
+    text session_id
+    text resident_code
+    text device_code
+    timestamptz timestamp_utc
+    double mic_noise_level_dbfs
+    text audio_quality_flag
+    text extraction_software_version
+    text device_firmware_version
+    double speech_duration_s
+    text phrase_id
+    double loudness_dbfs "plus 18 more feature columns" }
+  ingest_batches {
+    uuid id PK
+    ingest_source source
+    text filename
+    integer record_count
+    integer accepted_count
+    integer rejected_count
+    integer duplicate_count
+    uuid uploaded_by FK
+    uuid api_key_id FK
+    timestamptz received_at }
+  ingest_rejections {
+    uuid id PK
+    uuid ingest_batch_id FK
+    uuid api_key_id FK
+    integer row_number
+    timestamptz received_at
+    jsonb raw_body
+    jsonb errors }
+  epochs {
+    uuid id PK
+    uuid resident_id FK
+    integer epoch_number
+    uuid device_id FK
+    text device_firmware_version
+    text extraction_software_version
+    timestamptz started_at
+    timestamptz ended_at
+    uuid pipeline_run_id FK }
+  processed_sessions {
+    uuid id PK
+    uuid raw_session_id FK
+    text session_id
+    uuid resident_id FK
+    uuid epoch_id FK
+    session_status status
+    text_array reasons
+    text reason_text
+    timestamptz timestamp_utc
+    date local_date
+    time local_time
+    boolean is_morning
+    text screen_detail
+    integer baseline_ordinal
+    boolean in_baseline
+    jsonb adjusted_features
+    uuid pipeline_run_id FK }
+  day_ledger {
+    uuid id PK
+    uuid resident_id FK
+    date local_date
+    day_status status
+    uuid device_id FK
+    text reason
+    uuid pipeline_run_id FK }
+  baselines {
+    uuid id PK
+    uuid resident_id FK
+    uuid epoch_id FK
+    text feature_key
+    integer n_sessions
+    text first_session_id
+    text frozen_after_session_id
+    double median
+    double mad
+    double robust_spread
+    boolean floor_applied
+    timestamptz frozen_at
+    uuid pipeline_run_id FK }
+  scores {
+    uuid id PK
+    uuid processed_session_id FK
+    uuid resident_id FK
+    uuid epoch_id FK
+    date local_date
+    boolean is_morning
+    jsonb z
+    double composite_raw
+    double composite_z
+    double cusum_tally
+    alarm_state alarm_state
+    uuid pipeline_run_id FK }
+  cusum_state {
+    uuid epoch_id PK
+    uuid resident_id FK
+    double current_tally
+    text last_scored_session_id
+    boolean alarm_on
+    uuid pipeline_run_id FK }
+  alerts {
+    uuid id PK
+    uuid resident_id FK
+    uuid epoch_id FK
+    text session_id
+    timestamptz triggered_at
+    date local_date
+    double cusum_value
+    alert_status status
+    text closed_reason
+    timestamptz closed_at
+    uuid acknowledged_by FK
+    timestamptz acknowledged_at
+    uuid pipeline_run_id FK }
+  staff_notes {
+    uuid id PK
+    uuid resident_id FK
+    uuid alert_id FK
+    uuid author_user_id FK
+    note_type note_type
+    text body
+    boolean marked_reviewed
+    uuid supersedes_id FK
+    timestamptz created_at }
+  facility_reference_ranges {
+    uuid id PK
+    uuid facility_id FK
+    text feature_key
+    text sex
+    double low
+    double high
+    text method
+    integer n_residents
+    timestamptz computed_at
+    uuid pipeline_run_id FK }
+  pipeline_runs {
+    uuid id PK
+    pipeline_trigger trigger
+    jsonb scope
+    text config_profile
+    jsonb config_snapshot
+    text code_version
+    timestamptz as_of
+    timestamptz started_at
+    timestamptz finished_at
+    pipeline_run_status status
+    jsonb counts
+    jsonb warnings
+    text error_message }
+  config_parameters {
+    text profile PK
+    text key PK
+    jsonb value
+    text description
+    uuid updated_by FK
+    timestamptz updated_at }
+  users {
+    uuid id PK
+    text email UK
+    text display_name
+    text password_hash
+    user_role role
+    boolean active
+    timestamptz last_login_at }
+  api_keys {
+    uuid id PK
+    text name
+    text key_hash UK
+    text_array scopes
+    uuid device_id FK
+    boolean active
+    timestamptz created_at
+    timestamptz last_used_at }
+  audit_logs {
+    bigint id PK
+    timestamptz occurred_at
+    actor_type actor_type
+    text actor_id
+    text action
+    text entity_type
+    text entity_id
+    jsonb details
+    inet ip
+    text request_id }
+```
+
+`audit_logs.actor_id` and `entity_id` are text references (UUID or bigint as text) without FKs, so audit rows survive
+any later change to the referenced entity. Business keys (`session_id`, `first_session_id`,
+`frozen_after_session_id`, `last_scored_session_id`, `alerts.session_id`) are the device `session_id` text, which is
+stable across rebuilds, unlike `processed_sessions.id`.
+
+### 4.3 Immutability enforcement
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-008 | `raw_sessions` and `audit_logs` shall each have the row-level UPDATE/DELETE trigger and statement-level TRUNCATE trigger of TRD 20 (PGS-018), raising SQLSTATE `EW001`. | Must | BR-02, BR-16 | Test |
+| DB-009 | Role `echowell_app` shall hold only `SELECT, INSERT` on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes` and `baselines`. | Must | BR-02, BR-16, ASM-07 | Test (`has_table_privilege('echowell_app','raw_sessions','UPDATE')` = false) |
+| DB-010 | A correction to a staff note shall be stored as a new `staff_notes` row whose `supersedes_id` points to the corrected row; the API shall show only notes that no other note supersedes, with a "edited" marker. | Must | BR-13 | Test |
+| DB-011 | Every audited action of TRD 12 (login, logout, failed login, ingest batch, note created, alert acknowledged, pipeline run, config change, user change, resident cohort change, resident withdrawal) shall insert its `audit_logs` row in the same database transaction as the change it records. | Must | BR-16, TRD 12 | Test (forced rollback leaves neither change nor audit row) |
+
+### 4.4 Rebuild strategy
+
+The pipeline (TRD 07) is a pure function of (raw records, reference data, config profile, as-of time). The database
+layer persists its output per resident:
+
+```mermaid
+sequenceDiagram
+  participant S as backend/services/pipeline_service
+  participant DB as PostgreSQL
+  participant A as analytics.pipeline (pure)
+  S->>DB: INSERT pipeline_runs (status running, config_snapshot, code_version, as_of)
+  loop each resident in scope (sorted by resident_code)
+    S->>DB: BEGIN; pg_advisory_xact_lock(resident key)
+    S->>DB: SELECT raw_sessions ORDER BY arrival_seq; assignments; existing epochs + baselines + alerts
+    S->>A: run_resident(records, assignments, frozen_baselines, config, as_of)
+    A-->>S: epochs, processed, ledger, new baselines, scores, cusum, alert events, warnings
+    S->>DB: DELETE scores, processed_sessions, day_ledger, cusum_state of resident
+    S->>DB: UPSERT epochs by (resident_id, epoch_number)
+    S->>DB: INSERT processed_sessions, day_ledger, scores, cusum_state
+    S->>DB: INSERT baselines only for newly frozen epochs
+    S->>DB: UPSERT alerts by (epoch_id, session_id); close per rules
+    S->>DB: COMMIT (or ROLLBACK and record failure)
+  end
+  S->>DB: UPDATE pipeline_runs SET status, finished_at, counts, warnings
+```
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-012 | Table, column, constraint, index, trigger and enum names shall follow TRD 20 section 4.9, and SQLAlchemy models shall declare every constraint and index name explicitly. | Must | TRD 20 PGS-023 | Test (`alembic check`) |
+| DB-013 | The pipeline shall persist each resident's results in exactly one database transaction; on any error that transaction shall roll back, leaving the resident's previously persisted derived rows unchanged, and the run shall continue with the next resident. | Must | BR-02, TRD 07 | Test (inject failure for R05: R05 rows identical to before; other residents updated; run status `failed` with error_message naming R05) |
+| DB-014 | Within a resident transaction the service shall delete that resident's `scores`, `processed_sessions`, `day_ledger` and `cusum_state` rows and insert the newly computed rows; it shall not delete `baselines`, `alerts`, `staff_notes` or `epochs` that carry a frozen baseline. | Must | SRC-02, ASM-07 | Test |
+| DB-015 | `epochs` shall be upserted on `(resident_id, epoch_number)`, keeping the existing `id` so that `baselines`, `alerts` and `cusum_state` references stay valid; `ended_at` shall be updated when a later epoch starts. Epochs without a frozen baseline that the new computation no longer produces shall be deleted. | Must | BR-08 | Test |
+| DB-016 | A frozen baseline (20 `baselines` rows for an epoch) shall never be updated or deleted by the application; the pipeline shall load persisted baselines and score against them. If the recomputed membership of an already frozen baseline differs from the persisted `first_session_id`/`frozen_after_session_id`, the persisted baseline shall be kept and the run shall append `{"type": "late_arrival", "resident_code": …, "epoch_number": …, "session_id": …}` to `pipeline_runs.warnings`. | Must | ASM-07, OQ-10, BR-09 | Test (insert a late record dated inside R01's baseline window: baselines unchanged, warning present) |
+| DB-017 | If a late record would change the epoch numbering of an epoch that has a frozen baseline, the service shall leave all of that resident's derived rows unchanged, append a `late_arrival` warning with `"detail": "epoch renumbering blocked"`, and continue with the next resident. | Must | ASM-07, OQ-10 | Test |
+| DB-018 | Alerts shall be reconciled by `(epoch_id, session_id)`: an alert the computation produces and the table lacks is inserted with status `open`; an existing alert keeps `status`, `acknowledged_by`, `acknowledged_at`; an open or acknowledged alert the computation no longer produces is set to `closed` with `closed_reason = 'superseded by rebuild'`; when a resident's new epoch starts, every non-closed alert of the earlier epochs is set to `closed` with `closed_reason = 'epoch ended'` (ASM-06). | Must | BR-11, ASM-06, TRD 09 | Test |
+| DB-019 | A rebuild of all residents with unchanged `raw_sessions`, reference tables and config profile shall leave every derived table identical to the previous run when compared on all columns except `id`, `created_at`, `updated_at` and `pipeline_run_id`. | Must | BR-15, SRC-02 | Test (`tests/integration/test_rebuild_idempotent.py` runs test_v0_1 twice) |
+| DB-020 | Every `pipeline_runs` row shall store `config_profile`, the full 16-key `config_snapshot`, `code_version` (value of GIT_SHA, or `local` when unset), `as_of`, and on completion `counts` with keys `usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, scored, alerts_opened`. | Must | BR-15, TRD 07 | Test (test_v0_1 counts = 267/12/2/2/17/2/98/2) |
+| DB-021 | The per-resident transaction shall start with `pg_advisory_xact_lock(hashtextextended('echowell:resident:' \|\| resident_code, 0))`; the ingest path shall take `pg_advisory_xact_lock(hashtextextended('echowell:session:' \|\| session_id, 0))` before deciding whether an arrival is a duplicate, so concurrent arrivals of one `session_id` are ordered by `arrival_seq` and only the first is reported as new. | Must | BR-03 | Test (two concurrent POSTs of one session_id: one 201, one 200 duplicate) |
+| DB-022 | A raw record shall be committed before its pipeline run starts; a failed pipeline run shall never remove or alter the committed raw record. | Must | BR-02 | Test |
+| DB-023 | `day_ledger` shall contain exactly one row per resident per local calendar day from `residents.enrolled_on` through the earlier of the run's `as_of` local date (in `facilities.timezone`) and `residents.withdrawn_on`; it shall never contain rows for later days, and missing days shall never be filled from other days. | Must | BR-06, SRC-03 | Test (test_v0_1: 300 ledger rows, 19 missing; R02 day 12 `missing_device_gap`) |
+| DB-024 | A database's `pipeline_runs.config_profile` values shall all equal the environment's `PIPELINE_PROFILE`; switching a non-production database to another profile shall require `python -m backend.cli reset-test-db`, which shall refuse to run unless `APP_ENV` is `local` or `test`, and which removes all rows (purge path, TRD 20 PGS-019) and re-applies migrations and seeds. A production database shall never hold a `test_v0_1` run. | Must | D-OWNER-2, ASM-04 | Test (CLI with APP_ENV=staging exits 2; pipeline start with profile mismatch fails) |
+| DB-025 | When a resident with `cohort = 'new_admission'` gets a frozen baseline in its current epoch, the pipeline transaction shall set `residents.cohort = 'longitudinal'` and insert an `audit_logs` row with `actor_type = 'system'`, `action = 'resident.cohort_changed'`, details `{"from": "new_admission", "to": "longitudinal", "epoch_number": n}`. The transition is one-way. | Should | BR-14, SRC-12 | Test |
+
+### 4.5 Migration policy
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-026 | Alembic migrations under `backend/alembic/versions/` shall be the only mechanism that changes the schema of staging and production; `database/schema.sql` shall be a generated reference (TRD 20 PGS-016, PGS-017). | Must | SRC-01, contract §3 | Inspection; Test |
+| DB-027 | Migration files shall be named `NNNN_<snake_case_summary>.py` with a four-digit sequential revision id (`0001`, `0002`, …) and a linear history (exactly one head). | Must | TRD 18 | Test (`alembic heads` returns one revision) |
+| DB-028 | Migrations shall run as `echowell_migrator` in the deploy pipeline before the new backend version receives traffic (Railway pre-deploy command `alembic upgrade head`; TRD 15), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
+| DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments. Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
+| DB-030 | No migration shall UPDATE or DELETE rows of `raw_sessions` or `audit_logs`; a schema change to `raw_sessions` shall be additive (new nullable column or new CHECK validated `NOT VALID` then `VALIDATE`). | Must | BR-02, SRC-02 | Inspection; Test (migration test greps for UPDATE/DELETE on those tables) |
+| DB-031 | Before every production migration the deploy job shall create a Neon branch named `pre-migration-<git sha>` (on AWS RDS: a manual snapshot with the same name). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
+
+### 4.6 Constraints, enumerations and naming
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-032 | Database constraints shall duplicate, not replace, the application validation: every enumerated value, range and status/reason rule of TRD 20 section 4 shall be enforced by a type, CHECK, UNIQUE, EXCLUDE or FK constraint, so that a defect in application code cannot persist an invalid row. | Must | BR-02, BR-04 | Test (AC-PGS-01..13) |
+| DB-033 | Every foreign key shall be `ON DELETE RESTRICT` except `scores.processed_session_id` (`ON DELETE CASCADE`), so that no reference or human-entered row disappears as a side effect. | Must | BR-02 | Test (AC-PGS-13) |
+| DB-034 | Multi-valued state shall use the 12 PostgreSQL enum types of TRD 20 section 4.4; adding a label shall be done by `ALTER TYPE … ADD VALUE` in its own migration; labels shall never be renamed or removed in staging or production. | Must | contract §9 | Inspection |
+| DB-035 | The schema shall contain no column for names, dates of birth, contact details, free-text addresses or audio; the only free-text columns that staff fill are `staff_notes.body` and `devices.room_label`. | Must | BR-16, contract §2 | Inspection (column list review in PR); Test (schema test asserts the column whitelist) |
+
+Summary of key constraints (exact DDL in TRD 20):
+
+| Rule | Constraint |
+|---|---|
+| One processed row per raw row | `processed_sessions_raw_session_uq` |
+| One ledger row per resident-day | `day_ledger_resident_date_uq` |
+| One baseline row per epoch-feature (20 per frozen epoch) | `baselines_epoch_feature_uq`, `baselines_feature_key_ck` |
+| One score per processed session | `scores_processed_session_uq` |
+| One current epoch per resident | `epochs_current_uq` (partial) |
+| One active alert per epoch | `alerts_one_active_per_epoch_uq` (partial) |
+| No overlapping device assignments for one resident | `device_assignments_no_overlap_ex` |
+| Status ⇔ reasons | `processed_sessions_status_reason_ck`, `processed_sessions_reason_text_ck`, `day_ledger_reason_ck` |
+| Duplicates have no epoch | `processed_sessions_epoch_ck` |
+| Withdrawn ⇔ withdrawn_on | `residents_withdrawn_ck` |
+
+### 4.7 Indexing strategy and query patterns
+
+Indexes are chosen from the API queries of contract section 10 at the ASM-08 volume. UNIQUE constraints provide the
+lookup indexes for `resident_code`, `device_code`, `(resident_id, local_date)` on `day_ledger`,
+`(epoch_id, feature_key)` on `baselines`, `(resident_id, epoch_number)` on `epochs` and `processed_session_id` on
+`scores`.
+
+| Query pattern (endpoint) | SQL shape | Index(es) |
+|---|---|---|
+| Overview: current epoch per resident (`GET /residents`) | `epochs WHERE resident_id = ANY(:ids) AND ended_at IS NULL` | `epochs_current_uq` |
+| Overview: open alarm and alarm date | `alerts WHERE resident_id = ANY(:ids) AND status <> 'closed'` | `alerts_resident_triggered_idx`, `alerts_one_active_per_epoch_uq` |
+| Overview: last check-in | `SELECT DISTINCT ON (resident_id) … FROM processed_sessions WHERE status <> 'duplicate' ORDER BY resident_id, timestamp_utc DESC` | `processed_sessions_resident_ts_idx` (partial) |
+| Overview: 30-day used/set aside/quarantined | `processed_sessions WHERE resident_id = ANY(:ids) AND local_date BETWEEN :d-29 AND :d GROUP BY resident_id, status` | `processed_sessions_resident_date_idx` (INCLUDE status, index-only) |
+| Overview: 30-day missed | `day_ledger WHERE local_date BETWEEN :d-29 AND :d AND status <> 'checked_in'` | `day_ledger_missing_idx` (partial) |
+| Overview: baseline progress n of N | `count(*) FROM processed_sessions WHERE epoch_id = :current AND status = 'usable'` | `processed_sessions_epoch_idx` |
+| Detail header and baseline line (`GET /residents/{code}`) | `baselines WHERE epoch_id = :e AND feature_key = 'composite'` | `baselines_epoch_feature_uq` |
+| Scores series / tally chart (`GET /scores`) | `scores WHERE epoch_id = :e ORDER BY local_date` or `WHERE resident_id = :r AND local_date BETWEEN :from AND :to` | `scores_epoch_date_idx`, `scores_resident_date_idx` |
+| Check-in log (`GET /residents/{code}/checkins`) | union of `processed_sessions` (non-duplicate, non-usable), `day_ledger` (missing), `alerts`, `epochs`, `baselines` by resident and date range | `processed_sessions_resident_date_idx`, `day_ledger_missing_idx`, `alerts_resident_triggered_idx` |
+| Features sparklines (`GET /residents/{code}/features`) | `processed_sessions WHERE epoch_id = :e AND status = 'usable' ORDER BY timestamp_utc` + `scores` | `processed_sessions_epoch_idx` |
+| Alerts list (`GET /alerts?status=`) | `alerts WHERE status = :s ORDER BY triggered_at DESC` | `alerts_status_triggered_idx` |
+| Staff notes (`GET /residents/{code}/notes`) | `staff_notes WHERE resident_id = :r ORDER BY created_at DESC` | `staff_notes_resident_created_idx` |
+| Device panel (`GET /devices`) | assignments by device; last upload `max(timestamp_utc) FROM raw_sessions WHERE device_id = :d`; silent days from `day_ledger` by `(device_id, local_date)` | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
+| Ingest duplicate check (`POST /sessions`) | `EXISTS raw_sessions WHERE session_id = :s` | `raw_sessions_session_id_idx` |
+| Pipeline input | `raw_sessions WHERE resident_id = :r ORDER BY timestamp_utc, arrival_seq` (arrival order recovered by arrival_seq) | `raw_sessions_resident_ts_idx` |
+| Batch report (`GET /ingest/batches/{id}`) | `ingest_rejections WHERE ingest_batch_id = :b` | `ingest_rejections_batch_idx` |
+| Audit review | `audit_logs WHERE entity_type = :t AND entity_id = :id` / by actor / by time | `audit_logs_entity_idx`, `audit_logs_actor_idx`, `audit_logs_occurred_idx` |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-040 | The overview queries (current epoch, open alerts, last check-in, 30-day counts, baseline progress) shall be served by the indexes listed above and shall complete in ≤ 150 ms total database time for 100 residents with 730 days of data each. | Must | BR-12, ASM-08 | Test (`tests/performance/test_overview_queries.py` with generated volume) |
+| DB-041 | The 30-day window shall be the 30 local calendar days ending on the as-of local date inclusive (`as_of_date − 29` … `as_of_date`); "used", "set aside" and "quarantined" counts shall come from `processed_sessions` by `local_date` and status, and "missed" from `day_ledger` statuses `missing_resident` + `missing_device_gap`; duplicates are never counted. | Must | BR-12, SRC-09 | Test (as of 2026-10-30: R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12; tile sum 19) |
+| DB-042 | Resident-scoped queries on `raw_sessions`, `processed_sessions`, `scores` and `day_ledger` shall not use a sequential scan at the DB-040 volume. | Should | NFR | Test (EXPLAIN in performance test asserts no `Seq Scan` on those tables) |
+| DB-043 | The scores series for one epoch shall be returned in `local_date` order with `cusum_tally` and `alarm_state`, plus the baseline period derived from `baselines.first_session_id`/`frozen_after_session_id`, in ≤ 50 ms database time. | Must | BR-13 | Test |
+| DB-044 | A device silent day shall be derived, not stored: device D is silent on local day d when at least one `day_ledger` row has `device_id = D` and `local_date = d`, and none of those rows has status `checked_in`. | Must | BR-12, SRC-09 | Test (as of 2026-10-30: D02 silent on 2026-10-12 only; D08 silent on R08's 12 missing days) |
+| DB-045 | "Last check-in" shall be the `timestamp_utc` of the resident's latest non-duplicate `processed_sessions` row (any of usable, set_aside, quarantined), presented in facility local time. | Must | BR-12, SRC-09 | Test (R09 → 2026-10-30 14:28 local) |
+| DB-046 | New indexes shall be added only with a documented query pattern in this section and created with `CREATE INDEX CONCURRENTLY` in staging/production migrations (in an Alembic `autocommit_block`). | Should | — | Inspection |
+| DB-047 | Foreign-key columns used in deletes or joins (`pipeline_run_id`, `ingest_batch_id`, `api_key_id`, `acknowledged_by`, `author_user_id`, `alert_id`, `device_id`) shall be indexed (TRD 20 section 4.7). | Should | — | Test (catalog query: every FK column is the leading column of some index) |
+
+### 4.8 Data volumes
+
+Basis: ASM-08 (< 100 residents, ≤ 1 session per resident per day, < 25 users), test set SRC-05 (10 residents, 30 days,
+283 arrivals).
+
+| Table | Rows per resident-year | 100 residents, 1 year | 100 residents, 5 years | Approx. row size | 5-year size incl. indexes |
+|---|---|---|---|---|---|
+| raw_sessions | ≤ 365 (+ duplicates) | 36,500 | 182,500 | 1.6 kB (typed + payload) | ≈ 450 MB |
+| processed_sessions | = raw rows | 36,500 | 182,500 | 0.9 kB (adjusted_features jsonb) | ≈ 250 MB |
+| day_ledger | 365 | 36,500 | 182,500 | 0.1 kB | ≈ 40 MB |
+| scores | ≤ 335 (after baseline of 30) | 33,500 | 167,500 | 0.4 kB | ≈ 100 MB |
+| baselines | 20 per epoch (≈ 1–3 epochs) | ≤ 6,000 | ≤ 30,000 | 0.2 kB | < 10 MB |
+| alerts, cusum_state, epochs | < 10 | < 1,000 | < 5,000 | 0.2 kB | < 2 MB |
+| audit_logs | — | ≈ 50,000 (logins, notes, runs) | ≈ 250,000 | 0.3 kB | ≈ 100 MB |
+| pipeline_runs | — | ≈ 37,000 ingest + 365 nightly | ≈ 185,000 | 1 kB (snapshot) | ≈ 200 MB |
+
+Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB.
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-048 | The schema shall support at least 100 residents × 5 years at 1 record per resident per day without partitioning; partitioning shall not be introduced in the MVP. | Must | ASM-08 | Analysis (table above); Test (DB-040 volume test) |
+| DB-049 | The nightly run shall log total database size (`pg_database_size`) in its `counts` as `db_size_bytes`, so growth can be compared with the plan's storage limit (TRD 22). | Should | RSK-07 | Test |
+
+### 4.9 Backups, point-in-time recovery and encryption
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-050 | The production database shall have point-in-time recovery with a history window of at least 7 days (Neon history retention on the interim stack; RDS automated backups with ≥ 7-day retention on the AWS target); recovery point objective ≤ 15 minutes and recovery time objective ≤ 4 hours. | Must | BR-02, BR-16, D-OWNER-3 | Inspection (plan settings recorded in TRD 22); Demo (restore drill) |
+| DB-051 | A restore drill shall be run once per calendar month and before the 1 Dec 2026 demo: restore production to a new Neon branch (or RDS instance) at a chosen timestamp, run the schema diff test and compare row counts of `raw_sessions` and `audit_logs` with the source at that timestamp; the result shall be recorded in `docs/database_design.md`. | Should | BR-02 | Demo; Inspection |
+| DB-052 | All database storage and backups holding non-synthetic data shall be encrypted at rest (provider-managed encryption on Neon/Railway; RDS storage and snapshot encryption with a customer-managed KMS key on AWS). | Must | D-OWNER-3, BR-16 | Inspection |
+| DB-053 | Every connection to a non-local database shall use TLS (`sslmode=require` or `verify-full`) (TRD 20 PGS-027). | Must | D-OWNER-3, BR-16 | Test |
+| DB-054 | Logical exports (`pg_dump`) of a database holding non-synthetic data shall be written only to storage approved under OQ-23/OQ-01 and never to GitHub Actions artifacts, the repository or personal devices. | Must | D-OWNER-3, BR-16 | Inspection |
+
+### 4.10 Seeding
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-055 | Migration `0002_seed_config_parameters` shall insert both profiles (`production`, `test_v0_1`) with the 16 keys and values of contract section 7 (TRD 20 section 4.11); `production.baseline_n = 30`, `test_v0_1.baseline_n = 16`. | Must | SRC-03, D-OWNER-2 | Test |
+| DB-056 | `python -m backend.cli seed test_v0_1` shall create, in one transaction: facility `Edgewood test` (timezone America/Chicago); residents R01–R10 (cohort `longitudinal`, `enrolled_on` 2026-10-01, sex R01 F, R02 M, R03 F, R04 M, R05 F, R06 M, R07 F, R08 M, R09 F, R10 M per SRC-04); devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (`firmware_version_last` fw-1.0.0; D07 `active = false`); the 11 assignments of TRD 20 section 4.12 including R02 and R03 sharing D02 from 2026-10-01 and R07 on D07 2026-10-01..2026-10-12 then D07B from 2026-10-13; users `admin@echowell.test` (admin), `clinician@echowell.test` (clinician), `researcher@echowell.test` (researcher); and API key `test-ingest`. | Must | SRC-04, BR-15 | Test (counts 1/10/10/11/3/1) |
+| DB-057 | The seed command shall generate user passwords and the API key with `secrets.token_urlsafe(24)`, print them once to standard output, and store only their argon2id / SHA-256 hashes; no credential shall be committed to the repository. | Must | BR-16, TRD 12 | Inspection; Test |
+| DB-058 | `python -m backend.cli seed test_v0_1 --with-input` shall additionally ingest SRC-05 through the ingestion service as one `ingest_batches` row with `source = 'seed'` and then run the pipeline with trigger `test` and `as_of` 2026-10-30 15:00 America/Chicago (2026-10-30T20:00:00Z). | Must | BR-15, SRC-05 | Test (283 raw rows; counts of DB-020) |
+| DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Railway/Neon stack only synthetic or test data shall be loaded until OQ-23 is resolved. | Must | D-OWNER-3, OQ-23 | Test |
+| DB-060 | The production roster (residents, devices, assignments) shall be loaded by `python -m backend.cli load-roster <file.csv>` with header `resident_code,sex,cohort,enrolled_on,admitted_on,device_code,valid_from,valid_to`, as one transaction, writing one `audit_logs` row `action = 'roster.loaded'` with row counts; the file shall contain study IDs only. | Should | BR-16, ASM-03 | Test |
+
+### 4.11 Retention and withdrawal
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| DB-061 | The MVP shall contain no automated deletion, archiving or expiry job for any table; retention rules are pending OQ-01. | Must | OQ-01, BR-02 | Inspection |
+| DB-062 | Withdrawal shall be recorded by setting `residents.status = 'withdrawn'` and `withdrawn_on` (one UPDATE plus an `audit_logs` row `resident.withdrawn`); existing rows of that resident shall be kept unchanged. | Must | OQ-11, contract §9 | Test |
+| DB-063 | After withdrawal, ingestion shall reject the resident's records with 422 "resident withdrawn" (logged in `ingest_rejections`), the day ledger shall not extend past `withdrawn_on`, and default resident lists shall exclude the resident. | Must | OQ-11, BR-06 | Test |
+| DB-064 | If the IRB directs deletion of a withdrawn resident's data (OQ-11), it shall be executed only by `python -m backend.cli purge-resident <resident_code> --confirm <resident_code>` running as `echowell_migrator` with `echowell.allow_purge = 'on'`, deleting in FK order (scores, cusum_state, alerts' staff_notes, alerts, baselines, day_ledger, processed_sessions, epochs, raw_sessions, device_assignments, residents) in one transaction and inserting one `audit_logs` row `resident.purged` containing only the resident_code and per-table row counts; existing `audit_logs` rows are not deleted. | Should | OQ-11, BR-16 | Test (local: purge R08 leaves no R08 rows except audit_logs) |
+
+## 5. Assumptions
+
+- ASM-01 Facility timezone America/Chicago; stored per facility in `facilities.timezone`.
+- ASM-02 At most one session per resident per local day (v0.1); not enforced by a constraint.
+- ASM-03 Single facility (Edgewood) in the MVP; all reference tables carry `facility_id`.
+- ASM-04 Test profile baseline_n = 16, production 30 (confirmed by D-OWNER-2; test profile never used in production).
+- ASM-06 A new epoch closes open alerts of the previous epoch ("epoch ended") and restarts CUSUM.
+- ASM-07 Frozen baselines are never recomputed after freeze; late arrivals are flagged.
+- ASM-08 < 25 users, < 100 residents, ≤ 1 session per resident per day.
+- Note for lead (TRD-local): Neon permits `CREATE ROLE`, `btree_gist` and branch creation from CI with a Neon API key
+  (TRD 22); RDS PostgreSQL 16 permits the same features.
+
+## 6. Dependencies
+
+- TRD 20 for the DDL; TRD 23 for entity semantics; TRD 07–10 for writer behaviour.
+- TRD 12 for roles, audit action vocabulary and credential hashing.
+- TRD 15 / TRD 16 for the deploy step that runs migrations and the CI schema diff job.
+- TRD 21 for `DATABASE_URL`, `APP_ENV`, `PIPELINE_PROFILE`, `FACILITY_TZ`, `GIT_SHA`, and the migrator connection string.
+- TRD 22 for Neon/Railway/RDS plan features (PITR window, encryption, branching).
+- PostgreSQL 16, Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x.
+
+## 7. Acceptance Criteria
+
+1. AC-DB-01: After `seed test_v0_1 --with-input`, `raw_sessions` has 283 rows and `processed_sessions` 283 rows with status counts usable 267, set_aside 12, quarantined 2, duplicate 2; `day_ledger` has 300 rows with 17 `missing_resident` and 2 `missing_device_gap`.
+2. AC-DB-02: `baselines` has 180 rows (9 resident-epochs × 20); R08 has none; R07 epoch 1 has none; `scores` has 98 rows; `alerts` has 2 rows (R09 session R09-20261021-01, R10 session R10-20261024-01), both `open`.
+3. AC-DB-03: Running the full pipeline a second time changes no derived value (DB-019) and adds no baseline or alert row.
+4. AC-DB-04: As `echowell_app`, UPDATE/DELETE/TRUNCATE on `raw_sessions` and `audit_logs` fail; as owner they fail with SQLSTATE EW001.
+5. AC-DB-05: Overview queries return, as of 2026-10-30 15:00 CT, the 30-day counts of DB-041 and tile values 2 / 7 / 1 / 19.
+6. AC-DB-06: Inserting a late record R01-20261005-02 (timestamp 2026-10-05 12:00 local, arriving after the baseline froze) leaves all R01 `baselines` rows byte-identical and adds a `late_arrival` warning to the run.
+7. AC-DB-07: `alembic upgrade head` on an empty database followed by the schema diff test passes; `alembic heads` shows one head.
+8. AC-DB-08: `seed test_v0_1` and `reset-test-db` exit with code 2 and write nothing when `APP_ENV=production` (seed) or `APP_ENV=staging` (reset).
+9. AC-DB-09: The DB-040 performance test passes at 100 residents × 730 days.
+10. AC-DB-10: Withdrawing R08 on 2026-10-20 and re-running gives R08 ledger rows only through 2026-10-20, and a subsequent POST for R08 returns 422 "resident withdrawn".
+
+## 8. Implementation Notes
+
+- File paths: models in `backend/models/` (mapping in TRD 23 section 4.6), repositories in `backend/repositories/`,
+  pipeline persistence in `backend/services/pipeline_service.py`, CLI in `backend/cli.py`, migrations in
+  `backend/alembic/versions/`, reference DDL in `database/schema.sql`, seed helpers in `database/seeds/`
+  (`test_v0_1_roster.sql` = TRD 20 section 4.12), schema dump script `scripts/dump_schema.sh`.
+- Use SQLAlchemy 2.0 `Session` with `session.begin()` per resident; never share a session across residents.
+- Bulk inserts: use `session.execute(insert(Model), list_of_dicts)` (executemany); at ≤ 365 rows per resident per year
+  this is well under a second.
+- Do not use `ON CONFLICT DO UPDATE` on `baselines`; insert only for epochs that have no baseline rows yet.
+- Floats: keep float64 end to end (`double precision`); never round before storing. Tests compare with absolute
+  tolerance 1e-6 (contract §7).
+- Local dates: compute with `zoneinfo.ZoneInfo(facilities.timezone)` in Python; never with the database session time zone.
+- Neon pooled host (`-pooler`) uses transaction pooling: advisory transaction locks (`pg_advisory_xact_lock`) work, but
+  session-level locks and `SET` outside a transaction do not; Alembic must use the direct host.
+- Pitfall: deleting `processed_sessions` cascades to `scores` (only CASCADE in the schema); `cusum_state` and `day_ledger`
+  must be deleted explicitly.
+- Pitfall: `alerts.session_id` and baseline session references are text business keys; do not replace them with
+  `processed_sessions.id`, which changes on every rebuild.
+- The SRC-03 workbook is read only by `tests/validation/` with openpyxl/pandas; keep it out of any seed or fixture loaded
+  into the database (DB-007).
+
+## 9. Open Questions
+
+- OQ-01 Data retention architecture (what, where, how long) — determines future deletion/archiving jobs.
+- OQ-03 Final feature column names — renaming is a migration on `raw_sessions` columns and JSON keys.
+- OQ-05 Whether staff review resets CUSUM/alarm — would allow more than one alert per epoch (index already permits it).
+- OQ-07 AWS budget approval timing and account ownership (UND IT) — timing of the move from Neon to RDS.
+- OQ-08 / OQ-20 Facility norm definition and sex availability — shape of `facility_reference_ranges`.
+- OQ-10 Handling of late records that predate a frozen baseline (DB-016, DB-017 implement the interim rule).
+- OQ-11 Data handling on withdrawal (DB-062..DB-064).
+- OQ-13 Alarm-limit calibration on the larger dataset (changes `config_parameters`, not schema).
+- OQ-23 May live PHI-derived feature data be stored on the interim Netlify/Railway/Neon stack before AWS approval.
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |

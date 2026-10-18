@@ -1,2 +1,1679 @@
-# 19_API_Contracts_OpenAPI_Spec
+# 19 API Contracts OpenAPI Spec
 
+Document ID: ECHOWELL-TRD-19 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+
+## 1. Purpose
+
+This document is the wire contract of the EchoWell REST API: for every endpoint it fixes the method, path,
+authentication and roles, parameters with types and constraints, request body schema, response schemas
+with example JSON taken from the pipeline test data (SRC-03, SRC-05), status codes and error codes. It
+includes an OpenAPI 3.1 skeleton with `components/schemas` for every DTO. The FastAPI implementation
+(TRD 05) and the frontend API client (`frontend/services/api.ts`, TRD 04) are both built from this contract.
+
+## 2. Scope
+
+In scope: every endpoint in the shared contract §10 plus `POST /api/v1/auth/logout` (TRD 05 API-025);
+all request/response DTOs; enums aligned with the database enums (TRD 06/20); the error (Problem) schema
+and error code catalogue (owned by TRD 05 §4.7, repeated here per endpoint); security schemes; contract tests.
+
+Out of scope: endpoint behaviour beyond what a client observes (TRD 05), algorithm definitions (TRD 07–09),
+DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-01, BR-18, OQ-06).
+
+## 3. References
+
+| ID | Document |
+|---|---|
+| SRC-03 | Pipeline test workbook v0.1 (Exp_scores, Exp_baselines, Exp_status_counts, Exp_resident_outcomes used in examples) |
+| SRC-05 | Pipeline test input CSV v0.1 (field order of `IngestRecord`; CSV header for `POST /ingest`) |
+| SRC-09, SRC-10, SRC-11 | UI wireframes (fields the dashboard needs) |
+| SRC-17 | Implement_Feature_Batches.md ("Match OpenAPI specification exactly") |
+| TRD 05 | Backend API TRD (behaviour, error catalogue, pagination, rate limits) |
+| TRD 06 / TRD 20 / TRD 23 | Database design, PostgreSQL schema, entity definitions (enum sources) |
+| TRD 08 / TRD 09 | Baseline/scoring and CUSUM/alerting (meaning of z, composite, tally) |
+| TRD 10 | Ingestion and validation |
+| TRD 12 | Security and authentication (role matrix) |
+| TRD 13 | Testing strategy (contract tests) |
+
+## 4. Requirements
+
+### 4.1 Contract-level requirements
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| OAS-001 | The API shall be versioned in the path as `/api/v1`; a breaking change (removed/renamed field, changed type, new required request field, removed enum value) shall require a new path version `/api/v2`. | Must | BR-17 | Inspection |
+| OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the servers `/api/v1`-relative paths defined in §4.4. | Must | SRC-17 | Test |
+| OAS-003 | Every path, method, parameter (name, location, type, required flag, constraints), request body and response status code in this document shall appear in the generated document, and no other paths shall appear. | Must | SRC-17 | Test |
+| OAS-004 | Every schema in `components/schemas` of §4.5 shall exist in the generated document with the same property names, types, `required` lists and enum values; additional optional response properties are a contract change and shall be added here first. | Must | SRC-17 | Test |
+| OAS-005 | A contract test (`tests/integration/test_openapi_contract.py`) shall load `docs/api_reference/openapi.yaml` (the §4.5 YAML, committed by the build) and the generated `/api/v1/openapi.json`, and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13 | Test |
+| OAS-006 | Response-validation tests shall validate every response body produced by the integration test suite against the declared response schema for its status code (using `openapi-core` or `jsonschema` with the 3.1 dialect). | Must | TRD 13 | Test |
+| OAS-007 | Enum values in DTOs shall equal the database enum values in TRD 20: `ProcessedStatus`, `DayStatus`, `AlarmState`, `AlertStatus`, `NoteType`, `Role`, `Cohort`, `ResidentStatus`, `PipelineTrigger`, `PipelineStatus`, `IngestSource`; a test shall compare them with `pg_enum`. | Must | TRD 20, TRD 23 | Test |
+| OAS-008 | Property names shall be snake_case, identical to the database column names where a column exists (for example `resident_code`, `cusum_tally`, `alarm_state`). | Must | TRD 06 | Inspection |
+| OAS-009 | All non-2xx responses shall use media type `application/problem+json` and the `Problem` schema; all other responses `application/json`, except 204. | Must | contract §10 | Test |
+| OAS-010 | Every response shall declare the `X-Request-ID` header (string). | Must | contract §10 | Test |
+| OAS-011 | Floating-point values shall be serialised as JSON numbers in full float64 precision (no rounding in the API); rounding is a presentation concern (TRD 04). | Must | BR-15 | Test |
+| OAS-012 | Nullable fields shall be declared with `type: [<type>, "null"]` and shall always be present in responses (never omitted). | Must | — | Test |
+| OAS-013 | Security schemes shall be `bearerAuth` (`type: http`, `scheme: bearer`, `bearerFormat: JWT`) and `apiKeyAuth` (`type: apiKey`, `in: header`, `name: X-API-Key`); each operation shall list the schemes in §4.3. | Must | TRD 12 | Test |
+| OAS-014 | The frontend TypeScript types in `frontend/lib/api-types.ts` shall be generated from the §4.5 YAML with `openapi-typescript` 7.x, and CI shall fail if regeneration produces a diff. | Should | TRD 04, TRD 16 | Test |
+| OAS-015 | Examples in this document shall be included as `examples` in the YAML and the contract test shall validate each example against its schema. | Should | BR-15 | Test |
+| OAS-016 | No schema shall contain a property for audio data, audio URLs, resident names, dates of birth or any free-text identifier other than study IDs (`resident_code`, `device_code`, `session_id`). | Must | BR-01, BR-16 | Inspection |
+
+### 4.2 Common conventions
+
+- Base URL: `${NEXT_PUBLIC_API_BASE_URL}/api/v1` (for local development `http://localhost:8000/api/v1`).
+- Time fields: `*_at` = ISO 8601 UTC with `Z`; `*_local` = ISO 8601 with facility offset; `local_date`,
+  `*_on`, `*_since`, `from`, `to` = `YYYY-MM-DD` facility-local calendar dates.
+- Pagination query: `limit` integer 1..500 default 50, `offset` integer ≥ 0 default 0. Paged responses:
+  `{"items": [...], "total": int, "limit": int, "offset": int}` plus endpoint-specific top-level fields.
+- `as_of`: date-time of the most recent succeeded pipeline run (TRD 05 API-069), present on every read
+  response that uses a 30-day window.
+- Error codes listed per endpoint are in addition to the universal ones: 401 `NOT_AUTHENTICATED`/`TOKEN_EXPIRED`/
+  `TOKEN_INVALID` (bearer endpoints) or `API_KEY_INVALID` (key endpoints), 403 `FORBIDDEN`, 413 `PAYLOAD_TOO_LARGE`,
+  429 `RATE_LIMITED`, 500 `INTERNAL_ERROR`, 503 `SERVICE_UNAVAILABLE`.
+
+Problem example (all errors):
+
+```json
+{
+  "type": "urn:echowell:error:RESIDENT_NOT_FOUND",
+  "title": "Resident not found",
+  "status": 404,
+  "detail": "No resident with code 'R11'.",
+  "request_id": "6c1f3f5e-2b7d-4a7e-9a39-1f0d2f8a4c11",
+  "errors": []
+}
+```
+
+### 4.3 Endpoint contracts
+
+Role abbreviations: A = admin, C = clinician, Rs = researcher, K = API key with scope `ingest:write`.
+
+#### E-01 GET /api/v1/health
+- Auth: none. Parameters: none.
+- 200 `Health`; 503 `Health` with `status`="degraded".
+
+```json
+{"status": "ok", "database": "ok", "version": "3f2c9ab", "time": "2026-10-30T20:00:00Z"}
+```
+
+#### E-02 POST /api/v1/auth/login
+- Auth: none. Body `LoginRequest` `{email: string (email, ≤254), password: string (1..128)}`.
+- 200 `Token`. Errors: 401 `INVALID_CREDENTIALS`, 422 `VALIDATION_ERROR`, 429 `RATE_LIMITED`, 429 `ACCOUNT_TEMPORARILY_LOCKED`.
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.<payload>.<signature>",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {"id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f", "email": "clinician1@example.org",
+           "display_name": "Clinician One", "role": "clinician", "active": true,
+           "last_login_at": "2026-10-30T19:58:41Z", "created_at": "2026-10-19T15:02:10Z"}
+}
+```
+
+#### E-03 POST /api/v1/auth/logout
+- Auth: bearer (A, C, Rs). Body: none. 204. Errors: universal.
+
+#### E-04 GET /api/v1/auth/me
+- Auth: bearer (A, C, Rs). 200 `User`.
+
+#### E-05 POST /api/v1/sessions
+- Auth: apiKeyAuth (K). Body `IngestRecord` (application/json, ≤ 64 KB). Rate limit RATE_LIMIT_INGEST per key.
+- 201 `IngestResult` (first arrival, processed); 200 `IngestResult` with `status_after_processing`="duplicate".
+- Errors: 422 `VALIDATION_ERROR`, `UNSUPPORTED_SCHEMA_VERSION`, `UNKNOWN_RESIDENT`, `UNKNOWN_DEVICE`,
+  `RESIDENT_WITHDRAWN`, `SESSION_ID_MISMATCH`; 403 `DEVICE_KEY_MISMATCH`; 415 `UNSUPPORTED_MEDIA_TYPE`.
+
+Request (SRC-05 row R09-20261021-01):
+
+```json
+{
+  "schema_version": "0.1", "session_id": "R09-20261021-01", "resident_id": "R09", "device_id": "D09",
+  "timestamp_utc": "2026-10-21 19:07:50", "mic_noise_level_dbfs": -54.6, "audio_quality_flag": "ok",
+  "extraction_software_version": "openSMILE 3.0.2", "device_firmware_version": "fw-1.0.0",
+  "speech_duration_s": 2.72, "phrase_id": "P01",
+  "loudness_dbfs": -28.29, "total_phrase_duration_s": 2.72, "speech_rate_syl_per_s": 3.48,
+  "articulation_rate_syl_per_s": 4.93, "number_of_pauses": 2, "pause_fraction": 0.199,
+  "voiced_fraction": 0.517, "mean_f0_hz": 178.8, "f0_variability_st": 2.97, "jitter_local_pct": 0.305,
+  "shimmer_local_pct": 5.96, "hnr_db": 15.26, "cpps_db": 10.94, "alpha_ratio_db": -3.6,
+  "hammarberg_index_db": 29.88, "mfcc1": 26.8, "mfcc2": 10.31, "mfcc3": 2.02, "mfcc4": -4.5
+}
+```
+
+Response 201:
+
+```json
+{"raw_session_id": "9d7e1c44-3b2a-4f0e-8c1d-6e5f4a3b2c10", "arrival_seq": 254, "session_id": "R09-20261021-01",
+ "status_after_processing": "usable", "reasons": [], "pipeline_run_id": "c2a1b0f9-8e7d-4c6b-a5f4-e3d2c1b0a998"}
+```
+
+Response 200 (same body posted again):
+
+```json
+{"raw_session_id": "1f2e3d4c-5b6a-4978-8695-a4b3c2d1e0f9", "arrival_seq": 284, "session_id": "R09-20261021-01",
+ "status_after_processing": "duplicate", "reasons": ["session_id already received"], "pipeline_run_id": null}
+```
+
+Response 201 for SRC-05 row R03-20261018-01 (`audio_quality_flag` poor, noise −30.0):
+
+```json
+{"raw_session_id": "...", "arrival_seq": 78, "session_id": "R03-20261018-01", "status_after_processing": "set_aside",
+ "reasons": ["quality flag poor", "noise above limit"], "pipeline_run_id": "..."}
+```
+
+Response 422 (unknown resident):
+
+```json
+{"type": "urn:echowell:error:UNKNOWN_RESIDENT", "title": "Unknown resident", "status": 422,
+ "detail": "resident_id 'R11' is not enrolled.", "request_id": "0e4b2f7a-9c1d-4e8b-a3f6-5d2c7b1e9a40",
+ "errors": [{"field": "resident_id", "code": "UNKNOWN_RESIDENT", "message": "resident_id 'R11' is not enrolled."}]}
+```
+
+(`arrival_seq` and UUID values in examples are illustrative; all other values are from SRC-05/SRC-03.)
+
+#### E-06 POST /api/v1/ingest
+- Auth: apiKeyAuth (K) or bearerAuth (A).
+- Body, one of: `application/json` `IngestBatchRequest` `{records: IngestRecord[1..5000]}`; or
+  `multipart/form-data` with part `file` (text/csv, ≤ 5 MB, header = SRC-05 header).
+- 202 `IngestBatchAccepted`. Errors: 422 `EMPTY_BATCH`, `CSV_HEADER_MISMATCH`, `VALIDATION_ERROR` (envelope only);
+  413 `PAYLOAD_TOO_LARGE`; 415 `UNSUPPORTED_MEDIA_TYPE`. Record-level errors do not fail the request.
+
+```json
+{"ingest_batch_id": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d", "source": "csv_upload",
+ "accepted": 283, "rejected": 0, "duplicates": 2, "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
+```
+
+#### E-07 GET /api/v1/ingest/batches/{id}
+- Auth: bearer (A, Rs). Path `id` uuid. 200 `IngestBatch`. Errors: 404 `BATCH_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER` (malformed uuid).
+
+```json
+{"id": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d", "source": "csv_upload", "filename": "EchoWell_pipeline_test_input_v0_1.csv",
+ "record_count": 283, "accepted_count": 283, "rejected_count": 0, "duplicate_count": 2,
+ "uploaded_by": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f", "received_at": "2026-10-30T20:01:05Z",
+ "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "rejections": []}
+```
+
+#### E-08 GET /api/v1/residents
+- Auth: bearer (A, C, Rs).
+- Query: `sort` enum [alarm, resident_id, last_checkin] default alarm; `cohort` enum [longitudinal, new_admission]
+  default longitudinal; `include_withdrawn` boolean default false; `limit`, `offset`.
+- 200 `ResidentsOverviewResponse`. Errors: 422 `INVALID_QUERY_PARAMETER`.
+
+Example (test_v0_1, as of 2026-10-30 15:00 CDT; first rows shown, `total` 10):
+
+```json
+{
+  "as_of": "2026-10-30T20:00:00Z",
+  "window": {"from": "2026-10-01", "to": "2026-10-30"},
+  "summary": {"alarm_on": 2, "no_alarm": 7, "baseline_forming": 1, "missed_last_30_days": 19},
+  "items": [
+    {"resident_code": "R09", "cohort": "longitudinal", "resident_status": "active", "device_code": "D09",
+     "device_shared": false, "previous_device_code": null, "status": "alarm_on", "alarm_since": "2026-10-21",
+     "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "current_epoch": 1, "baseline_restarted_on": null,
+     "baseline_progress": {"n_usable": 16, "n_required": 16},
+     "last_checkin_at": "2026-10-30T19:28:04Z", "last_checkin_local": "2026-10-30T14:28:04-05:00",
+     "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0}},
+    {"resident_code": "R08", "cohort": "longitudinal", "resident_status": "active", "device_code": "D08",
+     "device_shared": false, "previous_device_code": null, "status": "baseline_forming", "alarm_since": null,
+     "open_alert_id": null, "current_epoch": 1, "baseline_restarted_on": null,
+     "baseline_progress": {"n_usable": 13, "n_required": 16},
+     "last_checkin_at": "2026-10-30T19:28:26Z", "last_checkin_local": "2026-10-30T14:28:26-05:00",
+     "last_30_days": {"used": 13, "set_aside": 5, "quarantined": 0, "missed": 12}},
+    {"resident_code": "R07", "cohort": "longitudinal", "resident_status": "active", "device_code": "D07B",
+     "device_shared": false, "previous_device_code": "D07", "status": "no_alarm", "alarm_since": null,
+     "open_alert_id": null, "current_epoch": 2, "baseline_restarted_on": "2026-10-13",
+     "baseline_progress": {"n_usable": 16, "n_required": 16},
+     "last_checkin_at": "2026-10-30T19:52:57Z", "last_checkin_local": "2026-10-30T14:52:57-05:00",
+     "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0}},
+    {"resident_code": "R02", "cohort": "longitudinal", "resident_status": "active", "device_code": "D02",
+     "device_shared": true, "previous_device_code": null, "status": "no_alarm", "alarm_since": null,
+     "open_alert_id": null, "current_epoch": 1, "baseline_restarted_on": null,
+     "baseline_progress": {"n_usable": 16, "n_required": 16},
+     "last_checkin_at": "2026-10-30T19:55:23Z", "last_checkin_local": "2026-10-30T14:55:23-05:00",
+     "last_30_days": {"used": 24, "set_aside": 0, "quarantined": 0, "missed": 6}}
+  ],
+  "total": 10, "limit": 50, "offset": 0
+}
+```
+
+Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example abbreviated; R10 row has
+`alarm_since` 2026-10-24).
+
+#### E-09 GET /api/v1/residents/{resident_code}
+- Auth: bearer (A, C, Rs). Path `resident_code` string pattern `^[A-Za-z0-9]{1,16}$`.
+- 200 `ResidentDetail`. Errors: 404 `RESIDENT_NOT_FOUND`.
+
+```json
+{
+  "resident_code": "R09", "cohort": "longitudinal", "resident_status": "active", "sex": "F",
+  "enrolled_on": "2026-10-01", "admitted_on": null, "withdrawn_on": null,
+  "as_of": "2026-10-30T20:00:00Z",
+  "status": "alarm_on",
+  "device": {"device_code": "D09", "shared": false, "shared_with": [], "previous_device_code": null},
+  "current_epoch": {"epoch_number": 1, "device_code": "D09", "device_firmware_version": "fw-1.0.0",
+                    "extraction_software_version": "openSMILE 3.0.2", "started_at": "2026-10-01T19:40:50Z",
+                    "started_on": "2026-10-01"},
+  "epoch_count": 1,
+  "baseline": {"state": "frozen", "n_usable": 16, "n_required": 16,
+               "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
+               "first_local_date": "2026-10-01", "frozen_after_local_date": "2026-10-16"},
+  "watching_since": "2026-10-17",
+  "alarm_since": "2026-10-21",
+  "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+  "current_tally": 26.830256,
+  "cusum_h": 5.0,
+  "last_checkin_at": "2026-10-30T19:28:04Z",
+  "last_checkin_local": "2026-10-30T14:28:04-05:00",
+  "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0},
+  "explanation": {"compared_with": "own_baseline", "alarm_crossed_on": "2026-10-21", "still_above_line": true,
+                  "baseline_restarted_on": null, "baseline_n_usable": 16, "baseline_n_required": 16}
+}
+```
+
+#### E-10 GET /api/v1/residents/{resident_code}/checkins
+- Auth: bearer (A, C, Rs). Query `from`, `to` (date, optional, from ≤ to, span ≤ 366 days), `limit`, `offset`.
+- 200 `CheckinEventList` (newest first). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
+
+```json
+{"as_of": "2026-10-30T20:00:00Z", "items": [
+  {"local_date": "2026-10-21", "event_type": "alarm_on", "epoch_number": 1, "session_id": "R09-20261021-01",
+   "detail": "tally crossed 5.0", "cusum_tally": 5.431965},
+  {"local_date": "2026-10-17", "event_type": "watching_started", "epoch_number": 1, "session_id": "R09-20261017-01",
+   "detail": null, "cusum_tally": null},
+  {"local_date": "2026-10-16", "event_type": "baseline_complete", "epoch_number": 1, "session_id": "R09-20261016-01",
+   "detail": "16 of 16", "cusum_tally": null}
+ ], "total": 3, "limit": 50, "offset": 0}
+```
+
+Other event examples: R03 2026-10-18 `set_aside` detail "quality flag poor; noise above limit"; R05 2026-10-08
+`quarantined` detail "possible other speaker (F0 z=-8.61; composite features with |z|>=3: 4)"; R02 2026-10-04
+`missed` detail "no record received"; R02 2026-10-12 `device_silent` detail "all residents on shared device D02
+have no record"; R07 2026-10-13 `baseline_restarted` detail "new epoch 2 on device D07B".
+
+#### E-11 GET /api/v1/residents/{resident_code}/features
+- Auth: bearer (A, C, Rs). Query `from`, `to` (date, optional; default 30 local days ending at as-of).
+- 200 `FeaturesResponse`. Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
+
+```json
+{"resident_code": "R09", "epoch_number": 1, "as_of": "2026-10-30T20:00:00Z",
+ "scored_features": [
+  {"feature_key": "loudness_dbfs", "label": "Quieter (loudness)", "unit": "dBFS", "composite_sign": -1,
+   "baseline_median": -22.405, "baseline_robust_spread": 2.14977,
+   "points": [
+     {"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": -21.21,
+      "adjusted_value": -21.21, "z": null, "in_baseline": true},
+     {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": -30.03,
+      "adjusted_value": -30.03, "z": -3.546891, "in_baseline": false},
+     {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": -28.29,
+      "adjusted_value": -28.29, "z": -2.737502, "in_baseline": false}
+   ]}
+ ],
+ "stored_feature_keys": ["mean_f0_hz", "f0_variability_st", "jitter_local_pct", "shimmer_local_pct", "hnr_db",
+   "cpps_db", "alpha_ratio_db", "hammarberg_index_db", "mfcc1", "mfcc2", "mfcc3", "mfcc4"]}
+```
+
+(`scored_features` always has 7 entries in contract §6 order; abbreviated here.)
+
+#### E-12 GET /api/v1/scores
+- Auth: bearer (A, C, Rs). Query `resident_code` (optional), `epoch` (integer ≥ 1, requires `resident_code`),
+  `from`, `to`, `limit`, `offset`.
+- 200 `ScoresResponse`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown resident_code), 422 `INVALID_QUERY_PARAMETER`.
+
+```json
+{"cusum_h": 5.0, "cusum_k": 0.5,
+ "baseline_periods": [{"resident_code": "R09", "epoch_number": 1, "first_local_date": "2026-10-01",
+   "frozen_after_local_date": "2026-10-16", "frozen_after_session_id": "R09-20261016-01", "n_sessions": 16}],
+ "items": [
+  {"session_id": "R09-20261020-01", "resident_code": "R09", "epoch_number": 1, "local_date": "2026-10-20",
+   "is_morning": false,
+   "z": {"z_loudness_dbfs": 0.918703, "z_total_phrase_duration_s": 0.753843, "z_speech_rate_syl_per_s": -0.22483,
+         "z_articulation_rate_syl_per_s": 0.298031, "z_number_of_pauses": 0.0, "z_pause_fraction": 0.524604,
+         "z_voiced_fraction": -1.364667},
+   "composite_raw": 0.235887, "composite_z": 0.370597, "cusum_tally": 1.643658, "alarm_state": "off"},
+  {"session_id": "R09-20261021-01", "resident_code": "R09", "epoch_number": 1, "local_date": "2026-10-21",
+   "is_morning": false,
+   "z": {"z_loudness_dbfs": -2.737502, "z_total_phrase_duration_s": 2.420232, "z_speech_rate_syl_per_s": -1.180359,
+         "z_articulation_rate_syl_per_s": -1.584269, "z_number_of_pauses": 1.348982, "z_pause_fraction": 2.285774,
+         "z_voiced_fraction": -4.721435},
+   "composite_raw": 2.325508, "composite_z": 4.288307, "cusum_tally": 5.431965, "alarm_state": "rings"},
+  {"session_id": "R09-20261022-01", "resident_code": "R09", "epoch_number": 1, "local_date": "2026-10-22",
+   "is_morning": false,
+   "z": {"z_loudness_dbfs": -1.597845, "z_total_phrase_duration_s": 2.420232, "z_speech_rate_syl_per_s": 0.056208,
+         "z_articulation_rate_syl_per_s": -2.086216, "z_number_of_pauses": 1.348982, "z_pause_fraction": 1.836114,
+         "z_voiced_fraction": -2.337189},
+   "composite_raw": 1.65291, "composite_z": 3.027292, "cusum_tally": 7.959257, "alarm_state": "on"}
+ ],
+ "total": 14, "limit": 50, "offset": 0}
+```
+
+The `z` values are unsigned standardised deviations `(adjusted − median)/robust_spread` (as in SRC-03 Exp_scores);
+`composite_raw` is the mean of `composite_sign × z` over the 7 features. Full R09 tally series (Exp_scores):
+Oct 17 3.245474, Oct 18 2.609763, Oct 19 1.773061, Oct 20 1.643658, Oct 21 5.431965 (rings), Oct 22 7.959257,
+Oct 23 8.289966, Oct 24 10.714804, Oct 25 12.441007, Oct 26 15.270658, Oct 27 16.705966, Oct 28 18.761866,
+Oct 29 23.126702, Oct 30 26.830256 (all `on` after Oct 21).
+
+#### E-13 GET /api/v1/alerts
+- Auth: bearer (A, C, Rs). Query `status` enum [open, acknowledged, closed] (optional), `resident_code` (optional), `limit`, `offset`.
+- 200 `AlertList` (ordered by `triggered_at` ascending). Errors: 422 `INVALID_QUERY_PARAMETER`.
+
+```json
+{"items": [
+  {"id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "resident_code": "R09", "epoch_number": 1,
+   "session_id": "R09-20261021-01", "triggered_at": "2026-10-21T19:07:50Z", "local_date": "2026-10-21",
+   "cusum_value": 5.431965, "status": "open", "closed_reason": null, "acknowledged_by": null, "acknowledged_at": null},
+  {"id": "4e3d2c1b-0a9f-4e8d-b7c6-5a4f3e2d1c0b", "resident_code": "R10", "epoch_number": 1,
+   "session_id": "R10-20261024-01", "triggered_at": "2026-10-24T19:25:37Z", "local_date": "2026-10-24",
+   "cusum_value": 5.97205, "status": "open", "closed_reason": null, "acknowledged_by": null, "acknowledged_at": null}
+ ], "total": 2, "limit": 50, "offset": 0}
+```
+
+`triggered_at` is the `timestamp_utc` of the first-crossing session (deterministic under rebuild); alert `id`
+values are illustrative.
+
+#### E-14 POST /api/v1/alerts/{id}/acknowledge
+- Auth: bearer (A, C). Path `id` uuid. Body: none.
+- 200 `Alert` (status `acknowledged`). Errors: 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`.
+
+#### E-15 GET /api/v1/residents/{resident_code}/notes
+- Auth: bearer (A, C, Rs). Query `include_superseded` boolean default false, `limit`, `offset`.
+- 200 `StaffNoteList` (newest first). Errors: 404 `RESIDENT_NOT_FOUND`.
+
+#### E-16 POST /api/v1/residents/{resident_code}/notes
+- Auth: bearer (A, C). Body `StaffNoteCreate`.
+- 201 `StaffNote`. Errors: 404 `RESIDENT_NOT_FOUND`, 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`,
+  422 `VALIDATION_ERROR`, `ALERT_ID_REQUIRED`, `ALERT_RESIDENT_MISMATCH`.
+
+```json
+{"note_type": "observation", "body": "Resident has a cold; nurse notified.",
+ "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "mark_reviewed": true, "supersedes_id": null}
+```
+
+```json
+{"id": "8c7b6a59-4d3e-4f2a-9b1c-0d9e8f7a6b5c", "resident_code": "R09",
+ "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+ "author": {"id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f", "display_name": "Clinician One"},
+ "note_type": "observation", "body": "Resident has a cold; nurse notified.", "marked_reviewed": true,
+ "supersedes_id": null, "created_at": "2026-10-30T20:10:00Z"}
+```
+
+#### E-17 GET /api/v1/devices
+- Auth: bearer (A, C, Rs). Query `limit`, `offset`. 200 `DeviceList` ordered by `device_code` (natural).
+
+```json
+{"as_of": "2026-10-30T20:00:00Z", "items": [
+  {"device_code": "D02", "room_label": null, "active": true, "resident_codes": ["R02", "R03"], "shared": true,
+   "replaces_device_code": null, "replaced_by_device_code": null, "in_use_since": "2026-10-01",
+   "last_upload_at": "2026-10-30T19:55:23Z", "last_upload_local": "2026-10-30T14:55:23-05:00",
+   "firmware_version": "fw-1.0.0", "silent_days_last_30": ["2026-10-12"], "device_gap_days_last_30": ["2026-10-12"]},
+  {"device_code": "D07B", "room_label": null, "active": true, "resident_codes": ["R07"], "shared": false,
+   "replaces_device_code": "D07", "replaced_by_device_code": null, "in_use_since": "2026-10-13",
+   "last_upload_at": "2026-10-30T19:52:57Z", "last_upload_local": "2026-10-30T14:52:57-05:00",
+   "firmware_version": "fw-1.0.0", "silent_days_last_30": [], "device_gap_days_last_30": []}
+ ], "total": 12, "limit": 50, "offset": 0}
+```
+
+`silent_days_last_30` lists local dates in the 30-day window, on or after `in_use_since`, with zero arrivals from
+the device. For D02 only 2026-10-12 qualifies: on R02's other missed days (4, 9, 10, 17, 23 Oct) R03 still sent a
+record from D02. For D08 (single resident R08) the 12 missed days are silent days but not device-gap days.
+
+#### E-18 GET /api/v1/analytics
+- Auth: bearer (A, Rs). 200 `AnalyticsSummary`.
+
+```json
+{"as_of": "2026-10-30T20:00:00Z",
+ "pipeline_run": {"id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "trigger": "ingest", "scope": "all",
+   "config_profile": "test_v0_1", "code_version": "3f2c9ab", "as_of": "2026-10-30T20:00:00Z",
+   "started_at": "2026-10-30T20:01:06Z", "finished_at": "2026-10-30T20:01:14Z", "status": "succeeded",
+   "counts": {"arrivals": 283, "usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2,
+              "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "baseline_rows": 180, "alerts": 2},
+   "warnings": []},
+ "window": {"from": "2026-10-01", "to": "2026-10-30"},
+ "status_totals": {"usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2,
+                   "missing_resident": 17, "missing_device_gap": 2},
+ "funnel": {"expected": 300, "received": 281, "duplicates_removed": 2, "missed": 19, "passed_quality": 269, "used": 267},
+ "set_aside_reasons": {"quality_flag_poor": 5, "noise_above_limit": 5, "speech_too_short": 3},
+ "daily_counts": [{"local_date": "2026-10-12", "used": 8, "set_aside": 0, "quarantined": 0, "missed": 2}],
+ "status_counts": [
+   {"resident_code": "R02", "usable": 24, "set_aside": 0, "quarantined": 0, "duplicate": 0,
+    "missing_resident": 5, "missing_device_gap": 1}],
+ "resident_outcomes": [
+   {"resident_code": "R07", "epoch_number": 1, "device_code": "D07", "usable_in_epoch": 12, "baseline_formed": false,
+    "baseline_frozen_after": null, "scored_sessions": null, "first_alarm_session": null,
+    "note": "Too few usable sessions: baseline pending, nothing scored"},
+   {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "usable_in_epoch": 30, "baseline_formed": true,
+    "baseline_frozen_after": "R09-20261016-01", "scored_sessions": 14, "first_alarm_session": "R09-20261021-01",
+    "note": null}]}
+```
+
+(`status_counts` has one row per resident (10 for test data), `resident_outcomes` one row per resident-epoch
+(11) and `daily_counts` one row per local date in the window (30); abbreviated; on Oct 12 the 2 missed are R02 and R03
+(D02 device gap). `funnel` and `set_aside_reasons` feed the Analytics
+wireframe (specs/UI-wireframe/Analytics.dc.html). `first_alarm_session` is null when no alarm, which SRC-03 writes as "none".)
+
+#### E-19 GET /api/v1/analytics/baselines
+- Auth: bearer (A, Rs). Query `resident_code`, `epoch` (requires resident_code), `limit` (default 50, max 500), `offset`.
+- 200 `BaselineRowList`. Test data total = 180.
+
+```json
+{"items": [
+  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "loudness_dbfs", "n_sessions": 16,
+   "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
+   "median": -22.405, "mad": 1.45, "robust_spread": 2.14977, "floor_applied": false},
+  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "composite", "n_sessions": 16,
+   "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
+   "median": 0.038219, "mad": 0.359758, "robust_spread": 0.533378, "floor_applied": false}
+ ], "total": 20, "limit": 50, "offset": 0}
+```
+
+#### E-20 POST /api/v1/pipeline/run
+- Auth: bearer (A). Body `PipelineRunRequest`.
+- 202 `PipelineRunAccepted`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown code in scope), 409 `PIPELINE_RUN_IN_PROGRESS`,
+  422 `VALIDATION_ERROR`, `PROFILE_NOT_ALLOWED` (production with `test_v0_1` or a profile other than PIPELINE_PROFILE).
+
+```json
+{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T20:00:00Z"}
+```
+```json
+{"pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
+```
+
+#### E-21 GET /api/v1/pipeline/runs/{id}
+- Auth: bearer (A, Rs). 200 `PipelineRun`. Errors: 404 `PIPELINE_RUN_NOT_FOUND`.
+
+#### E-22 GET /api/v1/admissions (experimental)
+- Auth: bearer (A, C, Rs). Query `limit`, `offset`. Header `X-EchoWell-Experimental: true`.
+- 200 `AdmissionList`. Test data: `{"items": [], "total": 0, "limit": 50, "offset": 0, "as_of": "2026-10-30T20:00:00Z"}`.
+
+#### E-23 GET /api/v1/admissions/{resident_code}/comparison (experimental)
+- Auth: bearer (A, C, Rs). 200 `AdmissionComparison`. Errors: 404 `RESIDENT_NOT_FOUND` (unknown or not new_admission).
+
+#### E-24 GET /api/v1/facility/reference-ranges (experimental)
+- Auth: bearer (A, C, Rs). Query `limit`, `offset`. 200 `ReferenceRangeList` (empty for test data; method per OQ-08).
+
+#### E-25 GET /api/v1/users · E-26 POST /api/v1/users · E-27 PATCH /api/v1/users/{id}
+- Auth: bearer (A).
+- GET: query `limit`, `offset`, `role` (optional enum), `active` (optional boolean) → 200 `UserList`.
+- POST: body `UserCreate` → 201 `User`; errors 409 `EMAIL_ALREADY_EXISTS`, 422 `PASSWORD_POLICY_VIOLATION`, `VALIDATION_ERROR`.
+- PATCH: path `id` uuid, body `UserUpdate` (at least one property) → 200 `User`; errors 404 `USER_NOT_FOUND`,
+  409 `LAST_ADMIN`, 422 `PASSWORD_POLICY_VIOLATION`, `VALIDATION_ERROR`.
+
+#### Endpoint/role summary
+
+| # | Method | Path | Security | Roles/keys | Success | Endpoint-specific errors |
+|---|---|---|---|---|---|---|
+| E-01 | GET | /health | none | — | 200/503 | — |
+| E-02 | POST | /auth/login | none | — | 200 | 401 INVALID_CREDENTIALS, 429 ACCOUNT_TEMPORARILY_LOCKED |
+| E-03 | POST | /auth/logout | bearer | A C Rs | 204 | — |
+| E-04 | GET | /auth/me | bearer | A C Rs | 200 | — |
+| E-05 | POST | /sessions | apiKey | K | 201/200 | 422 ingest codes, 403 DEVICE_KEY_MISMATCH, 415 |
+| E-06 | POST | /ingest | apiKey or bearer | K, A | 202 | 422 EMPTY_BATCH, CSV_HEADER_MISMATCH, 413, 415 |
+| E-07 | GET | /ingest/batches/{id} | bearer | A Rs | 200 | 404 BATCH_NOT_FOUND |
+| E-08 | GET | /residents | bearer | A C Rs | 200 | 422 INVALID_QUERY_PARAMETER |
+| E-09 | GET | /residents/{resident_code} | bearer | A C Rs | 200 | 404 RESIDENT_NOT_FOUND |
+| E-10 | GET | /residents/{resident_code}/checkins | bearer | A C Rs | 200 | 404, 422 |
+| E-11 | GET | /residents/{resident_code}/features | bearer | A C Rs | 200 | 404, 422 |
+| E-12 | GET | /scores | bearer | A C Rs | 200 | 404, 422 |
+| E-13 | GET | /alerts | bearer | A C Rs | 200 | 422 |
+| E-14 | POST | /alerts/{id}/acknowledge | bearer | A C | 200 | 404 ALERT_NOT_FOUND, 409 ALERT_CLOSED |
+| E-15 | GET | /residents/{resident_code}/notes | bearer | A C Rs | 200 | 404 |
+| E-16 | POST | /residents/{resident_code}/notes | bearer | A C | 201 | 404, 409, 422 ALERT_ID_REQUIRED, ALERT_RESIDENT_MISMATCH |
+| E-17 | GET | /devices | bearer | A C Rs | 200 | — |
+| E-18 | GET | /analytics | bearer | A Rs | 200 | — |
+| E-19 | GET | /analytics/baselines | bearer | A Rs | 200 | 422 |
+| E-20 | POST | /pipeline/run | bearer | A | 202 | 409 PIPELINE_RUN_IN_PROGRESS, 422 PROFILE_NOT_ALLOWED |
+| E-21 | GET | /pipeline/runs/{id} | bearer | A Rs | 200 | 404 PIPELINE_RUN_NOT_FOUND |
+| E-22 | GET | /admissions | bearer | A C Rs | 200 | — |
+| E-23 | GET | /admissions/{resident_code}/comparison | bearer | A C Rs | 200 | 404 |
+| E-24 | GET | /facility/reference-ranges | bearer | A C Rs | 200 | — |
+| E-25 | GET | /users | bearer | A | 200 | — |
+| E-26 | POST | /users | bearer | A | 201 | 409 EMAIL_ALREADY_EXISTS, 422 PASSWORD_POLICY_VIOLATION |
+| E-27 | PATCH | /users/{id} | bearer | A | 200 | 404 USER_NOT_FOUND, 409 LAST_ADMIN |
+
+| ID | Requirement | Priority | Trace | Verification |
+|---|---|---|---|---|
+| OAS-020 | Each endpoint E-01..E-27 shall return exactly the success status codes listed in the endpoint/role summary and only error codes from the TRD 05 catalogue. | Must | TRD 05 | Test |
+| OAS-021 | The E-08 example values (summary 2/7/1/19, order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06, R08 13 of 16 with 13·5·0·12) shall be asserted by an integration test on the test_v0_1 data. | Must | BR-12, SRC-09 | Test |
+| OAS-022 | The E-12 R09 series (14 rows, Oct 21 tally 5.431965 `rings`, Oct 30 tally 26.830256 `on`) shall be asserted with absolute tolerance 1e-6. | Must | BR-15, SRC-03 | Test |
+| OAS-023 | The E-19 response for the test data shall contain 180 rows whose values equal SRC-03 Exp_baselines within 1e-6, with Exp_baselines feature "COMPOSITE (raw signed mean of 7 z)" mapped to `feature_key`="composite". | Must | BR-09, BR-15 | Test |
+| OAS-024 | The E-18 `status_totals` for the test data shall be usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2; `funnel` shall be expected 300, received 281, duplicates_removed 2, missed 19, passed_quality 269, used 267; `set_aside_reasons` shall be 5 / 5 / 3. | Must | BR-15 | Test |
+| OAS-025 | `IngestRecord` property order in the YAML shall equal the SRC-05 CSV header order. | Must | SRC-05 | Inspection |
+| OAS-026 | `ScoredFeatureKey` shall list the 7 composite features in contract §6 order and `FeatureKey` all 19; `BaselineFeatureKey` shall be `FeatureKey` plus `composite`. | Must | contract §6 | Test |
+
+### 4.4 Servers
+
+```yaml
+servers:
+  - url: http://localhost:8000/api/v1
+    description: local (docker-compose)
+  - url: /api/v1
+    description: relative to the deployed Railway API origin (staging, production)
+```
+
+### 4.5 OpenAPI 3.1 skeleton
+
+The YAML below is committed as `docs/api_reference/openapi.yaml` and is the reference for OAS-005.
+Response components for errors are shared via `components/responses`.
+
+```yaml
+openapi: 3.1.0
+info:
+  title: EchoWell API
+  version: 0.1.0
+  description: >
+    EchoWell research system API. Detects a change in a resident's voice measurements relative to their own
+    frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.
+servers:
+  - url: http://localhost:8000/api/v1
+  - url: /api/v1
+security: []
+tags:
+  - {name: health}
+  - {name: auth}
+  - {name: ingest}
+  - {name: residents}
+  - {name: scores}
+  - {name: alerts}
+  - {name: devices}
+  - {name: analytics}
+  - {name: pipeline}
+  - {name: admissions, description: "Future / experimental study arm"}
+  - {name: users}
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      responses:
+        "200": {description: OK, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Health"}}}}
+        "503": {description: Database unavailable, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Health"}}}}
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/LoginRequest"}}}}
+      responses:
+        "200": {description: Token issued, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Token"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      security: [{bearerAuth: []}]
+      responses:
+        "204": {description: Logged out, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /auth/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: Current user, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/User"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /sessions:
+    post:
+      tags: [ingest]
+      operationId: ingestSession
+      security: [{apiKeyAuth: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/IngestRecord"}}}}
+      responses:
+        "201": {description: Stored and processed, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/IngestResult"}}}}
+        "200": {description: Duplicate session_id stored and dropped from processing, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/IngestResult"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "413": {$ref: "#/components/responses/PayloadTooLarge"}
+        "415": {$ref: "#/components/responses/UnsupportedMediaType"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+  /ingest:
+    post:
+      tags: [ingest]
+      operationId: ingestBatch
+      security: [{apiKeyAuth: []}, {bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: "#/components/schemas/IngestBatchRequest"}}
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, contentMediaType: text/csv, description: "UTF-8 CSV with the SRC-05 header, max 5 MB"}
+      responses:
+        "202": {description: Batch stored; pipeline scheduled, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/IngestBatchAccepted"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "413": {$ref: "#/components/responses/PayloadTooLarge"}
+        "415": {$ref: "#/components/responses/UnsupportedMediaType"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+  /ingest/batches/{id}:
+    get:
+      tags: [ingest]
+      operationId: getIngestBatch
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}]
+      responses:
+        "200": {description: Batch, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/IngestBatch"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /residents:
+    get:
+      tags: [residents]
+      operationId: listResidents
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sort, in: query, schema: {type: string, enum: [alarm, resident_id, last_checkin], default: alarm}}
+        - {name: cohort, in: query, schema: {$ref: "#/components/schemas/Cohort"}}
+        - {name: include_withdrawn, in: query, schema: {type: boolean, default: false}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Overview, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ResidentsOverviewResponse"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /residents/{resident_code}:
+    get:
+      tags: [residents]
+      operationId: getResident
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/ResidentCodePath"}]
+      responses:
+        "200": {description: Detail, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ResidentDetail"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /residents/{resident_code}/checkins:
+    get:
+      tags: [residents]
+      operationId: listCheckinEvents
+      security: [{bearerAuth: []}]
+      parameters:
+        - {$ref: "#/components/parameters/ResidentCodePath"}
+        - {$ref: "#/components/parameters/FromDate"}
+        - {$ref: "#/components/parameters/ToDate"}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Events newest first, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/CheckinEventList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /residents/{resident_code}/features:
+    get:
+      tags: [residents]
+      operationId: getResidentFeatures
+      security: [{bearerAuth: []}]
+      parameters:
+        - {$ref: "#/components/parameters/ResidentCodePath"}
+        - {$ref: "#/components/parameters/FromDate"}
+        - {$ref: "#/components/parameters/ToDate"}
+      responses:
+        "200": {description: Feature series, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/FeaturesResponse"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /residents/{resident_code}/notes:
+    get:
+      tags: [residents]
+      operationId: listNotes
+      security: [{bearerAuth: []}]
+      parameters:
+        - {$ref: "#/components/parameters/ResidentCodePath"}
+        - {name: include_superseded, in: query, schema: {type: boolean, default: false}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Notes newest first, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/StaffNoteList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      tags: [residents]
+      operationId: createNote
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/ResidentCodePath"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/StaffNoteCreate"}}}}
+      responses:
+        "201": {description: Created, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/StaffNote"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /scores:
+    get:
+      tags: [scores]
+      operationId: listScores
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: resident_code, in: query, schema: {$ref: "#/components/schemas/ResidentCode"}}
+        - {name: epoch, in: query, schema: {type: integer, minimum: 1}}
+        - {$ref: "#/components/parameters/FromDate"}
+        - {$ref: "#/components/parameters/ToDate"}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Scored sessions, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ScoresResponse"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /alerts:
+    get:
+      tags: [alerts]
+      operationId: listAlerts
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/AlertStatus"}}
+        - {name: resident_code, in: query, schema: {$ref: "#/components/schemas/ResidentCode"}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Alerts, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AlertList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /alerts/{id}/acknowledge:
+    post:
+      tags: [alerts]
+      operationId: acknowledgeAlert
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}]
+      responses:
+        "200": {description: Acknowledged (tally and alarm unchanged), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/Alert"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /devices:
+    get:
+      tags: [devices]
+      operationId: listDevices
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Offset"}]
+      responses:
+        "200": {description: Device panel, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/DeviceList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /analytics:
+    get:
+      tags: [analytics]
+      operationId: getAnalytics
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: Summary, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AnalyticsSummary"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /analytics/baselines:
+    get:
+      tags: [analytics]
+      operationId: listBaselines
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: resident_code, in: query, schema: {$ref: "#/components/schemas/ResidentCode"}}
+        - {name: epoch, in: query, schema: {type: integer, minimum: 1}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Baselines, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/BaselineRowList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /pipeline/run:
+    post:
+      tags: [pipeline]
+      operationId: startPipelineRun
+      security: [{bearerAuth: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRunRequest"}}}}
+      responses:
+        "202": {description: Run started, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRunAccepted"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /pipeline/runs/{id}:
+    get:
+      tags: [pipeline]
+      operationId: getPipelineRun
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}]
+      responses:
+        "200": {description: Run, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/PipelineRun"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /admissions:
+    get:
+      tags: [admissions]
+      operationId: listAdmissions
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Offset"}]
+      responses:
+        "200": {description: New admissions (experimental), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}, X-EchoWell-Experimental: {$ref: "#/components/headers/XExperimental"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AdmissionList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /admissions/{resident_code}/comparison:
+    get:
+      tags: [admissions]
+      operationId: getAdmissionComparison
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/ResidentCodePath"}]
+      responses:
+        "200": {description: Comparison (experimental), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}, X-EchoWell-Experimental: {$ref: "#/components/headers/XExperimental"}}, content: {application/json: {schema: {$ref: "#/components/schemas/AdmissionComparison"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /facility/reference-ranges:
+    get:
+      tags: [admissions]
+      operationId: listReferenceRanges
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Offset"}]
+      responses:
+        "200": {description: Facility ranges (experimental), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}, X-EchoWell-Experimental: {$ref: "#/components/headers/XExperimental"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ReferenceRangeList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /users:
+    get:
+      tags: [users]
+      operationId: listUsers
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: role, in: query, schema: {$ref: "#/components/schemas/Role"}}
+        - {name: active, in: query, schema: {type: boolean}}
+        - {$ref: "#/components/parameters/Limit"}
+        - {$ref: "#/components/parameters/Offset"}
+      responses:
+        "200": {description: Users, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/UserList"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+    post:
+      tags: [users]
+      operationId: createUser
+      security: [{bearerAuth: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/UserCreate"}}}}
+      responses:
+        "201": {description: Created, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/User"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+  /users/{id}:
+    patch:
+      tags: [users]
+      operationId: updateUser
+      security: [{bearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/IdPath"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/UserUpdate"}}}}
+      responses:
+        "200": {description: Updated, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/User"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "422": {$ref: "#/components/responses/Unprocessable"}
+
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    apiKeyAuth: {type: apiKey, in: header, name: X-API-Key}
+
+  headers:
+    XRequestID: {description: Request correlation ID, schema: {type: string}}
+    XExperimental: {description: Future / experimental study arm, schema: {type: string, const: "true"}}
+    RetryAfter: {description: Seconds to wait, schema: {type: integer}}
+
+  parameters:
+    Limit: {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 50}}
+    Offset: {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+    FromDate: {name: from, in: query, schema: {type: string, format: date}}
+    ToDate: {name: to, in: query, schema: {type: string, format: date}}
+    IdPath: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    ResidentCodePath: {name: resident_code, in: path, required: true, schema: {$ref: "#/components/schemas/ResidentCode"}}
+
+  responses:
+    Unauthorized: {description: "NOT_AUTHENTICATED | INVALID_CREDENTIALS | TOKEN_EXPIRED | TOKEN_INVALID | API_KEY_INVALID", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    Forbidden: {description: "FORBIDDEN | DEVICE_KEY_MISMATCH", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    NotFound: {description: "*_NOT_FOUND", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    Conflict: {description: "ALERT_CLOSED | EMAIL_ALREADY_EXISTS | LAST_ADMIN | PIPELINE_RUN_IN_PROGRESS", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    PayloadTooLarge: {description: PAYLOAD_TOO_LARGE, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    UnsupportedMediaType: {description: UNSUPPORTED_MEDIA_TYPE, headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    Unprocessable: {description: "VALIDATION_ERROR and other 422 codes (TRD 05 §4.7)", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+    TooManyRequests: {description: "RATE_LIMITED | ACCOUNT_TEMPORARILY_LOCKED", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}, Retry-After: {$ref: "#/components/headers/RetryAfter"}}, content: {application/problem+json: {schema: {$ref: "#/components/schemas/Problem"}}}}
+
+  schemas:
+    # ---------- shared scalars and enums ----------
+    ResidentCode: {type: string, pattern: "^[A-Za-z0-9]{1,16}$", examples: ["R09"]}
+    DeviceCode: {type: string, pattern: "^[A-Za-z0-9]{1,16}$", examples: ["D07B"]}
+    SessionId: {type: string, pattern: "^[A-Za-z0-9]{1,16}-[0-9]{8}-[0-9]{2}$", examples: ["R09-20261021-01"]}
+    ProcessedStatus: {type: string, enum: [usable, set_aside, quarantined, duplicate]}
+    IngestOutcome: {type: string, enum: [usable, set_aside, quarantined, duplicate, pending]}
+    DayStatus: {type: string, enum: [checked_in, missing_resident, missing_device_gap]}
+    DisplayStatus: {type: string, enum: [alarm_on, no_alarm, baseline_forming]}
+    AlarmState: {type: string, enum: ["off", rings, "on"]}
+    AlertStatus: {type: string, enum: [open, acknowledged, closed]}
+    NoteType: {type: string, enum: [observation, action_taken, follow_up]}
+    Role: {type: string, enum: [admin, clinician, researcher]}
+    Cohort: {type: string, enum: [longitudinal, new_admission]}
+    ResidentStatus: {type: string, enum: [active, withdrawn]}
+    Sex: {type: [string, "null"], enum: [F, M, null]}
+    PipelineTrigger: {type: string, enum: [ingest, nightly, manual, test]}
+    PipelineStatus: {type: string, enum: [running, succeeded, failed]}
+    ConfigProfile: {type: string, enum: [production, test_v0_1]}
+    IngestSource: {type: string, enum: [api_single, api_batch, csv_upload, seed]}
+    CheckinEventType: {type: string, enum: [alarm_on, watching_started, baseline_complete, baseline_restarted, set_aside, quarantined, missed, device_silent]}
+    ComparisonStatus: {type: string, enum: [outside_range, within_range, not_enough_checkins]}
+    ScoredFeatureKey:
+      type: string
+      enum: [loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction]
+    FeatureKey:
+      type: string
+      enum: [loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction,
+             mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4]
+    BaselineFeatureKey:
+      type: string
+      enum: [loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction,
+             mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4, composite]
+    PageMeta:
+      type: object
+      required: [total, limit, offset]
+      properties:
+        total: {type: integer, minimum: 0}
+        limit: {type: integer, minimum: 1, maximum: 500}
+        offset: {type: integer, minimum: 0}
+    Last30Days:
+      type: object
+      required: [used, set_aside, quarantined, missed]
+      properties:
+        used: {type: integer, minimum: 0}
+        set_aside: {type: integer, minimum: 0}
+        quarantined: {type: integer, minimum: 0}
+        missed: {type: integer, minimum: 0, description: missing_resident + missing_device_gap}
+    DateWindow:
+      type: object
+      required: [from, to]
+      properties: {from: {type: string, format: date}, to: {type: string, format: date}}
+
+    # ---------- errors, health, auth ----------
+    ProblemFieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: {type: string, examples: ["records.3.loudness_dbfs"]}
+        code: {type: string, examples: ["float_parsing", "UNKNOWN_RESIDENT"]}
+        message: {type: string}
+    Problem:
+      type: object
+      required: [type, title, status, detail, request_id, errors]
+      properties:
+        type: {type: string, pattern: "^urn:echowell:error:[A-Z_]+$"}
+        title: {type: string}
+        status: {type: integer, minimum: 400, maximum: 599}
+        detail: {type: string}
+        request_id: {type: string}
+        errors: {type: array, items: {$ref: "#/components/schemas/ProblemFieldError"}}
+    Health:
+      type: object
+      required: [status, database, version, time]
+      properties:
+        status: {type: string, enum: [ok, degraded]}
+        database: {type: string, enum: [ok, unavailable]}
+        version: {type: string, description: GIT_SHA}
+        time: {type: string, format: date-time}
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        password: {type: string, minLength: 1, maxLength: 128}
+    User:
+      type: object
+      required: [id, email, display_name, role, active, last_login_at, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        display_name: {type: string, minLength: 1, maxLength: 100}
+        role: {$ref: "#/components/schemas/Role"}
+        active: {type: boolean}
+        last_login_at: {type: [string, "null"], format: date-time}
+        created_at: {type: string, format: date-time}
+    UserCreate:
+      type: object
+      additionalProperties: false
+      required: [email, display_name, role, password]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        display_name: {type: string, minLength: 1, maxLength: 100}
+        role: {$ref: "#/components/schemas/Role"}
+        password: {type: string, minLength: 12, maxLength: 128}
+    UserUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        display_name: {type: string, minLength: 1, maxLength: 100}
+        role: {$ref: "#/components/schemas/Role"}
+        active: {type: boolean}
+        password: {type: string, minLength: 12, maxLength: 128}
+    UserList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/User"}}}}
+    Token:
+      type: object
+      required: [access_token, token_type, expires_in, user]
+      properties:
+        access_token: {type: string}
+        token_type: {type: string, const: bearer}
+        expires_in: {type: integer, examples: [3600]}
+        user: {$ref: "#/components/schemas/User"}
+
+    # ---------- ingest ----------
+    IngestRecord:
+      type: object
+      additionalProperties: false
+      description: Schema v0.1; property order equals the SRC-05 CSV header. Feature names are placeholders (OQ-03) mapped by configuration.
+      required: [schema_version, session_id, resident_id, device_id, timestamp_utc, mic_noise_level_dbfs, audio_quality_flag,
+                 extraction_software_version, device_firmware_version, speech_duration_s, phrase_id,
+                 loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses,
+                 pause_fraction, voiced_fraction, mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db,
+                 cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4]
+      properties:
+        schema_version: {type: string, enum: ["0.1"]}
+        session_id: {$ref: "#/components/schemas/SessionId"}
+        resident_id: {$ref: "#/components/schemas/ResidentCode"}
+        device_id: {$ref: "#/components/schemas/DeviceCode"}
+        timestamp_utc: {type: string, pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$", examples: ["2026-10-21 19:07:50"]}
+        mic_noise_level_dbfs: {type: number}
+        audio_quality_flag: {type: string, enum: [ok, poor]}
+        extraction_software_version: {type: string, minLength: 1, maxLength: 64}
+        device_firmware_version: {type: string, minLength: 1, maxLength: 64}
+        speech_duration_s: {type: number, minimum: 0}
+        phrase_id: {type: string, minLength: 1, maxLength: 16}
+        loudness_dbfs: {type: number}
+        total_phrase_duration_s: {type: number, minimum: 0}
+        speech_rate_syl_per_s: {type: number}
+        articulation_rate_syl_per_s: {type: number}
+        number_of_pauses: {type: integer, minimum: 0}
+        pause_fraction: {type: number, minimum: 0, maximum: 1}
+        voiced_fraction: {type: number, minimum: 0, maximum: 1}
+        mean_f0_hz: {type: number}
+        f0_variability_st: {type: number}
+        jitter_local_pct: {type: number}
+        shimmer_local_pct: {type: number}
+        hnr_db: {type: number}
+        cpps_db: {type: number}
+        alpha_ratio_db: {type: number}
+        hammarberg_index_db: {type: number}
+        mfcc1: {type: number}
+        mfcc2: {type: number}
+        mfcc3: {type: number}
+        mfcc4: {type: number}
+    IngestResult:
+      type: object
+      required: [raw_session_id, arrival_seq, session_id, status_after_processing, reasons, pipeline_run_id]
+      properties:
+        raw_session_id: {type: string, format: uuid}
+        arrival_seq: {type: integer, minimum: 1}
+        session_id: {$ref: "#/components/schemas/SessionId"}
+        status_after_processing: {$ref: "#/components/schemas/IngestOutcome"}
+        reasons: {type: array, items: {type: string}}
+        pipeline_run_id: {type: [string, "null"], format: uuid}
+    IngestBatchRequest:
+      type: object
+      additionalProperties: false
+      required: [records]
+      properties:
+        records: {type: array, minItems: 1, maxItems: 5000, items: {$ref: "#/components/schemas/IngestRecord"}}
+    IngestBatchAccepted:
+      type: object
+      required: [ingest_batch_id, source, accepted, rejected, duplicates, pipeline_run_id]
+      properties:
+        ingest_batch_id: {type: string, format: uuid}
+        source: {$ref: "#/components/schemas/IngestSource"}
+        accepted: {type: integer, minimum: 0, description: stored in raw_sessions, duplicates included}
+        rejected: {type: integer, minimum: 0}
+        duplicates: {type: integer, minimum: 0}
+        pipeline_run_id: {type: [string, "null"], format: uuid, description: null when no first-arrival record was accepted}
+    IngestRejection:
+      type: object
+      required: [row_number, session_id, received_at, errors]
+      properties:
+        row_number: {type: integer, minimum: 1, description: 1-based position in the batch (CSV excludes header)}
+        session_id: {type: [string, "null"]}
+        received_at: {type: string, format: date-time}
+        errors: {type: array, items: {$ref: "#/components/schemas/ProblemFieldError"}}
+    IngestBatch:
+      type: object
+      required: [id, source, filename, record_count, accepted_count, rejected_count, duplicate_count, uploaded_by, received_at, pipeline_run_id, rejections]
+      properties:
+        id: {type: string, format: uuid}
+        source: {$ref: "#/components/schemas/IngestSource"}
+        filename: {type: [string, "null"]}
+        record_count: {type: integer}
+        accepted_count: {type: integer}
+        rejected_count: {type: integer}
+        duplicate_count: {type: integer}
+        uploaded_by: {type: [string, "null"], format: uuid}
+        received_at: {type: string, format: date-time}
+        pipeline_run_id: {type: [string, "null"], format: uuid}
+        rejections: {type: array, items: {$ref: "#/components/schemas/IngestRejection"}}
+
+    # ---------- residents ----------
+    BaselineProgress:
+      type: object
+      required: [n_usable, n_required]
+      properties:
+        n_usable: {type: integer, minimum: 0, description: usable sessions counted toward the current epoch baseline (capped at n_required)}
+        n_required: {type: integer, minimum: 1, description: baseline_n of the active profile}
+    ResidentOverviewRow:
+      type: object
+      required: [resident_code, cohort, resident_status, device_code, device_shared, previous_device_code, status, alarm_since,
+                 open_alert_id, current_epoch, baseline_restarted_on, baseline_progress, last_checkin_at, last_checkin_local, last_30_days]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        cohort: {$ref: "#/components/schemas/Cohort"}
+        resident_status: {$ref: "#/components/schemas/ResidentStatus"}
+        device_code: {type: [string, "null"]}
+        device_shared: {type: boolean}
+        previous_device_code: {type: [string, "null"], description: "rendered as '(was D07)'"}
+        status: {$ref: "#/components/schemas/DisplayStatus"}
+        alarm_since: {type: [string, "null"], format: date}
+        open_alert_id: {type: [string, "null"], format: uuid}
+        current_epoch: {type: [integer, "null"], minimum: 1}
+        baseline_restarted_on: {type: [string, "null"], format: date, description: start date of current epoch when epoch > 1}
+        baseline_progress: {$ref: "#/components/schemas/BaselineProgress"}
+        last_checkin_at: {type: [string, "null"], format: date-time}
+        last_checkin_local: {type: [string, "null"], format: date-time}
+        last_30_days: {$ref: "#/components/schemas/Last30Days"}
+    OverviewSummary:
+      type: object
+      required: [alarm_on, no_alarm, baseline_forming, missed_last_30_days]
+      properties:
+        alarm_on: {type: integer}
+        no_alarm: {type: integer}
+        baseline_forming: {type: integer}
+        missed_last_30_days: {type: integer}
+    ResidentsOverviewResponse:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - type: object
+          required: [as_of, window, summary, items]
+          properties:
+            as_of: {type: [string, "null"], format: date-time}
+            window: {$ref: "#/components/schemas/DateWindow"}
+            summary: {$ref: "#/components/schemas/OverviewSummary"}
+            items: {type: array, items: {$ref: "#/components/schemas/ResidentOverviewRow"}}
+    EpochInfo:
+      type: object
+      required: [epoch_number, device_code, device_firmware_version, extraction_software_version, started_at, started_on]
+      properties:
+        epoch_number: {type: integer, minimum: 1}
+        device_code: {type: string}
+        device_firmware_version: {type: string}
+        extraction_software_version: {type: string}
+        started_at: {type: string, format: date-time}
+        started_on: {type: string, format: date}
+    BaselineInfo:
+      type: object
+      required: [state, n_usable, n_required, first_session_id, frozen_after_session_id, first_local_date, frozen_after_local_date]
+      properties:
+        state: {type: string, enum: [forming, frozen]}
+        n_usable: {type: integer, minimum: 0}
+        n_required: {type: integer, minimum: 1}
+        first_session_id: {type: [string, "null"]}
+        frozen_after_session_id: {type: [string, "null"]}
+        first_local_date: {type: [string, "null"], format: date}
+        frozen_after_local_date: {type: [string, "null"], format: date}
+    DeviceRef:
+      type: object
+      required: [device_code, shared, shared_with, previous_device_code]
+      properties:
+        device_code: {type: [string, "null"]}
+        shared: {type: boolean}
+        shared_with: {type: array, items: {$ref: "#/components/schemas/ResidentCode"}}
+        previous_device_code: {type: [string, "null"]}
+    Explanation:
+      type: object
+      description: Structured facts only; wording is rendered by the frontend from PI-reviewed strings (OQ-12).
+      required: [compared_with, alarm_crossed_on, still_above_line, baseline_restarted_on, baseline_n_usable, baseline_n_required]
+      properties:
+        compared_with: {type: string, const: own_baseline}
+        alarm_crossed_on: {type: [string, "null"], format: date}
+        still_above_line: {type: boolean}
+        baseline_restarted_on: {type: [string, "null"], format: date}
+        baseline_n_usable: {type: integer}
+        baseline_n_required: {type: integer}
+    ResidentDetail:
+      type: object
+      required: [resident_code, cohort, resident_status, sex, enrolled_on, admitted_on, withdrawn_on, as_of, status, device,
+                 current_epoch, epoch_count, baseline, watching_since, alarm_since, open_alert_id, current_tally, cusum_h,
+                 last_checkin_at, last_checkin_local, last_30_days, explanation]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        cohort: {$ref: "#/components/schemas/Cohort"}
+        resident_status: {$ref: "#/components/schemas/ResidentStatus"}
+        sex: {$ref: "#/components/schemas/Sex"}
+        enrolled_on: {type: string, format: date}
+        admitted_on: {type: [string, "null"], format: date}
+        withdrawn_on: {type: [string, "null"], format: date}
+        as_of: {type: [string, "null"], format: date-time}
+        status: {$ref: "#/components/schemas/DisplayStatus"}
+        device: {$ref: "#/components/schemas/DeviceRef"}
+        current_epoch: {oneOf: [{$ref: "#/components/schemas/EpochInfo"}, {type: "null"}]}
+        epoch_count: {type: integer, minimum: 0}
+        baseline: {$ref: "#/components/schemas/BaselineInfo"}
+        watching_since: {type: [string, "null"], format: date, description: local date of first scored session in current epoch}
+        alarm_since: {type: [string, "null"], format: date}
+        open_alert_id: {type: [string, "null"], format: uuid}
+        current_tally: {type: [number, "null"]}
+        cusum_h: {type: number}
+        last_checkin_at: {type: [string, "null"], format: date-time}
+        last_checkin_local: {type: [string, "null"], format: date-time}
+        last_30_days: {$ref: "#/components/schemas/Last30Days"}
+        explanation: {$ref: "#/components/schemas/Explanation"}
+    CheckinEvent:
+      type: object
+      required: [local_date, event_type, epoch_number, session_id, detail, cusum_tally]
+      properties:
+        local_date: {type: string, format: date}
+        event_type: {$ref: "#/components/schemas/CheckinEventType"}
+        epoch_number: {type: [integer, "null"]}
+        session_id: {type: [string, "null"]}
+        detail: {type: [string, "null"], description: pipeline reason text or progress, e.g. "16 of 16"}
+        cusum_tally: {type: [number, "null"]}
+    CheckinEventList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/CheckinEvent"}}}}
+    FeaturePoint:
+      type: object
+      required: [session_id, local_date, is_morning, raw_value, adjusted_value, z, in_baseline]
+      properties:
+        session_id: {$ref: "#/components/schemas/SessionId"}
+        local_date: {type: string, format: date}
+        is_morning: {type: boolean}
+        raw_value: {type: number}
+        adjusted_value: {type: number}
+        z: {type: [number, "null"], description: null for sessions not scored}
+        in_baseline: {type: boolean}
+    FeatureSeries:
+      type: object
+      required: [feature_key, label, unit, composite_sign, baseline_median, baseline_robust_spread, points]
+      properties:
+        feature_key: {$ref: "#/components/schemas/ScoredFeatureKey"}
+        label: {type: string, examples: ["Quieter (loudness)"]}
+        unit: {type: string}
+        composite_sign: {type: integer, enum: [-1, 1]}
+        baseline_median: {type: [number, "null"]}
+        baseline_robust_spread: {type: [number, "null"]}
+        points: {type: array, items: {$ref: "#/components/schemas/FeaturePoint"}}
+    FeaturesResponse:
+      type: object
+      required: [resident_code, epoch_number, as_of, scored_features, stored_feature_keys]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: [integer, "null"]}
+        as_of: {type: [string, "null"], format: date-time}
+        scored_features: {type: array, minItems: 7, maxItems: 7, items: {$ref: "#/components/schemas/FeatureSeries"}}
+        stored_feature_keys: {type: array, minItems: 12, maxItems: 12, items: {$ref: "#/components/schemas/FeatureKey"}}
+
+    # ---------- scores and alerts ----------
+    ZValues:
+      type: object
+      additionalProperties: false
+      required: [z_loudness_dbfs, z_total_phrase_duration_s, z_speech_rate_syl_per_s, z_articulation_rate_syl_per_s, z_number_of_pauses, z_pause_fraction, z_voiced_fraction]
+      properties:
+        z_loudness_dbfs: {type: number}
+        z_total_phrase_duration_s: {type: number}
+        z_speech_rate_syl_per_s: {type: number}
+        z_articulation_rate_syl_per_s: {type: number}
+        z_number_of_pauses: {type: number}
+        z_pause_fraction: {type: number}
+        z_voiced_fraction: {type: number}
+    ScoreRow:
+      type: object
+      required: [session_id, resident_code, epoch_number, local_date, is_morning, z, composite_raw, composite_z, cusum_tally, alarm_state]
+      properties:
+        session_id: {$ref: "#/components/schemas/SessionId"}
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: integer, minimum: 1}
+        local_date: {type: string, format: date}
+        is_morning: {type: boolean}
+        z: {$ref: "#/components/schemas/ZValues"}
+        composite_raw: {type: number}
+        composite_z: {type: number}
+        cusum_tally: {type: number, minimum: 0}
+        alarm_state: {$ref: "#/components/schemas/AlarmState"}
+    BaselinePeriod:
+      type: object
+      required: [resident_code, epoch_number, first_local_date, frozen_after_local_date, frozen_after_session_id, n_sessions]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: integer}
+        first_local_date: {type: string, format: date}
+        frozen_after_local_date: {type: string, format: date}
+        frozen_after_session_id: {$ref: "#/components/schemas/SessionId"}
+        n_sessions: {type: integer}
+    ScoresResponse:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - type: object
+          required: [cusum_h, cusum_k, baseline_periods, items]
+          properties:
+            cusum_h: {type: number, examples: [5.0]}
+            cusum_k: {type: number, examples: [0.5]}
+            baseline_periods: {type: array, items: {$ref: "#/components/schemas/BaselinePeriod"}}
+            items: {type: array, items: {$ref: "#/components/schemas/ScoreRow"}}
+    Alert:
+      type: object
+      required: [id, resident_code, epoch_number, session_id, triggered_at, local_date, cusum_value, status, closed_reason, acknowledged_by, acknowledged_at]
+      properties:
+        id: {type: string, format: uuid}
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: integer}
+        session_id: {$ref: "#/components/schemas/SessionId"}
+        triggered_at: {type: string, format: date-time}
+        local_date: {type: string, format: date}
+        cusum_value: {type: number}
+        status: {$ref: "#/components/schemas/AlertStatus"}
+        closed_reason: {type: [string, "null"], examples: ["epoch ended"]}
+        acknowledged_by: {type: [string, "null"], format: uuid}
+        acknowledged_at: {type: [string, "null"], format: date-time}
+    AlertList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/Alert"}}}}
+    StaffNoteCreate:
+      type: object
+      additionalProperties: false
+      required: [note_type, body]
+      properties:
+        note_type: {$ref: "#/components/schemas/NoteType"}
+        body: {type: string, minLength: 1, maxLength: 2000}
+        alert_id: {type: [string, "null"], format: uuid}
+        mark_reviewed: {type: boolean, default: false}
+        supersedes_id: {type: [string, "null"], format: uuid}
+    StaffNote:
+      type: object
+      required: [id, resident_code, alert_id, author, note_type, body, marked_reviewed, supersedes_id, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        alert_id: {type: [string, "null"], format: uuid}
+        author:
+          type: object
+          required: [id, display_name]
+          properties: {id: {type: string, format: uuid}, display_name: {type: string}}
+        note_type: {$ref: "#/components/schemas/NoteType"}
+        body: {type: string}
+        marked_reviewed: {type: boolean}
+        supersedes_id: {type: [string, "null"], format: uuid}
+        created_at: {type: string, format: date-time}
+    StaffNoteList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/StaffNote"}}}}
+
+    # ---------- devices ----------
+    Device:
+      type: object
+      required: [device_code, room_label, active, resident_codes, shared, replaces_device_code, replaced_by_device_code, in_use_since,
+                 last_upload_at, last_upload_local, firmware_version, silent_days_last_30, device_gap_days_last_30]
+      properties:
+        device_code: {$ref: "#/components/schemas/DeviceCode"}
+        room_label: {type: [string, "null"], description: non-identifying label only}
+        active: {type: boolean}
+        resident_codes: {type: array, items: {$ref: "#/components/schemas/ResidentCode"}}
+        shared: {type: boolean}
+        replaces_device_code: {type: [string, "null"]}
+        replaced_by_device_code: {type: [string, "null"]}
+        in_use_since: {type: [string, "null"], format: date}
+        last_upload_at: {type: [string, "null"], format: date-time}
+        last_upload_local: {type: [string, "null"], format: date-time}
+        firmware_version: {type: [string, "null"]}
+        silent_days_last_30: {type: array, items: {type: string, format: date}}
+        device_gap_days_last_30: {type: array, items: {type: string, format: date}}
+    DeviceList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/Device"}}}}
+
+    # ---------- analytics and pipeline ----------
+    StatusCountsRow:
+      type: object
+      required: [resident_code, usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        usable: {type: integer}
+        set_aside: {type: integer}
+        quarantined: {type: integer}
+        duplicate: {type: integer}
+        missing_resident: {type: integer}
+        missing_device_gap: {type: integer}
+    StatusTotals:
+      type: object
+      required: [usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap]
+      properties:
+        usable: {type: integer}
+        set_aside: {type: integer}
+        quarantined: {type: integer}
+        duplicate: {type: integer}
+        missing_resident: {type: integer}
+        missing_device_gap: {type: integer}
+    ResidentOutcome:
+      type: object
+      required: [resident_code, epoch_number, device_code, usable_in_epoch, baseline_formed, baseline_frozen_after, scored_sessions, first_alarm_session, note]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: integer}
+        device_code: {type: string}
+        usable_in_epoch: {type: integer}
+        baseline_formed: {type: boolean}
+        baseline_frozen_after: {type: [string, "null"]}
+        scored_sessions: {type: [integer, "null"]}
+        first_alarm_session: {type: [string, "null"]}
+        note: {type: [string, "null"]}
+    PipelineRun:
+      type: object
+      required: [id, trigger, scope, config_profile, code_version, as_of, started_at, finished_at, status, counts, warnings]
+      properties:
+        id: {type: string, format: uuid}
+        trigger: {$ref: "#/components/schemas/PipelineTrigger"}
+        scope:
+          oneOf:
+            - {type: string, const: all}
+            - {type: array, items: {$ref: "#/components/schemas/ResidentCode"}}
+        config_profile: {$ref: "#/components/schemas/ConfigProfile"}
+        code_version: {type: string}
+        as_of: {type: string, format: date-time}
+        started_at: {type: string, format: date-time}
+        finished_at: {type: [string, "null"], format: date-time}
+        status: {$ref: "#/components/schemas/PipelineStatus"}
+        counts: {type: object, additionalProperties: {type: integer}}
+        warnings:
+          type: array
+          items:
+            type: object
+            required: [code, message]
+            properties:
+              code: {type: string, examples: ["late_arrival", "DEVICE_ASSIGNMENT_MISMATCH", "STALE_RUN"]}
+              message: {type: string}
+              session_id: {type: [string, "null"]}
+              resident_code: {type: [string, "null"]}
+    PipelineRunRequest:
+      type: object
+      additionalProperties: false
+      required: [scope]
+      properties:
+        scope:
+          oneOf:
+            - {type: string, const: all}
+            - {type: array, minItems: 1, items: {$ref: "#/components/schemas/ResidentCode"}}
+        profile: {$ref: "#/components/schemas/ConfigProfile"}
+        as_of: {type: [string, "null"], format: date-time}
+    PipelineRunAccepted:
+      type: object
+      required: [pipeline_run_id]
+      properties: {pipeline_run_id: {type: string, format: uuid}}
+    AnalyticsSummary:
+      type: object
+      required: [as_of, window, pipeline_run, status_totals, status_counts, resident_outcomes, funnel, set_aside_reasons, daily_counts]
+      properties:
+        as_of: {type: [string, "null"], format: date-time}
+        window: {$ref: "#/components/schemas/DateWindow"}
+        pipeline_run: {oneOf: [{$ref: "#/components/schemas/PipelineRun"}, {type: "null"}]}
+        status_totals: {$ref: "#/components/schemas/StatusTotals"}
+        funnel:
+          type: object
+          description: check-in funnel over the window (Analytics wireframe "Where check-ins are lost")
+          required: [expected, received, duplicates_removed, missed, passed_quality, used]
+          properties:
+            expected: {type: integer, description: resident-days in window for enrolled residents}
+            received: {type: integer, description: non-duplicate arrivals}
+            duplicates_removed: {type: integer}
+            missed: {type: integer, description: missing_resident + missing_device_gap}
+            passed_quality: {type: integer, description: received minus set_aside}
+            used: {type: integer, description: usable}
+        set_aside_reasons:
+          type: object
+          description: count of set-aside sessions per reason; one session may count under several reasons
+          required: [quality_flag_poor, noise_above_limit, speech_too_short]
+          properties:
+            quality_flag_poor: {type: integer}
+            noise_above_limit: {type: integer}
+            speech_too_short: {type: integer}
+        daily_counts:
+          type: array
+          items:
+            type: object
+            required: [local_date, used, set_aside, quarantined, missed]
+            properties:
+              local_date: {type: string, format: date}
+              used: {type: integer}
+              set_aside: {type: integer}
+              quarantined: {type: integer}
+              missed: {type: integer}
+        status_counts: {type: array, items: {$ref: "#/components/schemas/StatusCountsRow"}}
+        resident_outcomes: {type: array, items: {$ref: "#/components/schemas/ResidentOutcome"}}
+    BaselineRow:
+      type: object
+      required: [resident_code, epoch_number, device_code, feature_key, n_sessions, first_session_id, frozen_after_session_id, median, mad, robust_spread, floor_applied]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        epoch_number: {type: integer}
+        device_code: {type: string}
+        feature_key: {$ref: "#/components/schemas/BaselineFeatureKey"}
+        n_sessions: {type: integer}
+        first_session_id: {$ref: "#/components/schemas/SessionId"}
+        frozen_after_session_id: {$ref: "#/components/schemas/SessionId"}
+        median: {type: number}
+        mad: {type: number, minimum: 0}
+        robust_spread: {type: number, exclusiveMinimum: 0}
+        floor_applied: {type: boolean}
+    BaselineRowList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/BaselineRow"}}}}
+
+    # ---------- future arm (experimental) ----------
+    AdmissionRow:
+      type: object
+      required: [resident_code, admitted_on, checkins_so_far, comparison_status, own_baseline_progress]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        admitted_on: {type: [string, "null"], format: date}
+        checkins_so_far: {type: integer, minimum: 0}
+        comparison_status: {$ref: "#/components/schemas/ComparisonStatus"}
+        own_baseline_progress: {$ref: "#/components/schemas/BaselineProgress"}
+    AdmissionList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [as_of, items], properties: {as_of: {type: [string, "null"], format: date-time}, items: {type: array, items: {$ref: "#/components/schemas/AdmissionRow"}}}}
+    ReferenceRange:
+      type: object
+      required: [feature_key, low, high, method, n_residents, computed_at, pipeline_run_id]
+      properties:
+        feature_key: {$ref: "#/components/schemas/FeatureKey"}
+        low: {type: number}
+        high: {type: number}
+        method: {type: string, description: definition pending OQ-08}
+        n_residents: {type: integer, minimum: 0}
+        computed_at: {type: string, format: date-time}
+        pipeline_run_id: {type: [string, "null"], format: uuid}
+    ReferenceRangeList:
+      allOf:
+        - {$ref: "#/components/schemas/PageMeta"}
+        - {type: object, required: [items], properties: {items: {type: array, items: {$ref: "#/components/schemas/ReferenceRange"}}}}
+    AdmissionComparison:
+      type: object
+      required: [resident_code, comparison_status, features]
+      properties:
+        resident_code: {$ref: "#/components/schemas/ResidentCode"}
+        comparison_status: {$ref: "#/components/schemas/ComparisonStatus"}
+        features:
+          type: array
+          items:
+            type: object
+            required: [feature_key, resident_value, low, high, outside_range]
+            properties:
+              feature_key: {$ref: "#/components/schemas/FeatureKey"}
+              resident_value: {type: [number, "null"], description: median of the resident's usable check-ins so far}
+              low: {type: [number, "null"]}
+              high: {type: [number, "null"]}
+              outside_range: {type: [boolean, "null"]}
+```
+
+## 5. Assumptions
+
+- ASM-01 Facility timezone America/Chicago (`*_local`, `local_date`).
+- ASM-02 One session per resident per local day (`session_id` suffix `-01` in test data; pattern allows `-NN`).
+- ASM-03 Single facility; no facility path parameter in v1.
+- ASM-04 `n_required` = 16 under test_v0_1, 30 under production.
+- ASM-08 Lists are small; `limit` maximum 500 covers every test-data list in one page (180 baseline rows).
+
+## 6. Dependencies
+
+- TRD 05 (behaviour, error catalogue), TRD 20 (enum values), TRD 10 (ingest validation and feature-name mapping),
+  TRD 08/09 (meaning of z, composite, tally, alarm_state).
+- Tooling: FastAPI 0.115.x OpenAPI 3.1 output; `openapi-spec-validator` 0.7.x and `jsonschema` 4.x (tests);
+  `openapi-typescript` 7.x (frontend types).
+- SRC-03 workbook values for example and contract-test assertions.
+
+## 7. Acceptance Criteria
+
+- AC-OAS-01: `docs/api_reference/openapi.yaml` validates with `openapi-spec-validator` as OpenAPI 3.1.
+- AC-OAS-02: The contract test (OAS-005) passes with zero differences between the committed YAML and `/api/v1/openapi.json`.
+- AC-OAS-03: Every response captured by the integration suite validates against its declared schema (OAS-006), including all Problem responses.
+- AC-OAS-04: Each JSON example in §4.3 validates against its schema (OAS-015).
+- AC-OAS-05: On the test_v0_1 data, the assertions OAS-021..OAS-024 pass with tolerance 1e-6 for numbers and exact match for strings/enums.
+- AC-OAS-06: The enum comparison test (OAS-007) finds identical value sets between DTO enums and `pg_enum`.
+- AC-OAS-07: A search of the YAML for `audio`, `wav`, `name` (as a resident property), `dob` finds no resident-level property (OAS-016).
+
+## 8. Implementation Notes
+
+- Name Pydantic models exactly as the schema names (`IngestRecord`, `ResidentOverviewRow`, ...); FastAPI uses the
+  class name as the component name. Use `model_config = ConfigDict(extra="forbid")` for request models.
+- Nullable fields: declare `X | None` without a default for response models and serialise with
+  `response_model_exclude_none=False` so nulls are present (OAS-012).
+- Pydantic v2 renders `X | None` as `anyOf: [{type: X}, {type: null}]`; the contract test shall normalise
+  `anyOf`-with-null and `type: [X, "null"]` as equivalent.
+- For `POST /sessions` and `POST /ingest` the body is read manually (TRD 05 API-031); attach the schema with
+  `openapi_extra={"requestBody": {...}}` so the generated document still matches.
+- `ScoreRow.z` holds unsigned z as in SRC-03 Exp_scores; do not multiply by sign before returning.
+- The SRC-03 Exp_scores `alarm` column values map: "off" → `off`, "RINGS (first crossing)" → `rings`, "on" → `on`.
+- Keep the YAML in `docs/api_reference/openapi.yaml` and the human summary in `docs/api_reference.md`.
+
+## 9. Open Questions
+
+- OQ-03 Feature key names are placeholders; renaming will change `FeatureKey` values only through a v2 or a mapping (see TRD 10).
+- OQ-04 `phrase_id` required status.
+- OQ-05 Review/tally reset: `POST /alerts/{id}/acknowledge` documents that tally and alarm are unchanged.
+- OQ-08 Facility norm definition (`ReferenceRange.method`, `ComparisonStatus` thresholds).
+- OQ-12 Final "What this means" wording (only structured `Explanation` facts are returned).
+- OQ-14 Speaker verification confidence field (not in schema v0.1; adding it is a schema_version change).
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
