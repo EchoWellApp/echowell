@@ -67,7 +67,7 @@ Out of scope:
 ```
 backend/
   main.py                    create_app(): FastAPI instance, middleware, exception handlers, routers
-  cli.py                     admin CLI: create-user, create-api-key, revoke-api-key
+  cli.py                     admin CLI: create-user, create-api-key, revoke-api-key, export-openapi
   jobs/nightly_run.py        nightly pipeline entry point (Railway cron service)
   api/                       routers (thin: parse, authorise, call one service, map DTO)
     health.py                GET /health
@@ -122,7 +122,7 @@ backend/
 | API-011 | `get_db()` shall yield one SQLAlchemy `Session` per request, commit when the handler returns without exception, roll back on any exception, and always close the session. | Must | BR-02 | Test |
 | API-012 | `get_current_user()` shall decode the Bearer JWT, load the `users` row by `sub`, and reject with 401 `TOKEN_INVALID` when the user does not exist or `active` is false. | Must | BR-16, TRD 12 | Test |
 | API-013 | `require_roles(*roles)` shall return a dependency that raises 403 `FORBIDDEN` when the current user's role (read from the database, not from the token) is not in `roles`. | Must | BR-16, TRD 12 | Test |
-| API-014 | `get_api_key()` shall hash the `X-API-Key` header with SHA-256, load the active `api_keys` row with that hash and scope `ingest:write`, and reject with 401 `API_KEY_INVALID` otherwise. | Must | BR-16, TRD 12 | Test |
+| API-014 | `get_api_key(scope)` shall hash the `X-API-Key` header with SHA-256, load the active `api_keys` row with that hash whose `scopes` contain the required scope (`ingest:write` for ingest endpoints, `pipeline:run` for `POST /pipeline/run`), and reject with 401 `API_KEY_INVALID` when the key is missing, unknown or inactive, and 403 `FORBIDDEN` when it lacks the scope. | Must | BR-16, TRD 12, contract §21 R18 | Test |
 | API-015 | `get_ingest_principal()` shall accept either a valid API key (API-014) or a JWT user with role `admin`, and shall return a `Principal(actor_type, actor_id, device_id)` object used for audit and device binding. | Must | contract §10 | Test |
 | API-016 | `get_pagination()` shall parse `limit` (integer 1..500, default 50) and `offset` (integer ≥ 0, default 0) and reject other values with 422 `INVALID_QUERY_PARAMETER`. | Must | contract §10 | Test |
 | API-017 | Tests shall be able to override `get_db`, `get_settings` and the auth dependencies through `app.dependency_overrides` without monkeypatching modules. | Must | TRD 13 | Test |
@@ -203,7 +203,9 @@ sequenceDiagram
 ### 4.5 Pipeline triggering and scheduling
 
 Decision: the nightly full run is executed by a **Railway Cron Job service** (`echowell-nightly`) that runs
-`python -m backend.jobs.nightly_run` and exits, not by APScheduler inside the web process.
+`python -m backend.jobs.nightly_run` and exits, not by any in-process scheduler (no APScheduler, no
+`NIGHTLY_SCHEDULER_ENABLED` flag) (contract §21 R18). On AWS the same command runs as an EventBridge
+Scheduler target (ECS/App Runner job), or EventBridge calls `POST /api/v1/pipeline/run` with a `pipeline:run` API key.
 Justification: (1) the web service may sleep or restart on free/trial tiers (RSK-07), which would silently
 skip in-process schedules; (2) more than one uvicorn worker or replica would run an in-process scheduler
 more than once; (3) a cron service gives a separate log stream and exit code per run. Railway cron
@@ -214,17 +216,18 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 |---|---|---|---|---|
 | API-060 | `backend/jobs/nightly_run.py` shall exit 0 without running when the current hour in FACILITY_TZ is not NIGHTLY_RUN_HOUR_LOCAL. | Must | contract §7 Trigger, §13 | Test |
 | API-061 | The nightly job shall exit 0 without running when a `pipeline_runs` row with trigger `nightly` and status `succeeded` already exists whose `started_at` falls on the same facility-local date. | Must | contract §7 | Test |
-| API-062 | The nightly job shall run the full pipeline (scope `all`) with trigger `nightly`, profile PIPELINE_PROFILE, and as-of = job start time, and shall exit non-zero when the run fails. | Must | contract §7 | Test |
+| API-062 | The nightly job shall run the full pipeline (scope `all`) with trigger `nightly`, profile PIPELINE_PROFILE and as-of resolved by API-135, and shall exit non-zero when the run fails. | Must | contract §7, §21 R18 | Test |
 | API-063 | Every pipeline invocation (ingest, nightly, manual) shall be executed by `services.pipeline_service.run(scope, trigger, profile, as_of)`, which creates the `pipeline_runs` row, stores `config_snapshot` (including `as_of`), `code_version`=GIT_SHA, `counts`, `warnings`, and writes audit actions `pipeline.run.started` and `pipeline.run.finished`. | Must | contract §9, BR-15 | Test |
 | API-064 | A full-scope run shall hold the PostgreSQL advisory lock `pg_advisory_lock(hashtext('echowell:pipeline:all'))`; a resident-scoped run shall hold `pg_advisory_xact_lock(hashtext('echowell:pipeline:resident:'||resident_code))` for each resident in ascending code order, and shall wait while a full run holds its lock. | Must | BR-15 | Test |
-| API-065 | `POST /api/v1/pipeline/run` (admin) shall accept `{scope: "all" | [resident_code, ...], profile?: "production" | "test_v0_1", as_of?: date-time}`, start the run as a background task, and return 202 `{pipeline_run_id}`; it shall return 409 `PIPELINE_RUN_IN_PROGRESS` when a full-scope run is running. | Must | contract §10 | Test |
+| API-065 | `POST /api/v1/pipeline/run` shall be authorised for admin users (JWT) and for API keys with scope `pipeline:run` (used by the AWS EventBridge Scheduler target), shall accept `{scope: "all" | [resident_code, ...], profile?: "production" | "test_v0_1", as_of?: date-time}`, start the run as a background task, and return 202 `{pipeline_run_id}`; it shall return 409 `PIPELINE_RUN_IN_PROGRESS` when a full-scope run is running. | Must | contract §10, §21 R18 | Test |
+| API-135 | The `as_of` of every pipeline run shall be resolved in this order: explicit `as_of` in `POST /pipeline/run`; else the PIPELINE_AS_OF environment variable (the backend refuses to start when PIPELINE_AS_OF is set and APP_ENV is `production`); else the current time. The resolved value is stored in `pipeline_runs.config_snapshot.as_of`. | Must | contract §21 R21 | Test |
 | API-066 | When APP_ENV is `production`, `POST /pipeline/run` with `profile`=`test_v0_1` or any `profile` different from PIPELINE_PROFILE shall return 422 `PROFILE_NOT_ALLOWED`. | Must | ASM-04, D-OWNER-2 | Test |
 | API-058 | `create_app()` and `backend/jobs/nightly_run.py` shall refuse to start (log the reason and exit non-zero) when APP_ENV is `production` and PIPELINE_PROFILE is `test_v0_1`; the test_v0_1 profile (baseline_n 16) exists only for build-out and testing (owner decision D-OWNER-2). | Must | ASM-04, D-OWNER-2, TRD 21 | Test |
 | API-059 | `create_app()` shall refuse to start when APP_ENV is `staging` or `production` and DATABASE_URL does not specify `sslmode=require` (or stricter `verify-full`), so that all database traffic uses TLS 1.2+ (D-OWNER-3). | Must | BR-16, D-OWNER-3, TRD 12 | Test |
 | API-067 | `GET /api/v1/pipeline/runs/{id}` (admin, researcher) shall return the `PipelineRun` DTO; an unknown id returns 404 `PIPELINE_RUN_NOT_FOUND`. | Must | contract §10 | Test |
 | API-128 | Pipeline rebuilds shall upsert derived rows by natural keys (epochs by (resident_id, epoch_number); alerts by (epoch_id, session_id); data_alerts by (kind, resident_id, device_id)) so that alert ids, `alert_reviews`, `snoozed_until` and `staff_notes.alert_id` links survive recomputation; the API shall never expose a surrogate id that a rebuild can change. | Must | contract §20 R15, BR-02 | Test |
 | API-068 | A run that is still `running` 30 minutes after `started_at` when the next run starts shall be marked `failed` with warning `STALE_RUN` before the new run proceeds. | Should | TRD 17 | Test |
-| API-069 | The reference time `as_of` for 30-day windows and day-ledger reads shall be: when PIPELINE_PROFILE is `production`, the request time; when PIPELINE_PROFILE is `test_v0_1`, the `as_of` of the most recent `succeeded` pipeline run (set by `POST /pipeline/run {as_of}`). The 30-day window is the 30 local days ending on the as-of local date, never starting before the resident's `enrolled_on`. For the test_v0_1 data loaded with as-of 2026-10-30T15:00 America/Chicago the window is 2026-10-01..2026-10-30. | Must | contract §7, §20 R10, R11 | Test |
+| API-069 | All read endpoints that use a reference date (30-day windows, day ledger, open days) shall use `as_of` = the `as_of` of the most recent `succeeded` pipeline run (API-135) and return it in `meta.as_of`. The 30-day window is the 30 local days ending on the as-of local date, never starting before the resident's `enrolled_on`. For the test_v0_1 data run with as-of 2026-10-30T15:00 America/Chicago the window is 2026-10-01..2026-10-30. | Must | contract §7, §20 R10, §21 R21 | Test |
 | API-057 | Every list, detail and analytics response body shall include a `meta` object `{facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile}` built by the `get_meta()` dependency from FACILITY_NAME, FACILITY_TZ, DATA_SOURCE_LABEL, the as-of rule above and the active profile's `baseline_n` and `cusum_h`. | Must | contract §20 R3 | Test |
 
 ### 4.6 Read endpoints: validation, filtering, sorting
@@ -253,7 +256,8 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 | API-085 | A note `alert_id` shall belong to the same resident (else 422 `ALERT_RESIDENT_MISMATCH`) and a `supersedes_id` shall reference a note of the same resident (else 422 `VALIDATION_ERROR`). | Must | BR-13 | Test |
 | API-133 | `GET /api/v1/data-alerts` (all user roles) shall accept `status` ∈ {open, resolved} (default open), `kind` ∈ {baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem} and pagination, and return `DataAlert` items ordered by kind in that enum order, then resident/device code. For the test_v0_1 data the open list shall be exactly: R08 baseline_stalled ("R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"), R05 possible_other_speaker ("2 check-ins quarantined: Oct 8, Oct 22"), R03 high_set_aside ("7 of 29 received: noise, quality flag, too short"), D02 device_silent ("Oct 12 · affects R02 and R03"). Data alerts are computed by the pipeline (TRD 09); the API only reads them. | Must | SRC-18, contract §19, OQ-24 | Test |
 | API-086 | `GET /api/v1/devices` shall return one `Device` item per device with assigned resident codes valid on the as-of date, `shared` flag, `replaces_device_code` / `replaced_by_device_code`, `in_use_since`, `last_upload_at`, `firmware_version`, `silent_days_last_30` (local dates with zero arrivals from the device) and `device_gap_days_last_30` (local dates where the ledger recorded `missing_device_gap` for its residents). For test_v0_1, D02 shall report residents [R02, R03], shared=true, device_gap_days_last_30=[2026-10-12]. | Must | BR-12, BR-06, SRC-09 | Test |
-| API-087 | `GET /api/v1/analytics` (researcher, admin) shall return `AnalyticsResponse` with `meta`, `period`, `kpis` (checkins_received, used_for_scoring, baselines_formed, alarms_raised), `daily_series`, `funnel`, `by_resident`, and exactly one of `alarm_timing` (when PIPELINE_PROFILE is `test_v0_1`, read from `evaluation_ground_truth`, which the pipeline never reads) or `review_outcomes` (production; counts by outcome from `alert_reviews`), plus `status_totals`, `status_counts`, `resident_outcomes` and the latest `pipeline_run`. Percentages are rounded half-up to integers. Test values: received 281 of 300 (94%), used 267 of 300 (89%), baselines formed 9 of 10, alarms raised 2 (R09, R10); funnel 300 → 281 → 269 → 267; set-aside reasons quality flag 5, noise 5, too short 3; by_resident R08 43%, R03 73%, R02 80%, R05 93%, others 100%; alarm timing R09 0 days, R10 7 days. | Must | BR-15, SRC-19, contract §19 | Test |
+| API-087 | `GET /api/v1/analytics` (researcher, admin) shall return `AnalyticsResponse` with `meta`, `period`, `kpis` (checkins_received, used_for_scoring, baselines_formed, alarms_raised), `daily_series`, `funnel`, `by_resident`, and exactly one of `alarm_timing` (when PIPELINE_PROFILE is `test_v0_1`; read through the view `evaluation_alarm_timing`, see API-136) or `review_outcomes` (production; counts by outcome from `alert_reviews`), plus `status_totals`, `status_counts`, `resident_outcomes` and the latest `pipeline_run`. Percentages are rounded half-up to integers. Test values: received 281 of 300 (94%), used 267 of 300 (89%), baselines formed 9 of 10, alarms raised 2 (R09, R10); funnel 300 → 281 → 269 → 267; set-aside reasons quality flag 5, noise 5, too short 3; by_resident R08 43%, R03 73%, R02 80%, R05 93%, others 100%; alarm timing R09 0 days, R10 7 days. | Must | BR-15, SRC-19, contract §19 | Test |
+| API-136 | Because `echowell_app` has no SELECT on `evaluation_ground_truth` (contract §21 R20), the alarm-timing comparison shall be read from the view `evaluation_alarm_timing` (owned by `echowell_migrator`, columns resident_code, planted_change, true_onset_date, first_alarm_date, delay_days, result), on which only `analytics_service` may query; `pipeline_service` and the `analytics/` package shall have no code path to it (enforced by an import-boundary test). | Must | contract §19, §21 R20, SRC-02 | Test |
 | API-134 | `GET /api/v1/pipeline/runs` (admin, researcher) shall list pipeline runs newest first with optional `trigger` and `status` filters and pagination. | Must | contract §20 R4 | Test |
 | API-088 | `GET /api/v1/analytics/baselines` (researcher, admin) shall return `BaselineRow` items (Exp_baselines shape) filtered by optional `resident_code` and `epoch`, ordered by resident_code, epoch, then contract §6 feature order with `composite` last. | Must | BR-09, BR-15 | Test |
 | API-089 | `GET /api/v1/admissions`, `GET /api/v1/admissions/{resident_code}/comparison` and `GET /api/v1/facility/reference-ranges` shall be available to all user roles, shall set response header `X-EchoWell-Experimental: true`, and shall return empty `items` (not an error) when no new-admission residents or reference ranges exist. | Must | BR-14, SRC-11, OQ-08 | Test |
@@ -305,8 +309,8 @@ Error code catalogue (complete; no other codes may be emitted):
 | INVALID_CREDENTIALS | 401 | Invalid email or password | login failure |
 | TOKEN_EXPIRED | 401 | Token expired | JWT `exp` passed |
 | TOKEN_INVALID | 401 | Token invalid | bad signature/claims, user inactive or missing |
-| API_KEY_INVALID | 401 | API key invalid | missing/unknown/inactive key or missing scope |
-| FORBIDDEN | 403 | Not allowed for this role | role check fails, or API key used on a user endpoint |
+| API_KEY_INVALID | 401 | API key invalid | missing/unknown/inactive key |
+| FORBIDDEN | 403 | Not allowed for this role | role check fails, or API key lacks the required scope |
 | DEVICE_KEY_MISMATCH | 403 | API key not valid for this device | API-040 |
 | NOT_FOUND | 404 | Not found | unknown route |
 | RESIDENT_NOT_FOUND | 404 | Resident not found | unknown resident_code |
@@ -351,7 +355,7 @@ Error code catalogue (complete; no other codes may be emitted):
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | API-110 | `GET /api/v1/health` shall require no authentication and return 200 `{"status":"ok","database":"ok","version":GIT_SHA,"time":<UTC now>}` when `SELECT 1` succeeds within 2 seconds. | Must | contract §10, SRC-17 | Test |
-| API-111 | When the database check fails or times out, `GET /health` shall return 503 with `{"status":"degraded","database":"unavailable","version":...,"time":...}` (Health shape, not Problem). | Must | TRD 15, TRD 17 | Test |
+| API-111 | When the database check fails or times out, `GET /health` shall return HTTP 503 with `{"status":"degraded","database":"unavailable","version":...,"time":...}` (Health shape, not Problem). | Must | TRD 15, TRD 17, contract §21 R19 | Test |
 | API-112 | `GET /health` shall be exempt from rate limiting and shall not write audit rows. | Must | TRD 15 | Test |
 | API-113 | The OpenAPI document shall be served unauthenticated at `/api/v1/openapi.json` in all environments; Swagger UI at `/api/v1/docs` shall be enabled when APP_ENV ∈ {local, staging, test} and disabled in `production`; ReDoc shall be disabled. | Must | contract §10 | Test |
 | API-114 | The generated OpenAPI document shall declare security schemes `bearerAuth` (HTTP bearer, JWT) and `apiKeyAuth` (header `X-API-Key`) and attach them per operation as in TRD 19. | Must | TRD 19 | Test |
@@ -434,7 +438,7 @@ the BR IDs shown here.
 | GET /devices | user | devices.py | device_service.panel | R devices, device_assignments, raw_sessions, day_ledger | BR-06, BR-12 | `/residents#devices` |
 | GET /analytics | researcher, admin | analytics.py | analytics_service.summary | R processed_sessions, day_ledger, epochs, baselines, scores, alerts, alert_reviews, evaluation_ground_truth (test_v0_1 only), pipeline_runs | BR-15 | `/analytics` page |
 | GET /analytics/baselines | researcher, admin | analytics.py | analytics_service.baselines (JSON or CSV) | R baselines, epochs, devices, residents; W audit_logs (CSV) | BR-09, BR-15 | `/analytics` export |
-| POST /pipeline/run | admin | pipeline.py | pipeline_service.start | W pipeline_runs and derived tables, audit_logs | BR-15 | `/admin` "Run pipeline" |
+| POST /pipeline/run | admin, api key (pipeline:run) | pipeline.py | pipeline_service.start | W pipeline_runs and derived tables, audit_logs | BR-15 | `/admin` "Run pipeline" |
 | GET /pipeline/runs | admin, researcher | pipeline.py | pipeline_service.list | R pipeline_runs | BR-15 | `/admin` |
 | GET /pipeline/runs/{id} | admin, researcher | pipeline.py | pipeline_service.get | R pipeline_runs | BR-15 | `/admin` |
 | GET /admissions | user | admissions.py | admission_service.list | R residents, processed_sessions, facility_reference_ranges, baselines | BR-14 | `/admissions` table |
@@ -471,7 +475,9 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Railway web service and Railway Cron Job service (TRD 15, TRD 22); environment variables from TRD 21.
 - Seed scripts in `database/seeds/` that register residents, devices and device assignments (TRD 14).
 - Owner decisions D-OWNER-2 (test_v0_1 never in production), D-OWNER-3 (AWS target) and D-OWNER-4 (interim stack synthetic/test data only; go-live on AWS only) from the shared contract §18.
-- Note: the current `backend/requirements.txt` lists `psycopg2-binary`; it shall be replaced by `psycopg[binary]` 3.x to match contract §3.
+- Note: the current `backend/requirements.txt` lists `psycopg2-binary`; it shall be replaced by `psycopg[binary]` 3.x (contract §21 R24).
+- DATABASE_URL (role `echowell_app`) for the API and nightly job; DATABASE_MIGRATION_URL (role `echowell_migrator`) for Alembic only (contract §21 R20).
+- OpenAPI artefact `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` (TRD 19, contract §21 R22).
 
 ## 7. Acceptance Criteria
 
@@ -484,7 +490,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - AC-API-07: Posting a record with an extra field `audio_base64` returns 422 `VALIDATION_ERROR` with errors[0].code `extra_forbidden`.
 - AC-API-08: Every response in the integration test suite (including 401, 404, 422, 429, 500) carries `X-Request-ID`, and every non-2xx body validates against the `Problem` schema.
 - AC-API-09: The sixth login attempt from one IP within one minute returns 429 `RATE_LIMITED` with `Retry-After`.
-- AC-API-10: A clinician calling `POST /pipeline/run` receives 403 `FORBIDDEN`; an API key calling `GET /residents` receives 401 `NOT_AUTHENTICATED`.
+- AC-API-10: A clinician calling `POST /pipeline/run` receives 403 `FORBIDDEN`; an `ingest:write` API key calling `POST /pipeline/run` receives 403 `FORBIDDEN`; a `pipeline:run` key receives 202; an API key calling `GET /residents` receives 401 `NOT_AUTHENTICATED`.
 - AC-API-11: Running `python -m backend.jobs.nightly_run` at 03:00 local exits 0 without creating a pipeline run; at 02:00 local it creates one run with trigger `nightly`; a second invocation the same night creates none.
 - AC-API-12: `GET /api/v1/health` returns 200 with `database` "ok"; with the database stopped it returns 503 with `database` "unavailable".
 - AC-API-13: The performance budgets API-120..API-124 are met in the staging load test (TRD 13).
@@ -517,7 +523,8 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Pitfall: `CORSMiddleware` must be added after the request-ID middleware so that preflight responses also
   carry `X-Request-ID`.
 - `backend/cli.py` (Typer or argparse): `create-user --email --display-name --role`, prompting for the password;
-  `create-api-key --name --device D01` printing the key once; `revoke-api-key --name`. These are the only ways to
+  `create-api-key --name --scope ingest:write|pipeline:run [--device D01]` printing the key once; `revoke-api-key --name`;
+  `export-openapi` writing `docs/api_reference/openapi.json`. These are the only ways to
   create the first admin and device keys (TRD 12).
 
 ## 9. Open Questions

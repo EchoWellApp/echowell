@@ -108,7 +108,7 @@ Jobs (run in parallel unless noted):
 | `repo-hygiene` | Policy checks | audio-file check, `.env` check, file size check, Conventional Commit title check (PR only) | 1 min |
 | `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend` | 3 min |
 | `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest tests/unit tests/integration tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
-| `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/openapi.json /tmp/openapi.json` | 2 min |
+| `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/api_reference/openapi.json /tmp/openapi.json`; regenerate `frontend/lib/api-types.ts` with `openapi-typescript` and `git diff --exit-code` | 2 min |
 | `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test -- --coverage`, `npm run build` | 6 min |
 | `security-audit` | Known vulnerabilities | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev` | 2 min |
 | `docker-build` | Images build | `docker build -f backend/Dockerfile .`; `docker build frontend`; image check (non-root, no `.env`, no `tests/`) | 5 min |
@@ -221,7 +221,8 @@ jobs:
         with: { python-version: "3.12", cache: pip, cache-dependency-path: backend/requirements*.txt }
       - run: pip install -r backend/requirements.txt
       - run: APP_ENV=test JWT_SECRET=$(openssl rand -hex 32) DATABASE_URL=postgresql+psycopg://x:x@localhost/x python -m backend.cli export-openapi > /tmp/openapi.json
-      - run: diff -u docs/openapi.json /tmp/openapi.json
+      - run: diff -u docs/api_reference/openapi.json /tmp/openapi.json
+      - run: npx --yes openapi-typescript@7 docs/api_reference/openapi.json -o frontend/lib/api-types.ts && git diff --exit-code frontend/lib/api-types.ts
   frontend:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -287,7 +288,7 @@ jobs:
 | CIC-015 | `backend-test` shall apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error. | Must | TRD 06, TRD 15 DEP-060 | Test |
 | CIC-016 | Line coverage shall be at least 95 % for `analytics/` and at least 85 % for `backend/`; the job shall fail below either gate. | Must | contract R7, TRD 13 | Test |
 | CIC-017 | The `frontend` job shall run `npm ci`, `npm run lint` (ESLint, zero warnings allowed: `--max-warnings=0`), `npm run typecheck` (`tsc --noEmit`), `npm run test` (Vitest + React Testing Library, line coverage at least 80 %) and `npm run build`, failing on any non-zero exit. | Must | contract §3, TRD 04, TRD 13 | Test |
-| CIC-018 | The `openapi-contract` job shall fail when the OpenAPI document generated from the backend differs from the committed `docs/openapi.json`; intentional API changes shall update `docs/openapi.json` in the same PR. | Must | TRD 19 | Test |
+| CIC-018 | The `openapi-contract` job shall fail when the OpenAPI document generated from the backend differs from the committed `docs/api_reference/openapi.json`; intentional API changes shall update `docs/api_reference/openapi.json` and the generated `frontend/lib/api-types.ts` in the same PR; the job shall also fail if `frontend/lib/api-types.ts` differs from the output of openapi-typescript. | Must | TRD 19 | Test |
 | CIC-019 | The `security-audit` job shall fail on any known vulnerability reported by `pip-audit` for runtime or dev requirements and on any `high` or `critical` advisory reported by `npm audit --omit=dev`. | Must | BR-16, TRD 12 | Test |
 | CIC-020 | The `repo-hygiene` job shall fail if any tracked file has an audio extension (wav, mp3, flac, m4a, ogg, opus, aac, wma, aif, aiff, amr, webm, caf, pcm). | Must | BR-01, contract §2, TRD 18 | Test |
 | CIC-021 | The `repo-hygiene` job shall fail if any tracked file is named `.env` or `.env.*` other than `*.example`, or if any tracked file exceeds 10 MB. | Must | BR-16, TRD 18 | Test |
@@ -417,7 +418,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | Name | Kind | Scope | Used by | Content |
 |---|---|---|---|---|
-| `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` branch direct URL of role `echowell_owner` |
+| `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` branch direct URL of role `echowell_migrator` |
 | `STAGING_SMOKE_EMAIL` | secret | environment `staging` | deploy-staging.yml | staging researcher-role smoke user |
 | `STAGING_SMOKE_PASSWORD` | secret | environment `staging` | deploy-staging.yml | its password |
 | `STAGING_API_BASE_URL` | variable | repository | deploy-staging.yml, uptime.yml | e.g. `https://echowell-backend-staging.up.railway.app/api/v1` |
@@ -469,7 +470,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt` (ruff, mypy, pytest 8.x, pytest-cov, httpx, openpyxl 3.1.x, pip-audit).
 - Root `pyproject.toml` with `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` (markers `smoke`, `authenticated`, `validation`) and `[tool.coverage]`.
 - `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:e2e`; `frontend/package-lock.json` committed.
-- `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/openapi.json` (TRD 19).
+- `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/api_reference/openapi.json` (TRD 19).
 - pytest plugin option `--validation-report` implemented in `tests/validation/conftest.py` (TRD 14); it also writes `validation_results.json` next to the Markdown report.
 - `tests/performance/make_load_dataset.py` and `tests/performance/` suite (TRD 13/TRD 14).
 - Railway "Wait for CI" and Netlify integration configured (TRD 15).
@@ -478,7 +479,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 - AC-CIC-01 A PR that changes one composite sign in `analytics/config.py` fails `backend-test` (validation suite) and cannot be merged.
 - AC-CIC-02 A PR that adds `tests/fixtures/sample.wav` fails `repo-hygiene`.
-- AC-CIC-03 A PR that adds an endpoint without updating `docs/openapi.json` fails `openapi-contract`.
+- AC-CIC-03 A PR that adds an endpoint without updating `docs/api_reference/openapi.json` fails `openapi-contract`.
 - AC-CIC-04 A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes.
 - AC-CIC-05 `ci.yml` on `main` completes all required checks in under 15 minutes (CIC-110) and uploads `backend-reports` containing `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `docs/reports/validation_results.json`.
 - AC-CIC-10 The nightly `performance` job passes all contract R8 budgets and uploads `performance-report`.

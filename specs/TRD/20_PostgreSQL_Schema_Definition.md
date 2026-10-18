@@ -17,10 +17,12 @@ diff test (PGS-016) fails.
 ## 2. Scope
 
 In scope:
-- DDL for all 21 tables of contract section 9 (with the additions listed in section 4.10), 12 enumerated types,
-  2 extensions, 2 trigger functions, 16 triggers, 3 group roles and their grants.
+- DDL for all 24 tables (the 21 of contract section 9 plus `alert_reviews`, `data_alerts` and `evaluation_ground_truth`
+  of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions,
+  2 trigger functions, 17 triggers, 4 group roles and their grants.
 - Seed SQL for `config_parameters` (profiles `production` and `test_v0_1`).
-- Seed SQL for the synthetic test roster (facility "Edgewood test", residents R01–R10, devices, assignments).
+- Seed SQL for the synthetic test roster (facility "Edgewood test", residents R01–R10, devices, assignments) and the
+  test-only evaluation answer key.
 - Rules that keep the Alembic migrations, `database/schema.sql` and SQLAlchemy models equivalent to this DDL.
 
 Out of scope:
@@ -38,6 +40,7 @@ Out of scope:
 | SRC-03 | Pipeline test workbook v0.1 (Parameters, Data_dictionary, Annotated_sessions, Exp_baselines, Exp_scores) |
 | SRC-04 | Pipeline test generator v0.1 (feature list, residents and sex, device moves) |
 | SRC-05 | Pipeline test input CSV v0.1 (column order of `raw_sessions`) |
+| SRC-18 / SRC-19 | Wireframes: Alert review (`/alerts`), Analytics (`/analytics`) — alert reviews, snooze, data alerts, alarm timing check |
 | TRD 06 | Database Design (DB-xxx) |
 | TRD 07 / 08 / 09 | Analytics Engine, Baseline and Scoring, CUSUM and Alerting (writers of derived tables) |
 | TRD 10 | Data Ingestion and Validation (writer of `raw_sessions`, `ingest_batches`, `ingest_rejections`) |
@@ -54,10 +57,10 @@ Out of scope:
 |---|---|---|---|---|
 | PGS-001 | The database shall run on PostgreSQL major version 16 with encoding UTF8, and the database-level setting `timezone` shall be `UTC` (`ALTER DATABASE <db> SET timezone = 'UTC'`). | Must | SRC-01, BR-17 | Test (`SHOW server_version_num` ≥ 160000 and < 170000; `SHOW timezone` = UTC) |
 | PGS-002 | The schema shall create the extensions `pgcrypto` (for `gen_random_uuid()`) and `btree_gist` (for the device-assignment exclusion constraint) and no other extension. | Must | SRC-01 | Inspection of migration 0001; Test (`pg_extension` lists exactly plpgsql, pgcrypto, btree_gist) |
-| PGS-003 | All EchoWell objects shall live in schema `public` and shall be owned by group role `echowell_migrator`. | Must | BR-16 | Test (`pg_tables.tableowner` = echowell_migrator for all 21 tables) |
-| PGS-004 | Exactly three group roles shall exist: `echowell_migrator` (DDL owner), `echowell_app` (backend runtime), `echowell_readonly` (research read access); each is `NOLOGIN` and environments connect through login roles that are members of exactly one group role (section 4.8). | Must | BR-16, TRD 12 | Test (`pg_roles`, `pg_auth_members`) |
-| PGS-005 | The schema shall define exactly the 12 enumerated types of section 4.4 with the listed labels in the listed order. | Must | Contract §9 | Test (query `pg_enum` ordered by `enumsortorder`) |
-| PGS-006 | The schema shall define exactly the 21 tables of section 4.5, with the column names, types, nullability and defaults shown, and no other tables except `alembic_version`. | Must | Contract §9, BR-02 | Test (schema diff, PGS-016) |
+| PGS-003 | All EchoWell objects shall live in schema `public` and shall be owned by group role `echowell_migrator`. | Must | BR-16 | Test (`pg_tables.tableowner` = echowell_migrator for all 24 tables) |
+| PGS-004 | Exactly three group roles shall exist: `echowell_migrator` (schema owner; Alembic connects through `DATABASE_MIGRATION_URL`), `echowell_app` (backend runtime and pipeline; `DATABASE_URL`), `echowell_readonly` (SELECT for researchers and exports, including `evaluation_ground_truth`); each is `NOLOGIN` and environments connect through the login roles of section 4.3. | Must | BR-16, TRD 12 | Test (`pg_roles`, `pg_auth_members`) |
+| PGS-005 | The schema shall define exactly the 15 enumerated types of section 4.4 with the listed labels in the listed order. | Must | Contract §9 | Test (query `pg_enum` ordered by `enumsortorder`) |
+| PGS-006 | The schema shall define exactly the 24 tables of section 4.6, with the column names, types, nullability and defaults shown, and no other tables except `alembic_version`. | Must | Contract §9, §19, §20 R17, BR-02 | Test (schema diff, PGS-016) |
 | PGS-007 | Every table except `audit_logs`, `config_parameters` and `cusum_state` shall have primary key `id uuid DEFAULT gen_random_uuid()`; `audit_logs.id` shall be `bigserial`; `config_parameters` shall have primary key `(profile, key)`; `cusum_state` shall have primary key `epoch_id`. | Must | Contract §9 | Test (`information_schema.table_constraints`) |
 | PGS-008 | Every column holding an instant shall be `timestamptz`; calendar days in facility local time shall be `date`; local clock time shall be `time(0)`. | Must | Contract §9, ASM-01 | Inspection; Test (no `timestamp without time zone` columns) |
 | PGS-009 | `raw_sessions` shall contain one column per ingest field of TRD 10 / contract §5 and one column per feature of contract §6, named exactly `loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction, mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4`; all are `double precision NOT NULL` except `number_of_pauses integer NOT NULL`. | Must | SRC-03, SRC-05, BR-01 | Test (column list equals SRC-05 header feature names) |
@@ -70,26 +73,30 @@ Out of scope:
 | PGS-016 | Running `alembic upgrade head` on an empty PostgreSQL 16 database shall produce a schema equivalent to the DDL in this document, verified by the schema diff test `tests/integration/test_schema_reference.py`, which compares normalised `pg_dump --schema-only --no-owner` output of the migrated database with `database/schema.sql` and fails on any difference. | Must | SRC-01, TRD 13 | Test (CI job `schema-diff`) |
 | PGS-017 | `database/schema.sql` shall be regenerated by `scripts/dump_schema.sh` (pg_dump `--schema-only --no-owner --no-comments` of a freshly migrated database, with the `SET`/`SELECT pg_catalog.set_config` preamble removed) in the same pull request as any migration change, and shall never be edited by hand. | Must | Contract §3 | Inspection (PR review); Test (PGS-016) |
 | PGS-018 | `raw_sessions` and `audit_logs` shall each carry a row-level `BEFORE UPDATE OR DELETE` trigger and a statement-level `BEFORE TRUNCATE` trigger that call `reject_mutation()`, which raises SQLSTATE `EW001`. | Must | BR-02, SRC-02, BR-16 | Test (section 7, checks 1–3) |
-| PGS-019 | `reject_mutation()` shall permit `DELETE` and `TRUNCATE` (never `UPDATE`) only when `current_user = 'echowell_migrator'` and the session setting `echowell.allow_purge` is `on`; this path is reserved for the test-database reset and the IRB withdrawal purge of TRD 06 (DB-024, DB-064). | Must | OQ-11, BR-02 | Test (section 7, check 9) |
+| PGS-019 | `reject_mutation()` shall permit `DELETE` and `TRUNCATE` (never `UPDATE`) only when `current_user = 'echowell_migrator'` and the session setting `echowell.allow_purge` is `on`; this path is reserved for the test-database reset and the IRB withdrawal purge of TRD 06 (DB-024, DB-030). | Must | OQ-11, BR-02 | Test (section 7, check 9) |
 | PGS-020 | Every table that has an `updated_at` column shall have a `BEFORE UPDATE` trigger calling `set_updated_at()`, which sets `updated_at = now()`. | Must | Contract §9 | Test (update a residents row; `updated_at` changes) |
-| PGS-021 | Grants shall be exactly those of section 4.8: `echowell_app` has only `SELECT, INSERT` on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`; no `DELETE` on master/config tables; and `echowell_readonly` cannot read `users.password_hash` or `api_keys.key_hash`. | Must | BR-16, TRD 12 | Test (`has_table_privilege`, `has_column_privilege`) |
+| PGS-021 | Grants shall be exactly those of section 4.8: `echowell_app` has only `SELECT, INSERT` on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`, `alert_reviews`; no `DELETE` on master/config tables, `alerts` or `data_alerts`; no privilege on `evaluation_ground_truth`; and `echowell_readonly` cannot read `users.password_hash` or `api_keys.key_hash`. | Must | BR-16, TRD 12 | Test (`has_table_privilege`, `has_column_privilege`) |
 | PGS-022 | Every migration that creates a table shall issue that table's grants in the same migration; `ALTER DEFAULT PRIVILEGES` shall not be used. | Must | BR-16 | Inspection; Test (PGS-016 compares privileges via `\dp` export) |
 | PGS-023 | Constraint and index names shall follow section 4.9 and shall be declared explicitly in SQLAlchemy models (`name=`), so Alembic autogenerate produces no diff on a migrated database. | Must | TRD 06 DB-012 | Test (`alembic check` exits 0 in CI) |
-| PGS-024 | Migration `0002_seed_config_parameters` shall insert the 32 rows of section 4.11 (16 keys × 2 profiles) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2 | Test (`SELECT count(*) … GROUP BY profile` = 16 each; values equal contract §7) |
+| PGS-024 | Migration `0002_seed_config_parameters` shall insert the 42 rows of section 4.11 (21 keys × 2 profiles: the 16 keys of contract §7 and the 5 keys of contract §19/§20 R17) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 21 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
 | PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, OQ-23 | Test (CLI with APP_ENV=production writes nothing) |
-| PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
-| PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 problem response and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
+| PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL` and `DATABASE_MIGRATION_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
+| PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 `application/problem+json` response (error code from the TRD 05 catalogue, contract R19) and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
 | PGS-029 | `alerts` shall have at most one non-closed row per `epoch_id` (partial unique index `alerts_one_active_per_epoch_uq`) and at most one row per `(epoch_id, session_id)`. | Must | BR-11, TRD 09 | Test |
 | PGS-030 | `epochs` shall have at most one row per resident with `ended_at IS NULL` (partial unique index `epochs_current_uq`) and unique `(resident_id, epoch_number)`. | Must | BR-08 | Test |
 | PGS-031 | `baselines.feature_key` shall be one of the 19 feature keys or `composite`, and `(epoch_id, feature_key)` shall be unique, giving exactly 20 rows per frozen resident-epoch. | Must | BR-09, SRC-03 Exp_baselines | Test (test_v0_1 run: 180 rows, 9 epochs × 20) |
 | PGS-032 | `scores.z` shall be a JSON object containing at least the 7 keys `z_loudness_dbfs, z_total_phrase_duration_s, z_speech_rate_syl_per_s, z_articulation_rate_syl_per_s, z_number_of_pauses, z_pause_fraction, z_voiced_fraction`, and `scores.cusum_tally` shall be ≥ 0. | Must | BR-10, SRC-03 Exp_scores | Test |
 | PGS-033 | `processed_sessions.adjusted_features` shall be NULL for `duplicate` rows and otherwise a JSON object containing all 19 feature keys. | Must | BR-07 | Test |
 | PGS-034 | `users.email` shall be stored lower-case and unique, and `users.password_hash` shall start with `$argon2id$`. | Must | TRD 12 | Test |
-| PGS-035 | `api_keys.key_hash` shall be 64 lower-case hexadecimal characters (SHA-256) and unique; `scopes` shall be a non-empty subset of `{ingest:write}`. | Must | TRD 12 | Test |
+| PGS-035 | `api_keys.key_hash` shall be 64 lower-case hexadecimal characters (SHA-256) and unique; `scopes` shall be a non-empty subset of `{ingest:write, pipeline:run}` (contract R18). | Must | TRD 12 | Test |
 | PGS-036 | `staff_notes.body` shall be 1–2000 characters after trimming, and a note may be superseded by at most one later note (`UNIQUE (supersedes_id)`). | Must | BR-13 | Test |
 | PGS-037 | `residents.status = 'withdrawn'` shall hold if and only if `withdrawn_on IS NOT NULL`, and `withdrawn_on` shall not precede `enrolled_on`. | Must | OQ-11 | Test |
 | PGS-038 | Every index of section 4.7 shall exist with the exact name, columns, order, INCLUDE list and predicate shown. | Should | TRD 06 DB-040..DB-047 | Test (PGS-016) |
+| PGS-040 | `echowell_app` shall have no privilege on `evaluation_ground_truth` and no UPDATE, DELETE or TRUNCATE on `raw_sessions`, `audit_logs`, `alert_reviews` or `staff_notes` (contract R20). The Analytics "Alarm timing check" (`GET /api/v1/analytics`, test_v0_1 profile only) shall read `evaluation_ground_truth` in a separate read-only transaction after `SET LOCAL ROLE echowell_readonly`, which `echowell_app_login` holds `WITH INHERIT FALSE, SET TRUE` in local, test and staging only; the pipeline service shall never issue that `SET ROLE`. In production the membership is not granted and the table is empty. | Must | SRC-02 ("answer key never touches the analytics"), contract §19, R20 | Test (as app login: SELECT fails with 42501; after SET LOCAL ROLE it succeeds) |
+| PGS-041 | `data_alerts` shall enforce by CHECK that `device_silent` rows reference a device and no resident; `baseline_stalled`, `possible_other_speaker` and `high_set_aside` rows reference a resident and no device; `review_flagged_data_problem` rows reference a resident and an `alert_reviews` row and have no `pipeline_run_id`; all other kinds have a `pipeline_run_id`; and at most one `open` row per `(kind, resident_id, device_id)` for the rule kinds (partial unique index `data_alerts_open_subject_uq`, NULLS NOT DISTINCT). | Must | Contract §19, BR-12 | Test |
+| PGS-042 | `alert_reviews` shall be append-only for the application (SELECT, INSERT), shall require an `outcome` of enum `review_outcome`, shall store `explanations` as an array of 0–20 lower-case codes, and `note` NULL or 1–2000 characters. | Must | Contract §19, R5 | Test |
+| PGS-043 | `alerts.snoozed_until` and `alerts.snoozed_by` shall be both NULL or both set. | Must | Contract §19 | Test |
 | PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Railway provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, OQ-23 | Inspection (provider settings recorded in TRD 22) |
 
 ### 4.2 Extensions
@@ -108,8 +115,11 @@ platform secret store (TRD 21):
 | Login role | Member of | Used by | Connection string |
 |---|---|---|---|
 | `echowell_app_login` | `echowell_app` | FastAPI backend and pipeline workers | `DATABASE_URL` |
-| `echowell_migrator_login` | `echowell_migrator` | Alembic in CI deploy step; `backend.cli seed` | migrator connection string (see TRD 21; flagged to lead) |
+| `echowell_migrator_login` | `echowell_migrator` | Alembic in the deploy step; `backend.cli seed`, `reset-test-db`, `purge-resident` | `DATABASE_MIGRATION_URL` |
 | `echowell_readonly_login` | `echowell_readonly` | Researchers' offline analysis, restore drills | issued on request by admin |
+
+`echowell_app_login` is additionally granted `echowell_readonly WITH INHERIT FALSE, SET TRUE` in local, test and
+staging only (PGS-040); without `SET ROLE` the app cannot read the answer key.
 
 Alembic's `env.py` shall execute `SET ROLE echowell_migrator` immediately after connecting, so that every object is
 owned by the group role and not by the login role.
@@ -126,6 +136,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'echowell_readonly') THEN
     CREATE ROLE echowell_readonly NOLOGIN;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'echowell_evaluation_reader') THEN
+    CREATE ROLE echowell_evaluation_reader NOLOGIN;
+  END IF;
 END
 $$;
 
@@ -133,6 +146,8 @@ $$;
 -- CREATE ROLE echowell_app_login      LOGIN PASSWORD :'app_password'      IN ROLE echowell_app;
 -- CREATE ROLE echowell_migrator_login LOGIN PASSWORD :'migrator_password' IN ROLE echowell_migrator;
 -- CREATE ROLE echowell_readonly_login LOGIN PASSWORD :'readonly_password' IN ROLE echowell_readonly;
+-- Non-production only:
+-- GRANT echowell_readonly TO echowell_app_login WITH INHERIT FALSE, SET TRUE;
 ```
 
 ### 4.4 Enumerated types
@@ -151,11 +166,16 @@ $$;
 | `pipeline_run_status` | running, succeeded, failed | pipeline_runs.status |
 | `user_role` | admin, clinician, researcher | users.role |
 | `actor_type` | user, api_key, system | audit_logs.actor_type |
+| `review_outcome` | no_concern, known_cause, referred, data_problem | alert_reviews.outcome |
+| `data_alert_kind` | baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem | data_alerts.kind |
+| `data_alert_status` | open, resolved | data_alerts.status |
 
 Small closed vocabularies that are not enums (to avoid enum migrations for text values) are CHECK-constrained text:
 `residents.sex` and `facility_reference_ranges.sex` (`F`, `M`, NULL), `raw_sessions.audio_quality_flag` (`ok`,
 `poor`), `pipeline_runs.config_profile` and `config_parameters.profile` (`production`, `test_v0_1`),
-`alerts.closed_reason` (`epoch ended`, `admin`, `superseded by rebuild`), `api_keys.scopes` elements (`ingest:write`).
+`alerts.closed_reason` (`epoch ended`, `admin`, `superseded by rebuild`), `api_keys.scopes` elements (`ingest:write`, `pipeline:run`).
+`alert_reviews.explanations` elements are codes validated by the application against config key `review_explanations`
+(provisional list, OQ-25); the database only checks their format.
 
 ```sql
 CREATE TYPE resident_cohort     AS ENUM ('longitudinal', 'new_admission');
@@ -170,6 +190,10 @@ CREATE TYPE pipeline_trigger    AS ENUM ('ingest', 'nightly', 'manual', 'test');
 CREATE TYPE pipeline_run_status AS ENUM ('running', 'succeeded', 'failed');
 CREATE TYPE user_role           AS ENUM ('admin', 'clinician', 'researcher');
 CREATE TYPE actor_type          AS ENUM ('user', 'api_key', 'system');
+CREATE TYPE review_outcome      AS ENUM ('no_concern', 'known_cause', 'referred', 'data_problem');
+CREATE TYPE data_alert_kind     AS ENUM ('baseline_stalled', 'possible_other_speaker', 'high_set_aside', 'device_silent',
+                                         'review_flagged_data_problem');
+CREATE TYPE data_alert_status   AS ENUM ('open', 'resolved');
 ```
 
 ### 4.5 Trigger functions
@@ -616,6 +640,8 @@ CREATE TABLE alerts (
   closed_at         timestamptz      NULL,
   acknowledged_by   uuid             NULL REFERENCES users (id) ON DELETE RESTRICT,
   acknowledged_at   timestamptz      NULL,
+  snoozed_until     timestamptz      NULL,
+  snoozed_by        uuid             NULL REFERENCES users (id) ON DELETE RESTRICT,
   pipeline_run_id   uuid             NOT NULL REFERENCES pipeline_runs (id) ON DELETE RESTRICT,
   created_at        timestamptz      NOT NULL DEFAULT now(),
   updated_at        timestamptz      NOT NULL DEFAULT now(),
@@ -627,11 +653,59 @@ CREATE TABLE alerts (
   CONSTRAINT alerts_closed_reason_ck CHECK (
     closed_reason IS NULL OR closed_reason IN ('epoch ended', 'admin', 'superseded by rebuild')),
   CONSTRAINT alerts_ack_ck CHECK ((acknowledged_by IS NULL) = (acknowledged_at IS NULL)),
-  CONSTRAINT alerts_ack_status_ck CHECK (status <> 'acknowledged' OR acknowledged_at IS NOT NULL)
+  CONSTRAINT alerts_ack_status_ck CHECK (status <> 'acknowledged' OR acknowledged_at IS NOT NULL),
+  CONSTRAINT alerts_snooze_ck CHECK ((snoozed_until IS NULL) = (snoozed_by IS NULL))
 );
 ```
 
-#### 4.6.18 staff_notes
+#### 4.6.18 alert_reviews
+```sql
+CREATE TABLE alert_reviews (
+  id                uuid           PRIMARY KEY DEFAULT gen_random_uuid(),
+  alert_id          uuid           NOT NULL REFERENCES alerts (id) ON DELETE RESTRICT,
+  reviewer_user_id  uuid           NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+  explanations      text[]         NOT NULL DEFAULT '{}'::text[],
+  outcome           review_outcome NOT NULL,
+  note              text           NULL,
+  created_at        timestamptz    NOT NULL DEFAULT now(),
+  CONSTRAINT alert_reviews_explanations_ck CHECK (
+    cardinality(explanations) <= 20
+    AND array_to_string(explanations, ',') ~ '^([a-z][a-z0-9_]{0,63}(,[a-z][a-z0-9_]{0,63})*)?$'),
+  CONSTRAINT alert_reviews_note_ck CHECK (note IS NULL OR (char_length(btrim(note)) >= 1 AND char_length(note) <= 2000))
+);
+```
+
+#### 4.6.19 data_alerts
+```sql
+CREATE TABLE data_alerts (
+  id                 uuid              PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind               data_alert_kind   NOT NULL,
+  resident_id        uuid              NULL REFERENCES residents (id) ON DELETE RESTRICT,
+  device_id          uuid              NULL REFERENCES devices (id) ON DELETE RESTRICT,
+  alert_review_id    uuid              NULL REFERENCES alert_reviews (id) ON DELETE RESTRICT,
+  title              text              NOT NULL,
+  detail             text              NOT NULL DEFAULT '',
+  first_detected_at  timestamptz       NOT NULL,
+  last_detected_at   timestamptz       NOT NULL,
+  status             data_alert_status NOT NULL DEFAULT 'open',
+  resolved_at        timestamptz       NULL,
+  pipeline_run_id    uuid              NULL REFERENCES pipeline_runs (id) ON DELETE RESTRICT,
+  created_at         timestamptz       NOT NULL DEFAULT now(),
+  updated_at         timestamptz       NOT NULL DEFAULT now(),
+  CONSTRAINT data_alerts_alert_review_uq UNIQUE (alert_review_id),
+  CONSTRAINT data_alerts_subject_ck CHECK (
+       (kind = 'device_silent' AND device_id IS NOT NULL AND resident_id IS NULL AND alert_review_id IS NULL)
+    OR (kind IN ('baseline_stalled', 'possible_other_speaker', 'high_set_aside')
+        AND resident_id IS NOT NULL AND device_id IS NULL AND alert_review_id IS NULL)
+    OR (kind = 'review_flagged_data_problem' AND resident_id IS NOT NULL AND alert_review_id IS NOT NULL)),
+  CONSTRAINT data_alerts_run_ck CHECK ((kind = 'review_flagged_data_problem') = (pipeline_run_id IS NULL)),
+  CONSTRAINT data_alerts_resolved_ck CHECK ((status = 'resolved') = (resolved_at IS NOT NULL)),
+  CONSTRAINT data_alerts_detected_ck CHECK (last_detected_at >= first_detected_at),
+  CONSTRAINT data_alerts_text_ck CHECK (char_length(title) BETWEEN 1 AND 200 AND char_length(detail) <= 500)
+);
+```
+
+#### 4.6.20 staff_notes
 ```sql
 CREATE TABLE staff_notes (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -649,7 +723,7 @@ CREATE TABLE staff_notes (
 );
 ```
 
-#### 4.6.19 facility_reference_ranges
+#### 4.6.21 facility_reference_ranges
 ```sql
 CREATE TABLE facility_reference_ranges (
   id               uuid             PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -675,7 +749,7 @@ CREATE TABLE facility_reference_ranges (
 );
 ```
 
-#### 4.6.20 config_parameters
+#### 4.6.22 config_parameters
 ```sql
 CREATE TABLE config_parameters (
   profile      text        NOT NULL,
@@ -690,7 +764,7 @@ CREATE TABLE config_parameters (
 );
 ```
 
-#### 4.6.21 audit_logs
+#### 4.6.23 audit_logs
 ```sql
 CREATE TABLE audit_logs (
   id           bigserial   PRIMARY KEY,
@@ -706,6 +780,22 @@ CREATE TABLE audit_logs (
   CONSTRAINT audit_logs_action_ck CHECK (action ~ '^[a-z_]+\.[a-z_]+$'),
   CONSTRAINT audit_logs_details_ck CHECK (jsonb_typeof(details) = 'object'),
   CONSTRAINT audit_logs_actor_ck CHECK (actor_type = 'system' OR actor_id IS NOT NULL)
+);
+```
+
+#### 4.6.24 evaluation_ground_truth (test_v0_1 only; never read by the pipeline)
+```sql
+CREATE TABLE evaluation_ground_truth (
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  resident_code    text        NOT NULL,
+  planted_change   text        NOT NULL,
+  true_onset_date  date        NULL,
+  source_file      text        NOT NULL,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT evaluation_ground_truth_resident_code_uq UNIQUE (resident_code),
+  CONSTRAINT evaluation_ground_truth_onset_ck CHECK ((planted_change = 'None') = (true_onset_date IS NULL)),
+  CONSTRAINT evaluation_ground_truth_text_ck CHECK (
+    char_length(planted_change) BETWEEN 1 AND 60 AND char_length(source_file) BETWEEN 1 AND 200)
 );
 ```
 
@@ -758,6 +848,16 @@ CREATE INDEX alerts_status_triggered_idx       ON alerts (status, triggered_at D
 CREATE INDEX alerts_resident_triggered_idx     ON alerts (resident_id, triggered_at DESC);
 CREATE INDEX alerts_acknowledged_by_idx        ON alerts (acknowledged_by);
 CREATE INDEX alerts_run_idx                    ON alerts (pipeline_run_id);
+CREATE INDEX alerts_snoozed_by_idx             ON alerts (snoozed_by);
+CREATE INDEX alert_reviews_alert_created_idx   ON alert_reviews (alert_id, created_at DESC);
+CREATE INDEX alert_reviews_reviewer_idx        ON alert_reviews (reviewer_user_id);
+CREATE INDEX alert_reviews_outcome_idx         ON alert_reviews (outcome);
+CREATE UNIQUE INDEX data_alerts_open_subject_uq ON data_alerts (kind, resident_id, device_id) NULLS NOT DISTINCT
+  WHERE status = 'open' AND kind <> 'review_flagged_data_problem';
+CREATE INDEX data_alerts_status_detected_idx   ON data_alerts (status, last_detected_at DESC);
+CREATE INDEX data_alerts_resident_idx          ON data_alerts (resident_id);
+CREATE INDEX data_alerts_device_idx            ON data_alerts (device_id);
+CREATE INDEX data_alerts_run_idx               ON data_alerts (pipeline_run_id);
 CREATE INDEX staff_notes_resident_created_idx  ON staff_notes (resident_id, created_at DESC);
 CREATE INDEX staff_notes_alert_idx             ON staff_notes (alert_id);
 CREATE INDEX staff_notes_author_idx            ON staff_notes (author_user_id);
@@ -793,28 +893,34 @@ CREATE TRIGGER pipeline_runs_set_updated_at      BEFORE UPDATE ON pipeline_runs 
 CREATE TRIGGER epochs_set_updated_at             BEFORE UPDATE ON epochs             FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER cusum_state_set_updated_at        BEFORE UPDATE ON cusum_state        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER alerts_set_updated_at             BEFORE UPDATE ON alerts             FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER data_alerts_set_updated_at        BEFORE UPDATE ON data_alerts        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER config_parameters_set_updated_at  BEFORE UPDATE ON config_parameters  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
 ```sql
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO echowell_app, echowell_readonly;
+GRANT USAGE ON SCHEMA public TO echowell_app, echowell_readonly, echowell_evaluation_reader;
 GRANT USAGE, CREATE ON SCHEMA public TO echowell_migrator;
 
 -- echowell_app: append-only tables (INSERT + SELECT only)
-GRANT SELECT, INSERT ON raw_sessions, audit_logs, ingest_rejections, staff_notes, baselines TO echowell_app;
--- echowell_app: master/config tables (no DELETE)
+GRANT SELECT, INSERT ON raw_sessions, audit_logs, ingest_rejections, staff_notes, baselines, alert_reviews TO echowell_app;
+-- echowell_app: master/config tables and tables whose rows carry human state (no DELETE)
 GRANT SELECT, INSERT, UPDATE ON facilities, residents, devices, device_assignments, users, api_keys,
-  ingest_batches, pipeline_runs, config_parameters TO echowell_app;
+  ingest_batches, pipeline_runs, config_parameters, alerts, data_alerts TO echowell_app;
 -- echowell_app: rebuildable derived tables
 GRANT SELECT, INSERT, UPDATE, DELETE ON epochs, processed_sessions, day_ledger, scores, cusum_state,
-  alerts, facility_reference_ranges TO echowell_app;
+  facility_reference_ranges TO echowell_app;
 GRANT USAGE, SELECT ON SEQUENCE raw_sessions_arrival_seq_seq, audit_logs_id_seq TO echowell_app;
+-- echowell_app: NO privilege on evaluation_ground_truth (the pipeline never reads the answer key, SRC-02)
+
+-- echowell_evaluation_reader: only the answer key; assumed with SET LOCAL ROLE by the analytics read path (test_v0_1)
+GRANT SELECT ON evaluation_ground_truth TO echowell_evaluation_reader;
 
 -- echowell_readonly: everything except credential columns
 GRANT SELECT ON facilities, residents, devices, device_assignments, ingest_batches, ingest_rejections,
-  raw_sessions, epochs, processed_sessions, day_ledger, baselines, scores, cusum_state, alerts,
-  staff_notes, facility_reference_ranges, pipeline_runs, config_parameters, audit_logs TO echowell_readonly;
+  raw_sessions, epochs, processed_sessions, day_ledger, baselines, scores, cusum_state, alerts, alert_reviews,
+  data_alerts, staff_notes, facility_reference_ranges, pipeline_runs, config_parameters, audit_logs,
+  evaluation_ground_truth TO echowell_readonly;
 GRANT SELECT (id, email, display_name, role, active, last_login_at, created_at, updated_at) ON users TO echowell_readonly;
 GRANT SELECT (id, name, scopes, device_id, active, created_at, updated_at, last_used_at) ON api_keys TO echowell_readonly;
 ```
@@ -824,10 +930,11 @@ Privilege matrix (summary of the grants above):
 | Table group | echowell_app | echowell_readonly | echowell_migrator |
 |---|---|---|---|
 | raw_sessions, audit_logs (trigger-protected) | SELECT, INSERT | SELECT | owner (DELETE/TRUNCATE only via purge path, PGS-019) |
-| ingest_rejections, staff_notes, baselines (append-only by grant) | SELECT, INSERT | SELECT | owner |
-| facilities, residents, devices, device_assignments, ingest_batches, pipeline_runs, config_parameters | SELECT, INSERT, UPDATE | SELECT | owner |
+| ingest_rejections, staff_notes, baselines, alert_reviews (append-only by grant) | SELECT, INSERT | SELECT | owner |
+| facilities, residents, devices, device_assignments, ingest_batches, pipeline_runs, config_parameters, alerts, data_alerts | SELECT, INSERT, UPDATE | SELECT | owner |
 | users, api_keys | SELECT, INSERT, UPDATE | SELECT on non-credential columns only | owner |
-| epochs, processed_sessions, day_ledger, scores, cusum_state, alerts, facility_reference_ranges | SELECT, INSERT, UPDATE, DELETE | SELECT | owner |
+| epochs, processed_sessions, day_ledger, scores, cusum_state, facility_reference_ranges | SELECT, INSERT, UPDATE, DELETE | SELECT | owner |
+| evaluation_ground_truth | none (SELECT only via `SET LOCAL ROLE echowell_readonly`, PGS-040) | SELECT | owner |
 
 ### 4.9 Naming conventions
 
@@ -860,15 +967,19 @@ The contract lists key columns; the following columns were added in this TRD set
 | pipeline_runs | `as_of`, `error_message`, `created_at`, `updated_at` | reproducible ledger end date (test as-of 2026-10-30 15:00 America/Chicago); failure detail |
 | epochs, day_ledger, baselines, scores, cusum_state, alerts | `pipeline_run_id` | every derived row names the run that wrote it |
 | processed_sessions | `timestamp_utc`, `created_at` | ordering and "last check-in" without joining raw_sessions |
-| alerts | `closed_at`, `created_at`, `updated_at`, `pipeline_run_id`; closed_reason value `superseded by rebuild` | alert lifecycle (TRD 23 §4.3) |
+| alerts | `closed_at`, `created_at`, `updated_at`, `pipeline_run_id`; closed_reason value `superseded by rebuild` (contract §19 adds `snoozed_until`, `snoozed_by`) | alert lifecycle (TRD 23 §4.3) |
+| data_alerts (contract §19 table) | `alert_review_id`, `resolved_at`, `created_at`, `updated_at`; `pipeline_run_id` nullable (NULL for `review_flagged_data_problem`) | link to the review that flagged a data problem; resolution time |
+| alert_reviews (contract §19 table) | none beyond contract | — |
+| evaluation_ground_truth (contract §19 table) | `id`, `created_at` | surrogate key |
 | facility_reference_ranges | `sex` | sex-specific F0 ranges (OQ-08, OQ-20) |
 | epochs, baselines, scores, day_ledger, staff_notes | `created_at` | insertion time |
 
-No table beyond contract section 9 was added.
+No table beyond contract sections 9, 19 and 20 was added.
 
 ### 4.11 Seed: config_parameters (migration 0002)
 
-Values are exactly contract section 7. Numeric values are JSON numbers; `facility_tz` is a JSON string;
+Values are exactly contract section 7 plus the five keys of contract sections 19/20 (R17); the data-alert thresholds and
+the explanation list are provisional (OQ-24, OQ-25). Numeric values are JSON numbers; `facility_tz` is a JSON string;
 `morning_offsets` is a JSON object with all 19 feature keys. `production.baseline_n = 30` is the owner-confirmed
 production value (D-OWNER-2); `test_v0_1` exists only for build-out and testing.
 
@@ -898,11 +1009,26 @@ CROSS JOIN (VALUES
 INSERT INTO config_parameters (profile, key, value, description) VALUES
   ('production', 'baseline_n', '30'::jsonb, 'Usable sessions that form and freeze a baseline (owner decision D-OWNER-2)'),
   ('test_v0_1',  'baseline_n', '16'::jsonb, 'Build/test only: usable sessions that form and freeze a baseline in the 30-day test set (SRC-03)');
+
+-- Alert review and data-alert parameters (contract sections 19/20; provisional, OQ-24, OQ-25)
+INSERT INTO config_parameters (profile, key, value, description)
+SELECT p.profile, v.key, v.value, v.description
+FROM (VALUES ('production'), ('test_v0_1')) AS p(profile)
+CROSS JOIN (VALUES
+  ('data_alert_baseline_stalled_enabled', 'true'::jsonb, 'Raise baseline_stalled data alerts (forming and days since epoch start >= baseline_n)'),
+  ('data_alert_set_aside_fraction',       '0.20'::jsonb, 'high_set_aside data alert when set_aside / received >= this in 30 days (received >= 10)'),
+  ('data_alert_device_silent_days',       '2'::jsonb,    'Consecutive silent days on a single-resident device that raise a device_silent data alert'),
+  ('alert_snooze_hours',                  '24'::jsonb,   'Hours added by "Remind me in 24 h" (alerts.snoozed_until)'),
+  ('review_explanations',
+   '[{"code": "cold_cough_sore_throat", "label": "Cold, cough or sore throat"}, {"code": "dental_dentures", "label": "Dental problem or dentures out"}, {"code": "medication_change", "label": "New or changed medication"}, {"code": "poor_sleep_unusual_day", "label": "Poor sleep or unusual day"}, {"code": "room_device_moved", "label": "Room or device moved"}]'::jsonb,
+   'Checklist "Anything that could explain it?" on the alert review form (codes stored in alert_reviews.explanations)')
+) AS v(key, value, description);
 ```
 
 ### 4.12 Seed: synthetic test roster (test_v0_1, non-production only)
 
-Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. Sex values are from SRC-04
+Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The last block loads the
+answer-key facts needed by the Analytics "Alarm timing check" (SRC-19) into `evaluation_ground_truth` only. Sex values are from SRC-04
 `RESIDENTS`. Device D07 is inactive after R07 moved to D07B on 2026-10-13. Users and the ingest API key are not
 seeded by SQL: the CLI creates `admin@echowell.test`, `clinician@echowell.test` and `researcher@echowell.test` and one
 API key named `test-ingest`, generating random secrets that are printed once to the terminal and stored only as
@@ -944,6 +1070,21 @@ FROM (VALUES
 JOIN residents r ON r.resident_code = a.resident_code
 JOIN devices   d ON d.device_code   = a.device_code;
 COMMIT;
+
+-- Answer key for the Analytics "Alarm timing check" (SRC-03 Test_plan / SRC-04); test_v0_1 only, never read by the pipeline
+BEGIN;
+INSERT INTO evaluation_ground_truth (resident_code, planted_change, true_onset_date, source_file) VALUES
+  ('R01', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R02', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R03', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R04', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R05', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R06', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R07', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R08', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R09', 'Sudden step', DATE '2026-10-21', 'EchoWell_pipeline_test_v0_1.xlsx'),
+  ('R10', 'Slow drift',  DATE '2026-10-17', 'EchoWell_pipeline_test_v0_1.xlsx');
+COMMIT;
 ```
 
 ## 5. Assumptions
@@ -962,7 +1103,7 @@ COMMIT;
 - Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x (TRD 05, TRD 06).
 - `pg_dump` 16 client in CI for PGS-016/PGS-017.
 - TRD 10 for the validation that guarantees inserts into `raw_sessions` satisfy these constraints.
-- TRD 21 for `DATABASE_URL`, the migrator connection string and `APP_ENV`.
+- TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role) and `APP_ENV`.
 
 ## 7. Acceptance Criteria
 
@@ -978,10 +1119,12 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 7. AC-PGS-07: a `missing_resident` ledger row with reason `no record` fails; a `missing_device_gap` row for R02 on 2026-10-12 with device D02 and reason `all residents on shared device D02 have no record` succeeds.
 8. AC-PGS-08: after the roster seed, inserting an R07 assignment to D09 from 2026-10-20 fails with SQLSTATE 23P01, while R02 and R03 both hold open assignments to D02.
 9. AC-PGS-09: as `echowell_migrator` with `SET echowell.allow_purge = 'on'`, `DELETE FROM audit_logs` succeeds and `UPDATE raw_sessions` still fails.
-10. AC-PGS-10: `config_parameters` holds 16 rows per profile; `baseline_n` is 30 (production) and 16 (test_v0_1); `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`.
+10. AC-PGS-10: `config_parameters` holds 21 rows per profile; `baseline_n` is 30 (production) and 16 (test_v0_1); `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`.
 11. AC-PGS-11: the schema diff test (PGS-016) and `alembic check` pass on a clean database.
 12. AC-PGS-12: `echowell_readonly_login` gets SQLSTATE 42501 on `SELECT password_hash FROM users` and succeeds on `SELECT email FROM users`.
 13. AC-PGS-13: `pg_constraint` shows every FK with `confdeltype = 'r'` except `scores_processed_session_id_fkey` with `'c'`.
+14. AC-PGS-14: as `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` fails with 42501; inside a transaction after `SET LOCAL ROLE echowell_readonly` it returns 10 (test seed).
+15. AC-PGS-15: inserting a second `open` `device_silent` data alert for D02 fails with 23505; a `device_silent` row without `pipeline_run_id` fails with 23514; `DELETE FROM alerts` as `echowell_app` fails with 42501.
 
 ## 8. Implementation Notes
 
@@ -1014,6 +1157,9 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 - OQ-11 Data handling on withdrawal.
 - OQ-13 Alarm-limit calibration (values of `cusum_h`, `cusum_k` may change through `config_parameters`, not DDL).
 - OQ-23 Whether live PHI-derived feature data may be stored on the interim Neon/Railway stack.
+- OQ-24 Data-alert thresholds (`data_alert_*` keys) confirmation by the study team.
+- OQ-25 Explanation checklist (`review_explanations`) confirmation by the clinical team.
+- OQ-26 Who may review alarms and how soon (affects `alert_reviews` writers, not schema).
 
 ## Revision History
 

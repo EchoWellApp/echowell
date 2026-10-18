@@ -127,7 +127,7 @@ gitGraph
 | GIT-031 | The next prompt batch shall not start until the previous batch's PR is merged into `staging` after review by the algorithm lead. | Must | contract §13 | Inspection |
 | GIT-032 | Any PR that changes `analytics/`, `tests/validation/`, `database/seeds/`, `backend/alembic/` or `specs/TRD/0[7-9]_*`/`14_*` shall be approved by the algorithm lead (enforced by CODEOWNERS). | Must | BR-15, BR-18 | Inspection |
 | GIT-033 | PR descriptions shall follow `.github/pull_request_template.md` (below); a PR with an empty "Requirements implemented" or "Testing" section shall not be approved. | Must | SRC-12 | Inspection |
-| GIT-034 | PRs should change at most 1,500 lines excluding generated files (`docs/openapi.json`, lockfiles, migrations autogenerate output); larger batches shall be split into sub-batches with a stated order. | Should | — | Inspection |
+| GIT-034 | PRs should change at most 1,500 lines excluding generated files (`docs/api_reference/openapi.json`, lockfiles, migrations autogenerate output); larger batches shall be split into sub-batches with a stated order. | Should | — | Inspection |
 | GIT-035 | Draft PRs shall be used for incomplete work; CI runs on drafts but review is requested only when ready. | Should | — | Inspection |
 | GIT-036 | Reviewers shall respond within 1 working day during the build block (19 Oct–15 Nov 2026). | Should | RSK-12 | Inspection |
 
@@ -335,7 +335,7 @@ Thumbs.db
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-100 | `.gitignore` shall contain at least the entries above; `database/schema.sql` (generated reference DDL), `docs/openapi.json` and `docs/reports/` shall remain tracked. | Must | BR-16, TRD 16 | Inspection |
+| GIT-100 | `.gitignore` shall contain at least the entries above; `database/schema.sql` (generated reference DDL), `docs/api_reference/openapi.json` and `docs/reports/` shall remain tracked. | Must | BR-16, TRD 16 | Inspection |
 
 ### 4.12 Dependency updates
 
@@ -413,7 +413,7 @@ updates:
 - Configure branch protection with rulesets (Settings → Rules → Rulesets) targeting `main` and `staging`; required check names are the job ids of `ci.yml`.
 - The preprint PDF was removed from the working tree by commit `cd6da8f` but remains in earlier history (commit `4e9b883`) of the public repository. Whether to purge it from history (e.g. `git filter-repo`, which rewrites all SHAs and requires force-push to protected branches) is an owner decision; this TRD does not perform or require it — raise it with the owner before Phase 8 starts, because rewriting history later is more disruptive.
 - `specs/business-requirements/EchoWell_PROSPERO.pdf` is a public registration record and may stay; if its licence is restrictive, apply GIT-093.
-- Keep `docs/openapi.json` formatted with `json.dumps(..., indent=2, sort_keys=True)` so diffs are stable (TRD 16 CIC-018).
+- Keep `docs/api_reference/openapi.json` formatted with `json.dumps(..., indent=2, sort_keys=True)` so diffs are stable (TRD 16 CIC-018).
 - AI agents must read this TRD before opening PRs (TRD 25). Reports named by SRC-17 (e.g. `ALGORITHM_VALIDATION_REPORT.md`, `validation_results.json`, implementation reports) live in `docs/reports/` (contract R6) and are committed only by the phase PR that produces them; transient test output goes to `build/` (gitignored).
 
 ## 9. Open Questions

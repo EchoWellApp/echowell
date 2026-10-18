@@ -208,16 +208,16 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 1. Sign in to Neon with the team-owned account (TRD 22, TPS ownership rules).
 2. Create project `echowell`, PostgreSQL version **16**, region **AWS US East 1 (N. Virginia)** (`aws-us-east-1`), database name `echowell`.
 3. The default branch is renamed or confirmed as `main` (production).
-4. Create roles: `echowell_owner` (owner of schema; used by Alembic only) and `echowell_app` (runtime). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
+4. Create roles: `echowell_migrator` (owns the schema; used by Alembic only via DATABASE_MIGRATION_URL), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
 5. Create child branch `staging` from `main` immediately after step 4 (empty schema).
-6. Copy four connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_owner`. Store them only in Railway variables (DEP-033).
+6. Copy four connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Store them only in Railway variables (DEP-033).
 7. Set compute autosuspend to the plan default (5 min) for `staging`; for `main` keep the default as well (cost, TRD 22) and accept cold starts (RSK-07).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DEP-030 | The production and staging databases shall run PostgreSQL major version 16. | Must | contract §3 | Inspection (`SELECT version()`) |
 | DEP-031 | The Neon project shall be created in region `aws-us-east-1`; no EchoWell data shall be stored outside the United States. | Must | BR-16, TRD 22 | Inspection |
-| DEP-032 | The runtime backend shall connect with role `echowell_app` through the Neon pooled endpoint; Alembic shall connect with role `echowell_owner` through the direct (non-pooled) endpoint supplied in DATABASE_MIGRATION_URL (TRD 21). | Must | BR-16, TRD 12, TRD 21 | Test |
+| DEP-032 | The runtime backend shall connect with role `echowell_app` through the Neon pooled endpoint; Alembic shall connect with role `echowell_migrator` through the direct (non-pooled) endpoint supplied in DATABASE_MIGRATION_URL (TRD 21). | Must | BR-16, TRD 12, TRD 21 | Test |
 | DEP-033 | Database connection strings shall be stored only in Railway service variables and, for staging re-seeding only, in the GitHub Actions secret `STAGING_DATABASE_URL`; the production connection string shall never be stored in GitHub. | Must | BR-16, TRD 12, TRD 16 | Inspection |
 | DEP-034 | All connections to Neon shall use TLS (`sslmode=require` in the connection string). | Must | BR-16, TRD 12 | Test |
 | DEP-035 | Railway PostgreSQL 16 may replace Neon for either environment only if Neon is unavailable to the team; the switch shall require only a change of DATABASE_URL and DATABASE_MIGRATION_URL followed by `pg_dump`/`pg_restore` of the data. | May | SRC-01 | Analysis |
@@ -235,12 +235,27 @@ Procedure:
    - Healthcheck path `/api/v1/health`, timeout 120 s.
    - Watch paths: `backend/**`, `analytics/**`, `alembic.ini`, `railway.toml` (other changes do not redeploy the backend).
    - "Wait for CI" enabled (deploy only after GitHub checks of the commit pass, TRD 16).
-   - Replicas: 1. Serverless / app sleeping: **disabled** (the in-process nightly run at 02:00 facility local time needs a running process).
+   - Replicas: 1. Serverless / app sleeping: allowed (cold start accepted, RSK-07); disable it for the demo day (DEP-042).
    - Region: US East (Virginia).
    - Restart policy: on failure, max 3 retries.
 3. Generate a Railway public domain per environment (`echowell-backend-production.up.railway.app`, `echowell-backend-staging.up.railway.app`; if taken, the generated name is recorded in `docs/deployment.md` and in GitHub Actions variables `PRODUCTION_API_BASE_URL` / `STAGING_API_BASE_URL`).
 4. Set variables per TRD 21 §4.7 matrix. `GIT_SHA` is set to the Railway reference `${{RAILWAY_GIT_COMMIT_SHA}}`. `PORT` is injected by Railway.
 5. Deploy; verify `GET https://<backend-domain>/api/v1/health` returns 200 and `version` equals the deployed commit SHA.
+6. Add a second service `nightly` (Railway Cron Job) in each environment from the same repository and branch: config file `/railway.nightly.toml`, builder Dockerfile `backend/Dockerfile`, start command `python -m backend.jobs.nightly_run`, cron schedule `0 7,8 * * *` (UTC), no public domain, no healthcheck, restart policy never, the same variables as `backend` (Railway shared variables) except PORT. The job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe), otherwise it exits 0 after the missing-run check of TRD 17 LOG-111.
+
+`railway.nightly.toml` outline:
+
+```toml
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = ["backend/**", "analytics/**"]
+
+[deploy]
+startCommand = "python -m backend.jobs.nightly_run"
+cronSchedule = "0 7,8 * * *"
+restartPolicyType = "NEVER"
+```
 
 `railway.toml` outline:
 
@@ -263,9 +278,12 @@ numReplicas = 1
 |---|---|---|---|---|
 | DEP-040 | The Railway start command shall be `alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. | Must | contract task, TRD 06 | Inspection |
 | DEP-041 | The Railway healthcheck path shall be `/api/v1/health`; a deployment whose healthcheck does not return 200 within 120 s shall not receive traffic (Railway keeps the previous deployment active). | Must | TRD 17 | Demo |
-| DEP-042 | The backend service shall run exactly 1 replica with app sleeping disabled in both staging and production. | Must | RSK-07, contract §7 trigger | Inspection |
+| DEP-042 | The backend service shall run exactly 1 replica in staging and production; app sleeping may be enabled to save cost, except on demo days when it shall be disabled. | Must | RSK-07 | Inspection |
+| DEP-046 | The nightly full pipeline run shall be executed by a separate Railway Cron Job service `nightly` running `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` UTC; there shall be no in-process scheduler in the backend. | Must | contract R18, contract §7 trigger | Inspection |
+| DEP-047 | `backend.jobs.nightly_run` shall start a run (trigger `nightly`, scope all) only when the current facility-local time (FACILITY_TZ) is between 02:00 and 02:59 and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` exists for that facility-local date; otherwise it shall exit 0 without running. | Must | contract R18 | Test |
+| DEP-048 | The `nightly` service shall never run `alembic upgrade`; it shall exit non-zero if the database schema revision differs from the revision bundled in its image. | Must | DEP-060 | Test |
 | DEP-043 | Railway "Wait for CI" shall be enabled so that a commit is deployed only after its required GitHub checks (TRD 16) pass. | Must | BR-17, TRD 16 | Demo |
-| DEP-044 | The Railway configuration shall be stored as code in `/railway.toml`; dashboard-only settings (branch, variables, domain, region, sleeping) shall be listed in `docs/deployment.md`. | Must | SRC-17 Phase 14A | Inspection |
+| DEP-044 | The Railway configuration shall be stored as code in `/railway.toml`; dashboard-only settings (branch, variables, domain, region, sleeping, cron service) shall be listed; the `nightly` service configuration shall be stored in `/railway.nightly.toml` and its other settings listed in `docs/deployment.md`. | Must | SRC-17 Phase 14A | Inspection |
 | DEP-045 | The backend shall serve only HTTPS through the Railway edge; HTTP requests shall be redirected by the platform, and the backend shall send `Strict-Transport-Security: max-age=31536000` in staging and production. | Must | BR-16, TRD 12 | Test |
 
 ### 4.6 Frontend site (Netlify)
@@ -440,7 +458,7 @@ flowchart LR
   AMP -- HTTPS --> AR[AWS App Runner - backend image from ECR]
   AR -- VPC connector, TLS sslmode=require --> RDS[(RDS PostgreSQL 16 - KMS encrypted, private subnets)]
   SM[Secrets Manager] --> AR
-  EB[EventBridge Scheduler 02:00 America/Chicago] -- HTTPS --> AR
+  EB[EventBridge Scheduler 02:00 America/Chicago] -- HTTPS X-API-Key pipeline:run --> AR
   AR --> CW[CloudWatch Logs + alarms]
   RDS --> SNAP[Automated backups + snapshots - KMS encrypted]
 ```
@@ -455,7 +473,7 @@ Target configuration (region `us-east-1`, AWS account owned by UND per OQ-07):
 | Database | Amazon RDS for PostgreSQL 16, `db.t4g.micro` (staging) / `db.t4g.small` (production), storage encrypted with KMS customer-managed key `alias/echowell-rds`, not publicly accessible, private subnets in 2 AZs, parameter `rds.force_ssl = 1`, automated backups 14 days, deletion protection on. |
 | Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21). |
 | Logs and monitoring | CloudWatch Logs (App Runner application + service logs, JSON format unchanged, TRD 17), retention 90 days, KMS-encrypted; CloudWatch alarms on health check failures, 5xx rate and RDS CPU/storage; SNS topic to the DevOps owner's email. |
-| Nightly run | EventBridge Scheduler rule `cron(0 2 * * ? *)` with time zone America/Chicago invoking an authenticated `POST /api/v1/pipeline/run`, because App Runner throttles CPU between requests and cannot host the in-process scheduler. |
+| Nightly run | EventBridge Scheduler rule `cron(0 2 * * ? *)` with time zone America/Chicago invoking `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (alternative: an ECS scheduled task running `python -m backend.jobs.nightly_run`); App Runner has no cron facility. |
 | Network | Only App Runner (HTTPS) and Amplify (HTTPS) are public; the RDS security group allows 5432 only from the App Runner VPC connector security group. |
 
 Mapping from the current interim stack:
@@ -464,7 +482,7 @@ Mapping from the current interim stack:
 |---|---|---|
 | Netlify site (`frontend/`, `@netlify/plugin-nextjs`) | AWS Amplify Hosting (Next.js SSR) | New Amplify app with base `frontend/`, build `npm run build`; same NEXT_PUBLIC_* variables. No code change. |
 | Railway service `backend` (`backend/Dockerfile`) | AWS App Runner from ECR image | Push the same image to ECR; App Runner port 8000 via PORT; health path `/api/v1/health`; nightly run via EventBridge (DEP-116). |
-| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_owner` / `echowell_app`; update DATABASE_URL and DATABASE_MIGRATION_URL. |
+| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_migrator` / `echowell_app` / `echowell_readonly`; update DATABASE_URL and DATABASE_MIGRATION_URL. |
 | Railway / Netlify variables | AWS Secrets Manager + App Runner env | Same variable names (TRD 21). |
 | Railway logs | CloudWatch Logs | JSON log format unchanged (TRD 17). |
 | GitHub Actions deploy verification | GitHub Actions with AWS OIDC role | Smoke tests unchanged; URLs change in Actions variables. |
@@ -477,7 +495,7 @@ Mapping from the current interim stack:
 | DEP-113 | All AWS production secrets shall be held in AWS Secrets Manager (KMS-encrypted) and injected as environment variables with the names defined in TRD 21; no secret shall be stored in Amplify build settings or in the image. | Must | D-OWNER-3, TRD 12, TRD 21 | Inspection |
 | DEP-114 | The AWS BAA shall be accepted for the account, and every AWS service on the live-data path (Amplify, App Runner, ECR, RDS, KMS, Secrets Manager, CloudWatch, EventBridge, SNS) shall be confirmed against the AWS HIPAA Eligible Services Reference before live data is loaded; a service not listed shall be replaced or removed from the live-data path. | Must | D-OWNER-3, D-OWNER-4, RSK-14 | Inspection |
 | DEP-115 | Application logs on AWS shall go to CloudWatch Logs with 90-day retention and KMS encryption; CloudWatch alarms shall notify the DevOps owner on health check failure and on a 5xx rate above 5 % over 10 minutes. | Must | D-OWNER-3, TRD 17 | Demo |
-| DEP-116 | On AWS the nightly pipeline run shall be triggered by EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an `X-API-Key` of scope `pipeline:run` (proposed scope; TRD 12 and TRD 05 to accept it alongside admin JWT), and the in-process scheduler shall be disabled with NIGHTLY_SCHEDULER_ENABLED=false (TRD 21). | Must | contract §7 trigger, SRC-01 | Test |
+| DEP-116 | On AWS the nightly pipeline run shall be triggered by EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an `X-API-Key` of scope `pipeline:run` (accepted alongside admin JWT, contract R18), or by an ECS scheduled task running `python -m backend.jobs.nightly_run`. | Must | contract §7 trigger, SRC-01 | Test |
 | DEP-117 | Cut-over from the interim stack to AWS shall follow: (1) provision AWS per the target table; (2) deploy the same `main` commit to Amplify and App Runner; (3) run `alembic upgrade head` against RDS; (4) run `bootstrap` and create users and API keys anew (credentials are not migrated); (5) run DEP-081 smoke tests against the AWS URLs; (6) re-point Team 1 devices to the App Runner URL; (7) keep the interim stack read-only for 14 days, then delete the Neon project and the Railway services. Because the interim stack holds only synthetic/test data (DEP-008), no data is migrated; AWS starts empty and receives the first real resident data. | Must | SRC-01, D-OWNER-3 | Demo |
 
 ## 5. Assumptions
@@ -522,7 +540,7 @@ Mapping from the current interim stack:
 - Railway's `$PORT` must be expanded by a shell; keep the `sh -c '...'` wrapper in `railway.toml`.
 - Netlify's `ignore` command runs inside the base directory, therefore paths are relative to `frontend/`.
 - Never put `NEXT_PUBLIC_API_BASE_URL` for production in `netlify.toml` (it differs per context and is configured in the Netlify UI); `NEXT_PUBLIC_APP_ENV` is safe in `netlify.toml`.
-- The nightly run scheduler must take a PostgreSQL advisory lock before running so that an overlapping redeploy (old and new container briefly alive) cannot start two nightly runs.
+- `backend/jobs/nightly_run.py` must take a PostgreSQL advisory lock before inserting the nightly `pipeline_runs` row so the two cron firings (07:00 and 08:00 UTC) or a manual re-run cannot start two nightly runs for the same local date.
 
 ## 9. Open Questions
 

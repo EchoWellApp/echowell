@@ -13,7 +13,7 @@ In scope:
 - Assumptions ASM-01 to ASM-08 with rationale, impact if wrong and validation step.
 - Risks RSK-01 to RSK-14 with likelihood, impact, mitigation, contingency, owner and linked requirements.
 - Discrepancies found between source documents (DSC-01 to DSC-14) and how the TRDs resolve them.
-- The decision log D-01 to D-46 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator) and the lead's reconciliation decisions R1–R17 of 18 Oct 2026.
+- The decision log D-01 to D-55 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator) and the lead's reconciliation decisions R1–R26 of 18 Oct 2026.
 - Rules for maintaining this register (RAQ-xxx).
 
 Out of scope:
@@ -153,7 +153,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | DSC-10 | Presentation dates differ inside the agenda: header "Solution 1 Dec, Impact 8 Dec" vs bullets "Solution (Nov 12)", "Impact (Dec 3)". | SRC-15 vs SRC-16 | Resolved: owner confirmed Solution 1 Dec 2026 and Impact 8 Dec 2026 (18 Oct 2026). | RSK-12 |
 | DSC-11 | Build prompts list endpoints without the base path and with `{id}` (e.g. `GET /residents/{id}`). | Implement_Feature_Batches.md Phase 10 vs TRD 05/19 | Base path `/api/v1`; residents addressed by `resident_code`; `/health` is `/api/v1/health`. | Resolved in TRD 05, TRD 19 |
 | DSC-12 | Audit checklist Sprint 5 asks for "Alert Review View" and "Analytics Pages", which have no wireframe; Sprint 7 is titled "Deployment" but asks for `Project_Backlog.md`. | TRD_Implementation_Audit_Checklist.md vs SRC-09/10/11 and Implement_Feature_Batches.md | Resolved by owner 18 Oct 2026: wireframes SRC-18 (Alert review, `/alerts`) and SRC-19 (Analytics, `/analytics`) were supplied and both pages are in MVP scope (D-46). Backlog is `specs/backlog/BACKLOG.md` (Generate_Backlog.md); deployment follows Implement_Feature_Batches.md Phases 14A/14B. | D-23 |
-| DSC-13 | Existing skeleton lists `psycopg2-binary` unpinned in backend/requirements.txt and lacks `analytics/` modules speaker_screen.py, day_ledger.py, robust_stats.py, pipeline.py, config.py and a `tests/` folder. | Repo skeleton vs TRD 01 layout and version pins | Skeleton phase replaces the driver with psycopg 3.x, pins versions, and adds the missing modules without renaming existing files. | D-24 |
+| DSC-13 | Existing skeleton lists `psycopg2-binary` unpinned in backend/requirements.txt and lacks `analytics/` modules speaker_screen.py, day_ledger.py, robust_stats.py, pipeline.py, config.py and a `tests/` folder. | Repo skeleton vs TRD 01 layout and version pins | Resolved by R24/R26: the skeleton phase replaces the driver with psycopg 3 (`psycopg[binary]`) and pins versions (D-53); the deployment-configuration phase replaces the legacy stubs (`docker-compose.yml` `version: "3"`, `ci.yml` stub) (D-55); missing modules are added without renaming existing files (D-24). | D-24, D-53, D-55 |
 | DSC-14 | Implement_Feature_Batches.md Phase 14B reads DEPLOYMENT_CHECKLIST.md and MVP_READINESS_CHECKLIST.md, which Generate_Backlog.md Prompt 3 produces, but the build order runs backlog generation last. | Implement_Feature_Batches.md vs Generate_Backlog.md | The deployment-configuration phase creates both checklists in `specs/backlog/` from TRD 13 and TRD 15 acceptance criteria if absent; the backlog phase reconciles them. | D-21 |
 
 ### 4.6 Decision log
@@ -174,7 +174,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-12 | Feature columns are mapped through a configurable feature-name mapping; placeholder names from SRC-05 are the default. | SRC-03 README note 1; OQ-03 | 10, 23 |
 | D-13 | Speaker screen uses raw values; baselines and scores use morning-adjusted values. Reference = first up to baseline_n prior usable sessions of the epoch. | SRC-03 Parameters; SRC-04 | 07, 08 |
 | D-14 | MVP pipeline is deterministic robust statistics (median, MAD × 1.4826 with floors) plus one-sided CUSUM (k 0.5, h 5.0); no ML and no LLM. | SRC-14 B.2; SRC-03 | 00, 07, 08, 09 |
-| D-15 | Pipeline trigger: per affected resident after each successful ingest (synchronous for single POST, background for batch) plus a full nightly run at 02:00 facility local time. | SRC-02 daily processing | 07, 15, 21 |
+| D-15 | Pipeline trigger: per affected resident after each successful ingest (synchronous for single POST, background for batch) plus a full nightly run at 02:00 facility local time, scheduled as in D-47. | SRC-02 daily processing | 07, 15, 21 |
 | D-16 | Missing days are recorded in `day_ledger` as `missing_resident` or `missing_device_gap`; never backfilled, carried forward or imputed. | SRC-03 Parameters; SRC-12; SRC-13 §6 | 07, 06, 11 |
 | D-17 | "Alarms first" sort rule as defined in TRD 11 is authoritative where the wireframe order differs on ties; for test data the order is R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (R16). | SRC-09 (illustrative order) | 04, 11, 14 |
 | D-18 | Clinical wording strings live in `frontend/lib/wording.ts`; with `CLINICAL_WORDING_APPROVED=false` they show "[Final clinical wording: confirm with PI]" until OQ-12 closes (R14). | SRC-10; OQ-12 | 04, 11, 21 |
@@ -206,6 +206,15 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-44 | Facility-range band colour token #E2E2DE (`--color-range-band`) is added to the design tokens (R13). | SRC-11 | 04, 11 |
 | D-45 | Rebuilds use natural-key upserts so `alert_reviews`, `staff_notes` and snoozes survive recomputation; alerts are keyed by (epoch_id, session_id) (R15). | D-07; SRC-18 | 06, 07, 09, 20 |
 | D-46 | Alert review (`/alerts`, roles clinician and admin may review) and Analytics (`/analytics`, roles researcher and admin; no clinician access in MVP) are MVP scope, with new tables `data_alerts`, `alert_reviews`, `evaluation_ground_truth`, columns `alerts.snoozed_until`/`snoozed_by`, and config keys `data_alert_set_aside_fraction`=0.20, `data_alert_device_silent_days`=2, `alert_snooze_hours`=24, `review_explanations` (R17). | SRC-18; SRC-19; DSC-12 | 02, 04, 05, 06, 11, 19, 20 |
+| D-47 | Nightly run: a separate Railway Cron Job service runs `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe); no in-process scheduler (no APScheduler, no NIGHTLY_SCHEDULER_ENABLED). On AWS: EventBridge Scheduler runs the same command as an ECS/App Runner job, or calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`; that endpoint accepts an admin JWT or such a key (R18). | SRC-02; RSK-07; D-27 | 07, 12, 15, 21, 22 |
+| D-48 | Error format: `application/problem+json`; `type` = `urn:echowell:error:<CODE>` (UPPER_SNAKE codes, catalogue in TRD 05 §4.7); `errors[]` items `{field, code, message}`; `/api/v1/health` returns 503 with status "degraded" when the DB check fails (R19). | RFC 7807 | 05, 17, 19 |
+| D-49 | DB roles: `echowell_migrator` (owns schema; Alembic via `DATABASE_MIGRATION_URL`), `echowell_app` (DML; no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes`; no SELECT on `evaluation_ground_truth`), `echowell_readonly` (SELECT for researchers and exports, incl. `evaluation_ground_truth` in the test profile); `DATABASE_URL` uses the app role (R20). | TRD 12 least privilege; D-38 | 06, 12, 15, 20, 21 |
+| D-50 | as_of precedence: explicit `as_of` in `POST /api/v1/pipeline/run` → `PIPELINE_AS_OF` env (refused when `APP_ENV=production`) → current time; read endpoints use the as_of of the latest succeeded run (R21). | D-43 | 05, 07, 13, 21 |
+| D-51 | OpenAPI artefacts: committed contract file `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi`; CI fails when the generated schema differs; frontend types generated to `frontend/lib/api-types.ts` with openapi-typescript (R22). | TRD 19 | 04, 05, 16, 19 |
+| D-52 | `POST /api/v1/sessions` may return `status_after_processing: "pending"` when the record is stored but the synchronous pipeline failed; the next or nightly run processes it (R23). | D-07; D-15 | 05, 10, 19 |
+| D-53 | Database driver is psycopg 3 (`psycopg[binary]`), replacing `psycopg2-binary` in `backend/requirements.txt` (R24). | DSC-13 | 01, 22, 25 |
+| D-54 | Regions: Neon aws-us-east-1, Railway US East, AWS target us-east-1 (R25). | D-27 | 15, 22 |
+| D-55 | Legacy stubs (`docker-compose.yml` with `version: "3"`, `ci.yml` stub) are replaced in the deployment-configuration phase (R26). | DSC-13 | 15, 16, 25 |
 
 ## 5. Assumptions
 
@@ -233,7 +242,7 @@ This document defines ASM-01 to ASM-08 (section 4.3). No TRD-local assumptions a
 
 - Agents cite IDs from this register in code comments only where behaviour depends on an interim decision, e.g. `# OQ-05 interim: a saved review does not reset the tally (D-03, D-35)`. This makes the change point easy to find when the OQ is answered.
 - Interim decisions that are config values (OQ-09 offsets, OQ-13 baseline_n, k, h) live in `config_parameters` per profile; never hard-code them in analytics functions.
-- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-47 onward). Report each new ID to the algorithm lead in the PR description.
+- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-56 onward). Report each new ID to the algorithm lead in the PR description.
 - Never reference the removed preprint PDF path; cite SRC-07 by its link in specs/business-requirements/REFERENCES.md (D-29).
 - Never load real resident data into the interim stack (D-28; OQ-23 answered), and never run the `test_v0_1` profile in production (D-01).
 

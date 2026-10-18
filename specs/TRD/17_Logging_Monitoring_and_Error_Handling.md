@@ -54,7 +54,7 @@ Each backend log line is one JSON object on stdout, UTF-8, no embedded newlines.
 |---|---|---|---|
 | `ts` | string | always | UTC ISO 8601 with milliseconds and `Z`: `2026-10-30T20:28:01.123Z` |
 | `level` | string | always | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| `logger` | string | always | Python logger name: `echowell.api`, `echowell.ingest`, `echowell.pipeline`, `echowell.auth`, `echowell.scheduler`, `echowell.db`, `uvicorn.error` |
+| `logger` | string | always | Python logger name: `echowell.api`, `echowell.ingest`, `echowell.pipeline`, `echowell.auth`, `echowell.jobs`, `echowell.db`, `uvicorn.error` |
 | `msg` | string | always | Short constant event message, snake_case event name first: `request_completed`, `ingest_record_rejected` |
 | `event` | string | always | Same snake_case event name as the start of `msg` (machine filter key) |
 | `env` | string | always | APP_ENV |
@@ -142,44 +142,46 @@ sequenceDiagram
 
 ### 4.5 Error taxonomy
 
+Codes are UPPER_SNAKE (contract R19; full catalogue in TRD 05 §4.7).
+
 | Code | HTTP | Layer | Meaning | Log level |
 |---|---|---|---|---|
-| `validation_error` | 422 | API/ingest | Request or record failed schema/type/enum validation | WARNING |
-| `unknown_resident` | 422 | ingest | resident_id not enrolled | WARNING |
-| `unknown_device` | 422 | ingest | device_id not registered | WARNING |
-| `resident_withdrawn` | 422 | ingest | resident status withdrawn | WARNING |
-| `unsupported_schema_version` | 422 | ingest | schema_version not in supported list | WARNING |
-| `authentication_required` | 401 | API | Missing/invalid/expired token or API key | INFO |
-| `forbidden` | 403 | API | Role or scope insufficient | WARNING |
-| `not_found` | 404 | API | Resource or route does not exist | INFO |
-| `conflict` | 409 | API | State conflict (e.g. user e-mail exists, pipeline run already running for scope) | WARNING |
-| `payload_too_large` | 413 | API | Batch above limit (TRD 10) | WARNING |
-| `rate_limited` | 429 | API | Rate limit exceeded (RATE_LIMIT_LOGIN / RATE_LIMIT_INGEST) | WARNING |
-| `database_unavailable` | 503 | API | DB connection failed or timed out | ERROR |
-| `internal_error` | 500 | API | Unhandled exception | ERROR |
-| `pipeline_stage_failed` | — (run record) | pipeline | A stage raised an exception | ERROR |
-| `pipeline_config_invalid` | — (run record) | pipeline | Config profile missing or invalid | ERROR |
+| `VALIDATION_ERROR` | 422 | API/ingest | Request or record failed schema/type/enum validation | WARNING |
+| `UNKNOWN_RESIDENT` | 422 | ingest | resident_id not enrolled | WARNING |
+| `UNKNOWN_DEVICE` | 422 | ingest | device_id not registered | WARNING |
+| `RESIDENT_WITHDRAWN` | 422 | ingest | resident status withdrawn | WARNING |
+| `UNSUPPORTED_SCHEMA_VERSION` | 422 | ingest | schema_version not in supported list | WARNING |
+| `AUTHENTICATION_REQUIRED` | 401 | API | Missing/invalid/expired token or API key | INFO |
+| `FORBIDDEN` | 403 | API | Role or scope insufficient | WARNING |
+| `NOT_FOUND` | 404 | API | Resource or route does not exist | INFO |
+| `CONFLICT` | 409 | API | State conflict (e.g. user e-mail exists, pipeline run already running for scope) | WARNING |
+| `PAYLOAD_TOO_LARGE` | 413 | API | Batch above limit (TRD 10) | WARNING |
+| `RATE_LIMITED` | 429 | API | Rate limit exceeded (RATE_LIMIT_LOGIN / RATE_LIMIT_INGEST) | WARNING |
+| `DATABASE_UNAVAILABLE` | 503 | API | DB connection failed or timed out | ERROR |
+| `INTERNAL_ERROR` | 500 | API | Unhandled exception | ERROR |
+| `PIPELINE_STAGE_FAILED` | — (run record) | pipeline | A stage raised an exception | ERROR |
+| `PIPELINE_CONFIG_INVALID` | — (run record) | pipeline | Config profile missing or invalid | ERROR |
 
 RFC 7807-style body (contract §10):
 
 ```json
 {
-  "type": "urn:echowell:problem:validation_error",
+  "type": "urn:echowell:error:VALIDATION_ERROR",
   "title": "Validation error",
   "status": 422,
   "detail": "1 field failed validation",
   "request_id": "6b1e0f9c-6a43-4d61-9a2e-3d0f7f0e2a11",
-  "errors": [{"loc": ["body", "mic_noise_level_dbfs"], "msg": "Input should be a valid number", "type": "float_parsing"}]
+  "errors": [{"field": "mic_noise_level_dbfs", "code": "FLOAT_PARSING", "message": "Input should be a valid number"}]
 }
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-040 | Every non-2xx API response shall have `Content-Type: application/problem+json` and the body fields `type`, `title`, `status`, `detail`, `request_id`, and `errors` (array, empty when not applicable). | Must | contract §10, TRD 05, TRD 19 | Test |
-| LOG-041 | `type` shall be `urn:echowell:problem:<code>` where `<code>` is one of the codes in §4.5; `title` shall be the fixed English title for that code. | Must | TRD 19 | Test |
+| LOG-041 | `type` shall be `urn:echowell:error:<CODE>` where `<CODE>` is an UPPER_SNAKE code from the catalogue in TRD 05 §4.7 (the codes in §4.5 are the subset this TRD relies on); `title` shall be the fixed English title for that code; each `errors[]` item shall be `{field, code, message}`. | Must | contract R19, TRD 05, TRD 19 | Test |
 | LOG-042 | 500 responses shall never include stack traces, exception messages, SQL or file paths; `detail` shall be "An unexpected error occurred. Quote the reference when reporting it." | Must | BR-16, TRD 12 | Test |
-| LOG-043 | Pydantic/FastAPI `RequestValidationError` shall be converted to `validation_error` with `errors[].loc`, `msg`, `type` but without the `input` value (no echo of submitted data). | Must | BR-16, LOG-021 | Test |
-| LOG-044 | Exception handlers shall be registered in `backend/core/errors.py` for `HTTPException`, `RequestValidationError`, a domain base class `EchoWellError(code, status, detail)`, SQLAlchemy `OperationalError` (→ `database_unavailable`) and `Exception` (→ `internal_error`). | Must | TRD 05 | Inspection |
+| LOG-043 | Pydantic/FastAPI `RequestValidationError` shall be converted to `VALIDATION_ERROR` with `errors[]` items `{field (dotted location without the leading body/query segment), code (UPPER_SNAKE of the pydantic error type), message}` but without the `input` value (no echo of submitted data). | Must | BR-16, LOG-021 | Test |
+| LOG-044 | Exception handlers shall be registered in `backend/core/errors.py` for `HTTPException`, `RequestValidationError`, a domain base class `EchoWellError(code, status, detail)`, SQLAlchemy `OperationalError` (→ `DATABASE_UNAVAILABLE`) and `Exception` (→ `INTERNAL_ERROR`). | Must | TRD 05 | Inspection |
 
 ### 4.6 Error handling per layer
 
@@ -189,7 +191,7 @@ RFC 7807-style body (contract §10):
 |---|---|---|---|---|
 | LOG-050 | A schema-invalid record shall be rejected with 422, written to `ingest_rejections` (raw_body, errors), logged once at WARNING `ingest_record_rejected` with `session_id` (if parseable), `resident_code` (if parseable) and error locations, and never written to `raw_sessions`. | Must | BR-01, contract §7 stage 1, TRD 10 | Test |
 | LOG-051 | A duplicate arrival shall be stored in `raw_sessions`, return 200 with status `duplicate`, and be logged at INFO `ingest_duplicate` with `session_id`; it shall not be logged as an error. | Must | BR-03 | Test |
-| LOG-052 | If the database is unavailable during ingest, the API shall return 503 `database_unavailable` with header `Retry-After: 60`, and no partial record shall be persisted (single transaction per record; per batch, accepted rows commit together). | Must | BR-02, OQ-15 | Test |
+| LOG-052 | If the database is unavailable during ingest, the API shall return 503 `DATABASE_UNAVAILABLE` with header `Retry-After: 60`, and no partial record shall be persisted (single transaction per record; per batch, accepted rows commit together). | Must | BR-02, OQ-15 | Test |
 | LOG-053 | A batch ingest shall log one INFO `ingest_batch_completed` with `ingest_batch_id`, `accepted`, `rejected`, `duplicates`, `duration_ms`. | Must | TRD 10 | Test |
 | LOG-054 | A failure of the post-ingest pipeline run shall not undo or fail the ingest: the record stays in `raw_sessions`, the API returns 201 with `status_after_processing: "pending"`, and the failure is handled per §4.6.2. | Must | BR-02, SRC-02 | Test |
 
@@ -208,7 +210,7 @@ stateDiagram-v2
 |---|---|---|---|---|
 | LOG-060 | Every pipeline run (trigger `ingest`, `nightly`, `manual`, `test`) shall insert a `pipeline_runs` row with status `running`, `config_profile`, `config_snapshot`, `code_version` (GIT_SHA) and `started_at` before the first stage executes, in its own committed transaction. | Must | contract §9, TRD 07 | Test |
 | LOG-061 | The derived-table writes of a run shall be committed in one transaction; if any stage raises, the transaction shall be rolled back so derived tables keep their previous consistent state. | Must | BR-02, SRC-02 | Test |
-| LOG-062 | On failure the run row shall be updated to status `failed` with `finished_at` and `warnings` containing an object `{"code":"pipeline_stage_failed","stage":"<stage name>","resident_code":"<code or null>","exc_type":"<type>","message":"<sanitised message>"}`; one ERROR `pipeline_run_failed` log shall be written with `pipeline_run_id`. | Must | TRD 07 | Test |
+| LOG-062 | On failure the run row shall be updated to status `failed` with `finished_at` and `warnings` containing an object `{"code":"PIPELINE_STAGE_FAILED","stage":"<stage name>","resident_code":"<code or null>","exc_type":"<type>","message":"<sanitised message>"}`; one ERROR `pipeline_run_failed` log shall be written with `pipeline_run_id`. | Must | TRD 07 | Test |
 | LOG-063 | Stage names in warnings and logs shall be exactly: `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`. | Must | contract §7 | Inspection |
 | LOG-064 | Non-fatal conditions shall be recorded in `pipeline_runs.warnings` without failing the run, each as `{"code": ..., "resident_code": ..., "session_id": ..., "detail": ...}`, with codes at least `late_arrival` (ASM-07), `config_mismatch`, and `no_device_assignment`. | Must | ASM-07, OQ-10 | Test |
 | LOG-065 | On success the run row shall be updated to status `succeeded` with `finished_at` and `counts` = `{usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, scored, alerts_opened, residents}` and one INFO `pipeline_run_succeeded` log with the same counts and `duration_ms`. | Must | contract §9, BR-15 | Test |
@@ -278,15 +280,15 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 |---|---|---|---|
 | Uptime failure | `uptime.yml` two consecutive failures | GitHub issue `incident` (notifies watchers by e-mail) | high |
 | Pipeline run failed | `pipeline_runs.status = failed` | ERROR log + Sentry (if enabled) + red banner on `/admin` | high |
-| Nightly run missing | watchdog at 06:00 facility local: no `pipeline_runs` row with trigger `nightly`, status `succeeded`, `started_at` within the last 26 h | ERROR log `nightly_run_missing` + Sentry + `/admin` banner | high |
+| Nightly run missing | nightly job's non-running firing, and `/admin` read-time check: no `pipeline_runs` row with trigger `nightly`, status `succeeded`, `started_at` within the last 26 h | ERROR log `nightly_run_missing` + Sentry + `/admin` banner | high |
 | Deployment failed | Railway/Netlify deploy failure, `deploy-*.yml` failure | GitHub commit status, workflow failure e-mail | medium |
 | CI failure on main | `ci.yml` / `e2e.yml` failure on `main` | `ci-failure` issue (TRD 16 CIC-033) | medium |
 | Data alerts (baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem) | rule-based, recomputed each pipeline run into `data_alerts` (contract §19) | **Dashboard only**: `/alerts` queue "Data alerts · go to the study team", device panel, check-in log — not pushed (OQ-06, OQ-24) | informational (data quality, not health) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| LOG-110 | The backend shall run the nightly pipeline at NIGHTLY_RUN_HOUR_LOCAL (default 2) in FACILITY_TZ via an in-process scheduler when NIGHTLY_SCHEDULER_ENABLED is true, holding a PostgreSQL advisory lock so only one nightly run executes per day. | Must | contract §7 trigger, TRD 15 DEP-042, TRD 21 | Test |
-| LOG-111 | A watchdog job at 06:00 facility local time shall log ERROR `nightly_run_missing` and set the `/admin` banner "Nightly run missing for <date>" when no succeeded nightly run started within the previous 26 hours. | Must | RSK-05 | Test |
+| LOG-110 | The nightly pipeline run shall be executed by the Railway Cron Job service `nightly` (`python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding a PostgreSQL advisory lock; the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-042, TRD 21 | Test |
+| LOG-111 | Each firing of `backend.jobs.nightly_run` that does not start a run shall check the most recent facility-local date whose 02:00 hour has passed and log ERROR `nightly_run_missing` (and report to Sentry when enabled) if no succeeded nightly run exists for it; independently, `/admin` shall show the banner "Nightly run missing for <date>" whenever no succeeded nightly run started within the previous 26 hours (computed at read time). | Must | RSK-05 | Test |
 | LOG-112 | The `/admin` page shall show the latest 20 `pipeline_runs` (trigger, status, started/finished local time, counts, warning count) and a banner while the most recent run of any trigger is `failed`. | Must | TRD 04 | Test |
 | LOG-113 | Device silence and the other data alerts shall be shown only in the dashboard (`/alerts` data-alert queue, device panel, check-in log); the system shall not send e-mail, SMS or push notifications for data alerts or for clinical alarms in the MVP. | Must | BR-12, OQ-06, OQ-24, RSK-05 | Inspection |
 | LOG-115 | Data alerts (`data_alerts`) are research data-quality flags for the study team and shall not be logged as operational errors; a pipeline run shall log one INFO `data_alerts_updated` with counts per kind (open, resolved). | Must | contract §19 | Test |
@@ -316,7 +318,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 
 ## 6. Dependencies
 
-- `backend/core/logging.py`, `backend/core/errors.py`, `backend/core/middleware.py` (request ID), `backend/services/pipeline_runner.py` (run lifecycle), scheduler module `backend/core/scheduler.py` (APScheduler 3.10.x `AsyncIOScheduler`, started in FastAPI lifespan).
+- `backend/core/logging.py`, `backend/core/errors.py`, `backend/core/middleware.py` (request ID), `backend/services/pipeline_runner.py` (run lifecycle), nightly job `backend/jobs/nightly_run.py` run by the Railway Cron Job service (TRD 15 DEP-046).
 - `sentry-sdk[fastapi]` 2.x as an optional runtime dependency (imported only when SENTRY_DSN is set).
 - `pipeline_runs`, `audit_logs`, `ingest_rejections` tables (TRD 06/20).
 - `uptime.yml` and `ci-failure` issue automation (TRD 16).
@@ -330,8 +332,8 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 - AC-LOG-04 A request with `X-Request-ID: abcd1234-test` returns the same header; a request with `X-Request-ID: bad id!` returns a generated UUID; a 422 body's `request_id` equals the header.
 - AC-LOG-05 Injecting an exception into the `cusum` stage (test double) leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run to `failed` with a warning whose `stage` is `cusum`, and the ingest that triggered it still returns 201.
 - AC-LOG-06 A `pipeline_runs` row artificially left `running` with `started_at` 31 minutes ago is marked `failed` with `run_abandoned` on the next run.
-- AC-LOG-07 With no nightly run in the past 26 hours, the 06:00 watchdog logs `nightly_run_missing` and `/admin` shows the banner.
-- AC-LOG-08 A forced 500 returns `application/problem+json` with `type` `urn:echowell:problem:internal_error`, no stack trace and a `request_id`.
+- AC-LOG-07 With no nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs `nightly_run_missing` and `/admin` shows the banner.
+- AC-LOG-08 A forced 500 returns `application/problem+json` with `type` `urn:echowell:error:INTERNAL_ERROR`, no stack trace and a `request_id`.
 - AC-LOG-09 With SENTRY_DSN empty, a network-isolated test shows no outbound connection attempts during a forced 500.
 - AC-LOG-10 Stopping the database makes `/api/v1/health` return 503 with `database: "unreachable"` within 5 s.
 
@@ -343,7 +345,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 - `pipeline_runs` status updates must use a separate session/transaction from the derived-table transaction; otherwise the `failed` status is rolled back together with the derived data.
 - Sanitise exception messages (LOG-024) before storing them in `pipeline_runs.warnings` — they are visible to researchers.
 - Do not add logging calls in `analytics/`; tests assert the package does not import `logging` handlers (a simple AST check in `tests/unit/test_analytics_purity.py`).
-- APScheduler's cron trigger must be created with `timezone=ZoneInfo(FACILITY_TZ)` so DST changes keep the run at 02:00 local.
+- The UTC schedule `0 7,8 * * *` covers 02:00 America/Chicago in both CDT (07:00 UTC) and CST (08:00 UTC); the job decides with `datetime.now(ZoneInfo(FACILITY_TZ)).hour == NIGHTLY_RUN_HOUR_LOCAL`. If FACILITY_TZ or NIGHTLY_RUN_HOUR_LOCAL changes, the cron schedule must be updated to cover the new local hour in both DST states.
 
 ## 9. Open Questions
 

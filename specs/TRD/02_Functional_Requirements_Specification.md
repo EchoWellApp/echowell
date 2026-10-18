@@ -10,7 +10,7 @@ Where an FR and a detailed TRD differ, the detailed TRD governs the "how" and th
 
 ## 2. Scope
 
-**In scope:** every user-visible or interface-visible behaviour of the EchoWell MVP: ingestion, validation and duplicate handling, the ten analytics stages, persistence of results, the dashboard pages (Residents overview with Devices panel, Resident detail, New admissions, Admin), staff review, authentication and roles, researcher analytics read-outs, audit logging.
+**In scope:** every user-visible or interface-visible behaviour of the EchoWell MVP: ingestion, validation and duplicate handling, the ten analytics stages, persistence of results, the dashboard pages (Residents overview with Devices panel, Resident detail, Alert review, Analytics, New admissions, Admin), alarm review and data alerts, staff notes, authentication and roles, researcher analytics read-outs, audit logging.
 
 **Out of scope:** quality attributes (TRD 03), Team 1 device behaviour, outbound alert delivery (OQ-06), data retention and deletion (OQ-01), EWMA trend display (OQ-18), LLM or ML features (BR-18), audio handling of any kind (BR-01).
 
@@ -28,6 +28,9 @@ Where an FR and a detailed TRD differ, the detailed TRD governs the "how" and th
 | SRC-12 | Page requirements in the TRD Generation Prompt |
 | SRC-13 | Record fields, extractor, phrase ID |
 | SRC-14 | Fixed constraints |
+| SRC-18 | Alert review wireframe (queues, data alerts, review panel, outcomes, snooze) |
+| SRC-19 | Analytics wireframe (KPIs, check-ins per day, funnel, usable by resident, alarm timing check) |
+| Contract §19–§20 | Owner wireframe decision; lead reconciliation decisions R1–R17 (cited as R-numbers) |
 
 Related TRDs and the prefixes their detailed requirements use: 04 Frontend (FE), 05 Backend API (API), 06 Database (DB), 07 Analytics Engine (ANL), 08 Baseline and Scoring (BSC), 09 CUSUM and Alerting (CUS), 10 Ingestion and Validation (ING), 11 UI/UX (UX), 12 Security (SEC), 17 Logging (LOG), 19 OpenAPI (OAS), 20 PostgreSQL Schema (PGS).
 
@@ -39,10 +42,12 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | Term | Definition |
 |---|---|
-| As-of time | The instant the data is evaluated at: the latest pipeline run's `as_of` (nightly or ingest run time); in the test profile, 2026-10-30 15:00 America/Chicago. |
-| Last 30 days | The 30 local calendar days ending on the as-of local date, inclusive (for the test data: 1–30 Oct 2026). |
+| As-of time | Production: the request time for read endpoints and the run start time for pipeline runs. Tests: set by `POST /api/v1/pipeline/run {as_of}` or a frozen clock; for the reference data 2026-10-30 15:00 America/Chicago (R11). Reported in `meta.as_of`. |
+| Last 30 days | The 30 local calendar days ending on the as-of local date, inclusive, excluding days before the resident's enrolment date (for the test data: 1–30 Oct 2026) (R10). |
+| Last check-in | The local timestamp of the resident's latest non-duplicate record of any status (usable, set aside or quarantined) (R10). |
+| Open alarm | An `alerts` row of the current epoch with status `open` or `acknowledged`; the alarm stays on after review (OQ-05). |
 | Current epoch | The resident's highest-numbered epoch. |
-| Watching since | The local date following the local date of the session after which the current epoch's baseline froze (R09: frozen after R09-20261016-01 → watched since Oct 17). |
+| Watching since | The local date of the first scored session in the current epoch (R09: Oct 17); before any scored session exists, the local date after the freeze session's local date (R9). |
 | Alarm since | The `local_date` of the open alert of the current epoch. |
 | Silent device-day | A local day on which a device assigned to 2 or more residents received no record from any of them (the `missing_device_gap` condition). |
 | No-upload day | A local day on which a device received no non-duplicate record from any assigned resident (applies to all devices, shared or not). |
@@ -83,6 +88,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-029 | The pipeline shall process arrivals in `arrival_seq` order and mark every arrival after the first with the same `session_id` as `duplicate` with reason "session_id already received". | Must | BR-03, SRC-03 R04 | 07 ANL | T |
 | FR-030 | Duplicate arrivals shall be excluded from epochs, quality gate, speaker screen, baseline, scoring, CUSUM and the day ledger. | Must | BR-03, SRC-03 R04 | 07 ANL | T |
 | FR-031 | The results for a resident with duplicates shall be identical to the results computed from the same input without the duplicate copies. | Must | BR-03, SRC-03 R04 | 07 ANL, 14 TDV | T |
+| FR-032 | A CSV upload whose header does not equal the schema v0.1 header (e.g. the legacy SRC-06 file with `entry_id`, `health_wifi`, `speech_feature_1..3`) shall be rejected as a whole with 422 "schema mismatch", and nothing shall be stored in `raw_sessions`. | Must | BR-01, BR-02, SRC-06, R12 | 10 ING | T |
 
 ### 4.4 Quality gate (BR-04)
 
@@ -157,11 +163,11 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-103 | Scored sessions before the first crossing shall have alarm_state `off`. | Must | BR-11, SRC-03 Exp_scores | 09 CUS | T |
 | FR-104 | The pipeline shall create exactly one `alerts` row per first crossing, recording resident, epoch, session_id, triggered_at, local_date and cusum value, with status `open`. | Must | BR-11, SRC-02 ("Flag for clinician review") | 09 CUS | T |
 | FR-105 | The pipeline shall keep one `cusum_state` row per resident-epoch with the current tally, last scored session and alarm flag. | Must | BR-11 | 09 CUS, 06 DB | T |
-| FR-106 | A user with role `clinician` or `admin` shall be able to acknowledge an open alert, setting status `acknowledged`, `acknowledged_by` and `acknowledged_at`. | Must | BR-11, BR-13, SRC-10 | 09 CUS, 05 API | T |
-| FR-107 | Acknowledging an alert shall not reset the tally and shall not turn the alarm off. | Must | BR-11, OQ-05 | 09 CUS | T |
+| FR-106 | Saving an alarm review (FR-270) shall set the alert's status to `acknowledged` with `acknowledged_by` and `acknowledged_at`; no separate acknowledge endpoint shall exist (`POST /alerts/{id}/acknowledge` is replaced by `POST /alerts/{id}/reviews`). | Must | BR-11, BR-13, SRC-18, R5 | 09 CUS, 05 API | T |
+| FR-107 | Saving a review or snoozing an alarm shall not reset the tally and shall not turn the alarm off. | Must | BR-11, OQ-05, SRC-18 | 09 CUS | T |
 | FR-108 | The system shall list alerts filtered by status and resident at `GET /api/v1/alerts`. | Must | BR-11, BR-13 | 05 API | T |
 | FR-109 | The system shall deliver alerts only inside the dashboard and shall send no SMS, e-mail or push notification. | Must | BR-11, OQ-06 | 09 CUS | I |
-| FR-110 | An alert shall move to status `closed` only through epoch end (reason "epoch ended") or an admin action with a recorded reason. | Must | BR-11, ASM-06 | 09 CUS | T |
+| FR-110 | An alert shall move to status `closed` only through epoch end (reason "epoch ended") or an admin command-line action with a recorded reason. | Must | BR-11, ASM-06, R4 | 09 CUS | T |
 
 ### 4.11 Day ledger and missing days (BR-06)
 
@@ -179,10 +185,10 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
 | FR-130 | The Residents overview (`/residents`) shall list every active resident of the longitudinal cohort; withdrawn residents shall be hidden unless `include_withdrawn=true`. | Must | BR-12, SRC-09, SRC-12 | 04 FE, 11 UX | T |
-| FR-131 | Each resident shall have exactly one display status: `alarm_on` ("▲ Alarm since <Mon D>") when an open alert exists in the current epoch; `baseline_forming` ("Baseline forming · n of N sessions") when the current epoch has fewer than `baseline_n` usable sessions; otherwise `no_alarm` ("No alarm"). | Must | BR-12, SRC-09, SRC-12 | 11 UX | T |
+| FR-131 | Each resident shall have exactly one display status: `alarm_on` ("▲ Alarm since <Mon D>") when an open alarm (status `open` or `acknowledged`) exists in the current epoch; `baseline_forming` ("Baseline forming · n of N sessions") when the current epoch has fewer than `baseline_n` usable sessions; otherwise `no_alarm` ("No alarm"). | Must | BR-12, SRC-09, SRC-12 | 11 UX | T |
 | FR-132 | A `no_alarm` resident whose current epoch is greater than 1 shall show " · baseline restarted <Mon D>" using the current epoch start date. | Must | BR-08, BR-12, SRC-09 (R07) | 11 UX | T |
 | FR-133 | The overview shall offer three sorts — "Alarms first" (default), "Resident ID", "Last check-in" — implementing the exact ordering rules of TRD 11. | Must | BR-12, SRC-09, SRC-12 | 11 UX, 05 API | T |
-| FR-134 | Each row shall show Resident, Device (with "(shared)" when the device is currently assigned to ≥ 2 residents, or "(was <old>)" after a device change in the current epoch), Status, Last check-in (local, e.g. "Oct 30, 2:28 PM") and an "Open" link. | Must | BR-12, SRC-09 | 04 FE, 11 UX | T |
+| FR-134 | Each row shall show Resident, Device (with "(shared)" when the device is currently assigned to ≥ 2 residents, or "(was <old>)" after a device change in the current epoch), Status, Last check-in (latest non-duplicate record of any status, local, e.g. "Oct 30, 2:28 PM") and an "Open" link. | Must | BR-12, SRC-09, R10 | 04 FE, 11 UX | T |
 | FR-135 | Each row shall show "Last 30 days: used · set aside · quarantined · missed", where missed = missing_resident + missing_device_gap days and duplicates are never counted. | Must | BR-06, BR-12, SRC-09, SRC-12 | 11 UX | T |
 | FR-136 | The overview shall show four summary tiles: "Alarm on" (count), "Being watched, no alarm" (count), "Baseline still forming" (count), "Missed check-ins, last 30 days" (sum of missed over listed residents). | Must | BR-12, SRC-09 | 11 UX | T |
 | FR-137 | For the SRC-05 data at as-of 2026-10-30 15:00 America/Chicago with profile `test_v0_1`, the tiles shall read 2, 7, 1, 19 and the rows shall show the counts of SRC-03 Exp_status_counts. | Must | BR-12, BR-15, SRC-09 | 14 TDV | T |
@@ -211,8 +217,8 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-162 | When the current epoch's baseline is frozen, the header shall show "Baseline: first N usable check-ins, <first date>–<last date> (then frozen) · watched since <Mon D>". | Must | BR-09, BR-13, SRC-10, SRC-12 | 11 UX | T |
 | FR-163 | When the current epoch's baseline is forming, the header shall show "Baseline forming · n of N sessions" as a progress indicator. | Must | BR-09, BR-13, SRC-12 | 11 UX | T |
 | FR-164 | The page shall show a "What this means" section whose text comes from PI-reviewed configuration strings per status, including "It is a prompt to check in, not a diagnosis." and the marker "[Final clinical wording: confirm with PI]" until OQ-12 is closed. | Must | BR-13, BR-18, SRC-10, OQ-12 | 11 UX | I |
-| FR-165 | The page shall show a "Running change tally" bar chart of the current epoch: baseline-period bars in grey (#BDBDB8), post-freeze bars in accent (#9A4508), a dashed horizontal line at h labelled "alarm line 5.0", and x-axis labels including the watched-since date and the alarm date. | Must | BR-11, BR-13, SRC-10, SRC-12 | 04 FE, 11 UX | T |
-| FR-166 | The tally chart shall make alarm persistence visible by marking every scored session with alarm_state `rings` or `on` with a non-colour cue (▲ marker or pattern). | Must | BR-11, BR-13, SRC-12 ("alarm persistence") | 11 UX | T |
+| FR-165 | The page shall show a "Running change tally" bar chart of the current epoch with one bar per scored session (height = cusum_tally), coloured #BDBDB8 with a 1 px #8A8A85 outline while alarm_state is `off` and #9A4508 when `rings` or `on`, preceded by a grey baseline slot labelled "Baseline <Mon D>–<Mon D>", with a dashed line at cusum_h labelled "alarm line 5.0" and x-axis labels including the watched-since date and the alarm date. | Must | BR-11, BR-13, SRC-10, SRC-12, R1 | 04 FE, 11 UX | T |
+| FR-166 | The tally chart shall make alarm persistence visible by a non-colour cue (▲ marker at the first crossing and the "Oct 21 · alarm"-style label) in addition to the accent colour of bars with alarm_state `rings` or `on`. | Must | BR-11, BR-13, SRC-12 ("alarm persistence"), R1 | 11 UX | T |
 | FR-167 | The tally chart shall carry the caption "Set-aside, quarantined and missed days leave the tally unchanged." | Must | BR-11, SRC-10 | 11 UX | I |
 | FR-168 | The tally chart shall have an equivalent text table (date, composite z, tally, alarm state) available to assistive technology and by a visible toggle. | Must | BR-13, BR-16 (accessibility, TRD 03) | 11 UX | T |
 | FR-169 | The page shall show "The 7 measurements behind the score" with one card per composite feature, showing the plain-language label of TRD 08 (e.g. "Quieter (loudness)", "More pauses (number of pauses)") and a sparkline of recent adjusted values. | Must | BR-10, BR-13, SRC-10, SRC-12 | 11 UX | T |
@@ -236,10 +242,10 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
 | FR-190 | A user with role `clinician` or `admin` shall be able to add a staff note to a resident with a type (`observation`, `action_taken`, `follow_up`) and a body of 1 to 2000 characters. | Must | BR-13, SRC-10, SRC-12 | 05 API, 11 UX | T |
-| FR-191 | A staff note may reference an alert and may set `mark_reviewed`; when `mark_reviewed` is true and the resident has an open alert, the alert shall be acknowledged (FR-106). | Must | BR-13, SRC-10 ("Mark as reviewed") | 05 API, 09 CUS | T |
+| FR-191 | The "Mark as reviewed" button on Resident detail shall open the alarm review form of FR-266–FR-270 for the resident's open alarm (single review model) and shall be disabled when the resident has no open alarm; staff notes themselves shall not change alert status. | Must | BR-13, SRC-10 ("Mark as reviewed"), SRC-18, R5 | 11 UX, 09 CUS | T |
 | FR-192 | Staff notes shall be append-only; an edit shall create a new note row referencing the superseded note via `supersedes_id`. | Must | BR-13, BR-16 | 06 DB | T |
 | FR-193 | The Staff review section shall list the resident's notes newest first with type, author display name and local timestamp, showing only the latest version of edited notes. | Must | BR-13 | 11 UX | T |
-| FR-194 | Users with role `researcher` shall see notes read-only and shall not see the note form or "Mark as reviewed" button. | Must | BR-13, BR-16 | 12 SEC, 11 UX | T |
+| FR-194 | Users with role `researcher` shall see notes and reviews read-only and shall not see the note form, the review form, "Mark as reviewed" or "Remind me in 24 h". | Must | BR-13, BR-16, OQ-26 | 12 SEC, 11 UX | T |
 | FR-195 | The Staff review section shall display the note "Does review reset the tally? — open question OQ-05" until OQ-05 is closed. | Must | BR-13, OQ-05, SRC-10 | 11 UX | I |
 
 ### 4.17 New admissions — future / experimental (BR-14)
@@ -262,12 +268,12 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-210 | A user shall log in at `/login` with e-mail and password; on success the backend shall return a JWT access token valid for 60 minutes. | Must | BR-16 | 12 SEC, 05 API | T |
 | FR-211 | All dashboard pages except `/login` shall require a valid token and shall redirect to `/login` when the token is missing or expired. | Must | BR-16 | 04 FE, 12 SEC | T |
 | FR-212 | All API endpoints except `GET /api/v1/health` and `POST /api/v1/auth/login` shall return 401 without valid credentials. | Must | BR-16 | 12 SEC | T |
-| FR-213 | The system shall enforce three roles with the permissions of the matrix in section 4.22. | Must | BR-16 | 12 SEC | T |
+| FR-213 | The system shall enforce three roles with the permissions of the matrix in section 4.26. | Must | BR-16 | 12 SEC | T |
 | FR-214 | An inactive user shall not be able to log in. | Must | BR-16 | 12 SEC | T |
 | FR-215 | The login endpoint shall return 429 after 5 attempts per minute from one IP address. | Must | BR-16 | 12 SEC | T |
 | FR-216 | `GET /api/v1/auth/me` shall return the current user's e-mail, display name and role. | Must | BR-16 | 05 API | T |
-| FR-217 | A user shall be able to log out; the frontend shall discard the token and the backend shall record a logout audit event. | Must | BR-16 | 12 SEC | T |
-| FR-218 | The navigation shall show "Admin" only to users with role `admin`. | Must | BR-16 | 04 FE | T |
+| FR-217 | A user shall be able to log out: the frontend shall call `POST /api/v1/auth/logout` (best effort; the token simply expires, no server-side revocation list) and discard the token, and the backend shall record a logout audit event. | Must | BR-16, R4 | 12 SEC | T |
+| FR-218 | The navigation shall show "Admin" only to users with role `admin` and "Analytics" only to users with role `researcher` or `admin`. | Must | BR-16, SRC-19 | 04 FE | T |
 
 ### 4.19 Administration (BR-15, BR-16, BR-02)
 
@@ -278,9 +284,9 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-222 | An admin shall be able to upload a CSV with the SRC-05 header from `/admin` and see the batch result: accepted, rejected (with per-row errors) and duplicate counts. | Must | BR-01, BR-15, SRC-05 | 04 FE, 10 ING | T |
 | FR-223 | An admin shall be able to trigger a pipeline run with scope (`all` or a list of resident codes) and profile, receiving a `pipeline_run_id`. | Must | BR-02, BR-15 | 05 API | T |
 | FR-224 | Admins and researchers shall be able to view a pipeline run's trigger, scope, profile, status, start/finish times, counts and warnings. | Must | BR-15 | 05 API | T |
-| FR-225 | The Admin page shall list the most recent 50 pipeline runs, newest first. | Should | BR-15 | 05 API, 04 FE | T |
-| FR-226 | Device API keys shall be created and revoked by an admin through a backend command-line command; the plaintext key shall be shown once and only its SHA-256 hash stored. | Must | BR-01, BR-16 | 12 SEC | T |
-| FR-227 | Residents, devices, device assignments and the facility shall be loaded from version-controlled seed files or backend command-line commands; no PII field shall exist for them. | Must | BR-12, BR-16, ASM-03 | 06 DB, 15 DEP | T |
+| FR-225 | `GET /api/v1/pipeline/runs` (admin, researcher; paginated, newest first) shall list pipeline runs, and the Admin page shall show the most recent 50. | Must | BR-15, R4 | 05 API, 04 FE | T |
+| FR-226 | Device API keys shall be created and revoked by an admin through `python -m backend.cli` commands; the plaintext key shall be shown once and only its SHA-256 hash stored; no HTTP endpoint shall exist for API keys. | Must | BR-01, BR-16, R4 | 12 SEC | T |
+| FR-227 | Residents, devices, device assignments and the facility shall be managed through version-controlled seed files and `python -m backend.cli` commands, with no HTTP endpoints; no PII field shall exist for them. | Must | BR-12, BR-16, ASM-03, R4 | 06 DB, 15 DEP | T |
 | FR-228 | Setting a resident's status to `withdrawn` with `withdrawn_on` shall stop ingestion for that resident (FR-026) and hide the resident from default lists. | Must | BR-16, OQ-11 | 06 DB, 10 ING | T |
 | FR-229 | Pipeline parameters shall be stored in `config_parameters` per profile and changes shall be audited. | Must | BR-09, BR-11, BR-16 | 07 ANL, 12 SEC | T |
 | FR-230 | The `test_v0_1` profile shall not be selectable in production (`APP_ENV=production`). | Must | BR-09, D-OWNER-2 | 21 ENV | T |
@@ -293,7 +299,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-241 | `GET /api/v1/analytics/baselines` shall return baselines in the shape of SRC-03 Exp_baselines (resident, epoch, feature, n, median, MAD, spread, floor_applied). | Must | BR-15, SRC-03 | 05 API | T |
 | FR-242 | `GET /api/v1/scores` shall return scored sessions in the shape of SRC-03 Exp_scores, filterable by resident, epoch and date range. | Must | BR-15, SRC-03 | 05 API | T |
 | FR-243 | The analytics endpoints shall be available only to roles `researcher` and `admin`. | Must | BR-16 | 12 SEC | T |
-| FR-244 | The analytics, baselines and scores endpoints should return CSV when requested with `Accept: text/csv`, using the column names of the corresponding SRC-03 sheet. | Should | BR-15, SRC-14 B.2 (offline mixed-effects analysis) | 05 API | T |
+| FR-244 | `GET /api/v1/analytics/baselines` and `GET /api/v1/scores` shall return CSV when requested with `Accept: text/csv` by a researcher or admin, using the column names of the corresponding SRC-03 sheet. | Must | BR-15, SRC-14 B.2 (offline mixed-effects analysis), R4 | 05 API | T |
 | FR-245 | Exports shall contain study IDs only and no free-text staff notes. | Must | BR-16 | 05 API, 12 SEC | T |
 
 ### 4.21 Audit and health (BR-16, BR-17)

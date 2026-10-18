@@ -88,9 +88,9 @@ the services that are explicitly excluded.
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine; environments `staging` and `production`; GitHub integration with "Wait for CI"; TLS edge |
+| Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine, plus the Cron Job service `nightly`; environments `staging` and `production`; GitHub integration with "Wait for CI"; TLS edge |
 | Plan | Hobby (monthly subscription that includes a usage credit; usage-based above it). Trial credit only for the first days. |
-| Relevant limits | Usage billed by vCPU, memory and egress; one always-on small service per environment is expected to stay near the included credit (about USD 5 per environment per month, TRD 15 DEP-100). App sleeping must stay **disabled** (TRD 15 DEP-042) so the nightly run executes, which means no cold starts but continuous usage. Log retention on Hobby is short (about 7 days, TRD 17 §4.10). Team (shared workspace) features may require the Pro plan. |
+| Relevant limits | Usage billed by vCPU, memory and egress; one always-on small service per environment is expected to stay near the included credit (about USD 5 per environment per month, TRD 15 DEP-100). The nightly run is a separate Railway Cron Job service (`nightly`, TRD 15 DEP-046) billed only while it runs; the backend may use app sleeping to reduce usage (cold start on the first request), except on demo days (TRD 15 DEP-042). Log retention on Hobby is short (about 7 days, TRD 17 §4.10). Team (shared workspace) features may require the Pro plan. |
 | Data stored | Container images, environment variables (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17). Synthetic/test data only passes through (D-OWNER-4). |
 | Region | US East (Virginia) |
 | Ownership | Railway workspace owned by the project mailbox; DevOps owner + 1 other admin; if team membership needs Pro, the upgrade decision follows OQ-07 |
@@ -181,7 +181,7 @@ the services that are explicitly excluded.
 | AWS KMS | Encryption keys | CMKs `alias/echowell-rds`, `alias/echowell-secrets`, `alias/echowell-logs`; key rotation enabled | keys |
 | AWS Secrets Manager | Secrets | `echowell/<env>/<VARIABLE>` names of TRD 21 | secrets |
 | Amazon CloudWatch | Logs, metrics, alarms | 90-day log retention, KMS, alarms to SNS | application logs (IDs only) |
-| Amazon EventBridge Scheduler | Nightly pipeline trigger | 02:00 America/Chicago | none |
+| Amazon EventBridge Scheduler | Nightly pipeline trigger | 02:00 America/Chicago; calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (or runs `python -m backend.jobs.nightly_run` as an ECS scheduled task) | none |
 | Amazon SNS | Operational alert e-mail | topic `echowell-ops` | none |
 | AWS CloudTrail | Account audit trail | all regions, encrypted bucket | API activity |
 
@@ -230,7 +230,7 @@ the services that are explicitly excluded.
 - AC-TPS-03 A dependency scan of `backend/requirements.txt` and `frontend/package-lock.json` finds no LLM SDKs (`openai`, `anthropic`, `@google/generative-ai`, `boto3` bedrock usage, `langchain*`), no analytics SDKs and no speech SDKs.
 - AC-TPS-04 The interim Neon project contains no resident codes other than `R01`–`R10` (test seed) and `T`-prefixed demo IDs.
 - AC-TPS-05 Before the first real resident record is ingested, evidence exists of: AWS BAA accepted, DEP-112 to DEP-114 verified, SENTRY_DSN decision per TPS-061 recorded.
-- AC-TPS-06 The OpenAPI document (`docs/openapi.json`) contains no path or request body accepting audio content types (`audio/*`, `multipart` audio fields).
+- AC-TPS-06 The OpenAPI document (`docs/api_reference/openapi.json`) contains no path or request body accepting audio content types (`audio/*`, `multipart` audio fields).
 
 ## 8. Implementation Notes
 

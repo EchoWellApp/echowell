@@ -58,14 +58,14 @@ the AWS target.
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
 | `APP_ENV` | Deployment environment name | Yes | — | `staging` | all | No | one of `local`, `staging`, `production`, `test` |
-| `DATABASE_URL` | Runtime DB connection (role `echowell_app`; Neon pooled endpoint) | Yes | — | `postgresql+psycopg://echowell_app:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | scheme `postgres`, `postgresql`, `postgresql+psycopg` (normalised to `postgresql+psycopg`); must contain `sslmode=require` (or `verify-full`) when APP_ENV is `staging` or `production` |
+| `DATABASE_URL` | Runtime DB connection (role `echowell_app`; Neon pooled endpoint); researcher exports may use a separate `echowell_readonly` connection configured in TRD 12 | Yes | — | `postgresql+psycopg://echowell_app:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | scheme `postgres`, `postgresql`, `postgresql+psycopg` (normalised to `postgresql+psycopg`); must contain `sslmode=require` (or `verify-full`) when APP_ENV is `staging` or `production` |
 | `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 hex chars from `openssl rand -hex 32` | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
 | `JWT_EXPIRES_MINUTES` | Access token lifetime | No | `60` | `60` | all | No | integer 5–1440 |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated | Yes in staging/production | `http://localhost:3000,http://localhost:3001` (local/test only) | `https://echowell-und.netlify.app` | all | No | each item a valid origin without path; `*` forbidden; `http://` allowed only for `localhost` origins and only when APP_ENV is `local` or `test` |
 | `FACILITY_NAME` | Facility display name in header subline | Yes in staging/production | `Edgewood` | `Edgewood` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
-| `FACILITY_TZ` | Facility IANA time zone (bootstrap facility row, scheduler) | No | `America/Chicago` | `America/Chicago` | all | No | valid `zoneinfo.ZoneInfo` key |
+| `FACILITY_TZ` | Facility IANA time zone (bootstrap facility row, nightly job hour check) | No | `America/Chicago` | `America/Chicago` | all | No | valid `zoneinfo.ZoneInfo` key |
 | `PIPELINE_PROFILE` | Name of `config_parameters` profile used by pipeline runs | No | `production` | `test_v0_1` | all | No | one of `production`, `test_v0_1`; `test_v0_1` refused when APP_ENV=`production` |
-| `NIGHTLY_RUN_HOUR_LOCAL` | Hour (facility local) of the full nightly run | No | `2` | `2` | all | No | integer 0–23 |
+| `NIGHTLY_RUN_HOUR_LOCAL` | Facility-local hour in which `backend.jobs.nightly_run` starts the full nightly run (TRD 15 DEP-047) | No | `2` | `2` | all | No | integer 0–23 |
 | `LOG_LEVEL` | Minimum log level | No | `INFO` | `INFO` | all | No | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `LOG_FORMAT` | Log output format | No | `json` | `json` | all | No | `json` or `console`; `console` refused in `staging`/`production` |
 | `SENTRY_DSN` | Sentry project DSN; empty disables Sentry | No | empty | `https://****@o0.ingest.us.sentry.io/0` | staging, production | Yes | empty or https URL |
@@ -78,10 +78,9 @@ the AWS target.
 
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
-| `DATABASE_MIGRATION_URL` | Connection used by Alembic only (role `echowell_owner`, direct non-pooled endpoint) | No | value of DATABASE_URL | `postgresql+psycopg://echowell_owner:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
+| `DATABASE_MIGRATION_URL` | Connection used by Alembic only (role `echowell_migrator`, direct non-pooled endpoint) | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
-| `NIGHTLY_SCHEDULER_ENABLED` | Starts the in-process nightly scheduler and 06:00 watchdog (TRD 17 LOG-110/111) | No | `true` (`false` when APP_ENV=`test`) | `false` | all | No | boolean; set `false` on AWS where EventBridge triggers runs (TRD 15 DEP-116) |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -93,7 +92,7 @@ the AWS target.
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
 | ENV-015 | FACILITY_NAME shall be rejected if it contains the string `Edge4Care` (case-insensitive). | Must | RSK-10, contract §2 | Test |
 | ENV-016 | The backend shall expose FACILITY_NAME (`meta.facility_name`), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
-| ENV-017 | As-of resolution (contract R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the request/run time (always the case in production). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger, 30-day windows and `meta.as_of` use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
+| ENV-017 | As-of resolution (contract R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
 
 ### 4.4 Config parameters (database) vs environment
@@ -103,7 +102,7 @@ the AWS target.
 | Which parameter profile is active | env `PIPELINE_PROFILE` | deployment (Railway variable / `.env`) |
 | Algorithm and alerting parameter values (`baseline_n`, `noise_limit_dbfs`, `cusum_k`, `cusum_h`, `morning_offsets`, `facility_tz`, `data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, …) | table `config_parameters` (profile, key) | admin via config change (audited, TRD 12); initial rows by `backend.cli bootstrap` (TRD 15 §4.8) |
 | Parameter snapshot used by a run | `pipeline_runs.config_snapshot` | pipeline (immutable record) |
-| Facility name, time zone for scheduler | env `FACILITY_NAME`, `FACILITY_TZ` | deployment |
+| Facility name, time zone for the nightly job | env `FACILITY_NAME`, `FACILITY_TZ` | deployment |
 | Secrets, URLs, logging, rate limits | env | deployment |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -158,7 +157,6 @@ FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=test_v0_1
 PIPELINE_AS_OF=2026-10-30T15:00:00-05:00
 NIGHTLY_RUN_HOUR_LOCAL=2
-NIGHTLY_SCHEDULER_ENABLED=true
 LOG_LEVEL=INFO
 LOG_FORMAT=console
 SENTRY_DSN=
@@ -179,7 +177,7 @@ NEXT_TELEMETRY_DISABLED=1
 # --- Backend (Railway service variables) ---
 APP_ENV=production                 # staging for the staging environment
 DATABASE_URL=                      # secret: Neon pooled URL, role echowell_app, must include sslmode=require
-DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_owner, must include sslmode=require
+DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_migrator, must include sslmode=require
 JWT_SECRET=                        # secret: openssl rand -hex 32 (different per environment)
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://staging--echowell-und.netlify.app)
@@ -189,7 +187,6 @@ FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=production        # staging: test_v0_1 ; production: production (test_v0_1 refused)
 PIPELINE_AS_OF=                    # staging: 2026-10-30T15:00:00-05:00 ; production: must be empty
 NIGHTLY_RUN_HOUR_LOCAL=2
-NIGHTLY_SCHEDULER_ENABLED=true     # false on AWS App Runner
 LOG_LEVEL=INFO
 LOG_FORMAT=json
 SENTRY_DSN=                        # optional secret; empty disables Sentry
@@ -221,7 +218,6 @@ NEXT_PUBLIC_APP_ENV=production
 | FACILITY_TZ | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `test_v0_1` | `production` | `production` |
 | PIPELINE_AS_OF | `2026-10-30T15:00:00-05:00` | set per test | `2026-10-30T15:00:00-05:00` | empty | empty |
-| NIGHTLY_SCHEDULER_ENABLED | `true` | `false` | `true` | `true` | `false` |
 | LOG_FORMAT / LOG_LEVEL | `console` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` |
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
 | GIT_SHA | `unknown` | `${{ github.sha }}` | Railway reference | Railway reference | image build arg |
@@ -273,6 +269,7 @@ NEXT_PUBLIC_APP_ENV=production
 
 ## 9. Open Questions
 
+- (As-of precedence is contract R21: explicit `as_of` → PIPELINE_AS_OF (refused in production) → current time; read endpoints use the as-of of the latest succeeded run.)
 - OQ-07 AWS budget approval timing and account ownership — determines when the AWS column of §4.7 becomes active.
 - OQ-13 Alarm-limit calibration — future changes to `cusum_h`/`cusum_k` are `config_parameters` changes, never environment changes.
 - OQ-12 Final clinical wording — wording strings live in `frontend/lib/wording.ts` with `CLINICAL_WORDING_APPROVED=false` (a source constant, contract R14), not an environment variable.
