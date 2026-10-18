@@ -103,7 +103,7 @@ tests/
                                   test_residents.py, test_scores.py, test_alerts.py, test_notes.py, test_devices.py,
                                   test_analytics.py, test_pipeline.py, test_admissions.py, test_users.py
     pipeline/                     ingest -> pipeline -> API flows, rebuild, nightly trigger
-  contract/                       test_openapi_snapshot.py, test_response_schemas.py, openapi_snapshot.json
+  contract/                       test_openapi_contract.py, test_response_schemas.py (contract file: docs/api_reference/openapi.json)
   validation/                     conftest.py (answer-key loader), comparator.py, report.py,
                                   test_r01_clean_control.py ... test_r10_gradual_drift.py, test_global_checks.py,
                                   test_invariance.py, test_answer_key_integrity.py, robustness.py (informational)
@@ -262,16 +262,18 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 | TST-031 | Feature-name mapping tests shall show that renaming an input column through configuration (no code change) yields identical pipeline output on SRC-05. | Must | OQ-03, RSK-02 | Test |
 | TST-032 | Security core tests shall cover argon2id hash/verify, JWT issue/verify/expiry at 60 min, API key SHA-256 hashing, and role checks. | Must | BR-16, TRD 12 | Test |
 | TST-033 | Display-status service tests shall cover `alarm_on`, `no_alarm` (with and without " · baseline restarted <Mon D>") and `baseline_forming` ("Baseline forming · n of N sessions") and all three sort options with tie rules from contract §8. | Must | BR-12, TRD 11 | Test |
-| TST-034 | Error-handler tests shall assert RFC 7807-style bodies `{type, title, status, detail, request_id, errors}` and an `X-Request-ID` header on every response including errors. | Must | TRD 05, TRD 17 | Test |
+| TST-034 | Error-handler tests shall assert `Content-Type: application/problem+json`, bodies `{type, title, status, detail, request_id, errors}` with `type` = `urn:echowell:error:<CODE>` (UPPER_SNAKE code from the TRD 05 §4.7 catalogue) and `errors[]` items `{field, code, message}`, and an `X-Request-ID` header on every response including errors (contract R19). | Must | TRD 05, TRD 17 | Test |
 
 ### 4.5 Integration tests
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TST-040 | Alembic `upgrade head` on an empty PostgreSQL 16 database shall succeed, and `downgrade base` followed by `upgrade head` shall succeed. | Must | TRD 06, TRD 20 | Test |
-| TST-041 | Executing UPDATE or DELETE on `raw_sessions` or `audit_logs` as the application DB role shall raise a PostgreSQL error (trigger or privilege), and the row shall be unchanged. | Must | BR-02, BR-16 | Test |
+| TST-041 | Connected as `echowell_app` (DATABASE_URL), UPDATE or DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` shall raise a PostgreSQL error and leave the row unchanged; SELECT on `evaluation_ground_truth` shall raise `permission denied`. Connected as `echowell_readonly`, SELECT on `evaluation_ground_truth` shall succeed and any INSERT/UPDATE/DELETE shall fail. Migrations shall run as `echowell_migrator` via DATABASE_MIGRATION_URL (contract R20). | Must | BR-02, BR-16, contract R20 | Test |
 | TST-042 | Unique constraints shall be verified: `residents.resident_code`, `epochs(resident_id, epoch_number)`, `baselines(epoch_id, feature_key)`, `day_ledger(resident_id, local_date)`, `processed_sessions.raw_session_id`, `raw_sessions.arrival_seq`. | Must | TRD 20 | Test |
 | TST-043 | `POST /api/v1/sessions` with a valid SRC-05 record shall return 201 and create exactly one `raw_sessions` row whose `payload` equals the request body exactly. | Must | BR-01, BR-02 | Test |
+| TST-037 | When the synchronous pipeline raises (fault injected), `POST /api/v1/sessions` shall still return 201 with `status_after_processing: "pending"` and the raw row stored; the next run processes it (contract R23). | Must | contract R23, BR-02 | Test |
+| TST-038 | as_of precedence (contract R21): an explicit `as_of` in `POST /api/v1/pipeline/run` wins; otherwise `PIPELINE_AS_OF` env is used; otherwise the current time. Startup with `PIPELINE_AS_OF` set and `APP_ENV=production` shall be refused. Read endpoints shall report the `as_of` of the latest succeeded run in `meta.as_of`. | Must | contract R11, R21 | Test |
 | TST-044 | A repeat `POST /api/v1/sessions` with the same session_id shall return 200 with status `duplicate`, store a second `raw_sessions` row, and leave all derived results for that resident unchanged. | Must | BR-03 | Test |
 | TST-045 | An invalid record shall return 422, create one `ingest_rejections` row, and create no `raw_sessions` row. | Must | BR-01, TRD 10 | Test |
 | TST-046 | Uploading SRC-05 as multipart CSV to `POST /api/v1/ingest` shall return 202 with `accepted` 283, `rejected` 0, `duplicates` 2. | Must | BR-01, BR-03 | Test |
@@ -280,9 +282,9 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 | TST-049 | Ingesting SRC-05 one record at a time through `POST /api/v1/sessions` in arrival order (synchronous per-resident pipeline; in-process `TestClient` with the clock frozen by `time-machine` at 2026-10-30 15:00 America/Chicago) shall yield derived tables equal to a single batch ingest plus full run with the same as-of. | Must | BR-15, contract §7 Trigger | Test |
 | TST-050 | Two consecutive full rebuilds (`POST /api/v1/pipeline/run`, scope all) with unchanged inputs and config shall produce identical derived tables, compared on all columns except surrogate ids, `pipeline_run_id` and timestamps of the run itself. | Must | SRC-02, contract §7 | Test |
 | TST-051 | Every pipeline run shall create a `pipeline_runs` row with `config_profile`, `config_snapshot` equal to the loaded profile, `code_version` equal to `GIT_SHA`, status `succeeded`, and counts equal to the status totals. | Must | TRD 07, TRD 17 | Test |
-| TST-052 | The nightly scheduler shall be tested with an injected clock: at 02:00 America/Chicago a full run is triggered once; at 01:59 and 02:01 no extra run is triggered. | Should | contract §7 Trigger | Test |
+| TST-052 | `python -m backend.jobs.nightly_run` (invoked by cron `0 7,8 * * *` UTC, contract R18) shall be tested with an injected clock: it starts a full run only when facility-local time is 02:xx and no nightly run exists for that local night; in CDT (07:xx UTC = 02:xx local) the 08:xx invocation exits without a run, and in CST (08:xx UTC = 02:xx local) the 07:xx invocation exits without a run; a second invocation the same night never starts a second run. | Must | contract §7 Trigger | Test |
 | TST-053 | Audit log rows shall be written for login, failed login, logout (`POST /api/v1/auth/logout`), ingest batch, note created, alert review saved, alert snoozed, pipeline run, config change and user change. | Must | BR-16, TRD 12 | Test |
-| TST-054 | `GET /api/v1/health` shall return 200 `{status, database, version, time}` with database "ok" when the DB is up and 503 with database "unavailable" when the DB container is stopped. | Must | TRD 05, TRD 17 | Test |
+| TST-054 | `GET /api/v1/health` shall return 200 `{status, database, version, time}` with database "ok" when the DB is up, and 503 with `status` "degraded" when the DB check fails (DB container stopped) (contract R19). | Must | TRD 05, TRD 17 | Test |
 | TST-055 | A withdrawn resident (status withdrawn) shall cause `POST /api/v1/sessions` to return 422 with detail "resident withdrawn" and shall be hidden from `GET /api/v1/residents` unless `include_withdrawn=true`. | Must | contract §9, OQ-11 | Test |
 | TST-056 | `POST /api/v1/alerts/{id}/reviews` by a clinician with `{explanations: ["cold_cough_sore_throat"], outcome: "known_cause", note: "..."}` shall return 201, create one `alert_reviews` row, and set the alert status to `acknowledged`; `cusum_state.current_tally`, every `scores.cusum_tally`, `scores.alarm_state` and `cusum_state.alarm_on` shall be unchanged (R09 tally stays 26.830256 ±1e-6; OQ-05). | Must | contract §19, R5, OQ-05 | Test |
 | TST-057 | A second review on the same alert shall create a second `alert_reviews` row; `GET /api/v1/alerts/{id}/reviews` shall return both, newest first. | Must | contract §19 | Test |
@@ -291,7 +293,7 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 | TST-065 | `POST /api/v1/alerts/{id}/snooze` with no body shall set `alerts.snoozed_until` = now + 24 h (`alert_snooze_hours`) and `snoozed_by` = caller, with the clock frozen; with `{hours: 4}` it shall be now + 4 h; status, tally and alarm state shall be unchanged; after `snoozed_until` passes the card shows the "Not reviewed" emphasis again. | Must | contract §19 | Test |
 | TST-066 | `POST /api/v1/alerts/{id}/acknowledge` shall not exist (404 or 405). | Must | contract R5 | Test |
 | TST-067 | A full rebuild after a review and a snooze shall keep the alert row (natural key epoch_id, session_id), its reviews, status `acknowledged` and `snoozed_until`. | Must | contract R15 | Test |
-| TST-068 | `evaluation_ground_truth` shall never be read by the pipeline: (a) a static test fails on any reference to `evaluation_ground_truth` in `analytics/` or in the backend pipeline service/repository modules (only the analytics summary read path may reference it); (b) Tier A and Tier B pipeline outputs shall be identical with the table empty and with it loaded; (c) loading ground truth shall be refused when the active profile is `production`. Detail in TRD 14 TDV-100..TDV-104. | Must | contract §19, SRC-02 | Test |
+| TST-068 | `evaluation_ground_truth` shall never be read by the pipeline: (a) a static test fails on any reference to `evaluation_ground_truth` in `analytics/` or in the backend pipeline service/repository modules (only the analytics summary read path, using the `echowell_readonly` connection, may reference it; the `echowell_app` role has no SELECT on it, TST-041); (b) Tier A and Tier B pipeline outputs shall be identical with the table empty and with it loaded; (c) loading ground truth shall be refused when the active profile is `production`. Detail in TRD 14 TDV-100..TDV-104. | Must | contract §19, SRC-02 | Test |
 | TST-069 | `POST /api/v1/auth/logout` shall return 204 and write an audit row; `GET /api/v1/pipeline/runs` shall list runs newest first. | Must | contract R4 | Test |
 | TST-079 | `GET /api/v1/analytics/baselines` and `GET /api/v1/scores` with `Accept: text/csv` shall return `text/csv` whose header row equals the JSON field names and whose rows equal the JSON items. | Must | contract R4 | Test |
 
@@ -299,10 +301,10 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-060 | `tests/contract/test_openapi_snapshot.py` shall compare the generated `/api/v1/openapi.json` with the committed `tests/contract/openapi_snapshot.json`; any difference shall fail until the snapshot is updated in the same PR. | Must | TRD 19 | Test |
+| TST-060 | `tests/contract/test_openapi_contract.py` shall compare the schema generated by `python -m backend.cli export-openapi` with the committed contract file `docs/api_reference/openapi.json`; any difference shall fail the CI contract check until the file is regenerated and committed in the same PR. | Must | TRD 19, contract R22 | Test |
 | TST-061 | Every response produced in `tests/integration/api/` shall be validated against the OpenAPI schema for its path, method and status code using `openapi-core`. | Must | TRD 19, SRC-17 Phase 10 | Test |
 | TST-062 | Every path in contract §10 as amended by §19 and R4 (including `/alerts/{id}/reviews`, `/alerts/{id}/snooze`, `/data-alerts`, `/auth/logout`, `/pipeline/runs`; excluding `/alerts/{id}/acknowledge`) shall exist in the OpenAPI document with the documented method, and no other path under `/api/v1` shall exist. | Must | TRD 05, TRD 19 | Test |
-| TST-063 | The frontend API client types (`frontend/services/api.ts`) shall be generated from or type-checked against the OpenAPI snapshot, and `tsc --noEmit` shall pass. | Should | TRD 04 | Test |
+| TST-063 | Frontend types in `frontend/lib/api-types.ts` shall be generated from `docs/api_reference/openapi.json` with openapi-typescript; CI shall regenerate them and fail on any diff, and `tsc --noEmit` shall pass. | Must | TRD 04, contract R22 | Test |
 | TST-064 | Every list, detail and analytics response shall contain `meta` with `facility_name`, `facility_tz`, `data_source_label`, `as_of`, `baseline_n`, `cusum_h`, `pipeline_profile`. | Must | contract R3 | Test |
 
 ### 4.7 Regression policy and golden files
@@ -428,7 +430,7 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 | POST /api/v1/alerts/{id}/snooze | 401 | 401 | 200 | 200 | 403 |
 | POST /api/v1/residents/{code}/notes | 401 | 401 | 201 | 201 | 403 |
 | GET /api/v1/analytics, /analytics/baselines | 401 | 401 | 200 | 403 | 200 |
-| POST /api/v1/pipeline/run | 401 | 401 | 202 | 403 | 403 |
+| POST /api/v1/pipeline/run | 401 | 403 (ingest:write only); 202 with a key of scope `pipeline:run` (contract R18) | 202 | 403 | 403 |
 | GET /api/v1/pipeline/runs, /pipeline/runs/{id} | 401 | 401 | 200 | 403 | 200 |
 | GET, POST, PATCH /api/v1/users | 401 | 401 | 200 / 201 / 200 | 403 | 403 |
 
@@ -524,7 +526,7 @@ Table 4.17-A MVP acceptance criteria.
 - AC-TST-01 `pytest -m unit tests/unit` passes and every case of Table 4.3-A exists by ID.
 - AC-TST-02 `pytest -m integration` passes against PostgreSQL 16 including TST-041 (raw store immutability) and TST-049/TST-050 (incremental and rebuild equivalence).
 - AC-TST-03 `pytest -m validation` passes Tier A and Tier B with zero skips and produces `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with "Overall: PASS".
-- AC-TST-04 Contract tests pass and `openapi_snapshot.json` equals the generated schema.
+- AC-TST-04 Contract tests pass, `docs/api_reference/openapi.json` equals the generated schema and `frontend/lib/api-types.ts` is up to date.
 - AC-TST-05 Every endpoint/caller cell of Table 4.13-A returns the listed status.
 - AC-TST-06 Coverage: analytics ≥ 95 %, backend ≥ 85 %, frontend ≥ 80 % lines.
 - AC-TST-07 E2E-01…E2E-21 pass in Chromium; axe reports zero serious/critical violations on all listed routes.
