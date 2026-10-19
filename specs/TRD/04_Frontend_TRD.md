@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -67,6 +67,7 @@ Priority: Must / Should / May. Verification: T = Test, I = Inspection, A = Analy
 | recharts | 2.x | CUSUM chart, sparklines, facility range chart |
 | openapi-typescript | 7.x (dev) | Generates `lib/api-types.ts` from the committed `docs/api_reference/openapi.json` (contract §21 R22) |
 | vitest | 2.x (dev) | Unit and component test runner |
+| @vitest/coverage-v8 | 2.x, same major as vitest (dev) | Coverage provider for `vitest.config.ts` (`coverage.provider: "v8"`) |
 | @testing-library/react, @testing-library/user-event, @testing-library/jest-dom | 16.x / 14.x / 6.x (dev) | Component tests |
 | jsdom | 25.x (dev) | DOM for Vitest |
 | msw | 2.x (dev) | HTTP mocking in component tests |
@@ -74,6 +75,7 @@ Priority: Must / Should / May. Verification: T = Test, I = Inspection, A = Analy
 | @axe-core/playwright | 4.x (dev) | Automated accessibility checks |
 | eslint | 8.x with `eslint-config-next` 14.2.x, `@typescript-eslint` 7.x, `eslint-plugin-jsx-a11y` 6.x (dev) | Linting |
 | prettier | 3.x (dev) | Formatting |
+| eslint-config-prettier | 9.x (dev) | Turns off ESLint rules that conflict with Prettier |
 
 Fonts are loaded with `next/font/google` (IBM Plex Sans 400/600, IBM Plex Mono 400) so that font files are self-hosted at build time and no request goes to Google at runtime.
 
@@ -128,10 +130,11 @@ frontend/
   middleware.ts                     `Cache-Control: private, no-store` on protected pages (FE-042); no CSP (TRD 12 §4.9, FE-060)
   tests/
     unit/                           Pure function tests (format, wording, deviceGroups, auth)
+    pages/                          One test file per route (`<route>.test.tsx`), API mocked with MSW (component tests are co-located in `components/<Name>/`)
     fixtures/                       JSON API responses for the test_v0_1 data set as of 2026-10-30 15:00
     msw/handlers.ts                 MSW handlers serving fixtures
-    e2e/                            Playwright specs
-  next.config.js  vitest.config.ts  vitest.setup.ts  playwright.config.ts
+    e2e/                            Playwright specs (incl. mutating.spec.ts, isolated.spec.ts), global-setup.ts, isolated-setup.ts, .auth/ (git-ignored)
+  next.config.js  vitest.config.ts  vitest.setup.ts  playwright.config.ts  playwright.isolated.config.ts
   .eslintrc.json  .prettierrc  .nvmrc  tsconfig.json  .env.example
 ```
 
@@ -408,7 +411,7 @@ Query keys (`lib/queryKeys.ts`):
 |---|---|---|---|---|
 | FE-080 | The `QueryClient` shall use defaults `staleTime: 60_000`, `gcTime: 300_000`, `refetchOnWindowFocus: true`, and a `retry` function that retries at most 2 times only when `ApiError.status` is 0 or ≥ 500, with exponential delay 1 s then 2 s. | Must | NFR (TRD 03) | T |
 | FE-081 | The residents overview, devices panel and resident detail queries shall use `refetchInterval: 300_000` (5 minutes) while the document is visible. | Should | BR-12, contract §7 (pipeline after ingest) | T |
-| FE-082 | The overview sort shall be held in the URL query `?sort=alarm|resident_id|last_checkin` (default `alarm` when absent or invalid) and changing it shall call `router.replace` without scrolling. | Must | SRC-12, contract §8 | T |
+| FE-082 | The overview sort shall be held in the URL query `?sort=alarm\|resident_id\|last_checkin` (default `alarm` when absent or invalid) and changing it shall call `router.replace` without scrolling. | Must | SRC-12, contract §8 | T |
 | FE-083 | Changing the sort shall keep the previous rows visible (`placeholderData: keepPreviousData`) until the new response arrives, and the table shall set `aria-busy="true"` during that time. | Must | SRC-09 | T |
 | FE-084 | Row order on the overview shall be exactly the order of `items` returned by the API for the selected sort; the frontend shall not re-sort rows. | Must | contract §8 | T |
 | FE-085 | After `createNote` succeeds, the frontend shall invalidate `["resident", code]` (prefix, which covers notes and check-ins), `["residents"]` and `["alerts"]`. | Must | BR-13 | T |
@@ -589,15 +592,16 @@ All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, 
 | Level | Tool | Location | What |
 |---|---|---|---|
 | Unit | Vitest | `tests/unit/` | `format.ts`, `wording.ts`, `deviceGroups.ts`, `auth.ts` (exp parsing, storage fallback), `api.ts` (error parsing, 401 handling) |
-| Component | Vitest + RTL + MSW | `components/**/<Name>.test.tsx` | Every component in 4.8 rendered with fixtures from `tests/fixtures/` |
-| E2E | Playwright (Chromium, Firefox, WebKit; viewports 1280×900 and 390×844) | `tests/e2e/` | Full stack: docker-compose backend with `PIPELINE_PROFILE=test_v0_1`, SRC-05 ingested, as-of 2026-10-30 15:00 America/Chicago; reset and re-seeded at the start of each browser project, `@mutating` scenarios last (TRD 13 §4.10, TRD 24 D-73: E2E-18, FE-187, FE-193 snooze step); one form login per role, reused per project (D-74); `@isolated` scenarios on `echowell_demo` in Chromium only (TRD 13 TST-100) |
+| Component | Vitest + RTL + MSW | `components/<Name>/<Name>.test.tsx` (co-located) | Every component in 4.8 rendered with fixtures from `tests/fixtures/` |
+| Page | Vitest + RTL + MSW | `tests/pages/` | One test file per route, API mocked with MSW |
+| E2E | Playwright (Chromium, Firefox, WebKit; viewports 1280×900 and 390×844) | `tests/e2e/` | Full stack: docker-compose backend with `PIPELINE_PROFILE=test_v0_1`, SRC-05 ingested, as-of 2026-10-30 15:00 America/Chicago; reset and re-seeded at the start of each browser project, `@mutating` scenarios last (TRD 13 §4.10, TRD 24 D-73: E2E-18, FE-187, FE-193 snooze step); one API login per role in `globalSetup` per invocation (`isolated-setup.ts` for the `@isolated` run), reused through the role fixture (D-74); `@isolated` scenarios on `echowell_demo` in Chromium only (TRD 13 TST-100) |
 | Accessibility | @axe-core/playwright | `tests/e2e/a11y.spec.ts` | Zero `serious` or `critical` violations on every route |
 
 Fixtures in `frontend/tests/fixtures/ds07/` are JSON responses captured from the backend running the test_v0_1 profile on SRC-05 (DS-07; generated by `npm run fixtures:capture` against the local stack after `backend.cli seed test_v0_1`; the single generator, TRD 14 TDV-016) and are checked in. Their content must match the expected rendering table in TRD 11 section 4.13.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| FE-180 | `npm run test` shall run Vitest with overall line coverage ≥ 80% for `frontend/` source (contract §20 R7), measured on `app/`, `components/`, `lib/` and `services/`. | Must | TRD 13, contract §20 R7 | T |
+| FE-180 | Vitest coverage shall be configured in `frontend/vitest.config.ts` as `coverage: { enabled: true, provider: "v8", reporter: ["text", "lcov", "html"], include: ["app/**", "components/**", "lib/**", "services/**"], exclude: ["**/*.test.ts", "**/*.test.tsx", "tests/**", "lib/api-types.ts"], thresholds: { lines: 80 } }` (contract §20 R7, TRD 13 TST-142), so that `npm run test` and `npm run test:coverage` both fail below 80 % line coverage of `frontend/` source; co-located `*.test.tsx` files are excluded from the measurement. | Must | TRD 13, contract §20 R7 | T |
 | FE-181 | A component test shall render `SummaryTiles` with the test fixture and assert the tile values 2, 7, 1 and 19 in the order "Alarm on", "Being watched, no alarm", "Baseline still forming", "Missed check-ins, last 30 days". | Must | SRC-09, SRC-03, BR-15 | T |
 | FE-182 | A component test shall render `ResidentsTable` with the test fixture and assert, for each of R01–R10, the device cell, status badge text, last check-in text and 30-day counts listed in TRD 11 section 4.13.1. | Must | SRC-09, SRC-03, BR-15 | T |
 | FE-183 | A component test shall render `CusumChart` with the R09 fixture and assert 14 bars, of which the first 4 (Oct 17–20) use the below-line fill and the last 10 (Oct 21–30) use the accent fill, the reference line at y = 5.0, and the tick "Oct 21 · alarm". | Must | SRC-10, SRC-03 | T |
@@ -628,18 +632,19 @@ Fixtures in `frontend/tests/fixtures/ds07/` are JSON responses captured from the
 | `typecheck` | `tsc --noEmit` |
 | `format` | `prettier --write .` |
 | `format:check` | `prettier --check .` |
-| `test` | `vitest run --coverage` |
+| `test` | `vitest run` (coverage settings come from `vitest.config.ts`, FE-180) |
+| `test:coverage` | `vitest run --coverage` (the CI `frontend` job; pass no further `--coverage`) |
 | `test:e2e:readonly` | `playwright test --grep-invert "@isolated\|@mutating"` (pass `--project=<browser>`; TRD 24 D-73) |
 | `test:e2e:mutating` | `playwright test --grep @mutating --workers=1` (pass `--project=<browser>`; run after `test:e2e:readonly`) |
-| `test:e2e:isolated` | `playwright test -c playwright.isolated.config.ts --project=chromium --workers=1` (needs the `echowell_demo` stack of TRD 16 `e2e.yml`) |
+| `test:e2e:isolated` | `playwright test -c playwright.isolated.config.ts --project=chromium --workers=1` (the config sets `grep: /@isolated/`, `workers: 1`, `fullyParallel: false` and runs the single file `tests/e2e/isolated.spec.ts` in the order E2E-15, TST-187, E2E-19; needs the `echowell_demo` stack of TRD 16 `e2e.yml`) |
 | `gen:api` | `openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts` |
 | `fixtures:capture` | `node tests/fixtures/capture.mjs` (writes `tests/fixtures/ds07/`) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| FE-200 | ESLint shall extend `next/core-web-vitals`, `plugin:@typescript-eslint/recommended` and `plugin:jsx-a11y/strict`, and shall set `react/no-danger: error`, `no-console: ["error", { allow: ["warn", "error"] }]` and `@typescript-eslint/no-explicit-any: error`. | Must | TRD 18 | I |
+| FE-200 | ESLint shall extend `next/core-web-vitals`, `plugin:@typescript-eslint/recommended` and `plugin:jsx-a11y/strict` and, last, `prettier` (`eslint-config-prettier`, TRD 18), and shall set `react/no-danger: error`, `no-console: ["error", { allow: ["warn", "error"] }]` and `@typescript-eslint/no-explicit-any: error`. | Must | TRD 18 | I |
 | FE-201 | Prettier shall use `printWidth: 100`, `singleQuote: false`, `trailingComma: "all"`, `semi: true`. | Should | TRD 18 | I |
-| FE-202 | CI shall run, in order, `npm ci`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run test`, `npm run build`, and E2E tests on pull requests to `main`; any failure shall fail the workflow. | Must | BR-17, TRD 16 | T |
+| FE-202 | CI shall run, in order, `npm ci`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run test:coverage`, `npm run build` (TRD 16 CIC-017), and E2E tests on pull requests to `main`; any failure shall fail the workflow. | Must | BR-17, TRD 16 | T |
 | FE-203 | `npm run build` shall complete with zero TypeScript errors and zero ESLint warnings. | Must | BR-17 | T |
 | FE-204 | The first-load JavaScript of every dashboard route, including `/residents`, reported by `next build` shall be ≤ 300 kB (gzip), the budget of TRD 03 NFR-012. | Should | NFR (TRD 03) | T |
 
@@ -744,3 +749,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-05) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-03, R6-05) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01, R8-02, R8-03, R8-04, R8-05) | — |

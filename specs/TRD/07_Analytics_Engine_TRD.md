@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -191,13 +191,13 @@ excluded_after_as_of, residents).
 |---|---|
 | `FeatureSpec` | `key: str`, `unit: str`, `sign: int` (−1, 0, +1), `morning_offset: float`, `in_composite: bool` (= sign != 0), `spread_floor: float` (0.5 for number_of_pauses, else 0.0) |
 | `RobustStats` | `median: float`, `mad: float`, `spread: float`, `floor_applied: bool` |
-| `ResidentInfo` | `resident_code: str`, `enrolled_on: date`, `withdrawn_on: date | None`, `status: str` |
-| `DeviceAssignment` | `resident_code: str`, `device_code: str`, `valid_from: date`, `valid_to: date | None` (inclusive) |
+| `ResidentInfo` | `resident_code: str`, `enrolled_on: date`, `withdrawn_on: date \| None`, `status: str` |
+| `DeviceAssignment` | `resident_code: str`, `device_code: str`, `valid_from: date`, `valid_to: date \| None` (inclusive) |
 | `EpochKey` | `tuple[str, int]` = (resident_code, epoch_number) |
 | `BaselineMembership` | `session_ids: tuple[str, ...]` (first N usable, time order), `formed: bool`, `usable_count: int` |
-| `EpochSummary` | `resident_code`, `epoch_number`, `device_code`, `device_firmware_version`, `extraction_software_version`, `started_at: datetime`, `ended_at: datetime | None` (= started_at of next epoch), `usable_count: int`, `baseline_formed: bool`, `frozen_after_session_id: str | None`, `scored_count: int`, `watching_since: date | None` (local date of the first scored session; before any scored session, the local date after the freeze session's local date; None if not formed), `current_tally: float` (0.0 if none), `last_scored_session_id: str | None`, `alarm_on: bool`, `first_alarm_session_id: str | None` |
-| `RunWarning` | `code: str`, `resident_code: str | None`, `session_id: str | None`, `detail: str` |
-| `DataAlert` | `kind: Literal["baseline_stalled","possible_other_speaker","high_set_aside","device_silent"]`, `resident_code: str | None`, `device_code: str | None`, `title: str`, `detail: str`, `days: tuple[date, ...]` (affected local dates, may be empty) |
+| `EpochSummary` | `resident_code`, `epoch_number`, `device_code`, `device_firmware_version`, `extraction_software_version`, `started_at: datetime`, `ended_at: datetime \| None` (= started_at of next epoch), `usable_count: int`, `baseline_formed: bool`, `frozen_after_session_id: str \| None`, `scored_count: int`, `watching_since: date \| None` (local date of the first scored session; before any scored session, the local date after the freeze session's local date; None if not formed), `current_tally: float` (0.0 if none), `last_scored_session_id: str \| None`, `alarm_on: bool`, `first_alarm_session_id: str \| None` |
+| `RunWarning` | `code: str`, `resident_code: str \| None`, `session_id: str \| None`, `detail: str` |
+| `DataAlert` | `kind: Literal["baseline_stalled","possible_other_speaker","high_set_aside","device_silent"]`, `resident_code: str \| None`, `device_code: str \| None`, `title: str`, `detail: str`, `days: tuple[date, ...]` (affected local dates, may be empty) |
 | `AnalyticsSummary` | `period_start: date`, `period_end: date`, `kpis: dict`, `daily_series: tuple[dict, ...]`, `funnel: tuple[dict, ...]`, `by_resident: tuple[dict, ...]` (shapes in section 4.13) |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -499,3 +499,4 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-04, F-05, F-12, F-26, F-30, F-32, F-38, F-41, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-06, R2-10, R2-11, R2-12, R2-15, R2-17, R2-25) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-05) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |

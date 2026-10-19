@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -109,7 +109,7 @@ Jobs (run in parallel unless noted):
 | `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend`, `lint-imports` (import-linter: `analytics/` purity, TRD 01 ARC-041) | 3 min |
 | `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest -p no:randomly tests/unit tests/integration tests/contract tests/security tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
 | `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/api_reference/openapi.json /tmp/openapi.json`; regenerate `frontend/lib/api-types.ts` with `openapi-typescript` and `git diff --exit-code` | 2 min |
-| `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test -- --coverage`, `npm run build` | 6 min |
+| `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run test:coverage`, `npm run build` | 6 min |
 | `security-audit` | Known vulnerabilities, secrets, insecure code | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev`, `gitleaks detect` (8.x), `bandit -r backend analytics -ll` | 3 min |
 | `docker-build` | Images build | `docker build -f backend/Dockerfile .`; `docker build frontend`; image check (non-root, no `.env`, no `tests/`) | 5 min |
 
@@ -255,7 +255,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test -- --coverage
+      - run: npm run format:check   # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
+      - run: npm run test:coverage  # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
@@ -312,7 +313,7 @@ jobs:
 | CIC-014 | The validation suite shall compare pipeline output against the SRC-03 answer key for R01–R10 with absolute tolerance 1e-6 and exact string match for statuses, reasons and alarm states; any mismatch shall fail the job. | Must | BR-15, SRC-03, TRD 14 | Test |
 | CIC-015 | `backend-test` shall first run `database/roles/provision_login_roles.sql` as the service superuser (creating the extensions `pgcrypto` and `btree_gist` before any migration, TRD 24 D-72, then `echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login`, TRD 20 §4.3, TRD 15 §4.2; passwords are CI-only throwaway values in the workflow env), then run all tests with DATABASE_URL = `echowell_app_login`, DATABASE_MIGRATION_URL = `echowell_migrator_login` and DATABASE_READONLY_URL = `echowell_readonly_login`; it shall then apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error; migrations run as `echowell_migrator` and never create or drop extensions (D-72). | Must | TRD 06, TRD 15 DEP-060 | Test |
 | CIC-016 | Line coverage shall be at least 95 % for `analytics/` and at least 85 % for `backend/`; the job shall fail below either gate. | Must | contract R7, TRD 13 | Test |
-| CIC-017 | The `frontend` job shall run `npm ci`, `npm run lint` (ESLint, zero warnings allowed: `--max-warnings=0`), `npm run typecheck` (`tsc --noEmit`), `npm run test` (Vitest + React Testing Library, line coverage at least 80 %) and `npm run build`, failing on any non-zero exit. | Must | contract §3, TRD 04, TRD 13 | Test |
+| CIC-017 | The `frontend` job shall run `npm ci`, `npm run lint` (ESLint, zero warnings allowed: `--max-warnings=0`), `npm run typecheck` (`tsc --noEmit`), `npm run format:check` (`prettier --check .`), `npm run test:coverage` (`vitest run --coverage`: Vitest + React Testing Library with `@vitest/coverage-v8`, line coverage at least 80 % per `vitest.config.ts`, TRD 04 FE-180) and `npm run build`, failing on any non-zero exit. | Must | contract §3, TRD 04, TRD 13 | Test |
 | CIC-018 | The `openapi-contract` job shall fail when the OpenAPI document generated from the backend differs from the committed `docs/api_reference/openapi.json`; intentional API changes shall update `docs/api_reference/openapi.json` and the generated `frontend/lib/api-types.ts` in the same PR; the job shall also fail if `frontend/lib/api-types.ts` differs from the output of openapi-typescript. | Must | TRD 19 | Test |
 | CIC-019 | The `security-audit` job shall fail on any known vulnerability reported by `pip-audit` for runtime or dev requirements and on any `high` or `critical` advisory reported by `npm audit --omit=dev`. | Must | BR-16, TRD 12 | Test |
 | CIC-020 | The `repo-hygiene` job shall fail if any tracked file has an audio extension (wav, mp3, flac, m4a, ogg, opus, aac, wma, aif, aiff, amr, webm, caf, pcm). | Must | BR-01, contract §2, TRD 18 | Test |
@@ -539,7 +540,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 - `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt`, the single dev-tool list (TRD 13 §6 refers to it): ruff 0.6.x+, mypy 1.11+, pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x (`lint-imports`), Bandit 1.7.x, pip-audit 2.x.
 - Root `pyproject.toml` with `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` (the marker list of TRD 13 TST-006, registered with `--strict-markers`) and `[tool.coverage]`.
-- `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:e2e:readonly`, `test:e2e:mutating`, `test:e2e:isolated` (no bare `test:e2e`, TRD 24 D-73); `frontend/package-lock.json` committed.
+- `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `format`, `format:check`, `test`, `test:coverage`, `test:e2e:readonly`, `test:e2e:mutating`, `test:e2e:isolated` (no bare `test:e2e`, TRD 24 D-73); `frontend/package-lock.json` committed.
 - `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/api_reference/openapi.json` (TRD 19).
 - pytest plugin option `--validation-report` implemented in `tests/validation/conftest.py` (TRD 14); it also writes `validation_results.json` next to the Markdown report.
 - `tests/performance/make_load_dataset.py` and `tests/performance/` suite (TRD 13/TRD 14).
@@ -588,3 +589,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-02, R5-04, R5-05, R5-07, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02, R6-03, R6-07) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-01, R7-02, R7-05) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-03) | — |

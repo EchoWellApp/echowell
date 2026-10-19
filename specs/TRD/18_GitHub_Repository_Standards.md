@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -204,7 +204,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 |---|---|---|---|---|
 | GIT-040 | Python code shall pass `ruff check` and `ruff format --check` with the configuration above (enforced by CI). | Must | TRD 16 CIC-011 | Test |
 | GIT-041 | `analytics/` shall pass `mypy --strict`; `backend/` shall pass mypy with `disallow_untyped_defs`. | Must | TRD 16 CIC-011 | Test |
-| GIT-042 | TypeScript shall compile with `strict: true` and zero errors; ESLint shall report zero warnings; Prettier shall report no differences (`prettier --check .` in `npm run lint`). | Must | TRD 16 CIC-017 | Test |
+| GIT-042 | TypeScript shall compile with `strict: true` and zero errors; ESLint shall report zero warnings; Prettier shall report no differences (`npm run format:check` = `prettier --check .`, its own CI step, TRD 16 CIC-017). | Must | TRD 16 CIC-017 | Test |
 | GIT-043 | `# type: ignore`, `# noqa` and `eslint-disable` comments shall name the specific rule and carry a reason comment on the same line. | Should | — | Inspection |
 | GIT-044 | Python modules, functions and variables shall use snake_case; classes PascalCase; TypeScript components PascalCase files (`ResidentTable.tsx`), hooks `useX`, other files camelCase; database identifiers snake_case (TRD 06). | Must | contract §9 | Inspection |
 | GIT-045 | A pre-commit configuration (`.pre-commit-config.yaml`) running ruff, ruff-format, prettier and a check for audio extensions and `.env` files should be provided for local use; CI remains the authority. | Should | TRD 16 | Inspection |
@@ -432,3 +432,4 @@ updates:
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-21) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-06) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-03) | — |

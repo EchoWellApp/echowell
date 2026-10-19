@@ -253,3 +253,39 @@ New decision: D-73. D-71 and D-72 amended. New test: TST-188. Next free IDs: D-7
 | R7-04 | Minor | TRD 06. DB-021 now places the helper at `backend/core/db.py::advisory_key`, matching the TRD 05 module tree and API-125. | Fixed |
 | R7-05 | Minor | TRD 13 and 16. TST-006 is now the single marker list: `unit`, `integration`, `contract`, `validation`, `security`, `performance` and `smoke` as level markers, plus `slow`, `authenticated`, `budget` and `req`. They are registered with `--strict-markers`, and the TRD 16 §6 pyproject entry refers to it. TRD 16 §6 is now the single dev-requirements list: ruff 0.6.x+, mypy 1.11+, pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x and pip-audit 2.x. The TRD 13 §6 tools line refers to it. | Fixed |
 | R7-06 | Minor | TRD 18. The rulesets note now says the required check names are the job IDs listed in TRD 16 CIC-070, from ci.yml and e2e.yml, including `playwright`. | Fixed |
+
+## Round 8 minor fixes
+
+
+**Changed TRDs:** 04, 05, 07, 08, 11, 12, 13, 15, 16, 17, 18, 24, 25. Only these now read Version 0.9, each with a "0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (...)" row.
+
+**IDs:** TST-189 is new. D-73 is amended in its text; its D-xx columns are left as they were, as instructed. Next free IDs: D-75, FE-206, ENV-055, CIC-038, TST-190.
+
+## Verification
+
+**Tables (`r8fix.py`, `r8/tbl.py`).** `r8fix.py` escaped every `|` inside a code span in a table row outside fences: 11 rows in TRD 04, 05, 07, 08 and 17. The remaining row, UX-091, had its pipe in plain text inside a quoted template, so it was escaped by hand. `r8/tbl.py` counts the cells of each table row against its header. After the fixes it reports 0 rows and 0 escaped pipes outside tables or inside fences, and it still reports 0 after all later edits.
+
+**Vitest (`r8/vt3/`).** Set up with Vitest 2.1.9 and @vitest/coverage-v8 2.1.9 on Node 22, with `vitest.config.ts` using `coverage: { enabled: true, provider: "v8", thresholds: { lines: 80 }, exclude: [*.test.*, ...] }`:
+- `npm run test` (= `vitest run`) exits 0 and writes the v8 report.
+- `npm run test:coverage` (= `vitest run --coverage`) exits 0.
+- With a source file at 44 % line coverage, both commands exit 1 with "Coverage for lines (44.44%) does not meet global threshold (80%)".
+- `npm run test:coverage -- --coverage` reproduces "Expected a single value for option --coverage". This is why CI calls `test:coverage` with no extra flag.
+
+## Mechanical checks
+
+- **Requirement IDs:** no duplicate or dangling IDs. 2007 IDs are defined and referenced (TST-189 is new). The only script hits are the known artefacts: AC-DB-02a, the TRD 19 endpoint list and the E2E row names.
+- **Decisions:** D-01 to D-74 are all defined.
+- **Endpoints, columns and env vars:** they agree with TRD 19, 20 and 21; the leftover hits are the same as in round 7.
+- **CLI commands:** every `backend.cli` command used is in the TRD 15 §4.8 table, and `resolve-data-alert` now has its syntax.
+- **Text:** code fences are balanced in all 26 files. There is no TBD, TODO or lorem outside GIT-053.
+- **Old forms:** none of these remain: `tests/components`, `npm run test -- --coverage`, or "prettier in `npm run lint`".
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R8-01 | Minor | TRD 04, 05, 07, 08, 11 and 17. Escaped `\|` in FE-082, API-065, API-129, the TRD 07 DTO rows `ResidentInfo`, `DeviceAssignment`, `EpochSummary`, `RunWarning` and `DataAlert`, BSC-015, BSC-016, UX-091 and LOG-023. The table checker now reports 0 broken rows across all TRDs. | Fixed |
+| R8-02 | Minor | TRD 04, 13 and 16. The `test` script is `vitest run`, and the new `test:coverage` script is `vitest run --coverage`. FE-180 defines the `vitest.config.ts` coverage block: `enabled`, the v8 provider, lcov/html/text reporters, the include and exclude lists (`*.test.tsx` excluded) and `thresholds.lines` 80. `@vitest/coverage-v8` 2.x (same major as vitest) was added to TRD 04 §4.1. The CI `frontend` job (job table, ci.yml step, CIC-017) and FE-202 now use `npm run test:coverage`. TST-142 and the TRD 13 tools line were aligned. Verified in `r8/vt3`. | Fixed |
+| R8-03 | Minor | TRD 04, 16 and 18. The `format:check` script (`prettier --check .`) is now its own step in the CI `frontend` job, after typecheck (ci.yml, job table, CIC-017), and the TRD 16 §6 script list now includes `format`, `format:check` and `test:coverage`. GIT-042 now names `npm run format:check`. `eslint-config-prettier` 9.x was added to TRD 04 §4.1 and to FE-200, extended last. | Fixed |
+| R8-04 | Minor | TRD 04 and 13. Component tests are co-located as `components/<Name>/<Name>.test.tsx`, and page tests live in `frontend/tests/pages/`. Aligned: the TRD 04 tree (adds `tests/pages/`), the §4.14 table (adds a Page row), TRD 13 §4.2 tree, TST-003 and TST-010. The FE-180 coverage measurement excludes test files. | Fixed |
+| R8-05 | Minor | TRD 04, 13 and 24. `playwright.isolated.config.ts` sets `grep: /@isolated/`, `workers: 1` and `fullyParallel: false`. Its single spec file `tests/e2e/isolated.spec.ts` runs E2E-15, TST-187 and E2E-19 in that order. This is written into TST-004, D-73 (amended text), the TRD 04 `test:e2e:isolated` row and the TRD 13 tree. The TRD 04 E2E row now uses the D-74 wording: one API login per role in `globalSetup` per invocation, with `isolated-setup.ts` for the isolated run. The TRD 04 tree now lists `playwright.isolated.config.ts` and the e2e setup files. | Fixed |
+| R8-06 | Minor | TRD 12, 13 and 15. The TRD 15 §4.8 row now defines `resolve-data-alert --id <uuid> --reason "<text>"`: admin/operator only, run with DATABASE_URL (`echowell_app`, PGS-021). It resolves only an open `review_flagged_data_problem` alert, and refuses with exit 2 and no change otherwise. It audits `data_alert.resolved`. The TRD 12 vocabulary details for that action are now `{alert_id, kind, reason, operator}`. New TST-189 tests FR-297, including that the pipeline does not resolve the alert (CUS-040), and the exit-2 refusals. | Fixed |
+| Observation | — | TRD 25. The Phase 3 outputs now say the pytest configuration is in `pyproject.toml` (`[tool.pytest.ini_options]` with the TST-006 markers) and that there is no `pytest.ini`. | Fixed |

@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -278,7 +278,7 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 | UX-088 | Below the chart a caption in IBM Plex Mono 12px secondary shall read "Set-aside, quarantined and missed days leave the tally unchanged." | Must | SRC-10, contract §11 | T |
 | UX-089 | When the resident's baseline is forming, the chart area shall be replaced by the text "No tally yet. The tally starts after the baseline is complete (<n> of <N> usable check-ins so far)." | Must | SRC-12, BR-09 | T |
 | UX-090 | A disclosure "Show tally as a table" below the chart shall reveal a table with columns "Date", "Tally", "Alarm" listing every point shown in the chart, where "Alarm" reads "—" (`off`), "▲ Alarm rings (first crossing)" (`rings`) or "▲ Alarm on" (`on`). | Must | WCAG 1.1.1, contract §11 | T |
-| UX-091 | The chart shall have a text alternative (`role="img"` `aria-label`) of the form "Running change tally for <R> from <first Mon D> to <last Mon D>. Baseline <range>. Alarm line <h>. <Crossed the alarm line on <Mon D>; | Below the alarm line throughout;> now <tally>." e.g. "Running change tally for R09 from Oct 17 to Oct 30. Baseline Oct 1–16. Alarm line 5.0. Crossed the alarm line on Oct 21; now 26.8." | Must | WCAG 1.1.1 | T |
+| UX-091 | The chart shall have a text alternative (`role="img"` `aria-label`) of the form "Running change tally for <R> from <first Mon D> to <last Mon D>. Baseline <range>. Alarm line <h>. <Crossed the alarm line on <Mon D>; \| Below the alarm line throughout;> now <tally>." e.g. "Running change tally for R09 from Oct 17 to Oct 30. Baseline Oct 1–16. Alarm line 5.0. Crossed the alarm line on Oct 21; now 26.8." | Must | WCAG 1.1.1 | T |
 | UX-092 | When the current epoch is greater than 1, a line above the chart (14px secondary) shall read "Showing the current device period since <Mon D>. Earlier periods are not scored against this baseline." | Must | BR-08 | T |
 
 #### 4.5.4 "The 7 measurements behind the score"
@@ -868,3 +868,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | 0.1 (rev. b) | 18 Oct 2026 | Contract §19–§21: Alert review (§4.17) and Analytics (§4.18) from SRC-18/19; unified navigation (R2, UX-016 retired); review model (R5: UX-121–UX-127, UX-130, UX-136–UX-138); watched-since/last check-in (R9, R10); admin runs list, legacy rejection, CLI-managed entities (R4, R12); problem+json field errors and degraded health (R19); as-of (R21); tokens (R13) | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-09, F-10, F-11, F-12, F-24, F-25, F-28, F-37) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |

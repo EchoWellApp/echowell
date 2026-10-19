@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -111,7 +111,7 @@ Example:
 | LOG-020 | Logs shall never contain passwords, password hashes, JWTs, API keys or their hashes, `Authorization`, `X-API-Key` or `Cookie` header values, JWT_SECRET, DATABASE_URL/DATABASE_MIGRATION_URL, SENTRY_DSN or any other secret. | Must | BR-16, TRD 12 | Test |
 | LOG-021 | Logs shall never contain request or response bodies; ingest logs shall contain only identifiers (`session_id`, `resident_code`, `device_id`, `ingest_batch_id`, `arrival_seq`) and validation error locations/messages, never feature values. | Must | BR-16, D-OWNER-3 | Test |
 | LOG-022 | Logs shall never contain e-mail addresses, names, staff note bodies or any personal data; users are identified by `user_id` UUID only, residents by study ID only. | Must | BR-16, contract §12 | Test |
-| LOG-023 | A redaction filter shall replace the value of any log field whose key matches (case-insensitive) `password|secret|token|authorization|api_key|apikey|cookie|dsn|database_url|body|note` with `"[REDACTED]"` before formatting. | Must | BR-16 | Test |
+| LOG-023 | A redaction filter shall replace the value of any log field whose key matches (case-insensitive) `password\|secret\|token\|authorization\|api_key\|apikey\|cookie\|dsn\|database_url\|body\|note` with `"[REDACTED]"` before formatting. | Must | BR-16 | Test |
 | LOG-024 | A redaction filter shall replace any substring of `msg` or `exc_message` matching a connection URL with credentials (`\w+://[^:\s]+:[^@\s]+@`) or a bearer token (`Bearer\s+\S+`) with `[REDACTED]`. | Must | BR-16 | Test |
 | LOG-025 | The system shall never log audio or audio-derived waveforms; no audio exists in EchoWell (contract §2). | Must | BR-01, contract §2 | Inspection |
 
@@ -364,3 +364,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-18, F-39, F-41) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-07) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |

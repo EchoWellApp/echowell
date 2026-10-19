@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -183,7 +183,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Item | Content |
 |---|---|
 | Inputs | TRD 01, 16, 18, 21; docs/design/ |
-| Outputs | `frontend/` Next.js 14.2 App Router scaffold (TypeScript, ESLint, Prettier, Vitest, Playwright config); `backend/` FastAPI app wiring (`main.py`, `api/`, `models/`, `schemas/`, `services/`, `repositories/`, `core/`, `alembic/`); `analytics/` modules incl. new `speaker_screen.py`, `day_ledger.py`, `robust_stats.py`, `data_alerts.py`, `aggregates.py`, `pipeline.py`, `config.py` (module list of TRD 07 §4.2); `backend/jobs/nightly_run.py` and `backend/cli.py` entry points; `tests/unit/`, `tests/integration/`, `tests/validation/`, `tests/fixtures/`, `conftest.py`, `pytest.ini` or `pyproject.toml` test config; Dockerfiles; `docker-compose.yml` (postgres:16, backend :8000, frontend :3000); `.env.example` files; `.github/workflows/ci.yml` |
+| Outputs | `frontend/` Next.js 14.2 App Router scaffold (TypeScript, ESLint, Prettier, Vitest, Playwright config); `backend/` FastAPI app wiring (`main.py`, `api/`, `models/`, `schemas/`, `services/`, `repositories/`, `core/`, `alembic/`); `analytics/` modules incl. new `speaker_screen.py`, `day_ledger.py`, `robust_stats.py`, `data_alerts.py`, `aggregates.py`, `pipeline.py`, `config.py` (module list of TRD 07 §4.2); `backend/jobs/nightly_run.py` and `backend/cli.py` entry points; `tests/unit/`, `tests/integration/`, `tests/validation/`, `tests/fixtures/`, `conftest.py`, `pyproject.toml` test config (`[tool.pytest.ini_options]` with the TRD 13 TST-006 markers; no `pytest.ini`); Dockerfiles; `docker-compose.yml` (postgres:16, backend :8000, frontend :3000); `.env.example` files; `.github/workflows/ci.yml` |
 | Definition of done | App starts locally; `GET /api/v1/health` returns 200; existing skeleton files kept (AGT-010); `backend/requirements.txt` replaces `psycopg2-binary` with `psycopg[binary]` 3.x and pins all versions (4.7; D-53, closes the DSC-13 driver gap); startup guard refuses `PIPELINE_PROFILE=test_v0_1` with `APP_ENV=production`; no business logic |
 | Required tests | Health endpoint smoke test; startup-guard test (AGT-015); frontend renders `/login` |
 | Commands | `docker compose up -d`; `pytest -q`; `cd frontend && npm ci && npm run lint && npm run build && npm run test` |
@@ -372,3 +372,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-09) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-03) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (observation: pytest configuration in pyproject.toml) | — |

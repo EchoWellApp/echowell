@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -83,8 +83,8 @@ flowchart TB
 |---|---|---|---|---|
 | TST-001 | Backend and analytics tests shall run with pytest 8.x on Python 3.12, with pytest-cov for coverage and httpx-based FastAPI `TestClient` for API calls. | Must | SRC-01, BR-17 | Inspection |
 | TST-002 | Integration tests shall run against PostgreSQL 16 started by testcontainers-python (image `postgres:16`); when `DATABASE_URL` is set and `APP_ENV=test`, the suite shall use that database instead (CI service container or docker-compose). SQLite shall not be used for any test that exercises SQL. | Must | SRC-01, TRD 06 | Inspection |
-| TST-003 | Frontend unit, component and page tests shall use Vitest with React Testing Library and jsdom, located under `frontend/tests/`. | Must | SRC-01, SRC-17 | Inspection |
-| TST-004 | E2E tests shall use Playwright, located under `frontend/tests/e2e/` with `frontend/playwright.config.ts`, and shall run against the docker-compose `demo` profile stack (postgres:16, backend :8000, `frontend-prod` :3001; TRD 16 CIC-030), with `globalSetup` `frontend/tests/e2e/global-setup.ts` (D-73) and `grepInvert: /@isolated/`, and a second config `frontend/playwright.isolated.config.ts` for the `@isolated` run whose `globalSetup` `frontend/tests/e2e/isolated-setup.ts` only logs in once per role (no reset or seed, D-74); E2E runs use only the `frontend/package.json` scripts `test:e2e:readonly`, `test:e2e:mutating` (`--workers=1`) and `test:e2e:isolated` (TRD 24 D-73). | Must | SRC-01, SRC-17 | Inspection |
+| TST-003 | Frontend unit, component and page tests shall use Vitest with React Testing Library and jsdom: unit tests in `frontend/tests/unit/`, page tests in `frontend/tests/pages/`, and component tests co-located as `frontend/components/<Name>/<Name>.test.tsx` (TRD 04 §4.2, §4.8). | Must | SRC-01, SRC-17 | Inspection |
+| TST-004 | E2E tests shall use Playwright, located under `frontend/tests/e2e/` with `frontend/playwright.config.ts`, and shall run against the docker-compose `demo` profile stack (postgres:16, backend :8000, `frontend-prod` :3001; TRD 16 CIC-030), with `globalSetup` `frontend/tests/e2e/global-setup.ts` (D-73) and `grepInvert: /@isolated/`, and a second config `frontend/playwright.isolated.config.ts` for the `@isolated` run whose `globalSetup` `frontend/tests/e2e/isolated-setup.ts` only logs in once per role (no reset or seed, D-74) and which sets `grep: /@isolated/`, `workers: 1` and `fullyParallel: false` for the single serial file `frontend/tests/e2e/isolated.spec.ts` (E2E-15, TST-187, E2E-19 in this order); E2E runs use only the `frontend/package.json` scripts `test:e2e:readonly`, `test:e2e:mutating` (`--workers=1`) and `test:e2e:isolated` (TRD 24 D-73). | Must | SRC-01, SRC-17 | Inspection |
 | TST-005 | Unit and integration tests (all pytest suites and Vitest) shall be deterministic: no dependence on wall-clock time (clock frozen or injected), on network access outside the test stack, or on test execution order. E2E scenarios may depend on the documented TRD 24 D-73 order and on the current time only where stated (E2E-15, TST-187, E2E-19). | Must | BR-15 | Test (`pytest -p randomly` in the nightly `nightly-validation` job, TRD 16 CIC-037) |
 | TST-006 | This is the single list of pytest markers: the level markers `unit`, `integration`, `contract`, `validation`, `security`, `performance`, `smoke` and the additional markers `slow`, `authenticated` (smoke tests that log in, staging only; production runs `-m "smoke and not authenticated"`, TRD 16 §4.5), `budget` (PR-scope performance budget, TRD 16 CIC-036) and `req` (requirement trace, TST-013); all shall be registered in `pyproject.toml` `[tool.pytest.ini_options]` with `--strict-markers`, and every test module shall carry exactly one level marker. TRD 16 refers to this list. | Must | TRD 16 | Inspection |
 | TST-007 | Tests shall never require or read audio files; no fixture in the repository shall have an audio media type (`.wav`, `.mp3`, `.flac`, `.ogg`, `.m4a`). | Must | BR-16, SRC-14 Part B | Test (repository scan test) |
@@ -122,14 +122,15 @@ tests/
 frontend/
   tests/
     unit/                         lib/ helpers (formatters, sort rules, date formatting)
-    components/                   one test file per component
     pages/                        one test file per route, API mocked with MSW 2.x
-    e2e/                          Playwright specs E2E-01 .. E2E-21 (§4.10), a11y.spec.ts
+    e2e/                          Playwright specs E2E-01 .. E2E-21 (§4.10), a11y.spec.ts, mutating.spec.ts (D-73 group),
+                                  isolated.spec.ts (E2E-15, TST-187, E2E-19 in this order)
+  components/<Name>/<Name>.test.tsx   component tests, co-located with each component (TRD 04 §4.8)
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-010 | The test tree shall follow the layout in §4.2; a test file shall be named `test_<subject>.py` (Python) or `<Subject>.test.tsx` / `<subject>.spec.ts` (frontend/E2E). | Must | SRC-17 Phase 8 | Inspection |
+| TST-010 | The test tree shall follow the layout in §4.2; a test file shall be named `test_<subject>.py` (Python) or `<Subject>.test.tsx` / `<subject>.spec.ts` (frontend/E2E); frontend component tests are co-located (`frontend/components/<Name>/<Name>.test.tsx`), all other frontend tests live under `frontend/tests/`. | Must | SRC-17 Phase 8 | Inspection |
 | TST-011 | Each analytics module listed in the contract layout (`duplicate_detection`, `quality_screening`, `speaker_screen`, `epoch_detection`, `morning_offset`, `baseline_builder`, `zscore_calculator`, `composite_score`, `cusum_engine`, `alert_generator`, `day_ledger`, `robust_stats`, `data_alerts`, `aggregates`, `pipeline`, `config`; the module list of TRD 07 §4.2) shall have a matching `tests/unit/analytics/test_<module>.py`. | Must | TRD 07 | Test (meta-test lists modules and asserts files exist) |
 | TST-012 | Test function names shall include the test-case ID from §4.3 or TRD 14 where one exists (e.g. `test_rob_03_even_count_median`, `test_vc_r09_first_alarm`). | Should | Traceability | Inspection |
 | TST-013 | Every Must requirement in TRDs 02, 04, 05, 07–12 shall be referenced by at least one test via a `@pytest.mark.req("<ID>")` marker (Python) or a `// req: <ID>` comment (frontend), or be listed with its inspection evidence in `docs/reports/traceability_inspections.md`; a script `tests/trace_report.py` shall list requirement IDs without a test or inspection and CI shall publish the report (TRD 03 NFR-111). | Must | SRC-17 audit phases | Analysis |
@@ -295,6 +296,7 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 | TST-057 | A second review on the same alert shall create a second `alert_reviews` row; `GET /api/v1/alerts/{id}/reviews` shall return both, newest first. | Must | contract §19 | Test |
 | TST-058 | A review without `outcome`, with an outcome outside {no_concern, known_cause, referred, data_problem}, with an explanation code outside the configured `review_explanations`, or with a note longer than 2000 characters shall return 422 and create no row. | Must | contract §19 | Test |
 | TST-059 | A review with outcome `data_problem` shall create (or link to an open) data alert of kind `review_flagged_data_problem` for that resident. | Must | contract §19 | Test |
+| TST-189 | An integration test (`tests/integration/test_resolve_data_alert.py`) shall create a `review_flagged_data_problem` data alert through a review with outcome `data_problem`, run a full pipeline and assert it stays `open` (FR-297, CUS-040), then run `python -m backend.cli resolve-data-alert --id <uuid> --reason "checked"` and assert status `resolved`, `resolved_at` set and one `audit_logs` row `data_alert.resolved` with `alert_id` and `reason`; the same command for a data alert of another kind, an unknown id or an already resolved alert shall exit 2 without any change. | Must | FR-297, BR-13 | Test |
 | TST-065 | `POST /api/v1/alerts/{id}/snooze` with no body shall set `alerts.snoozed_until` = now + 24 h (`alert_snooze_hours`) and `snoozed_by` = caller, with the application clock frozen by `time-machine` (the API computes now in Python, not with the database `now()`, TRD 23 DME-022); with `{hours: 4}` it shall be now + 4 h; status, tally and alarm state shall be unchanged; the integration test `tests/integration/test_alert_snooze.py` asserts the stored and returned `snoozed_until` exactly, and after `time-machine` moves the application clock 24 h + 1 s forward asserts that `snoozed_until` < now (the API exposes only `snoozed_until`); the return of the "Not reviewed" emphasis is a client-side comparison tested by TRD 04 FE-205 (Vitest, fake timers); E2E-19 does not advance any clock. | Must | contract §19 | Test |
 | TST-066 | `POST /api/v1/alerts/{id}/acknowledge` shall not exist (404 or 405). | Must | contract R5 | Test |
 | TST-067 | A full rebuild after a review and a snooze shall keep the alert row (natural key epoch_id, session_id), its reviews, status `acknowledged` and `snoozed_until`. | Must | contract R15 | Test |
@@ -450,7 +452,7 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 |---|---|---|---|---|
 | TST-140 | Line coverage of `analytics/` measured by unit + validation tests shall be ≥ 95 % (`--cov=analytics --cov-fail-under=95`). | Must | BR-15 | Test |
 | TST-141 | Line coverage of `backend/` measured by unit + integration + contract + security tests shall be ≥ 85 %. | Must | TRD 05 | Test |
-| TST-142 | Line coverage of `frontend/` (app/, components/, lib/, services/) measured by Vitest (v8 provider) shall be ≥ 80 %, configured as `coverage.thresholds.lines: 80`. | Must | TRD 04 | Test |
+| TST-142 | Line coverage of `frontend/` (app/, components/, lib/, services/) measured by Vitest (v8 provider) shall be ≥ 80 %, configured in `vitest.config.ts` as `coverage.thresholds.lines: 80` with `@vitest/coverage-v8` 2.x and `*.test.tsx` excluded (TRD 04 FE-180). | Must | TRD 04 | Test |
 | TST-143 | Branch coverage of `analytics/` should be ≥ 90 %; it is reported on every PR and gates only after the first release. | Should | Quality | Analysis |
 | TST-144 | Coverage exclusions shall be limited to `if __name__ == "__main__":`, `TYPE_CHECKING` blocks and generated Alembic revision headers; each exclusion pragma shall carry a reason comment. | Must | Quality | Inspection |
 
@@ -532,7 +534,7 @@ Table 4.17-A MVP acceptance criteria.
 
 - TRD 14 for datasets, expected values, comparator and report format.
 - TRD 07/08/09/10 for function signatures under test; TRD 05/19 for endpoints and the OpenAPI document; TRD 04/11 for component names, labels and routes; TRD 12 for roles, tokens and rate limits; TRD 16 for CI job wiring; TRD 15 for environments and rollback.
-- Tools: Python test tools exactly as the `backend/requirements-dev.txt` list of TRD 16 §6 (pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x, pip-audit 2.x) plus pandas 2.2.x (runtime); Vitest 2.x, React Testing Library 16.x, MSW 2.x, Playwright 1.4x, @axe-core/playwright 4.x, Lighthouse CI 0.14.x, gitleaks 8.x.
+- Tools: Python test tools exactly as the `backend/requirements-dev.txt` list of TRD 16 §6 (pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x, pip-audit 2.x) plus pandas 2.2.x (runtime); Vitest 2.x with @vitest/coverage-v8 2.x, React Testing Library 16.x, MSW 2.x, Playwright 1.4x, @axe-core/playwright 4.x, Lighthouse CI 0.14.x, gitleaks 8.x.
 - Team 1 for one real feature record for the demo (SRC-15 step 3).
 
 ## 7. Acceptance Criteria
@@ -586,3 +588,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-02, R5-03, R5-04, R5-05) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-03, R6-04, R6-05, R6-07) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-01, R7-02, R7-05) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-04, R8-05, R8-06) | — |

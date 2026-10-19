@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -289,7 +289,7 @@ Audit events (`audit_logs.action`):
 | api_key.revoked | system | api_key / key id | {"name"} |
 | access.denied | user or api_key | route / route template | {"status": 403, "code"} |
 | alert.closed | system | alert / alert id | {"resident_code", "closed_reason"} (`epoch ended` or `superseded by rebuild`) |
-| data_alert.resolved | system | data_alert / data alert id | {"kind", "operator"} (CLI `resolve-data-alert`) |
+| data_alert.resolved | system | data_alert / data alert id | {"alert_id", "kind", "reason", "operator"} (CLI `resolve-data-alert --id <uuid> --reason "<text>"`, TRD 15 §4.8) |
 | resident.cohort_changed | system | resident / resident id | {"from", "to", "epoch_number"} (TRD 06 DB-025) |
 | resident.withdrawn | system | resident / resident id | {"resident_code", "withdrawn_on", "operator"} (TRD 06 DB-062) |
 | resident.purged | system | resident / resident id | {"resident_code", "row_counts"} (TRD 06 DB-064) |
@@ -458,3 +458,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-10, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |

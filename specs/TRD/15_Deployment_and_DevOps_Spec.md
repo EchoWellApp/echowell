@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -391,7 +391,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | `export-openapi` | Prints the OpenAPI JSON (used by CI, TRD 16). | all |
 | `reset-test-db` | As `echowell_migrator`: `alembic downgrade base` then `alembic upgrade head` (empty schema with triggers, grants and `config_parameters` seed; no TRUNCATE, no purge path); refused unless APP_ENV ∈ {local, test, staging} and PIPELINE_PROFILE = `test_v0_1`; on staging it runs only from the deploy-staging re-seed step (DEP-060 exception, TRD 06 DB-024, DB-029, TRD 24 D-71); the downgrade never drops the extensions (D-72) and the reset writes its `seed.reset` audit row after the upgrade. `seed test_v0_1 --reset` = `reset-test-db` + `seed test_v0_1`. | local, test, staging (re-seed step only) |
 | `purge-resident <code> --confirm <code>` | IRB-directed deletion of a withdrawn resident's data (TRD 06 DB-064, OQ-11). | all |
-| `resolve-data-alert` | Resolves a `review_flagged_data_problem` data alert (TRD 02 FR-297, TRD 23). | all |
+| `resolve-data-alert --id <uuid> --reason "<text>"` | Admin/operator only; runs with DATABASE_URL (role `echowell_app`, which may update `data_alerts`, TRD 20 PGS-021). Sets the open `review_flagged_data_problem` data alert `<uuid>` to `resolved` with `resolved_at` = now and writes one `audit_logs` row `data_alert.resolved` (`details`: alert_id, kind, reason, operator) in the same transaction; refuses with exit code 2 and no change for an unknown id, a data alert of any other kind or one that is not open (TRD 02 FR-297, TRD 23, TRD 13 TST-189). | all |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -590,3 +590,4 @@ Mapping from the current interim stack:
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-01, R4-02, R4-03, R4-06) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-10, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-02) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |

@@ -1,6 +1,6 @@
 # 08 Baseline and Scoring Algorithm Spec
 
-Document ID: ECHOWELL-TRD-08 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-08 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -132,8 +132,8 @@ screen_speakers(rows, config):
 | BSC-012 | The reference set for record r shall be the first min(N, k) usable sessions of the same epoch that precede r in time order, where k is the number of such sessions (i.e. `prior[:baseline_n]`, not the most recent N). | Must | SRC-04, SRC-03 Parameters | Test |
 | BSC-013 | The screen shall run only when the reference set contains at least `screen_min_n` (5) sessions; otherwise r becomes `usable` without a screen and `screen_detail` is null. | Must | SRC-03 Parameters | Test |
 | BSC-014 | For mean_f0_hz and each of the 7 composite features, z shall be `(x − median)/spread` from `robust(reference raw values, floor_f, 1.4826)`; if spread equals 0 the z value shall be 0.0. | Must | SRC-04 | Test |
-| BSC-015 | A record shall be quarantined if and only if `|z_F0| ≥ 4.0` AND the number of composite features with `|z| ≥ 3.0` is ≥ 2 (thresholds `screen_f0_z`, `screen_other_z`, `screen_other_count`). | Must | BR-05, SRC-03 Parameters | Test |
-| BSC-016 | The quarantine reason text shall be exactly `possible other speaker (F0 z=<z_F0 formatted with 2 decimals>; composite features with |z|>=3: <count>)`, using Python format `{:.2f}` on the float64 value (e.g. "-7.34"). | Must | SRC-03 Annotated_sessions | Test |
+| BSC-015 | A record shall be quarantined if and only if `\|z_F0\| ≥ 4.0` AND the number of composite features with `\|z\| ≥ 3.0` is ≥ 2 (thresholds `screen_f0_z`, `screen_other_z`, `screen_other_count`). | Must | BR-05, SRC-03 Parameters | Test |
+| BSC-016 | The quarantine reason text shall be exactly `possible other speaker (F0 z=<z_F0 formatted with 2 decimals>; composite features with \|z\|>=3: <count>)`, using Python format `{:.2f}` on the float64 value (e.g. "-7.34"). | Must | SRC-03 Annotated_sessions | Test |
 | BSC-017 | A quarantined record shall not be appended to the reference list, shall not enter a baseline and shall not be scored; a usable record shall be appended. | Must | BR-05, SRC-03 | Test |
 | BSC-018 | The screen shall run both before and after the baseline freezes; after freeze the reference is therefore the raw values of the N baseline sessions. | Must | SRC-03 Test_plan R05 | Test |
 | BSC-019 | `screen_detail` shall be stored in `processed_sessions.screen_detail` for every screened record (usable or quarantined) so staff and researchers can see the screen values. | Should | BR-05, BR-13 | Test |
@@ -335,3 +335,4 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03) | — |
+| 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
