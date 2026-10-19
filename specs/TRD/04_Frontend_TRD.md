@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -629,7 +629,9 @@ Fixtures in `frontend/tests/fixtures/ds07/` are JSON responses captured from the
 | `format` | `prettier --write .` |
 | `format:check` | `prettier --check .` |
 | `test` | `vitest run --coverage` |
-| `test:e2e` | `playwright test` |
+| `test:e2e:readonly` | `playwright test --grep-invert "@isolated\|@mutating"` (pass `--project=<browser>`; TRD 24 D-73) |
+| `test:e2e:mutating` | `playwright test --grep @mutating --workers=1` (pass `--project=<browser>`; run after `test:e2e:readonly`) |
+| `test:e2e:isolated` | `playwright test -c playwright.isolated.config.ts --project=chromium --workers=1` (needs the `echowell_demo` stack of TRD 16 `e2e.yml`) |
 | `gen:api` | `openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts` |
 | `fixtures:capture` | `node tests/fixtures/capture.mjs` (writes `tests/fixtures/ds07/`) |
 
@@ -741,3 +743,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-04, R2-14, R2-19) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-05) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-03, R6-05) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |

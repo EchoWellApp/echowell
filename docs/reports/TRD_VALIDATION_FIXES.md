@@ -229,3 +229,27 @@ New decision: D-73. D-71 and D-72 amended. New test: TST-188. Next free IDs: D-7
 | R6-06 | Minor | TRD 20. PGS-016 now verifies in CI job `backend-test`. | Fixed |
 | R6-07 | Minor | TRD 13, 14 and 16. New CIC-037 adds a job `nightly-validation` to `e2e.yml`, run on the schedule and on manual dispatch only. It uses the backend-test service and setup, runs `pytest -p randomly` across all suites, and runs `tests/validation/robustness.py` as an informational step (`continue-on-error`). It is not a required check, and failures open the `ci-failure` issue as in CIC-033. The job is in the YAML outline and the §4.3 trigger text. CIC-070 now names `performance`, `lighthouse` and `nightly-validation` as not required. CIC-112 covers all `e2e.yml` jobs, and an artifact row was added. pytest-randomly 3.x was added to requirements-dev and to the TRD 13 tools list. `backend-test` uses `-p no:randomly` so pull-request order stays fixed. TST-151, TST-084 and TDV-083 point to CIC-037. | Fixed |
 | R6-08 | Minor | TRD 03 and 24. The D-73 TRD column now reads 03, 04, 05, 13, 15, 16, 25. D-71's sources gained "round 5 R5-01", and its TRDs gained 05. The TRD 24 0.6 row gained R5-03 and R5-04. The TRD 03 0.6 row gained R5-02. | Fixed |
+
+## Round 7 fixes
+
+
+**Changed TRDs:** 04, 06, 12, 13, 16, 18, 21, 24, 25. Only these now read Version 0.8, each with a "0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (...)" row.
+
+**IDs:** none new. D-73 and D-74 were amended. The next free IDs are unchanged: D-75, FE-206, ENV-055, CIC-038, TST-189.
+
+## Mechanical checks
+
+- **Requirement IDs:** no duplicate or dangling requirement IDs. 2006 IDs are defined and referenced. The only script hits are the known artefacts: AC-DB-02a, the TRD 19 endpoint list and the E2E row names.
+- **Decisions:** D-70 to D-74 are all defined. The TRD columns of D-73 and D-74 still match the TRDs that cite them (D-73 also lists 03 and D-74 also lists 18, as decided in round 6).
+- **Cross-references:** endpoints, `table.column` references and env vars agree with TRD 19, 20 and 21. The leftover hits are the same as in round 6.
+- **Text hygiene:** code fences are balanced in all 26 files. There is no TBD, TODO or lorem outside GIT-053.
+- **Leftovers:** no `backend/db.py`, bare `test:e2e` or plain `npx playwright test` remains anywhere.
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R7-01 | Major | TRD 13, 16 and 24. `playwright.isolated.config.ts` now has its own `globalSetup`, `frontend/tests/e2e/isolated-setup.ts`. It never resets or seeds, because e2e.yml has already seeded `echowell_demo`. It logs in once per role against the `echowell_demo` backend and writes `frontend/tests/e2e/.auth/isolated-<role>.json`. E2E-15, TST-187 and E2E-19 use these files through the same role fixture. Updated: D-74(a) (amended), D-73, TST-004, the TRD 13 §4.10 preamble, the Table 4.10-A note and §8, CIC-030, and the e2e.yml isolated step and comment. The existing `.auth/` gitignore entry in TRD 18 covers the new files. | Fixed |
+| R7-02 | Minor | TRD 04, 12, 13, 16, 21, 24 and 25. `frontend/package.json` now defines exactly `test:e2e:readonly` (`--grep-invert "@isolated\|@mutating"`), `test:e2e:mutating` (`--grep @mutating --workers=1`) and `test:e2e:isolated` (the isolated config, Chromium, one worker). There is no bare `test:e2e`. `playwright.config.ts` sets `grepInvert: /@isolated/`. The scripts are in the TRD 04 table, TST-004, D-73 (amended), the e2e.yml loop and isolated step, CIC-030 and TRD 16 §6. TRD 25 Phase 8 and Phase 11 run readonly then mutating in Chromium, and the isolated run stays in CI. Also fixed: pipes inside code spans in table cells were escaped (TRD 04 scripts table, D-73, SEC-020 and the TRD 21 RATE_LIMIT_LOGIN validation cell), so the cells no longer split. | Fixed |
+| R7-03 | Minor | TRD 21. ENV-002: exit code 1 is the single code for every settings-validation failure, in the backend, the nightly job and every CLI command. Exit 2 is reserved for command-specific CLI refusals (DEP-070, the §4.8 table, DB-024, DB-057), which are checked before settings validation. ENV-041 and the SEED_* row were changed from exit 2 to exit 1. | Fixed |
+| R7-04 | Minor | TRD 06. DB-021 now places the helper at `backend/core/db.py::advisory_key`, matching the TRD 05 module tree and API-125. | Fixed |
+| R7-05 | Minor | TRD 13 and 16. TST-006 is now the single marker list: `unit`, `integration`, `contract`, `validation`, `security`, `performance` and `smoke` as level markers, plus `slow`, `authenticated`, `budget` and `req`. They are registered with `--strict-markers`, and the TRD 16 §6 pyproject entry refers to it. TRD 16 §6 is now the single dev-requirements list: ruff 0.6.x+, mypy 1.11+, pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x and pip-audit 2.x. The TRD 13 §6 tools line refers to it. | Fixed |
+| R7-06 | Minor | TRD 18. The rulesets note now says the required check names are the job IDs listed in TRD 16 CIC-070, from ci.yml and e2e.yml, including `playwright`. | Fixed |

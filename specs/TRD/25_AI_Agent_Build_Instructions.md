@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -241,7 +241,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Outputs | Pages `/login`, `/residents` (with Devices panel `#devices`), `/residents/[residentCode]`, `/admissions` (experimental banner), `/alerts` (Alert review), `/analytics` (Analytics, researcher and admin), `/admin`; `frontend/lib/wording.ts` (D-18); components, `frontend/services/api.ts` client; loading, error and empty states; `docs/reports/FRONTEND_IMPLEMENTATION_REPORT.md` |
 | Definition of done | With test data as of Oct 30 the overview tiles read 2 / 7 / 1 / 19; R09 detail shows the alarm line labelled "alarm line 5.0", grey baseline bars and accent post-freeze bars; 7 measurement cards plus the "12 other measurements" card; Alert review shows R09 (since Oct 21, open 9 days, tally 26.8) and R10 (since Oct 24, open 6 days, tally 13.4) and the four data alerts; Analytics shows 281 of 300 received (94%), 267 of 300 used (89%), baselines 9 of 10, alarms 2, and the alarm timing table (R09 0 days, R10 7 days); CUSUM bars follow D-30; chrome follows D-31; OQ-05 note and OQ-12 marker present; frontend line coverage ≥ 80% (D-39); WCAG 2.1 AA (status never by colour alone, chart has a text table); no mock values in production builds |
 | Required tests | Vitest + React Testing Library component and page tests (sort orders, badges, 30-day counts, empty states); Playwright E2E: login → overview → R09 detail → add note → "Mark as reviewed" opens the review form → save review → Alerts badge shows "Reviewed" and the tally is unchanged (tagged `@mutating`, the D-73 group E2E-18 → E2E-09/FE-187 → FE-193 snooze step, run after all read-only scenarios on a freshly re-seeded database, TRD 13 §4.10, TRD 24 D-73); researcher opens `/analytics`; clinician is refused `/analytics` |
-| Commands | `cd frontend && npm run lint && npm run build && npm run test && npx playwright test` |
+| Commands | `cd frontend && npm run lint && npm run build && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium` (the `@isolated` scenarios run in CI via `npm run test:e2e:isolated`, TRD 16 `e2e.yml`, TRD 24 D-73) |
 | Pitfalls | Natural sort of resident codes; never display duplicates; dates shown in facility local time; footer "No audio is stored or played here — only extracted voice measurements." |
 
 #### Phase 9 — Deployment configuration (Implement_Feature_Batches.md Phase 14A)
@@ -274,7 +274,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Outputs | `docs/reports/FINAL_IMPLEMENTATION_AUDIT.md` (ends "READY FOR DEMO" or "NOT READY FOR DEMO" with justification), `docs/reports/TRD_Implementation_Audit.md` (pass/fail per requirement), `docs/reports/DOCUMENTATION_COMPLETENESS_AUDIT.md`, `docs/reports/UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` |
 | Definition of done | Every TRD requirement has pass/fail with evidence; every AC has a linked test; grep checks of AGT-004, AGT-007, AGT-018, AGT-019 recorded; open OQs listed with interim decisions |
 | Required tests | Full suite: `pytest -q`; frontend tests and E2E |
-| Commands | `pytest -q`; `cd frontend && npm run test && npx playwright test`; grep commands from 4.3 |
+| Commands | `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium`; grep commands from 4.3 |
 | Pitfalls | An audit does not modify code; it records findings. |
 
 #### Phase 12 — Backlog (Generate_Backlog.md Prompts 1–3; Checklist Sprint 7)
@@ -371,3 +371,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-03) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-09) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-03) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |

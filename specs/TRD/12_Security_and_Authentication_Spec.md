@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -107,7 +107,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> [--scope <ingest:write|pipeline:run>]… [--device <device_code>]`; `--scope` is optional and repeatable, and defaults to `ingest:write` when omitted (this requirement is the single definition of the syntax; TRD 05 and TRD 15 §4.8 refer to it; the D-71 seed key `test-ingest` carries both scopes). | Must | contract §12, §21 R18 | Test |
+| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> [--scope <ingest:write\|pipeline:run>]… [--device <device_code>]`; `--scope` is optional and repeatable, and defaults to `ingest:write` when omitted (this requirement is the single definition of the syntax; TRD 05 and TRD 15 §4.8 refer to it; the D-71 seed key `test-ingest` carries both scopes). | Must | contract §12, §21 R18 | Test |
 | SEC-021 | Only the SHA-256 hex digest of the key shall be stored (`api_keys.key_hash`, unique); the plaintext key shall be printed once by `create-api-key` and never stored, logged or retrievable; the seeded test key comes from SEED_INGEST_API_KEY and is never printed (TRD 06 DB-057). | Must | contract §12 | Test |
 | SEC-022 | Every API key shall carry one or more scopes from the set {`ingest:write` (devices, test harnesses), `pipeline:run` (the AWS EventBridge scheduler calling `POST /pipeline/run`)} (non-empty subset, TRD 20 `api_keys_scopes_ck`); a key used on an endpoint outside its scope receives 403 `FORBIDDEN`. No other scopes exist in the MVP. | Must | contract §9, §21 R18 | Test |
 | SEC-023 | A key used by a device in a deployment shall be bound to that device (`api_keys.device_id`), and a record from another device shall be refused with 403 `DEVICE_KEY_MISMATCH` (TRD 05 API-040). Unbound keys are permitted only for test harnesses and the seed/CI pipeline. | Must | T-01 | Test |
@@ -457,3 +457,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-06, R4-07) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-10, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |

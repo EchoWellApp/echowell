@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -47,7 +47,7 @@ the AWS target.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-001 | All backend configuration shall be read through one `Settings` class (pydantic-settings 2.x `BaseSettings`) in `backend/core/config.py`, instantiated once at startup and injected via a cached `get_settings()` dependency; no other module shall read `os.environ` directly. | Must | TRD 01 | Inspection |
-| ENV-002 | Settings validation shall run before the application accepts traffic and before Alembic migrations run; on any validation failure the process shall exit with code 1 and log one CRITICAL `startup_config_invalid` record listing the invalid variable names and the rule violated, never their values (TRD 17 LOG-072). | Must | TRD 17 | Test |
+| ENV-002 | Settings validation shall run before the application accepts traffic and before Alembic migrations run; on any validation failure the process shall exit with code 1 and log one CRITICAL `startup_config_invalid` record listing the invalid variable names and the rule violated, never their values (TRD 17 LOG-072). Exit code 1 is the single code for every settings-validation failure, in the backend, the nightly job and every CLI command; exit code 2 is reserved for the command-specific refusals of operator CLI commands (TRD 15 DEP-070 and the §4.8 table, TRD 06 DB-024 and DB-057), which are checked before settings validation. | Must | TRD 17 | Test |
 | ENV-003 | Variable names shall be upper-case and exactly as listed in this TRD; unknown variables beginning with `ECHOWELL_` shall be rejected (typo protection) and other unknown variables ignored. | Should | contract §13 | Test |
 | ENV-004 | Secret variables (marked "secret" in §4.2) shall be typed `pydantic.SecretStr` so they are masked in `repr()`, logs and error messages. | Must | BR-16, TRD 17 LOG-020 | Test |
 | ENV-005 | Secrets shall be stored only in: local `.env` (gitignored, local values only), Railway service variables (interim staging/production), GitHub Actions `staging` environment secrets (TRD 16 §4.9), and AWS Secrets Manager (AWS target). They shall never be set in `netlify.toml`, `railway.toml`, Dockerfiles, `docker-compose.yml` or any committed file. | Must | BR-16, contract §12 | Inspection |
@@ -69,7 +69,7 @@ the AWS target.
 | `LOG_LEVEL` | Minimum log level | No | `INFO` | `INFO` | all | No | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `LOG_FORMAT` | Log output format | No | `json` | `json` | all | No | `json` or `console`; `console` refused in `staging`/`production` |
 | `SENTRY_DSN` | Sentry project DSN; empty disables Sentry | No | empty | `https://****@o0.ingest.us.sentry.io/0` | staging, production | Yes | empty or https URL |
-| `RATE_LIMIT_LOGIN` | Login rate limit per client IP | No | `5/minute` | `5/minute` (E2E stack `60/minute`, D-74) | all | No | `<int>/<second|minute|hour|day>`; must be `5/minute` when APP_ENV is `staging` or `production` (ENV-054) |
+| `RATE_LIMIT_LOGIN` | Login rate limit per client IP | No | `5/minute` | `5/minute` (E2E stack `60/minute`, D-74) | all | No | `<int>/<second\|minute\|hour\|day>`; must be `5/minute` when APP_ENV is `staging` or `production` (ENV-054) |
 | `RATE_LIMIT_INGEST` | Ingest rate limit per API key | No | `600/minute` | `600/minute` | all | No | same format |
 | `GIT_SHA` | Deployed commit SHA, reported as `version` by health | No | `unknown` | `3f9c2ab…` (40 hex) | all | No | `unknown` or 7–40 hex chars; set by platform (Railway: `${{RAILWAY_GIT_COMMIT_SHA}}`; Compose: `git rev-parse HEAD` via `.env`; App Runner: image build arg) |
 | `DATA_SOURCE_LABEL` | Text shown in header "Showing <label> as of …" | No | `pipeline test data v0.1` | `demo data (synthetic)` | all | No | 1–60 chars |
@@ -82,7 +82,7 @@ the AWS target.
 | `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes where PIPELINE_PROFILE=`test_v0_1` (local, staging, test); not set in production and on AWS (TRD 12 SEC-116; the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
-| `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@example.com`, `clinician@example.com`, `researcher@example.com` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: the `local-dev-only-change-me` placeholders of `.env.development.example` (ENV-041); CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 2 when any is non-empty and APP_ENV=`production` |
+| `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@example.com`, `clinician@example.com`, `researcher@example.com` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: the `local-dev-only-change-me` placeholders of `.env.development.example` (ENV-041); CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 1 (settings validation, ENV-002) when any is non-empty and APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -217,7 +217,7 @@ NEXT_PUBLIC_APP_ENV=production
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-040 | The three template files shall exist at the repository root with the content above (`.env.example` being the union of all variables with comments) and shall be kept in sync with this TRD; a unit test shall assert that every field of `Settings` appears in `.env.example`. | Must | SRC-17 Phase 14A | Test |
-| ENV-041 | `JWT_SECRET`, the SEED_* values and the database passwords in `.env.development.example`, `docker-compose.yml` and `ci.yml` shall be obviously fake placeholders following `local-dev-only-*` (local, e.g. `local-dev-only-change-me`) or `ci-only-*` (CI); the backend and every CLI command shall refuse to start (exit code 2) when JWT_SECRET, any SEED_* value or the password of DATABASE_URL, DATABASE_MIGRATION_URL or DATABASE_READONLY_URL contains `local-dev-only` or `ci-only` and APP_ENV is `staging` or `production` (TRD 06 DB-057, TRD 12 SEC-050). | Must | BR-16 | Test |
+| ENV-041 | `JWT_SECRET`, the SEED_* values and the database passwords in `.env.development.example`, `docker-compose.yml` and `ci.yml` shall be obviously fake placeholders following `local-dev-only-*` (local, e.g. `local-dev-only-change-me`) or `ci-only-*` (CI); the backend and every CLI command shall refuse to start (settings validation, exit code 1, ENV-002) when JWT_SECRET, any SEED_* value or the password of DATABASE_URL, DATABASE_MIGRATION_URL or DATABASE_READONLY_URL contains `local-dev-only` or `ci-only` and APP_ENV is `staging` or `production` (TRD 06 DB-057, TRD 12 SEC-050). | Must | BR-16 | Test |
 
 ### 4.7 Per-environment matrix
 
@@ -305,3 +305,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-07, R4-08) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02, R7-03) | — |

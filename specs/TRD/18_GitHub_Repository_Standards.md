@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -411,7 +411,7 @@ updates:
 
 ## 8. Implementation Notes
 
-- Configure branch protection with rulesets (Settings → Rules → Rulesets) targeting `main` and `staging`; required check names are the job ids of `ci.yml`.
+- Configure branch protection with rulesets (Settings → Rules → Rulesets) targeting `main` and `staging`; required check names are the job ids listed in TRD 16 CIC-070 (from `ci.yml` and `e2e.yml`, including `playwright`).
 - The preprint PDF was removed from the working tree by commit `cd6da8f` but remains in earlier history (commit `4e9b883`) of the public repository. Whether to purge it from history (e.g. `git filter-repo`, which rewrites all SHAs and requires force-push to protected branches) is an owner decision; this TRD does not perform or require it — raise it with the owner before Phase 8 starts, because rewriting history later is more disruptive.
 - `specs/business-requirements/EchoWell_PROSPERO.pdf` is a public registration record and may stay; if its licence is restrictive, apply GIT-093.
 - Keep `docs/api_reference/openapi.json` formatted with `json.dumps(..., indent=2, sort_keys=True)` so diffs are stable (TRD 16 CIC-018).
@@ -431,3 +431,4 @@ updates:
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-45) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-21) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-06) | — |

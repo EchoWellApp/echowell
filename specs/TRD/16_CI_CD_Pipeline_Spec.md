@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -365,8 +365,8 @@ jobs:
         env: { E2E_BASE_URL: "http://localhost:3001" }   # logins: seeded admin/clinician/researcher@example.com with the masked SEED_* values from $GITHUB_ENV
         run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) before each invocation: seed test_v0_1 --reset + DS-10 loader, docker compose restart backend, one login per role (D-73, D-74)
           for p in ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}; do
-            npx playwright test --project=$p --grep-invert "@isolated|@mutating"   # read-only scenarios on the pristine seed
-            npx playwright test --project=$p --grep @mutating --workers=1          # D-73 group: E2E-18; E2E-09 (FE-187); FE-193 snooze step
+            npm run test:e2e:readonly -- --project=$p   # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
+            npm run test:e2e:mutating -- --project=$p   # D-73 group, --workers=1: E2E-18; E2E-09 (FE-187); FE-193 snooze step
           done
       - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays exactly the test_v0_1 seed)
         run: |
@@ -378,7 +378,7 @@ jobs:
           curl -fsS --retry 30 --retry-all-errors --retry-delay 2 http://localhost:8000/api/v1/health
           docker compose run --rm --no-deps $DEMO backend python -m backend.cli seed test_v0_1 --master-only
           docker compose run --rm --no-deps $DEMO backend python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay
-      - run: npx playwright test -c playwright.isolated.config.ts --grep @isolated --project=chromium --workers=1   # no globalSetup; E2E-15, TST-187, E2E-19 in this order
+      - run: npm run test:e2e:isolated   # isolated-setup.ts: no reset/seed, one login per role -> .auth/isolated-<role>.json (D-74); E2E-15, TST-187, E2E-19 in this order
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001" }
       - if: failure()
@@ -407,7 +407,7 @@ jobs:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze) run afterwards as the `@mutating` group of TRD 24 D-73 (`frontend/tests/e2e/mutating.spec.ts`, serial, in this order: E2E-18; E2E-09, implemented by TRD 04 FE-187; the FE-193 snooze step on R10), so every read-only assertion sees the pristine seed. After the reset `globalSetup` restarts the backend container (`docker compose restart backend`, waiting for `/api/v1/health`), so the connection pool and the in-memory login limiter start empty, and then logs in once per role and stores the sessions in `frontend/tests/e2e/.auth/` (TRD 24 D-74); only the login scenarios perform form logins. Both runs use RATE_LIMIT_LOGIN=`60/minute` (D-74, TRD 21 ENV-054). The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts` (no `globalSetup`). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
+| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze) run afterwards as the `@mutating` group of TRD 24 D-73 (`frontend/tests/e2e/mutating.spec.ts`, serial, in this order: E2E-18; E2E-09, implemented by TRD 04 FE-187; the FE-193 snooze step on R10), so every read-only assertion sees the pristine seed. After the reset `globalSetup` restarts the backend container (`docker compose restart backend`, waiting for `/api/v1/health`), so the connection pool and the in-memory login limiter start empty, and then logs in once per role and stores the sessions in `frontend/tests/e2e/.auth/` (TRD 24 D-74); only the login scenarios perform form logins. Both runs use RATE_LIMIT_LOGIN=`60/minute` (D-74, TRD 21 ENV-054). The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts`, whose `globalSetup` `frontend/tests/e2e/isolated-setup.ts` does not reset or seed but logs in once per role against the `echowell_demo` backend and writes `frontend/tests/e2e/.auth/isolated-<role>.json` (TRD 24 D-74). The workflow invokes Playwright only through the `frontend/package.json` scripts `test:e2e:readonly`, `test:e2e:mutating` and `test:e2e:isolated` (D-73). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
 | CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
 | CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and, in the `@mutating` group after all read-only assertions (D-73), a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
@@ -537,9 +537,9 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 ## 6. Dependencies
 
-- `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt` (ruff, mypy, pytest 8.x, pytest-cov, pytest-randomly 3.x, httpx, openpyxl 3.1.x, pip-audit).
-- Root `pyproject.toml` with `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` (markers `smoke`, `authenticated`, `validation`) and `[tool.coverage]`.
-- `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:e2e`; `frontend/package-lock.json` committed.
+- `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt`, the single dev-tool list (TRD 13 §6 refers to it): ruff 0.6.x+, mypy 1.11+, pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x (`lint-imports`), Bandit 1.7.x, pip-audit 2.x.
+- Root `pyproject.toml` with `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` (the marker list of TRD 13 TST-006, registered with `--strict-markers`) and `[tool.coverage]`.
+- `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:e2e:readonly`, `test:e2e:mutating`, `test:e2e:isolated` (no bare `test:e2e`, TRD 24 D-73); `frontend/package-lock.json` committed.
 - `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/api_reference/openapi.json` (TRD 19).
 - pytest plugin option `--validation-report` implemented in `tests/validation/conftest.py` (TRD 14); it also writes `validation_results.json` next to the Markdown report.
 - `tests/performance/make_load_dataset.py` and `tests/performance/` suite (TRD 13/TRD 14).
@@ -587,3 +587,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-05, R4-07) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-02, R5-04, R5-05, R5-07, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02, R6-03, R6-07) | — |
+| 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-01, R7-02, R7-05) | — |
