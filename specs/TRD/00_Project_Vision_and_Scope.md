@@ -1,6 +1,6 @@
 # 00 Project Vision and Scope
 
-Document ID: ECHOWELL-TRD-00 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-00 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -283,7 +283,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 |---|---|---|---|---|
 | SC-01 | Answer-key reproduction | Fraction of SRC-03 expected values matched (status counts, outcomes, 180 baseline rows, 98 score rows, reasons) | 100% within 1e-6 / exact strings | Automated validation suite in CI (TRD 14) |
 | SC-02 | Overview matches wireframe numbers | Summary tiles for test data as of 2026-10-30 15:00 America/Chicago | Alarm on 2, Being watched no alarm 7, Baseline still forming 1, Missed check-ins 19 | E2E test (TRD 13) |
-| SC-03 | End-to-end demo | One record posted with a valid API key shows on the dashboard: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67) | Within 5 s of the POST returning (warm services) | Demo, E2E test |
+| SC-03 | End-to-end demo | One record posted with a valid API key shows on the dashboard: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67) | Within 5 s of the POST returning (warm services) | E2E timing test (TRD 13 TST-187); demo (TST-181) |
 | SC-04 | No audio, no PII | Audio-like fields or endpoints; name-like fields | 0 | Inspection, schema test |
 | SC-05 | Reproducibility | Two full rebuilds of SRC-05 with the same config produce identical derived tables | Byte-identical comparison of exported derived tables | Test |
 | SC-06 | Deployed | Frontend on Netlify and backend on Railway reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
@@ -436,3 +436,4 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-17, F-19, F-27) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |

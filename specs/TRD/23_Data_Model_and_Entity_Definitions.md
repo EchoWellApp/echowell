@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -250,7 +250,7 @@ One execution of the pipeline. Read by `/api/v1/pipeline/runs/{id}`, `/api/v1/an
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key; returned as `pipeline_run_id` | gen_random_uuid() |
-| `trigger` | pipeline_trigger | no | `ingest` (after POST), `nightly` (02:00 local), `manual` (POST /pipeline/run), `test` | Pipeline service |
+| `trigger` | pipeline_trigger | no | `ingest` (after POST), `nightly` (02:00 local cron job, or POST /pipeline/run with a `pipeline:run` API key, D-70), `manual` (POST /pipeline/run with an admin JWT; CLI `run-pipeline`, `rebuild`, `seed test_v0_1`), `test` (automated validation suite only) | Pipeline service |
 | `scope` | jsonb | no | `{"type": "all"}` or `{"type": "residents", "resident_codes": ["R01", …]}` | Pipeline service |
 | `config_profile` | text | no | `production` or `test_v0_1`; must equal PIPELINE_PROFILE | Pipeline service |
 | `config_snapshot` | jsonb | no | All 23 config_parameters keys and values of the profile used, plus `config_hash` (algorithm keys only, TRD 07 ANL-030) and `as_of`, as one JSON object | Pipeline service |
@@ -916,3 +916,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-06, F-08, F-09, F-10, F-11, F-35, F-37, F-41, F-44, F-54) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-07) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03) | — |

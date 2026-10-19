@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -346,17 +346,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.development.example .env && echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+      - name: Per-job seed credentials (TRD 21 SEED_*, masked, never printed)
+        run: |
+          for v in SEED_ADMIN_PASSWORD SEED_CLINICIAN_PASSWORD SEED_RESEARCHER_PASSWORD; do
+            val="E2e-$(openssl rand -hex 16)"; echo "::add-mask::$val"; echo "$v=$val" >> "$GITHUB_ENV"; sed -i "/^$v=/d" .env; echo "$v=$val" >> .env
+          done
+          key="ewk_$(openssl rand -hex 24)"; echo "::add-mask::$key"; echo "SEED_INGEST_API_KEY=$key" >> "$GITHUB_ENV"; sed -i "/^SEED_INGEST_API_KEY=/d" .env; echo "SEED_INGEST_API_KEY=$key" >> .env
       - run: docker compose --profile demo up -d --build --wait db backend frontend-prod
       - run: docker compose exec -T backend python -m backend.cli seed test_v0_1      # roster + SRC-05 + pipeline (D-68)
       - run: docker compose exec -T backend python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv   # DS-10 for E2E-20
-      - run: printf 'e2e-Password-1\n' | docker compose exec -T backend python -m backend.cli create-user --email e2e@local.test --role admin --password-stdin
       - uses: actions/setup-node@v4
         with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci && npx playwright install --with-deps ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}
         working-directory: frontend
       - run: npx playwright test ${{ github.event_name == 'schedule' && '--project=chromium --project=firefox --project=webkit' || '--project=chromium' }}
         working-directory: frontend
-        env: { E2E_BASE_URL: "http://localhost:3001", E2E_USER_EMAIL: e2e@local.test, E2E_USER_PASSWORD: e2e-Password-1 }
+        env: { E2E_BASE_URL: "http://localhost:3001" }   # logins: seeded admin/clinician/researcher@echowell.test with the masked SEED_* values from $GITHUB_ENV
       - if: failure()
         run: docker compose logs --no-color > e2e-compose.log
       - if: always()
@@ -374,7 +379,7 @@ jobs:
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
 | CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s. | Must | contract R8, TRD 03, TRD 13 | Test |
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
-| CIC-034 | The E2E user credentials shall be generated for the ephemeral stack only and shall never be valid on staging or production. | Must | BR-16 | Inspection |
+| CIC-034 | The E2E credentials (SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY) shall be generated per job, masked with `::add-mask::` before use, passed to the stack through `.env` and to Playwright through `$GITHUB_ENV`, and shall never be valid on staging or production; Playwright logs in as the seeded admin, clinician and researcher users (TRD 06 DB-057, TRD 24 D-71). | Must | BR-16 | Inspection |
 | CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
 | CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
 | CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` and `staging` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.14.x, the version of TRD 13 §4, desktop preset) on `/residents` of the seeded Compose `demo` stack after a scripted login (`frontend/tests/lighthouse/login.js`) and fails below Performance 80 or above LCP 2.5 s (TRD 13 TST-125). | Should | TRD 13, TRD 03 | Test |
@@ -387,8 +392,8 @@ Steps:
 1. Checkout; set `EXPECTED_SHA=${{ github.sha }}`.
 2. Wait for backend: poll `${{ vars.STAGING_API_BASE_URL }}/health` every 15 s, up to 15 min, until JSON `version` equals `EXPECTED_SHA`.
 3. Wait for frontend: poll `${{ vars.STAGING_FRONTEND_URL }}/login` until the HTML contains `<meta name="echowell-build" content="EXPECTED_SHA">` (TRD 21 NEXT_PUBLIC_GIT_SHA), up to 15 min. If the commit changed no file under `frontend/` (Netlify skipped the build), accept the previous build.
-4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL` and `DATABASE_MIGRATION_URL` both `${{ secrets.STAGING_DATABASE_URL }}` (migrator role), `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, `FACILITY_NAME=Edgewood`, `FACILITY_TZ=America/Chicago` (the complete variable set of an operator command, TRD 21 ENV-053), followed by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` with the same variables.
-5. Run `pytest tests/smoke -m smoke` with SMOKE_API_BASE_URL, SMOKE_FRONTEND_URL, SMOKE_EXPECTED_SHA, SMOKE_USER_EMAIL (`secrets.STAGING_SMOKE_EMAIL`), SMOKE_USER_PASSWORD (`secrets.STAGING_SMOKE_PASSWORD`), `SMOKE_ENV=staging`.
+4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL` and `DATABASE_MIGRATION_URL` both `${{ secrets.STAGING_DATABASE_URL }}` (migrator role), `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, `FACILITY_NAME=Edgewood`, `FACILITY_TZ=America/Chicago` (the complete variable set of an operator command, TRD 21 ENV-053), with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY from the environment secrets `STAGING_SEED_*` (the seed upserts the users and key and prints nothing, TRD 06 DB-057), followed by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` with the same variables.
+5. Run `pytest tests/smoke -m smoke` with SMOKE_API_BASE_URL, SMOKE_FRONTEND_URL, SMOKE_EXPECTED_SHA, SMOKE_USER_EMAIL `researcher@echowell.test` (the seeded researcher), SMOKE_USER_PASSWORD (`secrets.STAGING_SEED_RESEARCHER_PASSWORD`), `SMOKE_ENV=staging`.
 6. Upload `build/smoke-junit.xml`.
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -449,8 +454,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | Name | Kind | Scope | Used by | Content |
 |---|---|---|---|---|
 | `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` branch direct URL of role `echowell_migrator` |
-| `STAGING_SMOKE_EMAIL` | secret | environment `staging` | deploy-staging.yml | staging researcher-role smoke user |
-| `STAGING_SMOKE_PASSWORD` | secret | environment `staging` | deploy-staging.yml | its password |
+| `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` | secret | environment `staging` | deploy-staging.yml (re-seed step 4 as SEED_*; smoke step 5 uses the researcher password) | credentials of the seeded staging users and API key (TRD 21 SEED_*) |
 | `STAGING_API_BASE_URL` | variable | repository | deploy-staging.yml, uptime.yml | e.g. `https://echowell-backend-staging.up.railway.app/api/v1` |
 | `STAGING_FRONTEND_URL` | variable | repository | deploy-staging.yml | e.g. `https://staging--echowell-und.netlify.app` |
 | `PRODUCTION_API_BASE_URL` | variable | repository | deploy-production.yml, uptime.yml | e.g. `https://echowell-backend-production.up.railway.app/api/v1` |
@@ -459,7 +463,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-090 | The only GitHub Actions secrets shall be the three `staging` environment secrets listed above; no production credential of any kind shall be stored in GitHub. | Must | BR-16, TRD 12 | Inspection |
+| CIC-090 | The only GitHub Actions secrets shall be the five `staging` environment secrets listed above (`STAGING_DATABASE_URL` and the four `STAGING_SEED_*`); no production credential of any kind shall be stored in GitHub. | Must | BR-16, TRD 12 | Inspection |
 | CIC-091 | Workflows triggered by `pull_request` from forks shall not have access to any secret (GitHub default) and `pull_request_target` shall not be used. | Must | BR-16 | Inspection |
 | CIC-092 | Secret values shall never be echoed; steps that use secrets shall pass them via `env:` and not via command-line arguments. | Must | BR-16, TRD 17 | Inspection |
 
@@ -513,7 +517,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - AC-CIC-04 A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes.
 - AC-CIC-05 `ci.yml` on `main` completes all required checks in under 15 minutes (CIC-110) and uploads `backend-reports` containing `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `docs/reports/validation_results.json`.
 - AC-CIC-10 The nightly `performance` job passes all contract R8 budgets and uploads `performance-report`.
-- AC-CIC-06 `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SMOKE_EMAIL`, `STAGING_SMOKE_PASSWORD` (and `GITHUB_TOKEN`).
+- AC-CIC-06 `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (and `GITHUB_TOKEN`).
 - AC-CIC-07 A merge to `main` yields a green `deploy-production.yml` run whose log shows the health `version` equal to the merge SHA.
 - AC-CIC-08 Branch protection settings for `main` list exactly the eight required checks of CIC-070.
 - AC-CIC-09 The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before the demo freeze (15 Nov 2026).
@@ -543,3 +547,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-19, F-20, F-40) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-18, R2-20) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |

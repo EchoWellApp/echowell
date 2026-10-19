@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -391,7 +391,7 @@ sequenceDiagram
 | ANL-055 | Morning offsets shall be read only from `PipelineConfig.morning_offsets`; a future estimator (OQ-09) shall be added as a separate pure function `morning_offset.estimate_offsets(rows, config) -> Mapping[str, float]` whose output is written to `config_parameters` with `python -m backend.cli set-config` and applied with `python -m backend.cli rebuild` (ANL-032, TRD 24 D-69); the estimator shall not run inside `run_pipeline` in v0.1. | Should | OQ-09, BR-07 | Inspection |
 | ANL-056 | A future EWMA trend (OQ-18) shall be implemented as an additional output field on `ScoreRow` computed after step 10 and shall not alter `cusum_tally` or `alarm_state`; it is not implemented in v0.1. | May | OQ-18, SRC-02 | Inspection |
 | ANL-057 | Facility reference ranges for the new-admission arm (BR-14, OQ-08) shall be computed by a separate pure function outside `run_pipeline` (planned module `analytics/facility_norms.py`, created only when OQ-08 is resolved) that reads adjusted values of usable sessions and writes `facility_reference_ranges`; it shall never influence any resident's own baseline, score or alarm. | May | BR-14, OQ-08 | Inspection |
-| ANL-058 | Adding a feature to the composite or changing a sign shall require only a change of `features` in the config with `python -m backend.cli set-config` followed by `python -m backend.cli rebuild` (ANL-032, TRD 24 D-69), not a code change. | Should | OQ-03, RSK-02 | Test |
+| ANL-058 | Adding a feature to the composite or changing a sign shall require only a change of the built-in `FEATURES` / `PipelineConfig.features` in `analytics/config.py` (it is not a `config_parameters` key, so `set-config` cannot change it), reviewed as a code change under TRD 18 GIT-032, deployed, and then applied with `python -m backend.cli rebuild` (ANL-032); no stage function shall need to change. | Should | OQ-03, RSK-02 | Test |
 
 ### 4.13 Data alerts and analytics aggregates (stages 11–12)
 
@@ -498,3 +498,4 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-04, F-05, F-12, F-26, F-30, F-32, F-38, F-41, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-06, R2-10, R2-11, R2-12, R2-15, R2-17, R2-25) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-05) | — |

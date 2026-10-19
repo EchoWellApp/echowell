@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -132,7 +132,7 @@ sequenceDiagram
         Note over V,DB: single-record ingest writes no audit row (provenance: raw_sessions.api_key_id + app log; TRD 05 API-032)
         A->>P: run(scope = this resident, trigger = ingest) [synchronous]
         P->>DB: load raw_sessions, frozen baselines, config snapshot for resident
-        P->>AN: run_pipeline(records, config, frozen_baselines, as_of)
+        P->>AN: run_pipeline(records, residents, assignments, config, as_of, frozen_baselines=...)
         AN-->>P: processed_sessions, epochs, baselines, scores, cusum_state, alerts, day_ledger
         P->>DB: replace derived rows for resident in one transaction + pipeline_runs row
         alt first (or only) arrival of session_id
@@ -305,7 +305,8 @@ echowell/
 | Single record ingest | `ingest` | the record's resident (and co-residents of a shared device for the day ledger) | synchronous within request | `POST /api/v1/sessions` |
 | Batch / CSV ingest | `ingest` | all residents in the batch (plus device co-residents) | background task after 202 | `POST /api/v1/ingest` |
 | Nightly | `nightly` | all active residents | separate Railway Cron Job service at `0 7,8 * * *` UTC; proceeds only when facility-local time is 02:xx (`NIGHTLY_RUN_HOUR_LOCAL`) and that local night has not yet run | `python -m backend.jobs.nightly_run` (TRD 15) |
-| Manual | `manual` | `{scope, profile, as_of?}` from request | background task | `POST /api/v1/pipeline/run` (admin JWT or API key scope `pipeline:run`) |
+| Nightly (AWS target scheduler) | `nightly` | all | background task; once per facility-local night (API-061 dedupe) | `POST /api/v1/pipeline/run` with API key scope `pipeline:run` (D-70) |
+| Manual | `manual` | `{scope, profile, as_of?}` from request | background task | `POST /api/v1/pipeline/run` (admin JWT); operator CLI `run-pipeline`, `rebuild` and `seed test_v0_1` |
 | Test | `test` | all | synchronous in test harness | pytest validation suite |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -438,7 +439,7 @@ flowchart LR
 ## 8. Implementation Notes
 
 - Missing analytics files to create next to the existing skeletons: `analytics/data_alerts.py`, `analytics/aggregates.py`, `analytics/speaker_screen.py`, `analytics/day_ledger.py`, `analytics/robust_stats.py`, `analytics/pipeline.py`, `analytics/config.py`, `analytics/__init__.py`.
-- `run_pipeline` signature (recommended): `run_pipeline(records: list[RawRecord], residents: list[ResidentInfo], assignments: list[DeviceAssignment], frozen_baselines: dict[(resident, epoch_number), BaselineSet], config: PipelineConfig, as_of: datetime) -> PipelineResult`. All inputs are plain dataclasses; the backend repository layer converts ORM rows to them.
+- `run_pipeline` signature (binding, TRD 07 §4.5): `run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines=None) -> PipelineResult` (types as defined in TRD 07 §4.3–§4.4). All inputs are plain dataclasses; the backend repository layer converts ORM rows to them.
 - Use `SRC-04` as the executable reference when in doubt; its output must equal SRC-03.
 - Railway and Neon free tiers may sleep or auto-suspend (RSK-07); the first request after idle can be slow. Do not add keep-alive pingers without TRD 15 approval.
 - Database driver is psycopg 3 (`psycopg[binary]`); replace `psycopg2-binary` in `backend/requirements.txt` (R24). SQLAlchemy URLs use the `postgresql+psycopg://` scheme.
@@ -465,3 +466,4 @@ flowchart LR
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-04, F-16, F-32, F-33) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-06, R2-07, R2-10, R2-24, R2-25) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03, R3-04) | — |

@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -13,7 +13,7 @@ In scope:
 - Assumptions ASM-01 to ASM-08 with rationale, impact if wrong and validation step.
 - Risks RSK-01 to RSK-15 with likelihood, impact, mitigation, contingency, owner and linked requirements.
 - Discrepancies found between source documents (DSC-01 to DSC-14) and how the TRDs resolve them.
-- The decision log D-01 to D-70 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator), the lead's reconciliation decisions R1–R27 of 18 Oct 2026 and the Phase 1 validation decisions D-56 to D-70 of 19 Oct 2026.
+- The decision log D-01 to D-71 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator), the lead's reconciliation decisions R1–R27 of 18 Oct 2026 and the Phase 1 validation decisions D-56 to D-71 of 19 Oct 2026.
 - Rules for maintaining this register (RAQ-xxx).
 
 Out of scope:
@@ -231,6 +231,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-68 | One meaning for the seed command: `python -m backend.cli seed test_v0_1` loads the roster, creates the test users and API key, ingests SRC-05 and runs the pipeline at as_of 2026-10-30 15:00 America/Chicago (fully populated test system); `--master-only` loads the roster, users and key only; refused in production. The roster has one format: `facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` in `database/seeds/test_v0_1/`, loaded by `import-master-data`, which `seed` calls internally. No SQL roster and no `backend.scripts.load_fixture`; the ground-truth loader stays a separate direct script. | Phase 1 round 2 R2-02 | 06, 13, 14, 15, 16, 20, 25 |
 | D-69 | Parameters are changed only with `python -m backend.cli set-config --profile <p> --key <k> --value '<json>' --reason "<text>"` (admin/operator, runs as `echowell_migrator`): it validates the value against the key's schema and writes `config.changed` (old, new, reason) in the same transaction. For algorithm keys it prints that `backend.cli rebuild` is required, and ingest/nightly runs keep failing with `config_changed_requires_rebuild` until the rebuild runs (D-56). CUSUM calibration = `set-config`, then `rebuild`. | Phase 1 round 2 R2-03; D-56 | 02, 03, 07, 09, 12, 13, 15, 21, 23 |
 | D-70 | A `POST /api/v1/pipeline/run` call authenticated by an API key of scope `pipeline:run` (the AWS EventBridge scheduler) runs scope `all` with `trigger = nightly` and the once-per-night dedupe of TRD 05 API-061 (202 with the existing run id when that night already ran); admin JWT calls record `trigger = manual`. | Phase 1 round 2 R2-25; D-47; R18 | 01, 05, 07, 15 |
+| D-71 | Test-database reset and seeded credentials. `python -m backend.cli reset-test-db` runs as `echowell_migrator` (`SET ROLE` after connecting), is refused unless APP_ENV ∈ {local, test, staging} and PIPELINE_PROFILE = `test_v0_1`, and runs `alembic downgrade base` then `alembic upgrade head`: DROP fires no immutability trigger and removes foreign keys with the tables, and the migrations recreate triggers, grants and the `config_parameters` seed (verified on PostgreSQL 16 with the TRD 20 DDL). `seed test_v0_1 --reset` = reset-test-db + seed. The seed upserts `admin@echowell.test`, `clinician@echowell.test`, `researcher@echowell.test` and API key `test-ingest` (scopes ingest:write, pipeline:run) from SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY (test/staging/local only, refused in production), never printing them; E2E generates and masks them per job, staging keeps them as GitHub secrets `STAGING_SEED_*`, and the staging smoke test logs in as the seeded researcher. | Phase 1 round 3 R3-01, R3-07 | 06, 12, 13, 15, 16, 20, 21, 25 |
 
 ## 5. Assumptions
 
@@ -258,7 +259,7 @@ This document defines ASM-01 to ASM-08 (section 4.3). No TRD-local assumptions a
 
 - Agents cite IDs from this register in code comments only where behaviour depends on an interim decision, e.g. `# OQ-05 interim: a saved review does not reset the tally (D-03, D-35)`. This makes the change point easy to find when the OQ is answered.
 - Interim decisions that are config values (OQ-09 offsets, OQ-13 baseline_n, k, h) live in `config_parameters` per profile; never hard-code them in analytics functions.
-- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-71 onward); new risks the next free RSK number (RSK-16 onward). Report each new ID to the algorithm lead in the PR description.
+- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-72 onward); new risks the next free RSK number (RSK-16 onward). Report each new ID to the algorithm lead in the PR description.
 - Never reference the removed preprint PDF path; cite SRC-07 by its link in specs/business-requirements/REFERENCES.md (D-29).
 - Never load real resident data into the interim stack (D-28; OQ-23 answered), and never run the `test_v0_1` profile in production (D-01).
 
@@ -274,3 +275,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-26). OQ-21 and OQ-23 (
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03, F-04, F-05, F-06, F-07, F-10, F-11, F-12, F-13, F-14, F-16, F-17, F-23, F-26, F-28, F-47, F-55) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-02, R2-03, R2-25) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |

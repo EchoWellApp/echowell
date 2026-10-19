@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -108,7 +108,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> --scope <ingest:write|pipeline:run> [--device <device_code>]`. | Must | contract §12, §21 R18 | Test |
-| SEC-021 | Only the SHA-256 hex digest of the key shall be stored (`api_keys.key_hash`, unique); the plaintext key shall be printed once by the CLI and never stored, logged or retrievable. | Must | contract §12 | Test |
+| SEC-021 | Only the SHA-256 hex digest of the key shall be stored (`api_keys.key_hash`, unique); the plaintext key shall be printed once by `create-api-key` and never stored, logged or retrievable; the seeded test key comes from SEED_INGEST_API_KEY and is never printed (TRD 06 DB-057). | Must | contract §12 | Test |
 | SEC-022 | Every API key shall carry exactly one scope: `ingest:write` (devices, test harnesses) or `pipeline:run` (the AWS EventBridge scheduler calling `POST /pipeline/run`); a key used on an endpoint outside its scope receives 403 `FORBIDDEN`. No other scopes exist in the MVP. | Must | contract §9, §21 R18 | Test |
 | SEC-023 | A key used by a device in a deployment shall be bound to that device (`api_keys.device_id`), and a record from another device shall be refused with 403 `DEVICE_KEY_MISMATCH` (TRD 05 API-040). Unbound keys are permitted only for test harnesses and the seed/CI pipeline. | Must | T-01 | Test |
 | SEC-024 | `python -m backend.cli revoke-api-key --name <name>` shall set `active=false`; revoked keys shall be rejected with 401 `API_KEY_INVALID` on the next request. | Must | T-01 | Test |
@@ -188,7 +188,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. | Must | contract §12, D-OWNER-3 | Inspection |
+| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* credentials of TRD 21 (never in production), database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. | Must | contract §12, D-OWNER-3 | Inspection |
 | SEC-051 | `.env`, `.env.*` (except `.env.example`) shall be listed in `.gitignore`; `.env.example` shall contain variable names with non-secret dummy values only. | Must | contract §12 | Inspection |
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
@@ -283,8 +283,8 @@ Audit events (`audit_logs.action`):
 | pipeline.run.started | user, api_key or system | pipeline_run / run id | {"trigger", "scope", "profile"} |
 | pipeline.run.finished | system | pipeline_run / run id | {"status", "duration_ms", "warning_count"} |
 | config.changed | system (CLI) | config_parameter / "<profile>:<key>" or secret name | {"old": value, "new": value, "reason", "operator"} for parameters (written by `backend.cli set-config`, TRD 15 §4.8); {"rotated": true} for secrets |
-| user.created | user | user / user id | {"role"} |
-| user.updated | user | user / user id | {"changed": ["role", "active", "password", "display_name"]} |
+| user.created | user (API, `POST /users`) or system (CLI `create-user`, `seed`; SEC-103) | user / user id | {"role"} |
+| user.updated | user (API, `PATCH /users/{id}`) or system (CLI, `seed` upsert) | user / user id | {"changed": ["role", "active", "password", "display_name"]} |
 | api_key.created | system | api_key / key id | {"name", "device_code"} |
 | api_key.revoked | system | api_key / key id | {"name"} |
 | access.denied | user or api_key | route / route template | {"status": 403, "code"} |
@@ -317,14 +317,14 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 
 | Role | Purpose | Privileges |
 |---|---|---|
-| echowell_migrator | Alembic migrations (Railway pre-deploy command, TRD 15 DEP-040) and operator CLI (seed, reset-test-db, purge-resident, rebuild), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
+| echowell_migrator | Alembic migrations (Railway pre-deploy command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
 | echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`, `alert_reviews`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE (no DELETE) on `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `ingest_batches`, `pipeline_runs`, `config_parameters`, `alerts`, `data_alerts`; SELECT, INSERT, UPDATE, DELETE on rebuildable derived tables (`epochs`, `processed_sessions`, `day_ledger`, `scores`, `cusum_state`, `facility_reference_ranges`); USAGE on sequences; no DDL, no TRUNCATE (exact grants: TRD 20 §4.8) |
 | echowell_readonly | Researchers' offline analysis, audit review, exports; login used by DATABASE_READONLY_URL (alarm-timing read in `analytics_summary.py`, test_v0_1 only) | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-110 | The three roles above shall be created by the first Alembic migration (or a bootstrap SQL script run by the database owner) with the listed privileges, in every environment. | Must | contract §12 | Test |
-| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as the Railway pre-deploy command `alembic upgrade head`, never in the web start command, TRD 15 DEP-040) and the operator CLI commands listed in TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild) shall use DATABASE_MIGRATION_URL as `echowell_migrator`; application request, pipeline and job code shall never read it (import-boundary test), and it shall not be set on the Railway cron (`nightly`) service; on AWS only the one-off migration task receives it (TRD 24 D-58, RSK-15). | Must | contract §12, §21 R20 | Inspection |
+| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as the Railway pre-deploy command `alembic upgrade head`, never in the web start command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`) shall use DATABASE_MIGRATION_URL as `echowell_migrator` (each runs `SET ROLE echowell_migrator` after connecting); application request, pipeline and job code shall never read it (import-boundary test), and it shall not be set on the Railway cron (`nightly`) service; on AWS only the one-off migration task receives it (TRD 24 D-58, RSK-15). | Must | contract §12, §21 R20 | Inspection |
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
 | SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` fail and that `SELECT * FROM evaluation_ground_truth` fails with a permission error. | Must | T-04, contract §21 R20 | Test |
@@ -453,3 +453,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-12, F-14, F-16, F-23, F-28, F-42, F-43, F-45, F-47) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-02, R3-07, R3-09) | — |

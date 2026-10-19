@@ -101,3 +101,27 @@ Mechanical checks re-run: no duplicate or dangling requirement IDs (AC-DB-02a is
 | R2-24 | Minor | TRD 01, 05: Single-record ingest is not audited (vocabulary audits batches only): API-032, TRD 05 §4.12 row, TRD 01 ingest sequence note | Fixed |
 | R2-25 | Minor | TRD 01, 05, 07, 15, 24: D-70 (new): POST /pipeline/run with a pipeline:run API key records trigger = nightly, scope all, with the API-061 once-per-night dedupe (202 with the existing run id); API-065, ANL-045, DEP-116, TRD 01 AWS mapping row, D-47 | Fixed |
 | R2-26 | Minor | TRD 13: New TST-185 (FR-205/DB-025 new-admission -> own-baseline transition, Must) and TST-186 (populated facility comparison: API statuses + FacilityRangeChart, Should) | Fixed |
+
+## Round 3 fixes
+
+
+Source: docs/reports/TRD_VALIDATION_REPORT.md round 3 (R3-01 Major, R3-02..R3-10 Minor). Edits only in specs/TRD/; every changed TRD is Version 0.4 with a round-3 revision row.
+
+New IDs: D-71 (TRD 24), TST-187; new TRD 21 variables SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY and GitHub secrets STAGING_SEED_*; retired STAGING_SMOKE_EMAIL/PASSWORD and E2E_USER_*.
+
+Scratch PostgreSQL 16.15 check for D-71 (scratchpad t_downgrade.sh + downgrade_base.sql): superuser creates roles, extensions and schema owner; the TRD 20 DDL runs as echowell_migrator (exit 0); with data present, dropping every table/type/function as echowell_migrator succeeds (DROP fires no reject_mutation trigger; FKs go with the tables), leaving 0 tables and 0 enums; re-running the DDL as echowell_migrator succeeds (exit 0) with 24 migrator-owned tables, 17 triggers, 46 config_parameters rows and grants restored (echowell_app INSERT but not DELETE on raw_sessions; readonly SELECT on evaluation_ground_truth; app none).
+
+Mechanical checks re-run: no duplicate/dangling requirement IDs; D/OQ/ASM/RSK/DSC references all defined (only 'next free' text); endpoints, table.columns and env vars consistent with TRD 19/20/21; code fences balanced; no TBD/TODO/lorem outside GIT-053; DDL and CHECK tests unchanged (5 expected rejections).
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R3-01 | Major | TRD 06, 15, 16, 20, 24, 25: D-71 (new): reset-test-db = alembic downgrade base + upgrade head as echowell_migrator (SET ROLE), refused unless APP_ENV in {local,test,staging} and PIPELINE_PROFILE=test_v0_1; no TRUNCATE/purge path (DROP fires no triggers; grants and config seed come back with the migrations, PGS-022); seed --reset = reset-test-db + seed; seed upserts users/key by email/name and never prints secrets. DB-024, DB-057, DB-056, AC-DB-08; TRD 20 PGS-019 (purge path only for IRB purge), §4.3 SET ROLE rule, §4.12 text; TRD 15 §4.2 steps 7-8, §4.8 seed and reset-test-db rows, DEP-071; TRD 16 §4.4 step 4; TRD 25 Phase 4. Verified on scratch PG16: DDL as migrator, drop all objects as migrator, DDL again -> exit 0, 24 tables, grants, 46 config rows, 17 triggers | Fixed |
+| R3-02 | Minor | TRD 12, 15, 20: Closed migrator list (TRD 20 §4.3, TRD 12 role table, SEC-111, DEP-040) = seed, reset-test-db, purge-resident, rebuild, set-config, load_evaluation_ground_truth.py; all SET ROLE echowell_migrator | Fixed |
+| R3-03 | Minor | TRD 01, 06, 23: TRD 01 §4.7 trigger table adds the AWS scheduler row (nightly, D-70) and limits manual to admin JWT/CLI; TRD 23 §4.2.10 trigger row; DB-058 seed run uses trigger manual (test reserved for the validation suite) | Fixed |
+| R3-04 | Minor | TRD 01: TRD 01 ingest sequence and §8 note quote the binding TRD 07 run_pipeline signature | Fixed |
+| R3-05 | Minor | TRD 07: ANL-058 reworded: features is a built-in config.py field; change = reviewed config.py code change + deploy + rebuild (set-config cannot change it) | Fixed |
+| R3-06 | Minor | TRD 00, 03, 13: New TST-187 automated 5 s ingest-to-dashboard timing test (E2E job, warm stack) tracing NFR-011/SC-03; TST-181 notes its 60 s demo limit; NFR-011 and SC-03 verification cells | Fixed |
+| R3-07 | Minor | TRD 06, 12, 13, 15, 16, 21, 24, 25: Deterministic seeded users/key (D-71): new TRD 21 vars SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY (test/staging/local only, secret, refused in production; local values in .env.development.example; ENV-053); e2e.yml generates and ::add-mask::s them, no create-user step, CIC-034; staging secrets STAGING_SEED_* (re-seed and smoke), §4.9 table, CIC-090, AC-CIC-06; DEP-080(c) smoke user = seeded researcher; TRD 13 Table 4.10-A login note; E2E_USER_* retired; SEC-050 | Fixed |
+| R3-08 | Minor | TRD 13: demo overlay is a CSV directory tests/fixtures/seeds/demo_overlay/ (DB-060 format) loaded by import-master-data (E2E-15 and fixture tree); fixture tree lists evaluation_ground_truth_v0_1.csv under answer_key/ (as TDV-012) | Fixed |
+| R3-09 | Minor | TRD 12: TRD 12 §4.12 user.created and user.updated actor = user (API) or system (CLI/seed), matching SEC-103 | Fixed |
+| R3-10 | Minor | TRD 06: DB-025 priority Should -> Must (FR-205, TST-185) | Fixed |

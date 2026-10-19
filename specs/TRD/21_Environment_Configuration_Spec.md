@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -82,6 +82,7 @@ the AWS target.
 | `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes where PIPELINE_PROFILE=`test_v0_1` (local, staging, test); not set in production and on AWS (TRD 12 SEC-116; the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
+| `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@echowell.test`, `clinician@echowell.test`, `researcher@echowell.test` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: values in `.env.development.example`; CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 2 when any is non-empty and APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -95,7 +96,7 @@ the AWS target.
 | ENV-016 | The backend shall expose `facilities.name` (`meta.facility_name`; FACILITY_NAME only seeds that row), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
 | ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
-| ENV-053 | Operator commands (`python -m backend.cli ...` and `database/seeds/load_evaluation_ground_truth.py`) shall validate only the variables they use: DATABASE_URL and DATABASE_MIGRATION_URL (both may be the migrator URL), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ, LOG_LEVEL, LOG_FORMAT; JWT_SECRET, CORS_ORIGINS, CORS_ORIGIN_REGEX and DATABASE_READONLY_URL are required only by the web application (the ground-truth loader connects with DATABASE_MIGRATION_URL). | Must | TRD 15 §4.8, TRD 16 §4.4 | Test (seed with only these variables succeeds) |
+| ENV-053 | Operator commands (`python -m backend.cli ...` and `database/seeds/load_evaluation_ground_truth.py`) shall validate only the variables they use: DATABASE_URL and DATABASE_MIGRATION_URL (both may be the migrator URL), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ, LOG_LEVEL, LOG_FORMAT, and for `seed` the four SEED_* variables; JWT_SECRET, CORS_ORIGINS, CORS_ORIGIN_REGEX and DATABASE_READONLY_URL are required only by the web application (the ground-truth loader connects with DATABASE_MIGRATION_URL). | Must | TRD 15 §4.8, TRD 16 §4.4 | Test (seed with only these variables succeeds) |
 
 ### 4.4 Config parameters (database) vs environment
 
@@ -127,9 +128,9 @@ Frontend variables are inlined at build time by Next.js and are therefore **publ
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Compose `db` / CI service container init (superuser; used only to run `database/roles/provision_login_roles.sql`) | Compose, CI | `echowell` / `echowell` / `echowell` (CI DB `echowell_test`) | — | local, CI | local/CI-only | — |
 | `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD`, `ECHOWELL_READONLY_DB_PASSWORD` | Passwords of the login roles created by `database/roles/provision_login_roles.sql` (read via psql `\getenv`; TRD 15 §4.2, TRD 16 CIC-015, TRD 20 §4.3) | Compose, CI | — | `app-local` | local, CI | local/CI-only throwaway values | never set in staging or production |
 | `SMOKE_API_BASE_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_EXPECTED_SHA`, `SMOKE_ENV` | Smoke test targets (TRD 15 §4.11) | smoke runs | — | `https://…/api/v1` | CI | No | `SMOKE_ENV` ∈ `staging`, `production` |
-| `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` | Staging smoke user | staging smoke | — | — | CI (staging) | Yes | never set for production |
-| `E2E_BASE_URL`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Playwright targets (TRD 16 §4.3) | E2E runs | `http://localhost:3001` | — | CI, local | ephemeral | — |
-| `STAGING_DATABASE_URL`, `STAGING_SMOKE_EMAIL`, `STAGING_SMOKE_PASSWORD` (secrets); `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` (variables); `PYTHON_VERSION`, `NODE_VERSION` (workflow env) | GitHub Actions secrets/variables; defined in TRD 16 §4.9 and mapped by the workflows onto `DATABASE_URL`, `SMOKE_*` above | CI workflows | — | — | CI | secrets: Yes | never read by application code |
+| `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` | Staging smoke user = the seeded `researcher@echowell.test` with `secrets.STAGING_SEED_RESEARCHER_PASSWORD` (TRD 16 §4.4) | staging smoke | — | `researcher@echowell.test` | CI (staging) | Yes | never set for production |
+| `E2E_BASE_URL` | Playwright target (TRD 16 §4.3); Playwright logs in as the seeded users `admin@echowell.test`, `clinician@echowell.test`, `researcher@echowell.test` with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD (the `E2E_USER_*` pair is retired) | E2E runs | `http://localhost:3001` | — | CI, local | No | — |
+| `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (secrets); `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` (variables); `PYTHON_VERSION`, `NODE_VERSION` (workflow env) | GitHub Actions secrets/variables; defined in TRD 16 §4.9 and mapped by the workflows onto `DATABASE_URL`, `SMOKE_*` above | CI workflows | — | — | CI | secrets: Yes | never read by application code |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -163,6 +164,10 @@ FACILITY_NAME=Edgewood
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=test_v0_1
 PIPELINE_AS_OF=2026-10-30T15:00:00-05:00
+SEED_ADMIN_PASSWORD=local-dev-only-Admin-1
+SEED_CLINICIAN_PASSWORD=local-dev-only-Clinician-1
+SEED_RESEARCHER_PASSWORD=local-dev-only-Researcher-1
+SEED_INGEST_API_KEY=ewk_local-dev-only-0123456789abcdef0123
 NIGHTLY_RUN_HOUR_LOCAL=2
 LOG_LEVEL=INFO
 LOG_FORMAT=console
@@ -194,6 +199,7 @@ FACILITY_NAME=Edgewood
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=production        # staging: test_v0_1 ; production: production (test_v0_1 refused)
 PIPELINE_AS_OF=                    # staging: 2026-10-30T15:00:00-05:00 ; production: must be empty
+# SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY: never set here; production refuses them (staging seeding gets them from GitHub secrets STAGING_SEED_*)
 NIGHTLY_RUN_HOUR_LOCAL=2
 LOG_LEVEL=INFO
 LOG_FORMAT=json
@@ -293,3 +299,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-17, F-48) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-12, R2-18) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-07) | — |

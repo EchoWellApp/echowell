@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -55,7 +55,7 @@ Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sl
 | NFR-008 | The first request after an idle period (cold start of backend or database on interim tiers) shall complete in < 15 s; the frontend shall show a loading state (not an error) for up to 20 s. | Should | BR-12, RSK-07 | Test (manual, staging) |
 | NFR-009 | Batch ingest of the reference CSV (283 rows) shall return 202 in ≤ 2 s and the batch shall be fully processed in ≤ 30 s. | Must | BR-15, R8 | Test |
 | NFR-010 | The Residents overview, Resident detail, Alert review and Analytics pages shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI) |
-| NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E), Demo |
+| NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E timing test TRD 13 TST-187), Demo (TST-181, 60 s incl. cold start) |
 | NFR-012 | The initial JavaScript transferred for any dashboard route shall be ≤ 300 KB gzip. | Should | BR-12 | Test (`next build` output check in CI) |
 | NFR-013 | The Alert review page shall reflect a saved review or snooze (badge change, history entry) within 1 s of the API response, without a full page reload. | Should | BR-13, SRC-18 | Test (E2E) |
 
@@ -270,3 +270,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-19, F-23, F-40) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |

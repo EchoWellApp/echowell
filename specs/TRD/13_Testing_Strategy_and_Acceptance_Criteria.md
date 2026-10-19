@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -112,9 +112,12 @@ tests/
   smoke/                          post-deploy smoke tests, pytest marker `smoke` (TRD 15 §4.11, TRD 16)
   fixtures/
     pipeline_input/               EchoWell_pipeline_test_input_v0_1.csv (copy of SRC-05; the ONLY pipeline input fixture)
-    answer_key/                   EchoWell_pipeline_test_v0_1.xlsx (copy of SRC-03), SHA256SUMS
+    answer_key/                   EchoWell_pipeline_test_v0_1.xlsx (copy of SRC-03), evaluation_ground_truth_v0_1.csv (DS-10, TRD 14), SHA256SUMS
     legacy/                       echowell_mock_data_500.csv (copy of SRC-06; negative fixture)
-    seeds/                        demo_overlay.json (E2E-15); the R01–R10 roster is read from database/seeds/test_v0_1/ (TRD 14 DS-07)
+    seeds/demo_overlay/           facilities.csv (Edgewood), residents.csv (R11,F,longitudinal,2026-10-30,), devices.csv (D11,,true,fw-1.0.0),
+                                  device_assignments.csv (R11,D11,2026-10-30,) in the TRD 06 DB-060 format, loaded by
+                                  `python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay` (E2E-15, TST-187);
+                                  the R01–R10 roster is read from database/seeds/test_v0_1/ (TRD 14 DS-07)
 frontend/
   tests/
     unit/                         lib/ helpers (formatters, sort rules, date formatting)
@@ -352,7 +355,7 @@ clock fixed at 2026-10-30 15:00 America/Chicago, TRD 14 §4.9) and log in as a s
 | TST-100 | Every E2E scenario in Table 4.10-A shall be implemented in `frontend/tests/e2e/` and pass in Chromium on every PR, and in Firefox and WebKit nightly. | Must | SRC-09/10/11, SRC-17 | Test |
 | TST-101 | Playwright shall run with `retries: 1` in CI and `retries: 0` locally; a scenario that passes only on retry shall be reported as flaky (§4.16). | Must | Quality | Inspection |
 
-Table 4.10-A E2E scenarios.
+Table 4.10-A E2E scenarios. "Log in as clinician / researcher / admin" means the seeded users `clinician@echowell.test`, `researcher@echowell.test` and `admin@echowell.test` with the per-job SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_ADMIN_PASSWORD (TRD 06 DB-057, TRD 16 CIC-034, TRD 24 D-71).
 
 | Scenario | Steps | Expected |
 |---|---|---|
@@ -370,7 +373,7 @@ Table 4.10-A E2E scenarios.
 | E2E-12 Set-aside reasons R03 | Open R03 | Log entry Oct 18 set aside "quality flag poor; noise above limit"; Oct 12 missed with device-gap wording (device silent) |
 | E2E-13 New admissions | Open `/admissions` | Banner "Future / experimental study arm"; empty state (no new-admission residents in DS-07) |
 | E2E-14 Role restriction | Log in as clinician; open `/admin` | The access-denied state "You do not have access to this page." with the link "Back to all residents" (no redirect, no admin API call; TRD 04 FE-034, TRD 11 UX-215); no "Admin" link in the navigation (UX-014) |
-| E2E-15 New check-in appears (demo path) | On an isolated DB loaded with DS-07 plus the overlay registry `tests/fixtures/seeds/demo_overlay.json` (resident R11, sex F, device D11, enrolled 2026-10-30), POST one valid record `R11-20261030-01` with `timestamp_utc` "2026-10-30 19:59:00" via API key, then as admin `POST /api/v1/pipeline/run` with `as_of` 2026-10-30T15:00:00-05:00; reload `/residents` | New row R11 with last check-in "Oct 30, 2:59 PM", status "Baseline forming · 1 of 16 sessions" and 30-day used count 1; R11 has no frozen baseline, so its tally chart shows no bar and its check-in log lists no event for the usable check-in (TRD 11 UX-144, TRD 24 D-67); rows R01–R10 unchanged |
+| E2E-15 New check-in appears (demo path) | On an isolated DB loaded with DS-07 plus the overlay roster `tests/fixtures/seeds/demo_overlay/` (CSV files loaded with `python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay`; resident R11, sex F, device D11, enrolled 2026-10-30), POST one valid record `R11-20261030-01` with `timestamp_utc` "2026-10-30 19:59:00" via API key, then as admin `POST /api/v1/pipeline/run` with `as_of` 2026-10-30T15:00:00-05:00; reload `/residents` | New row R11 with last check-in "Oct 30, 2:59 PM", status "Baseline forming · 1 of 16 sessions" and 30-day used count 1; R11 has no frozen baseline, so its tally chart shows no bar and its check-in log lists no event for the usable check-in (TRD 11 UX-144, TRD 24 D-67); rows R01–R10 unchanged |
 | E2E-17 Alert review queues | Log in as clinician; open `/alerts` | Nav "Alerts (2)"; change-alarm cards in order "R09 · D09" "Not reviewed" "Alarm since Oct 21 · open 9 days · tally 26.8" and "R10 · D10" "Not reviewed" "Alarm since Oct 24 · open 6 days · tally 13.4"; data alerts exactly the 4 of TRD 14 Table 4.9-D |
 | E2E-18 Save review | Select R09; panel title "R09 · alarm since Oct 21", "Leaning most" "more pauses, quieter, less voiced sound"; click Save review without an outcome, then choose "Checked on resident, no concern" and Save review | First attempt: validation message, nothing saved; second: R09 card badge "Reviewed"; nav "Alerts (1)" (nav counts only not-yet-reviewed alarms; the alarm itself stays on); tally 26.8 unchanged; footer "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." |
 | E2E-19 Snooze | Select R10; click "Remind me in 24 h" | R10 card loses "Not reviewed" emphasis; status unchanged; after advancing the server clock 24 h (isolated stack) emphasis returns |
@@ -500,12 +503,13 @@ Table 4.17-A MVP acceptance criteria.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TST-180 | Demo step 4 ("Pipeline passes the test set answer key, then processes a real record") shall be accepted when (a) the validation suite reports PASS for all VC cases on the commit deployed to the demo environment, and (b) one feature record produced by Team 1's device from a team-member speaker registered under a demo study ID (no real resident data on the interim stack, D-OWNER-4) is received by `POST /api/v1/sessions` in the demo environment, returns 201, appears unaltered in raw_sessions and has a processed status (usable, set_aside or quarantined) with reasons. | Must | SRC-15, BR-15, BR-01 | Demo |
-| TST-181 | Demo step 5 ("The new check-in shows up on the dashboard") shall be accepted when, after the step 4 POST, reloading `/residents` shows the demo resident's "Last check-in" equal to the record's local time and its 30-day "used" count increased by 1, and, when that resident's baseline is frozen, the Resident detail tally chart has one more bar for that session, within 60 s of the POST (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | SRC-15, BR-12, BR-13 | Demo |
+| TST-181 | Demo step 5 ("The new check-in shows up on the dashboard") shall be accepted when, after the step 4 POST, reloading `/residents` shows the demo resident's "Last check-in" equal to the record's local time and its 30-day "used" count increased by 1, and, when that resident's baseline is frozen, the Resident detail tally chart has one more bar for that session, within 60 s of the POST (demo with possible cold starts; the 5 s target of NFR-011 is verified automatically by TST-187) (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | SRC-15, BR-12, BR-13 | Demo |
 | TST-182 | The step 4 answer-key run shall use profile `test_v0_1` on an isolated database (local docker-compose or a disposable Neon branch) seeded only with DS-01; the real record shall be processed with profile `production` in the demo environment. Test fixture data and real records shall never share one database. | Must | TRD 14 TDV-007, TRD 15, D-OWNER-4 | Inspection |
 | TST-183 | If the cloud deployment is not ready by 5 Nov 2026, the demo may run on the local docker-compose stack with the same steps and criteria (RSK-12). | Should | RSK-12, OQ-07 | Demo |
 | TST-184 | The demo resident shall show "Baseline forming · 1 of 30 sessions" after its first usable record under the `production` profile (or the correct n if more records exist) and no alarm. | Should | BR-09, contract §8 | Demo |
 | TST-185 | An integration test shall load a synthetic new-admission resident `N01` (cohort `new_admission`, own device, test_v0_1 profile) with 15 usable records, assert it is listed by `GET /api/v1/admissions` and absent from `GET /api/v1/residents`, then ingest a 16th usable record and assert that, in the same pipeline transaction, `residents.cohort` becomes `longitudinal` with one `audit_logs` row `resident.cohort_changed` (TRD 06 DB-025), N01 leaves `/admissions` and appears in `/residents` with status "No alarm" (TRD 02 FR-205). | Must | BR-14, FR-205, DB-025 | Test |
 | TST-186 | A test shall load fixture `facility_reference_ranges` rows for the 7 scored features and a new-admission resident with enough check-ins, and assert that `GET /api/v1/admissions` returns `comparison_status` `outside_range` when at least one feature median is outside its range and `within_range` otherwise, that `GET /api/v1/admissions/{code}/comparison` returns the per-feature `low`, `high`, `resident_value` and `outside_range`, and that the `FacilityRangeChart` component renders the band and dot for each feature (TRD 02 FR-202–FR-204, TRD 11 UX-185–UX-194). | Should | BR-14, FR-202, FR-203 | Test |
+| TST-187 | An automated latency test in the E2E job (warm Compose stack, TRD 16 `e2e.yml`) shall POST one valid record with the seeded API key (as in E2E-15) and measure the time from the 201 response until a reload of `/residents` shows the resident's new "Last check-in" and increased 30-day "used" count; it shall fail above 5 s (TRD 03 NFR-011, TRD 00 SC-03). The demo acceptance TST-181 keeps its 60 s limit because it includes cold starts and manual steps. | Must | NFR-011, SC-03, BR-13 | Test |
 
 ## 5. Assumptions
 
@@ -570,3 +574,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-19, F-20, F-24, F-40, F-50, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-02, R2-03, R2-09, R2-10, R2-14, R2-22, R2-26) | — |
+| 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06, R3-07, R3-08) | — |
