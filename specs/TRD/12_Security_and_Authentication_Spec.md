@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -282,7 +282,7 @@ Audit events (`audit_logs.action`):
 | export.csv | user | route / route template | {"filters": {...}, "row_count"} |
 | pipeline.run.started | user, api_key or system | pipeline_run / run id | {"trigger", "scope", "profile"} |
 | pipeline.run.finished | system | pipeline_run / run id | {"status", "duration_ms", "warning_count"} |
-| config.changed | user or system | config_parameter / "<profile>:<key>" or secret name | {"old": value, "new": value} for parameters; {"rotated": true} for secrets |
+| config.changed | system (CLI) | config_parameter / "<profile>:<key>" or secret name | {"old": value, "new": value, "reason", "operator"} for parameters (written by `backend.cli set-config`, TRD 15 §4.8); {"rotated": true} for secrets |
 | user.created | user | user / user id | {"role"} |
 | user.updated | user | user / user id | {"changed": ["role", "active", "password", "display_name"]} |
 | api_key.created | system | api_key / key id | {"name", "device_code"} |
@@ -305,7 +305,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | SEC-100 | Every event in the table above shall write exactly one `audit_logs` row with `occurred_at` (UTC), `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `details`, `ip`, `request_id`. | Must | contract §9, §12, BR-16 | Test |
 | SEC-101 | The audit row shall be written in the same database transaction as the change it records, so that a rolled-back change leaves no audit row and a committed change always has one. | Must | T-07 | Test |
 | SEC-102 | `audit_logs` shall be append-only: the TRD 20 triggers `audit_logs_no_update_delete` (row level, UPDATE or DELETE) and its statement-level TRUNCATE trigger shall call `reject_mutation()` (SQLSTATE `EW001`, TRD 20 PGS-018), and `echowell_app` shall have only INSERT and SELECT on it. TRUNCATE shall be revoked from all non-owner roles. `raw_sessions` carries the same triggers (`raw_sessions_no_update_delete`); `alert_reviews` and `staff_notes` are append-only through grants only (`echowell_app`: SELECT, INSERT; TRD 20 PGS-021), without a trigger. | Must | contract §12, §21 R20, T-04, T-07 | Test |
-| SEC-103 | CLI actions (create-user, create-api-key, revoke-api-key) shall write audit rows with `actor_type`=`system` and `details.operator` = the OS user name running the CLI. | Must | T-07 | Test |
+| SEC-103 | CLI actions (create-user, create-api-key, revoke-api-key, set-config, rebuild) shall write audit rows with `actor_type`=`system` and `details.operator` = the OS user name running the CLI. | Must | T-07 | Test |
 | SEC-104 | Audit `details` shall never contain passwords, password hashes, tokens, API keys, DATABASE_URL, request bodies of ingest calls, or feature values. | Must | BR-16, T-09 | Test |
 | SEC-105 | Admins and researchers shall be able to read audit logs only through the `echowell_readonly` database role in the MVP; there is no audit-log API endpoint. | Must | BR-16 | Inspection |
 | SEC-106 | Audit logs shall be retained for the life of the study database; deletion policy follows OQ-01. | Must | OQ-01 | Inspection |
@@ -452,3 +452,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-12, F-14, F-16, F-23, F-28, F-42, F-43, F-45, F-47) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03) | — |

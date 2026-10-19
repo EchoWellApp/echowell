@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -174,7 +174,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | API-030 | `POST /api/v1/sessions` shall accept exactly one ingest record (contract §5 fields) as `application/json`, authenticated by `X-API-Key` with scope `ingest:write`. | Must | BR-01, contract §10 | Test |
 | API-031 | The ingest handlers shall read the raw request body themselves (not through FastAPI body-model binding) so that invalid bodies can be stored verbatim in `ingest_rejections` before the 422 is returned; the OpenAPI document shall still reference the `IngestRecord` schema via `openapi_extra`. | Must | BR-02, TRD 10 | Test |
-| API-032 | A call to `POST /sessions` shall create no `ingest_batches` row: the stored `raw_sessions.ingest_batch_id` (or `ingest_rejections.ingest_batch_id`) is null, provenance is kept in `api_key_id` and the audit log (TRD 10 ING-010; enum value `api_single` is reserved). | Must | BR-02 | Test |
+| API-032 | A call to `POST /sessions` shall create no `ingest_batches` row: the stored `raw_sessions.ingest_batch_id` (or `ingest_rejections.ingest_batch_id`) is null, provenance is kept in `raw_sessions.api_key_id` and the request log (TRD 17); single-record ingest writes no audit row (the TRD 12 §4.12 vocabulary audits only batches, `ingest.batch.received`; the triggered run writes `pipeline.run.started`/`pipeline.run.finished`) (TRD 10 ING-010; enum value `api_single` is reserved). | Must | BR-02 | Test |
 | API-033 | Before validation, the ingestion service shall apply the configured feature-name mapping (TRD 10) so that renamed extractor columns (OQ-03) need no code change. | Must | contract §5, OQ-03 | Test |
 | API-034 | The ingest record shall be validated with `extra="forbid"`: unknown fields, missing required fields, wrong types, non-finite numbers, `audio_quality_flag` not in {ok, poor}, `number_of_pauses` not a non-negative integer, `pause_fraction` or `voiced_fraction` outside [0, 1], `speech_duration_s` or `total_phrase_duration_s` negative, and `timestamp_utc` not matching `YYYY-MM-DD HH:MM:SS` shall each produce 422 `VALIDATION_ERROR` with one `errors[]` entry per failing field. | Must | BR-01, TRD 10 | Test |
 | API-035 | A `schema_version` not in the configured supported list (v0.1: `["0.1"]`) shall produce 422 `UNSUPPORTED_SCHEMA_VERSION`. | Must | contract §5 | Test |
@@ -219,7 +219,7 @@ CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 
 | API-062 | The nightly job shall run the full pipeline (scope `all`) with trigger `nightly`, profile PIPELINE_PROFILE and as-of resolved by API-135, and shall exit non-zero when the run fails. | Must | contract §7, §21 R18 | Test |
 | API-063 | Every pipeline invocation (ingest, nightly, manual) shall be executed by `services.pipeline_runner.run(scope, trigger, profile, as_of)`, which creates the `pipeline_runs` row, stores `config_snapshot` (including `as_of`), `code_version`=GIT_SHA, `counts`, `warnings`, and writes audit actions `pipeline.run.started` and `pipeline.run.finished`. | Must | contract §9, BR-15 | Test |
 | API-064 | Every run, full-scope or resident-scoped, shall serialise with other runs only through the transaction-scoped per-resident advisory locks of TRD 06 DB-021 (a), taken in ascending `resident_code` order; no session-level or global advisory lock shall be used (Neon pooled endpoint, DEP-032). | Must | BR-15 | Test |
-| API-065 | `POST /api/v1/pipeline/run` shall be authorised for admin users (JWT) and for API keys with scope `pipeline:run` (used by the AWS EventBridge Scheduler target), shall accept `{scope: "all" | [resident_code, ...], profile?: "production" | "test_v0_1", as_of?: date-time}`, start the run as a background task, and return 202 `{pipeline_run_id}`; it shall return 409 `PIPELINE_RUN_IN_PROGRESS` when a full-scope run is running. | Must | contract §10, §21 R18 | Test |
+| API-065 | `POST /api/v1/pipeline/run` shall be authorised for admin users (JWT) and for API keys with scope `pipeline:run` (used by the AWS EventBridge Scheduler target), shall accept `{scope: "all" | [resident_code, ...], profile?: "production" | "test_v0_1", as_of?: date-time}`, start the run as a background task, and return 202 `{pipeline_run_id}`; it shall return 409 `PIPELINE_RUN_IN_PROGRESS` when a full-scope run is running. A request authenticated by an API key of scope `pipeline:run` (the scheduler) shall always run scope `all` with `trigger = nightly` and, when a nightly run with status `running` or `succeeded` already exists for the facility-local date (API-061), shall start nothing and return 202 with that run's id; admin JWT requests record `trigger = manual` (TRD 24 D-70). | Must | contract §10, §21 R18 | Test |
 | API-135 | The `as_of` of every pipeline run shall be resolved in this order: explicit `as_of` in `POST /pipeline/run`; else the PIPELINE_AS_OF environment variable (the backend refuses to start when PIPELINE_AS_OF is set and APP_ENV is `production`); else the current time. The resolved value is stored in `pipeline_runs.config_snapshot.as_of`. | Must | contract §21 R21 | Test |
 | API-066 | When APP_ENV is `production`, `POST /pipeline/run` with `profile`=`test_v0_1` or any `profile` different from PIPELINE_PROFILE shall return 422 `PROFILE_NOT_ALLOWED`. | Must | ASM-04, D-OWNER-2 | Test |
 | API-058 | `create_app()` and `backend/jobs/nightly_run.py` shall refuse to start (log the reason and exit non-zero) when APP_ENV is `production` and PIPELINE_PROFILE is `test_v0_1`; the test_v0_1 profile (baseline_n 16) exists only for build-out and testing (owner decision D-OWNER-2). | Must | ASM-04, D-OWNER-2, TRD 21 | Test |
@@ -422,7 +422,7 @@ the BR IDs shown here.
 | POST /auth/logout | user | auth.py | auth_service.logout | W audit_logs | BR-16 | header "Sign out" |
 | GET /auth/me | user | auth.py | auth_service.me | R users | BR-16 | app shell (role-based nav) |
 | GET /config/ui | user | config.py | config_service.ui_config | R config_parameters, facilities | BR-13 | `/alerts` review form checklist and "Remind me in <h> h" |
-| POST /sessions | api key | sessions.py | ingestion.ingest_single, pipeline_runner.run | R residents, devices, device_assignments, api_keys; W ingest_rejections, raw_sessions, all derived tables, pipeline_runs, audit_logs (no `ingest_batches` row, API-032) | BR-01..BR-11 | none (device) |
+| POST /sessions | api key | sessions.py | ingestion.ingest_single, pipeline_runner.run | R residents, devices, device_assignments, api_keys; W ingest_rejections, raw_sessions, all derived tables, pipeline_runs, audit_logs (pipeline run rows only; no `ingest_batches` row and no ingest audit row, API-032) | BR-01..BR-11 | none (device) |
 | POST /ingest | api key, admin | ingest.py | ingestion.ingest_batch, pipeline_runner.run (background) | as POST /sessions, plus W ingest_batches | BR-01..BR-11, BR-15 | `/admin` ingest upload |
 | GET /ingest/batches/{id} | admin, researcher | ingest.py | ingestion.get_batch | R ingest_batches, ingest_rejections, pipeline_runs | BR-02 | `/admin` upload result |
 | GET /residents | user | residents.py | resident_service.overview | R residents, device_assignments, devices, processed_sessions, day_ledger, epochs, baselines, alerts, cusum_state, pipeline_runs | BR-12 | `/residents` table + tiles |
@@ -472,7 +472,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Python 3.12, FastAPI 0.115.x, Pydantic 2.x, pydantic-settings 2.x, SQLAlchemy 2.0.x, psycopg 3.x,
   Alembic 1.13.x, uvicorn, slowapi 0.1.9, PyJWT 2.x, argon2-cffi 23.x, python-multipart (CSV upload),
   tzdata/zoneinfo; pytest 8.x and httpx for tests.
-- `analytics/` package (TRD 07) exposing `analytics.pipeline.run_pipeline(raw_records, config, as_of, frozen_baselines)`.
+- `analytics/` package (TRD 07) exposing the binding signature `analytics.pipeline.run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines=None) -> PipelineResult` (TRD 07 §4.5).
 - PostgreSQL 16 schema from TRD 06/20, including the `raw_sessions` and `audit_logs` immutability triggers.
 - Railway web service and Railway Cron Job service (TRD 15, TRD 22); environment variables from TRD 21.
 - Seed scripts in `database/seeds/` that register residents, devices and device assignments (TRD 14).
@@ -554,3 +554,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-08, F-09, F-10, F-12, F-34, F-36, F-39, F-41, F-47, F-49) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-16, R2-24, R2-25) | — |

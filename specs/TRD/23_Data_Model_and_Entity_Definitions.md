@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -467,7 +467,7 @@ Algorithm, data-alert and review parameters per profile (contract sections 7 and
 |---|---|---|---|---|
 | `profile` | text | no | `production` or `test_v0_1` | Migration 0002 / admin |
 | `key` | text | no | Parameter key (23 keys: 16 of contract section 7, 5 of section 19, 2 ingest keys `supported_schema_versions` and `feature_name_map`) | Migration 0002 |
-| `value` | jsonb | no | JSON value (number, string, or object for morning_offsets) | Migration 0002 / admin (audited `config.changed`) |
+| `value` | jsonb | no | JSON value (number, string, or object for morning_offsets) | Migration 0002 / `backend.cli set-config` (audited `config.changed`, TRD 15 §4.8) |
 | `description` | text | no | Plain-language meaning | Migration 0002 |
 | `updated_by` | uuid | yes | User who last changed it; NULL for migration | Admin |
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
@@ -696,7 +696,7 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | `scores.z` | object, 7 keys `z_<feature>` → float (unsigned z) | `{"z_loudness_dbfs": -0.082559, …}` |
 | `pipeline_runs.scope` | `{"type": "all"}` or `{"type": "residents", "resident_codes": [...]}` | `{"type": "residents", "resident_codes": ["R04"]}` |
 | `pipeline_runs.config_snapshot` | object, 23 keys → JSON value | `{"baseline_n": 16, "cusum_h": 5.0, …}` |
-| `pipeline_runs.counts` | object of integers | `{"usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2, "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "alerts_opened": 2}` |
+| `pipeline_runs.counts` | object of integers | `{"arrivals": 283, "usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2, "missing_resident": 17, "missing_device_gap": 2, "late_arrival": 0, "scored": 98, "alerts_opened": 2, "excluded_after_as_of": 0, "residents": 10}` |
 | `pipeline_runs.warnings` | array of objects `{code, resident_code, session_id, detail}` | `[{"code": "late_arrival", "resident_code": "R01", "session_id": "R01-20261005-02", "detail": "epoch 1"}]` |
 | `ingest_rejections.errors` | non-empty array of objects `{field, code, message}`, identical to the 422 response `errors` (TRD 05 API-041, TRD 10 ING-004; no `value`) | `[{"field": "audio_quality_flag", "code": "invalid_enum", "message": "must be ok or poor"}]` |
 | `config_parameters.value` | number, boolean, string, object or array | `-40.0`, `"America/Chicago"`, morning_offsets object, `review_explanations` array of `{code, label}` |
@@ -915,3 +915,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-06, F-08, F-09, F-10, F-11, F-35, F-37, F-41, F-44, F-54) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-07) | — |

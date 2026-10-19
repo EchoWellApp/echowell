@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -460,24 +460,24 @@ Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_so
  "items": [
   {"id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "kind": "baseline_stalled", "resident_code": "R08", "device_code": null,
    "title": "R08 · baseline stuck at 13 of 16", "detail": "12 missed and 5 set aside in 30 days", "status": "open",
-   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e", "kind": "possible_other_speaker", "resident_code": "R05", "device_code": null,
    "title": "R05 · possible other speaker", "detail": "2 check-ins quarantined: Oct 8, Oct 22", "status": "open",
-   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "8c3d4e5f-6a7b-4c8d-ae9f-1a2b3c4d5e6f", "kind": "high_set_aside", "resident_code": "R03", "device_code": null,
    "title": "R03 · many check-ins set aside", "detail": "7 of 29 received: noise, quality flag, too short", "status": "open",
-   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "9d4e5f6a-7b8c-4d9e-bf0a-2b3c4d5e6f7a", "kind": "device_silent", "resident_code": null, "device_code": "D02",
    "title": "D02 · device silent all day", "detail": "Oct 12 · affects R02 and R03", "status": "open",
-   "first_detected_at": "2026-10-30T20:01:14Z", "last_detected_at": "2026-10-30T20:01:14Z",
+   "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
  ], "total": 4, "limit": 50, "offset": 0}
 ```
 
-(ids and detection times illustrative; titles, details and the list are the SRC-18 expected test values.)
+(ids illustrative; `first_detected_at`/`last_detected_at` are the run's `as_of` 2026-10-30T20:00:00Z (TRD 06 DB-036); titles, details and the list are the SRC-18 expected test values.)
 
 #### E-15 GET /api/v1/residents/{resident_code}/notes
 - Auth: bearer (A, C, Rs). Query `include_superseded` boolean default false, `limit`, `offset`.
@@ -2078,3 +2078,4 @@ components:
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-08, F-09, F-10, F-12, F-39, F-41, F-43) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-11) | — |

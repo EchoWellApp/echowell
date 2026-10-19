@@ -1,6 +1,6 @@
 # 02 Functional Requirements Specification
 
-Document ID: ECHOWELL-TRD-02 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-02 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -236,7 +236,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-181 | The log shall include event types: alarm on, watching started, baseline complete ("Baseline complete (n of N)"), set aside (with reasons), quarantined ("possible other speaker"), missed (missing_resident), device silent (missing_device_gap), baseline restarted (new device/firmware/software). | Must | BR-04, BR-05, BR-06, BR-08, BR-11, BR-13, SRC-10, SRC-12 | 05 API, 11 UX | T |
 | FR-182 | The log shall never contain duplicate records. | Must | BR-03, SRC-09 footer | 05 API | T |
 | FR-183 | The check-in log API shall support filtering by `from` and `to` local dates. | Should | BR-13 | 05 API | T |
-| FR-184 | A newly ingested record shall appear in the resident's check-in log and "Last check-in" after the ingest response returns, without manual pipeline action. | Must | BR-01, BR-13, SRC-15 demo step 5 | 01 ARC, 05 API | T, D |
+| FR-184 | A newly ingested usable record shall show on the dashboard after the ingest response returns, without manual pipeline action: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67); a set-aside or quarantined record appears in the check-in log as its event type. | Must | BR-01, BR-13, SRC-15 demo step 5 | 01 ARC, 05 API | T, D |
 
 ### 4.16 Staff review (BR-13)
 
@@ -247,7 +247,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-192 | Staff notes shall be append-only; an edit shall create a new note row referencing the superseded note via `supersedes_id`. | Must | BR-13, BR-16 | 06 DB | T |
 | FR-193 | The Staff review section shall list the resident's notes newest first with type, author display name and local timestamp, showing only the latest version of edited notes. | Must | BR-13 | 11 UX | T |
 | FR-194 | Users with role `researcher` shall see notes and reviews read-only and shall not see the note form, the review form, "Mark as reviewed" or "Remind me in 24 h". | Must | BR-13, BR-16, OQ-26 | 12 SEC, 11 UX | T |
-| FR-195 | The Staff review section shall display the note "Does review reset the tally? — open question OQ-05" until OQ-05 is closed. | Must | BR-13, OQ-05, SRC-10 | 11 UX | I |
+| FR-195 | The Staff review section shall display the open-question note of TRD 11 UX-125 ("Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are.") until OQ-05 is closed. | Must | BR-13, OQ-05, SRC-10 | 11 UX | I |
 
 ### 4.17 New admissions — future / experimental (BR-14)
 
@@ -289,7 +289,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-226 | Device API keys shall be created and revoked by an admin through `python -m backend.cli` commands; the plaintext key shall be shown once and only its SHA-256 hash stored; no HTTP endpoint shall exist for API keys. | Must | BR-01, BR-16, R4 | 12 SEC | T |
 | FR-227 | Residents, devices, device assignments and the facility shall be managed through version-controlled seed files and `python -m backend.cli` commands, with no HTTP endpoints; no PII field shall exist for them. | Must | BR-12, BR-16, ASM-03, R4 | 06 DB, 15 DEP | T |
 | FR-228 | Setting a resident's status to `withdrawn` with `withdrawn_on` shall stop ingestion for that resident (FR-026) and hide the resident from default lists. | Must | BR-16, OQ-11 | 06 DB, 10 ING | T |
-| FR-229 | Pipeline parameters shall be stored in `config_parameters` per profile and changes shall be audited. | Must | BR-09, BR-11, BR-16 | 07 ANL, 12 SEC | T |
+| FR-229 | Pipeline parameters shall be stored in `config_parameters` per profile and shall be changed only by the operator command `python -m backend.cli set-config --profile <p> --key <k> --value '<json>' --reason "<text>"` (TRD 15 §4.8), which validates the value against the key's schema and writes an `audit_logs` row `config.changed` with old value, new value and reason; for algorithm keys it prints that `python -m backend.cli rebuild` is required (TRD 24 D-69). | Must | BR-09, BR-11, BR-16 | 07 ANL, 12 SEC | T |
 | FR-230 | The `test_v0_1` profile shall not be selectable in production (`APP_ENV=production`). | Must | BR-09, D-OWNER-2 | 21 ENV | T |
 
 ### 4.20 Researcher analytics and export (BR-15)
@@ -307,7 +307,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
-| FR-250 | The system shall write an `audit_logs` entry for login, logout, failed login, ingest batch, note created, alert acknowledged (review saved), alarm snoozed, pipeline run, config change and user change. | Must | BR-16 | 12 SEC, 17 LOG | T |
+| FR-250 | The system shall write an `audit_logs` entry for login, logout, failed login, ingest batch, note created, alert acknowledged (review saved), alarm snoozed, pipeline run, config change (`config.changed`, written by the `set-config` CLI) and user change. | Must | BR-16 | 12 SEC, 17 LOG | T |
 | FR-251 | Each audit entry shall record time, actor type and id, action, entity type and id, details, IP and request ID, and shall contain no feature values or passwords. | Must | BR-16 | 12 SEC | T |
 | FR-252 | Audit entries shall be append-only for the application database role. | Must | BR-16 | 20 PGS | T |
 | FR-253 | `GET /api/v1/health` shall return `{status, database, version, time}` without authentication, with HTTP 503 and status "degraded" when the database check fails. | Must | BR-17, R19 | 05 API | T |
@@ -540,7 +540,7 @@ Note: `GET /api/v1/scores` is authorised for any user (contract §10) because th
 | Trigger | "Alerts (n)" in the navigation shows n > 0, or "Mark as reviewed" on Resident detail |
 | Preconditions | Logged in; at least one open alarm |
 | Inputs | Selected alarm; explanations (0..5 codes from `review_explanations`); outcome (required); note (optional, ≤ 2000 chars); or "Remind me in 24 h" |
-| Processing | `GET /api/v1/alerts?status=open,acknowledged` and `GET /api/v1/data-alerts?status=open` → render queues → select card → mini tally chart (`GET /scores`), "Leaning most", review history (`GET /alerts/{id}/reviews`) → "Save review" → `POST /alerts/{id}/reviews` → `alert_reviews` row, alert `acknowledged`, data alert for outcome `data_problem` → audit; or "Remind me in 24 h" → `POST /alerts/{id}/snooze` → audit |
+| Processing | `GET /api/v1/alerts?status=open` and `GET /api/v1/alerts?status=acknowledged` (E-13 takes one status value per call) and `GET /api/v1/data-alerts?status=open` → render queues → select card → mini tally chart (`GET /scores`), "Leaning most", review history (`GET /alerts/{id}/reviews`) → "Save review" → `POST /alerts/{id}/reviews` → `alert_reviews` row, alert `acknowledged`, data alert for outcome `data_problem` → audit; or "Remind me in 24 h" → `POST /alerts/{id}/snooze` → audit |
 | Outputs | Card shows "Reviewed" (or snoozed without emphasis); review history updated; alarm stays on and tally unchanged (OQ-05) |
 | Errors / alternatives | Missing outcome or bad code → 422; researcher → 403 (read-only view); alert closed meanwhile (epoch ended) → 409 and the queue refreshes; no open alarms → "No open alarms" |
 | Related FRs | FR-106, FR-107, FR-191, FR-260–FR-280, FR-330 |
@@ -663,3 +663,4 @@ Every FR in sections 4.2–4.25 is exercised by at least one use case: ingestion
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-06, F-07, F-08, F-09, F-12, F-21, F-24, F-25, F-29, F-36, F-37) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03, R2-13, R2-23) | — |

@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -138,7 +138,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ING-029 | Every accepted arrival, including duplicates, shall be inserted into `raw_sessions` with `arrival_seq` (bigserial), `received_at` (server UTC time), `ingest_batch_id`, `payload` (the record as received: the JSON object, or for CSV an object of header → cell text, before mapping and conversion), typed copies of all §5 fields and the 19 canonical feature columns, and `ingest_warnings`. | Must | BR-02, SRC-02, contract §9 | Test |
-| ING-030 | `raw_sessions` shall be insert-only: a database trigger shall raise on UPDATE and DELETE, and the application role `echowell_app` (used via `DATABASE_URL`) shall have no UPDATE/DELETE grant on it; the same applies to `ingest_rejections`. | Must | BR-02, SRC-02, contract §12, §21 R20 | Test |
+| ING-030 | `raw_sessions` shall be insert-only: a database trigger shall raise on UPDATE and DELETE, and the application role `echowell_app` (used via `DATABASE_URL`) shall have no UPDATE/DELETE grant on it (trigger `raw_sessions_no_update_delete`, TRD 20 PGS-018); `ingest_rejections` is append-only through grants only (`echowell_app`: SELECT, INSERT; TRD 20 PGS-021), without a trigger. | Must | BR-02, SRC-02, contract §12, §21 R20 | Test |
 | ING-031 | A CSV upload shall be UTF-8 (optional BOM), comma-separated, RFC 4180 quoting, LF or CRLF line endings; its header row, after feature-name mapping, shall consist of exactly the 30 fields of contract section 5 in any order (no missing, no extra columns), else the request is rejected with 422 `CSV_HEADER_MISMATCH` whose `errors` list the missing and extra column names, and nothing is stored. | Must | SRC-05, TRD 05 §4.7 | Test |
 | ING-032 | Within a batch, records shall be inserted in input order (JSON array order or CSV row order) so that `arrival_seq` increases in that order; `ingest_rejections.raw_body` shall hold the rejected record as received and `errors` the violation list, plus `row_number` (1-based data row, header excluded) for CSV. | Must | BR-03 | Test |
 | ING-033 | Rejected records shall never enter `raw_sessions` and shall never be processed by the pipeline; a corrected record re-sent later is treated as a new arrival. | Must | contract §7 step 1 | Test |
@@ -316,3 +316,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-04, F-21, F-22, F-35, F-43, F-44) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-08) | — |

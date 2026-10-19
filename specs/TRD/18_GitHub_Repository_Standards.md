@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -102,7 +102,7 @@ gitGraph
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-010 | `main` and `staging` shall be protected with: pull request required, at least 1 approving review, dismissal of stale approvals on new commits, CODEOWNERS review required, required status checks of TRD 16 CIC-070, branch up to date, conversation resolution, linear history, no force pushes and no deletion; administrators shall not bypass. | Must | contract §13, TRD 16 | Inspection |
+| GIT-010 | `main` and `staging` shall be protected with: pull request required, at least 1 approving review, dismissal of stale approvals on new commits, CODEOWNERS review required, required status checks of TRD 16 CIC-070, branch up to date, conversation resolution, no force pushes and no deletion; administrators shall not bypass. "Require linear history" shall be enabled on `staging` only; `main` does not require linear history because `release:` PRs from `staging` and the GIT-013 back-merge of `main` into `staging` use merge commits (GIT-014); `main` history stays readable because every other PR is squash-merged. | Must | contract §13, TRD 16 | Inspection |
 | GIT-011 | Working branches shall be named `feat/`, `fix/`, `docs/`, `chore/` or `hotfix/` followed by a lowercase kebab-case description of at most 40 characters. | Must | contract §13 | Inspection |
 | GIT-012 | Feature, fix, docs and chore branches shall target `staging`; only `release:` PRs from `staging` and `hotfix/` PRs shall target `main`. | Must | TRD 15 §4.9–4.10 | Inspection |
 | GIT-013 | After a `hotfix/` merge to `main`, `main` shall be merged back into `staging` within 1 working day. | Must | TRD 15 | Inspection |
@@ -428,3 +428,4 @@ updates:
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-45) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-21) | — |

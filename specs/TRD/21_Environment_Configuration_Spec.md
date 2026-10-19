@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -95,13 +95,14 @@ the AWS target.
 | ENV-016 | The backend shall expose `facilities.name` (`meta.facility_name`; FACILITY_NAME only seeds that row), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
 | ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
+| ENV-053 | Operator commands (`python -m backend.cli ...` and `database/seeds/load_evaluation_ground_truth.py`) shall validate only the variables they use: DATABASE_URL and DATABASE_MIGRATION_URL (both may be the migrator URL), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ, LOG_LEVEL, LOG_FORMAT; JWT_SECRET, CORS_ORIGINS, CORS_ORIGIN_REGEX and DATABASE_READONLY_URL are required only by the web application (the ground-truth loader connects with DATABASE_MIGRATION_URL). | Must | TRD 15 §4.8, TRD 16 §4.4 | Test (seed with only these variables succeeds) |
 
 ### 4.4 Config parameters (database) vs environment
 
 | Concern | Where | Changed by |
 |---|---|---|
 | Which parameter profile is active | env `PIPELINE_PROFILE` | deployment (Railway variable / `.env`) |
-| Algorithm and alerting parameter values (`baseline_n`, `noise_limit_dbfs`, `cusum_k`, `cusum_h`, `morning_offsets`, `facility_tz`, `data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, …) | table `config_parameters` (profile, key) | admin via config change (audited, TRD 12); initial rows by `backend.cli bootstrap` (TRD 15 §4.8) |
+| Algorithm and alerting parameter values (`baseline_n`, `noise_limit_dbfs`, `cusum_k`, `cusum_h`, `morning_offsets`, `facility_tz`, `data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, …) | table `config_parameters` (profile, key) | operator via `python -m backend.cli set-config --profile <p> --key <k> --value '<json>' --reason "<text>"` (runs as `echowell_migrator`, validates, audited `config.changed`; algorithm keys then need `backend.cli rebuild`, TRD 24 D-56/D-69); initial rows by `backend.cli bootstrap` (TRD 15 §4.8) |
 | Parameter snapshot used by a run | `pipeline_runs.config_snapshot` | pipeline (immutable record) |
 | Facility display name | table `facilities.name` (created from env `FACILITY_NAME` by bootstrap/seed) | bootstrap/seed CLI |
 | Time zone for the nightly job | env `FACILITY_TZ` | deployment |
@@ -110,7 +111,7 @@ the AWS target.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-020 | Algorithm, data-alert and review parameters (including the contract §19 keys `data_alert_*`, `alert_snooze_hours`, `review_explanations`) shall never be read from environment variables; the only algorithm-related environment variables are PIPELINE_PROFILE and PIPELINE_AS_OF (test as-of). | Must | contract §7, BR-15 | Inspection |
-| ENV-021 | At startup the backend shall verify that the profile named by PIPELINE_PROFILE exists in `config_parameters` with all keys of contract §7; if not, `/api/v1/health` shall still return 200 but every pipeline run shall fail with `pipeline_config_invalid` (TRD 17) until `bootstrap` is run. | Must | TRD 17 | Test |
+| ENV-021 | At startup the backend shall verify that the profile named by PIPELINE_PROFILE has rows in `config_parameters`. If the profile has no rows, or a stored value fails the validation of TRD 07 ANL-029, `/api/v1/health` shall still return 200 but every pipeline run shall fail with warning code `pipeline_config_invalid` (TRD 17) until `bootstrap` or `set-config` fixes it; a single missing key is not an error: the built-in default is used with warning `config_default_used` (TRD 07 ANL-031). | Must | TRD 17 | Test |
 | ENV-022 | If FACILITY_TZ differs from the active profile's `facility_tz`, the backend shall log WARNING `config_mismatch` at startup and add a `config_mismatch` warning to each pipeline run; the pipeline shall use the profile value. | Must | ASM-01, TRD 17 LOG-064 | Test |
 
 ### 4.5 Frontend, Compose, CI and test-harness variables
@@ -291,3 +292,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-17, F-48) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-12, R2-18) | — |

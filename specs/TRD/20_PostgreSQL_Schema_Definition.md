@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -21,8 +21,8 @@ In scope:
   of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions,
   2 trigger functions, 17 triggers, 4 group roles and their grants.
 - Seed SQL for `config_parameters` (profiles `production` and `test_v0_1`).
-- Seed SQL for the synthetic test roster (facility "Edgewood", residents R01–R10, devices, assignments) and the
-  test-only evaluation answer key.
+- The synthetic test roster (facility "Edgewood", residents R01–R10, devices, assignments) as CSV files, and the
+  test-only evaluation answer key CSV (section 4.12).
 - Rules that keep the Alembic migrations, `database/schema.sql` and SQLAlchemy models equivalent to this DDL.
 
 Out of scope:
@@ -80,7 +80,7 @@ Out of scope:
 | PGS-023 | Constraint and index names shall follow section 4.9 and shall be declared explicitly in SQLAlchemy models (`name=`), so Alembic autogenerate produces no diff on a migrated database. | Must | TRD 06 DB-012 | Test (`alembic check` exits 0 in CI) |
 | PGS-024 | Migration `0002_seed_config_parameters` shall insert the 46 rows of section 4.11 (23 keys × 2 profiles: the 16 keys of contract §7, the 5 keys of contract §19/§20 R17 and the 2 ingest keys `supported_schema_versions`, `feature_name_map` of TRD 10) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 23 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
-| PGS-026 | The synthetic roster seed of section 4.12 shall be applied only by `python -m backend.cli seed test_v0_1`, which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Test (CLI with APP_ENV=production writes nothing) |
+| PGS-026 | The synthetic roster of section 4.12 (CSV files in `database/seeds/test_v0_1/`) shall be applied only by `python -m backend.cli seed test_v0_1` (with or without `--master-only`), which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Test (CLI with APP_ENV=production writes nothing) |
 | PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
 | PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 `application/problem+json` response (error code from the TRD 05 catalogue, contract R19) and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
 | PGS-029 | `alerts` shall have at most one non-closed row per `epoch_id` (partial unique index `alerts_one_active_per_epoch_uq`) and at most one row per `(epoch_id, session_id)`. | Must | BR-11, TRD 09 | Test |
@@ -1055,60 +1055,81 @@ Analytics "Alarm timing check" (SRC-19) are NOT part of this seed: they are load
 `RESIDENTS`. Device D07 is inactive after R07 moved to D07B on 2026-10-13. Users and the ingest API key are not
 seeded by SQL: the CLI creates `admin@echowell.test`, `clinician@echowell.test` and `researcher@echowell.test` and one
 API key named `test-ingest`, generating random secrets that are printed once to the terminal and stored only as
-argon2id / SHA-256 hashes (TRD 12). The CLI then ingests SRC-05 as an `ingest_batches` row with `source = 'seed'`.
+argon2id / SHA-256 hashes (TRD 12). Unless `--master-only` is given, the CLI then ingests SRC-05 as an `ingest_batches` row with
+`source = 'seed'` and runs the pipeline at as_of 2026-10-30 15:00 America/Chicago (TRD 06 DB-058).
 
-```sql
-BEGIN;
-INSERT INTO facilities (name, timezone) VALUES ('Edgewood', 'America/Chicago');
+The roster has a single format (TRD 24 D-68): four CSV files in `database/seeds/test_v0_1/`, loaded by
+`python -m backend.cli import-master-data --dir database/seeds/test_v0_1` (format of TRD 06 DB-060), which
+`seed test_v0_1` calls internally. There is no SQL roster script. Content (UTF-8, header row first):
 
-INSERT INTO residents (facility_id, resident_code, sex, cohort, enrolled_on, status)
-SELECT f.id, r.code, r.sex, 'longitudinal', DATE '2026-10-01', 'active'
-FROM facilities f
-CROSS JOIN (VALUES ('R01','F'), ('R02','M'), ('R03','F'), ('R04','M'), ('R05','F'),
-                   ('R06','M'), ('R07','F'), ('R08','M'), ('R09','F'), ('R10','M')) AS r(code, sex)
-WHERE f.name = 'Edgewood';
+```csv
+# database/seeds/test_v0_1/facilities.csv
+name,timezone
+Edgewood,America/Chicago
+```
 
-INSERT INTO devices (facility_id, device_code, firmware_version_last, active)
-SELECT f.id, d.code, 'fw-1.0.0', d.active
-FROM facilities f
-CROSS JOIN (VALUES ('D01', true), ('D02', true), ('D04', true), ('D05', true), ('D06', true),
-                   ('D07', false), ('D07B', true), ('D08', true), ('D09', true), ('D10', true)) AS d(code, active)
-WHERE f.name = 'Edgewood';
+```csv
+# database/seeds/test_v0_1/residents.csv
+resident_code,sex,cohort,enrolled_on,admitted_on
+R01,F,longitudinal,2026-10-01,
+R02,M,longitudinal,2026-10-01,
+R03,F,longitudinal,2026-10-01,
+R04,M,longitudinal,2026-10-01,
+R05,F,longitudinal,2026-10-01,
+R06,M,longitudinal,2026-10-01,
+R07,F,longitudinal,2026-10-01,
+R08,M,longitudinal,2026-10-01,
+R09,F,longitudinal,2026-10-01,
+R10,M,longitudinal,2026-10-01,
+```
 
-INSERT INTO device_assignments (resident_id, device_id, valid_from, valid_to)
-SELECT r.id, d.id, a.valid_from, a.valid_to
-FROM (VALUES
-  ('R01', 'D01',  DATE '2026-10-01', NULL::date),
-  ('R02', 'D02',  DATE '2026-10-01', NULL),
-  ('R03', 'D02',  DATE '2026-10-01', NULL),
-  ('R04', 'D04',  DATE '2026-10-01', NULL),
-  ('R05', 'D05',  DATE '2026-10-01', NULL),
-  ('R06', 'D06',  DATE '2026-10-01', NULL),
-  ('R07', 'D07',  DATE '2026-10-01', DATE '2026-10-12'),
-  ('R07', 'D07B', DATE '2026-10-13', NULL),
-  ('R08', 'D08',  DATE '2026-10-01', NULL),
-  ('R09', 'D09',  DATE '2026-10-01', NULL),
-  ('R10', 'D10',  DATE '2026-10-01', NULL)
-) AS a(resident_code, device_code, valid_from, valid_to)
-JOIN residents r ON r.resident_code = a.resident_code
-JOIN devices   d ON d.device_code   = a.device_code;
-COMMIT;
+```csv
+# database/seeds/test_v0_1/devices.csv
+device_code,room_label,active,firmware_version_last
+D01,,true,fw-1.0.0
+D02,,true,fw-1.0.0
+D04,,true,fw-1.0.0
+D05,,true,fw-1.0.0
+D06,,true,fw-1.0.0
+D07,,false,fw-1.0.0
+D07B,,true,fw-1.0.0
+D08,,true,fw-1.0.0
+D09,,true,fw-1.0.0
+D10,,true,fw-1.0.0
+```
 
--- Equivalent rows, for reference only: the canonical source is the CSV fixture loaded by
--- database/seeds/load_evaluation_ground_truth.py (test_v0_1 only, never read by the pipeline); do not execute this block.
-BEGIN;
-INSERT INTO evaluation_ground_truth (resident_code, planted_change, true_onset_date, source_file) VALUES
-  ('R01', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R02', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R03', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R04', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R05', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R06', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R07', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R08', 'None', NULL, 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R09', 'Sudden step', DATE '2026-10-21', 'EchoWell_pipeline_test_v0_1.xlsx'),
-  ('R10', 'Slow drift',  DATE '2026-10-17', 'EchoWell_pipeline_test_v0_1.xlsx');
-COMMIT;
+```csv
+# database/seeds/test_v0_1/device_assignments.csv
+resident_code,device_code,valid_from,valid_to
+R01,D01,2026-10-01,
+R02,D02,2026-10-01,
+R03,D02,2026-10-01,
+R04,D04,2026-10-01,
+R05,D05,2026-10-01,
+R06,D06,2026-10-01,
+R07,D07,2026-10-01,2026-10-12
+R07,D07B,2026-10-13,
+R08,D08,2026-10-01,
+R09,D09,2026-10-01,
+R10,D10,2026-10-01,
+```
+
+The evaluation ground truth (not part of the seed) is the CSV fixture DS-10
+`tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv`, loaded only by
+`python database/seeds/load_evaluation_ground_truth.py <csv_path>`:
+
+```csv
+resident_code,planted_change,true_onset_date,source_file
+R01,None,,EchoWell_pipeline_test_v0_1.xlsx
+R02,None,,EchoWell_pipeline_test_v0_1.xlsx
+R03,None,,EchoWell_pipeline_test_v0_1.xlsx
+R04,None,,EchoWell_pipeline_test_v0_1.xlsx
+R05,None,,EchoWell_pipeline_test_v0_1.xlsx
+R06,None,,EchoWell_pipeline_test_v0_1.xlsx
+R07,None,,EchoWell_pipeline_test_v0_1.xlsx
+R08,None,,EchoWell_pipeline_test_v0_1.xlsx
+R09,Sudden step,2026-10-21,EchoWell_pipeline_test_v0_1.xlsx
+R10,Slow drift,2026-10-17,EchoWell_pipeline_test_v0_1.xlsx
 ```
 
 ## 5. Assumptions
@@ -1193,3 +1214,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-03, F-04, F-43, F-44, F-52) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02) | — |

@@ -63,3 +63,41 @@ Re-run mechanical checks after the fixes: no duplicate requirement IDs, no dangl
 | F-53 | Minor | TRD 25: Workflow merges to staging (GIT-012); Phase 4 users/admin per DB-056/DB-057/SEC-017 (no admin from env); Phase 6 and Phase 8 input lists completed; AGT-060 exports via API CSV, readonly role for offline SQL and analytics_summary only | Fixed |
 | F-54 | Minor | TRD 23: AC-DME-01 24 classes; DME-005 batch report returns only TRD 19 IngestRejection fields (no raw_body); §4.2.22 PipelineConfig.from_mapping | Fixed |
 | F-55 | Minor | TRD 24: D-61 (new): analytics as root package analytics/ imported by and deployed with the backend = reading of SRC-01 | Fixed |
+
+## Round 2 fixes
+
+
+Source: docs/reports/TRD_VALIDATION_REPORT.md round 2 (R2-01..R2-26: 3 Major, 23 Minor). Edits only in specs/TRD/; changed TRDs (all except 08, 11, 22) are Version 0.3 with a round-2 revision row.
+
+New IDs: D-67 (R2-01), D-68 (R2-02), D-69 (R2-03), D-70 (R2-25) in TRD 24; ENV-053; TST-185, TST-186; new CLI command `set-config` (TRD 15 §4.8). No new OQ or RSK.
+
+Mechanical checks re-run: no duplicate or dangling requirement IDs (AC-DB-02a is defined as list item '2a.'); all D/OQ/ASM/RSK/DSC references defined (only 'next free' text D-71/OQ-27/RSK-16); all /api/v1 paths in TRD 19 (except the endpoints declared not to exist, and the example path /residents/R09); table.column references match the TRD 20 DDL; code fences balanced; no TBD/TODO/lorem outside GIT-053; TRD 20 DDL runs on PostgreSQL 16.15 and the CHECK tests still give the expected 5 rejections.
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R2-01 | Major | TRD 00, 02, 03, 13, 24: D-67 (new): usable check-ins are not log events; 'shows on the dashboard' = Last check-in + 30-day used +1, and one more tally bar when the baseline is frozen. FR-184, SC-03, AC-VIS-03, TRD 00 §6 demo step 5 row, NFR-011, TST-181, E2E-15 | Fixed |
+| R2-02 | Major | TRD 06, 13, 14, 15, 16, 20, 24, 25: D-68 (new): `seed test_v0_1` = roster CSVs (via import-master-data) + users/API key + SRC-05 ingest + pipeline at as_of 2026-10-30 15:00; `--master-only` = roster only; refused in production; no `--with-input`. DB-056, DB-058, DB-060 (facilities.csv, firmware column), AC-DB-01, TRD 06 §8 seed-file note; TRD 20 §4.12 SQL roster replaced by the CSV file contents (+ DS-10 CSV), PGS-026, §2 scope; TRD 15 §4.8 import-master-data and seed rows, DEP-015, DEP-119; TRD 13 §8 E2E note (backend.scripts.load_fixture removed); TRD 14 DS-07; TRD 16 CIC-030; TRD 25 Phase 4 outputs | Fixed |
+| R2-03 | Major | TRD 02, 03, 07, 09, 12, 13, 15, 21, 23, 24: D-69 (new): new CLI `backend.cli set-config --profile --key --value --reason` (TRD 15 §4.8 row; migrator role; schema validation; audited config.changed with old/new/reason; algorithm keys print the rebuild instruction and runs fail with config_changed_requires_rebuild until rebuild). FR-229, FR-250, NFR-084, D-56, ANL-032, ANL-055, ANL-058, CUS-034 (set-config then rebuild), TRD 21 §4.4 row, TST-053, TRD 12 audit vocabulary row config.changed + SEC-103, TRD 23 §4.2.22 value row | Fixed |
+| R2-04 | Minor | TRD 04: FE-041: middleware sets Cache-Control only, no CSP nonce | Fixed |
+| R2-05 | Minor | TRD 15, 25: TRD 15 §4.5 step 6 lists the nightly job's variables explicitly (no migrator/readonly/JWT/CORS); TRD 25 Phase 4 and Phase 10 commands use root alembic.ini and the D-58 pre-deploy step | Fixed |
+| R2-06 | Minor | TRD 01, 07, 25: TRD 07 §4.2 pipeline.py has no CLI (scripts/run_engine.py); TRD 01 repo tree and §8 module list add aggregates.py; TRD 25 Phase 3 and Phase 6 module lists add data_alerts/aggregates | Fixed |
+| R2-07 | Minor | TRD 01, 17, 23: TRD 17 §4.6.2 state diagram per-resident (D-63); TRD 17 request-ID sequence no longer puts request_id in counts (logs + pipeline.run.started audit row); TRD 23 §4.5 counts example has the 12 keys; ARC-100 aligned | Fixed |
+| R2-08 | Minor | TRD 10: ING-030: trigger only on raw_sessions (TRD 20 PGS-018); ingest_rejections append-only by grants (PGS-021) | Fixed |
+| R2-09 | Minor | TRD 13: DA-01 and DA-02 restated with the inclusive day count ((as_of − start) + 1); DA-02 = 15 < 16 no alert, plus 16 ≥ 16 boundary case | Fixed |
+| R2-10 | Minor | TRD 01, 07, 13, 15: Rollback step issues new keys with create-api-key (no re-activate); one nightly dedupe condition (running or succeeded on the facility-local date, API-061/DEP-047) in ARC-061, TST-052, ANL-045 | Fixed |
+| R2-11 | Minor | TRD 07, 19: One model (TRD 06 DB-036 owner, TRD 23 §4.3.7): ANL-060 references DB-036 (new open row on recurrence, never reopen; timestamps = run as_of); TRD 19 E-30 example uses as_of | Fixed |
+| R2-12 | Minor | TRD 07, 21: ENV-021, ANL-031 and ANL-052 agree: missing key -> default + config_default_used; no profile rows or invalid value -> run fails with pipeline_config_invalid (listed as a failure code) | Fixed |
+| R2-13 | Minor | TRD 02: FR-195 uses the UX-125 note text verbatim | Fixed |
+| R2-14 | Minor | TRD 04, 13: TST-090 uses the TRD 04 §4.8 component names; TRD 04 §4.6.3 adds aliases ResidentDetail, StaffNote, AdmissionRow, AdmissionComparison | Fixed |
+| R2-15 | Minor | TRD 07: ANL-044 scope = API-053 definition (incl. co-assigned residents) | Fixed |
+| R2-16 | Minor | TRD 05, 06: TRD 05 §6 dependency and TRD 06 §4.4 sequence quote the binding run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines) signature; engine called once per run, writes per resident | Fixed |
+| R2-17 | Minor | TRD 06, 07, 09: CUS-018, DB-018 and ANL-039 set closed_at = run as_of on every close (alerts_closed_ck) | Fixed |
+| R2-18 | Minor | TRD 16, 21: e2e.yml loads DS-10 ground truth after seeding; staging reseed passes DATABASE_URL/DATABASE_MIGRATION_URL (migrator), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ; new ENV-053 (operator commands validate only the variables they use) | Fixed |
+| R2-19 | Minor | TRD 04, 14: One generator and path: npm run fixtures:capture -> frontend/tests/fixtures/ds07/ (TRD 04 §4.11/§4.12 notes, TDV-016) | Fixed |
+| R2-20 | Minor | TRD 16: CIC-116 pins @lhci/cli 0.14.x (as TRD 13) | Fixed |
+| R2-21 | Minor | TRD 18: GIT-010: linear history on staging only; main allows the release/back-merge merge commits of GIT-013/GIT-014 | Fixed |
+| R2-22 | Minor | TRD 13: TST-152: authenticated smoke on staging only; production smoke = unauthenticated DEP-081 checks | Fixed |
+| R2-23 | Minor | TRD 02: UC-13 uses two single-value status calls (E-13 accepts one enum value) | Fixed |
+| R2-24 | Minor | TRD 01, 05: Single-record ingest is not audited (vocabulary audits batches only): API-032, TRD 05 §4.12 row, TRD 01 ingest sequence note | Fixed |
+| R2-25 | Minor | TRD 01, 05, 07, 15, 24: D-70 (new): POST /pipeline/run with a pipeline:run API key records trigger = nightly, scope all, with the API-061 once-per-night dedupe (202 with the existing run id); API-065, ANL-045, DEP-116, TRD 01 AWS mapping row, D-47 | Fixed |
+| R2-26 | Minor | TRD 13: New TST-185 (FR-205/DB-025 new-admission -> own-baseline transition, Must) and TST-186 (populated facility comparison: API statuses + FacilityRangeChart, Should) | Fixed |

@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -129,7 +129,7 @@ sequenceDiagram
         A-->>D: 422 problem+json with field errors
     else valid
         V->>DB: insert raw_sessions (payload as received, arrival_seq)
-        V->>DB: audit_logs (ingest)
+        Note over V,DB: single-record ingest writes no audit row (provenance: raw_sessions.api_key_id + app log; TRD 05 API-032)
         A->>P: run(scope = this resident, trigger = ingest) [synchronous]
         P->>DB: load raw_sessions, frozen baselines, config snapshot for resident
         P->>AN: run_pipeline(records, config, frozen_baselines, as_of)
@@ -277,7 +277,7 @@ echowell/
 │                             quality_screening.py, epoch_detection.py, speaker_screen.py,
 │                             morning_offset.py, baseline_builder.py, zscore_calculator.py,
 │                             composite_score.py, cusum_engine.py, alert_generator.py,
-│                             day_ledger.py, data_alerts.py, pipeline.py
+│                             day_ledger.py, data_alerts.py, aggregates.py, pipeline.py
 ├── database/                 schema.sql (generated reference DDL), seeds/, roles/provision_login_roles.sql (local/CI)
 ├── tests/                    unit/, integration/, validation/ (R01–R10), fixtures/ (SRC-03, SRC-05)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md,
@@ -311,7 +311,7 @@ echowell/
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ARC-060 | Every pipeline execution shall create one `pipeline_runs` row recording trigger, scope, config profile, config snapshot, code version (`GIT_SHA`), start and finish times, status, counts and warnings. | Must | BR-15, BR-16, TRD 17 | Test |
-| ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when facility-local time is 02:xx and no nightly run exists for that local night, so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
+| ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when facility-local time is 02:xx and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047), so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
 | ARC-062 | The nightly run shall recompute the day ledger up to the new as-of date so that a resident with no record on the previous local day receives a missing-day entry even when no record arrived. | Must | BR-06, SRC-03 | Test |
 | ARC-063 | Pipeline executions that touch the same resident shall be serialized using a transaction-scoped PostgreSQL advisory lock keyed on the resident, taken by every run including full-scope runs (keys and helper in TRD 06 DB-021); there is no global run lock, because session-level advisory locks do not work over the Neon pooled endpoint. | Must | BR-02, BR-15 | Test (concurrent ingest) |
 | ARC-064 | The derived-table writes of one pipeline execution shall commit in a single database transaction per resident, so that readers never observe a partially processed resident. | Must | BR-12, BR-13 | Test |
@@ -377,7 +377,7 @@ flowchart LR
 | Frontend hosting | Netlify | AWS Amplify Hosting | Standard Next.js build; no Netlify-specific runtime APIs (Netlify Functions, Edge Functions, Netlify Identity) |
 | Backend hosting | Railway | AWS App Runner | Containerized via `backend/Dockerfile`; listens on `$PORT`; stateless |
 | Database | Neon / Railway PostgreSQL 16 | AWS RDS PostgreSQL 16 | Standard PostgreSQL only; no Neon-specific SQL; connection via `DATABASE_URL` |
-| Scheduler | Separate Railway Cron Job service running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (D-47) | Trigger calls the same `pipeline_runner` entry |
+| Scheduler | Separate Railway Cron Job service running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, recorded as `trigger = nightly` (D-47, D-70) | Trigger calls the same `pipeline_runner` entry |
 | Region | Neon `aws-us-east-1`, Railway US East | AWS `us-east-1` | Region set only in hosting configuration (R25) |
 | Secrets | Netlify/Railway env vars, GitHub secrets | AWS Secrets Manager injected as App Runner environment variables | Read only from environment variables |
 | Encryption at rest | Provider-managed storage encryption (Neon/Railway) | RDS storage encryption with AWS KMS key; encrypted automated backups and snapshots; any S3 objects encrypted (SSE-KMS) | No application-level dependency on the mechanism |
@@ -399,7 +399,7 @@ flowchart LR
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ARC-100 | Every HTTP response shall carry an `X-Request-ID` header; the backend shall propagate the request ID into logs, `audit_logs.request_id` and `pipeline_runs` started by that request. | Must | BR-16, TRD 17 | Test |
+| ARC-100 | Every HTTP response shall carry an `X-Request-ID` header; the backend shall propagate the request ID into logs and `audit_logs.request_id` (including the `pipeline.run.started` row of a run started by that request, which links the request to the `pipeline_runs` row). | Must | BR-16, TRD 17 | Test |
 | ARC-101 | Errors shall be returned as `application/problem+json` with `{type, title, status, detail, request_id, errors}`, where `type` = `urn:echowell:error:<CODE>` (UPPER_SNAKE codes catalogued in TRD 05) and `errors[]` items are `{field, code, message}`. | Must | BR-01, TRD 05, R19 | Test |
 | ARC-102 | All timestamps shall be stored as `timestamptz` in UTC; conversion to local time shall use the IANA zone in `facilities.timezone` (default `America/Chicago`) via Python `zoneinfo`. | Must | BR-07, ASM-01 | Test |
 | ARC-103 | Security-relevant actions listed in TRD 12 shall be written to the append-only `audit_logs` table. | Must | BR-16 | Test |
@@ -437,7 +437,7 @@ flowchart LR
 
 ## 8. Implementation Notes
 
-- Missing analytics files to create next to the existing skeletons: `analytics/data_alerts.py`, `analytics/speaker_screen.py`, `analytics/day_ledger.py`, `analytics/robust_stats.py`, `analytics/pipeline.py`, `analytics/config.py`, `analytics/__init__.py`.
+- Missing analytics files to create next to the existing skeletons: `analytics/data_alerts.py`, `analytics/aggregates.py`, `analytics/speaker_screen.py`, `analytics/day_ledger.py`, `analytics/robust_stats.py`, `analytics/pipeline.py`, `analytics/config.py`, `analytics/__init__.py`.
 - `run_pipeline` signature (recommended): `run_pipeline(records: list[RawRecord], residents: list[ResidentInfo], assignments: list[DeviceAssignment], frozen_baselines: dict[(resident, epoch_number), BaselineSet], config: PipelineConfig, as_of: datetime) -> PipelineResult`. All inputs are plain dataclasses; the backend repository layer converts ORM rows to them.
 - Use `SRC-04` as the executable reference when in doubt; its output must equal SRC-03.
 - Railway and Neon free tiers may sleep or auto-suspend (RSK-07); the first request after idle can be slow. Do not add keep-alive pingers without TRD 15 approval.
@@ -464,3 +464,4 @@ flowchart LR
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-04, F-16, F-32, F-33) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-06, R2-07, R2-10, R2-24, R2-25) | — |

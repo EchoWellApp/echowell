@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -126,7 +126,7 @@ sequenceDiagram
   B->>A: request (X-Request-ID: uuid generated per call)
   A->>A: validate or replace id, set contextvar
   A->>H: handle (logs carry request_id)
-  H->>P: start background run (request_id stored in pipeline_runs.counts.request_id)
+  H->>P: start background run (request_id carried in the run's log events and in its pipeline.run.started audit row, audit_logs.request_id; never in pipeline_runs.counts)
   A-->>B: response + X-Request-ID header (+ request_id in RFC 7807 body on error)
   B->>B: show "Reference: <request_id>" in error message
 ```
@@ -202,9 +202,9 @@ RFC 7807-style body (contract §10):
 ```mermaid
 stateDiagram-v2
   [*] --> running: pipeline_runs row inserted (status running)
-  running --> succeeded: all stages complete, derived tables committed
-  running --> failed: any stage raises / config invalid / DB error
-  failed --> [*]: derived tables unchanged (transaction rolled back), warnings + error recorded
+  running --> succeeded: all stages complete, every resident's transaction committed
+  running --> failed: a resident's transaction raises / config invalid / DB error
+  failed --> [*]: failed residents' derived rows unchanged (their transactions rolled back), other residents committed (D-63), warnings + error_message recorded
   succeeded --> [*]
 ```
 
@@ -363,3 +363,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-18, F-39, F-41) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-07) | — |

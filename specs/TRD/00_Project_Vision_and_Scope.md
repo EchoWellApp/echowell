@@ -1,6 +1,6 @@
 # 00 Project Vision and Scope
 
-Document ID: ECHOWELL-TRD-00 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-00 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -233,7 +233,7 @@ The MVP is the smallest system that achieves the end-of-semester demo goal (SRC-
 | 2. Device checks audio and extracts features | Team 1 | A feature record is produced on the device and the raw audio is deleted | Out of scope (interface only); record conforms to schema v0.1 |
 | 3. Feature record sent to cloud storage | Team 1 + Team 2 | A record made on the device appears in cloud storage | `POST /api/v1/sessions` accepts the record and stores it in `raw_sessions` |
 | 4. Pipeline processes the record | Team 2 | Pipeline passes the test set answer key, then processes a real record | Full pipeline reproduces SRC-03 exactly; processes the live record within the targets of TRD 03 |
-| 5. Dashboard shows the result | Team 2 | The new check-in shows up on the dashboard | Residents overview "Last check-in" and Resident detail check-in log update |
+| 5. Dashboard shows the result | Team 2 | The new check-in shows up on the dashboard | Residents overview "Last check-in" and 30-day "used" count update; with a frozen baseline the Resident detail tally chart gains one bar (D-67) |
 | 6. Full run recorded on video | Both teams | Two videos: spoken phrase to cloud (Team 1), cloud to dashboard (Team 2) | Staging or production deployment usable for recording |
 
 MVP feature set: all items S-01 to S-13 in section 2.1, with the New admissions page delivered as an experimental page whose comparison status reads "Facility range not available yet" or "Not enough check-ins yet" unless facility reference ranges exist (OQ-08; TRD 02 FR-202).
@@ -283,7 +283,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 |---|---|---|---|---|
 | SC-01 | Answer-key reproduction | Fraction of SRC-03 expected values matched (status counts, outcomes, 180 baseline rows, 98 score rows, reasons) | 100% within 1e-6 / exact strings | Automated validation suite in CI (TRD 14) |
 | SC-02 | Overview matches wireframe numbers | Summary tiles for test data as of 2026-10-30 15:00 America/Chicago | Alarm on 2, Being watched no alarm 7, Baseline still forming 1, Missed check-ins 19 | E2E test (TRD 13) |
-| SC-03 | End-to-end demo | One record posted with a valid API key appears on the Resident detail check-in log | Within 5 s of the POST returning (warm services) | Demo, E2E test |
+| SC-03 | End-to-end demo | One record posted with a valid API key shows on the dashboard: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67) | Within 5 s of the POST returning (warm services) | Demo, E2E test |
 | SC-04 | No audio, no PII | Audio-like fields or endpoints; name-like fields | 0 | Inspection, schema test |
 | SC-05 | Reproducibility | Two full rebuilds of SRC-05 with the same config produce identical derived tables | Byte-identical comparison of exported derived tables | Test |
 | SC-06 | Deployed | Frontend on Netlify and backend on Railway reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
@@ -388,7 +388,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 |---|---|
 | AC-VIS-01 | The validation suite (TRD 14) passes 100% of SRC-03 comparisons for R01–R10 on the `test_v0_1` profile. |
 | AC-VIS-02 | With the SRC-05 data loaded and as-of 2026-10-30 15:00 America/Chicago, the Residents overview shows tiles 2 / 7 / 1 / 19 and the R09 row reads "▲ Alarm since Oct 21". |
-| AC-VIS-03 | A record posted to `POST /api/v1/sessions` in the interim production environment for a `T`-prefixed demo study ID (profile `production`, as-of = request time; TRD 15 DEP-093) appears in the Resident detail check-in log after a page reload, demonstrated on video. Staging is not used for this step because its fixed PIPELINE_AS_OF (2026-10-30) excludes later records (TRD 07 ANL-015, TRD 24 D-59). |
+| AC-VIS-03 | A record posted to `POST /api/v1/sessions` in the interim production environment for a `T`-prefixed demo study ID (profile `production`, as-of = request time; TRD 15 DEP-093) shows on the dashboard after a page reload, demonstrated on video: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). Staging is not used for this step because its fixed PIPELINE_AS_OF (2026-10-30) excludes later records (TRD 07 ANL-015, TRD 24 D-59). |
 | AC-VIS-04 | A repository search finds no audio upload/download endpoint, no audio column, no LLM dependency, and no use of "Edge4Care" to name the facility. |
 | AC-VIS-05 | Every requirement row in TRDs 01–25 contains at least one BR-xx trace (checked by script or review). |
 | AC-VIS-06 | Every page of the dashboard shows its no-audio footer (VIS-020) and the New admissions page shows the "Future / experimental study arm" banner. |
@@ -435,3 +435,4 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-17, F-19, F-27) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01) | — |

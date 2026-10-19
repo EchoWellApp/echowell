@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -55,7 +55,7 @@ Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sl
 | NFR-008 | The first request after an idle period (cold start of backend or database on interim tiers) shall complete in < 15 s; the frontend shall show a loading state (not an error) for up to 20 s. | Should | BR-12, RSK-07 | Test (manual, staging) |
 | NFR-009 | Batch ingest of the reference CSV (283 rows) shall return 202 in ≤ 2 s and the batch shall be fully processed in ≤ 30 s. | Must | BR-15, R8 | Test |
 | NFR-010 | The Residents overview, Resident detail, Alert review and Analytics pages shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI) |
-| NFR-011 | A record accepted by `POST /api/v1/sessions` shall be visible on the Resident detail page (after reload) within 5 s of the API response, end to end. | Must | BR-13, SRC-15 demo step 5 | Test (E2E), Demo |
+| NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E), Demo |
 | NFR-012 | The initial JavaScript transferred for any dashboard route shall be ≤ 300 KB gzip. | Should | BR-12 | Test (`next build` output check in CI) |
 | NFR-013 | The Alert review page shall reflect a saved review or snooze (badge change, history entry) within 1 s of the API response, without a full page reload. | Should | BR-13, SRC-18 | Test (E2E) |
 
@@ -133,7 +133,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-081 | Python code shall pass `ruff` lint and `ruff format --check`; TypeScript shall pass `tsc --noEmit` in strict mode, ESLint and Prettier. | Must | BR-17 | Test (CI) |
 | NFR-082 | Line coverage shall be ≥ 95% for `analytics/`, ≥ 85% for `backend/`, and ≥ 80% for `frontend/` (Vitest), enforced in CI. | Must | BR-15, BR-17, SRC-01, R7 | Test (CI coverage gate) |
 | NFR-083 | Every analytics stage function shall have unit tests covering its boundary values (e.g. noise exactly −40.0 is not set aside; speech exactly 1.0 s is not set aside; local hour 12:00 is not morning; tally exactly 5.0 rings). | Must | BR-04, BR-07, BR-11, BR-15 | Test |
-| NFR-084 | Pipeline parameters shall be changeable through `config_parameters` without code change and without redeploy: operational keys (data-alert thresholds, `alert_snooze_hours`, `review_explanations`, ingest keys) take effect from the next run or request; algorithm keys take effect through the operator rebuild command (TRD 07 ANL-032), until which ingest and nightly runs fail with `config_changed_requires_rebuild` (TRD 24 D-56). | Must | BR-09, BR-11, ARC-053 | Test |
+| NFR-084 | Pipeline parameters shall be changeable through `config_parameters` with the `set-config` CLI (TRD 15 §4.8, TRD 24 D-69), without code change and without redeploy: operational keys (data-alert thresholds, `alert_snooze_hours`, `review_explanations`, ingest keys) take effect from the next run or request; algorithm keys take effect through the operator rebuild command (TRD 07 ANL-032), until which ingest and nightly runs fail with `config_changed_requires_rebuild` (TRD 24 D-56). | Must | BR-09, BR-11, ARC-053 | Test |
 | NFR-085 | Public functions in `analytics/` and service methods in `backend/services/` shall carry docstrings stating inputs, outputs and the TRD requirement IDs they implement. | Should | BR-17, VIS-014 | Inspection |
 | NFR-086 | Database schema changes shall be delivered only as Alembic migrations that upgrade and downgrade cleanly on an empty database and on a database with the reference dataset. | Must | BR-17 | Test (CI migration job) |
 | NFR-087 | A new developer shall be able to start the full local stack with one command (`docker compose up`) and load the reference dataset with one documented command in < 10 min on a laptop with 8 GB RAM. | Should | BR-17 | Demo |
@@ -269,3 +269,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-19, F-23, F-40) | — |
+| 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03) | — |
