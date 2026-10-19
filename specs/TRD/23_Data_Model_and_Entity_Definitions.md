@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -59,7 +59,7 @@ Out of scope:
 | DME-006 | `processed_sessions.status` shall take exactly the transitions of section 4.3.1; `pending_screen` shall exist only in memory inside `analytics/` and shall never be persisted. | Must | BR-03, BR-04, BR-05, SRC-04 | Test (status counts of test_v0_1 = 267/12/2/2) |
 | DME-007 | `alerts.status` shall change only along section 4.3.2; the first `alert_reviews` row sets `open` → `acknowledged` with `acknowledged_by`/`acknowledged_at`; neither a review nor a snooze shall change `scores`, `cusum_state` or `alarm_state` in v0.1 (OQ-05). | Must | BR-11, OQ-05, contract §19, R5 | Test |
 | DME-021 | `alert_reviews` rows shall be immutable and several may exist per alert; a review with outcome `data_problem` shall, in the same transaction, create or link one `data_alerts` row of kind `review_flagged_data_problem` by `alert_review_id` (TRD 02 FR-273); `explanations` codes shall be validated against config `review_explanations`. | Must | Contract §19, OQ-25 | Test |
-| DME-022 | A snooze shall set `alerts.snoozed_until = now() + alert_snooze_hours` and `snoozed_by`, leaving `status` unchanged; the UI shows "Not reviewed" emphasis again once `snoozed_until` has passed. | Must | Contract §19 | Test |
+| DME-022 | A snooze shall set `alerts.snoozed_until` = the application clock's current time (computed in Python, never the database `now()`) + `alert_snooze_hours` and `snoozed_by`, leaving `status` unchanged; the UI shows "Not reviewed" emphasis again once `snoozed_until` has passed (a client-side comparison, TRD 04 FE-205). | Must | Contract §19 | Test |
 | DME-023 | `data_alerts` shall follow the lifecycle of section 4.3.7 and the natural keys of TRD 06 DB-036; for test_v0_1 as of 2026-10-30 exactly 4 rows are open: R08 baseline_stalled, R05 possible_other_speaker, R03 high_set_aside, D02 device_silent. | Must | Contract §19, OQ-24 | Test |
 | DME-024 | `evaluation_ground_truth` shall hold rows only in databases running the test_v0_1 profile, shall never be read by `analytics/` or the pipeline service, and shall feed only the Analytics "Alarm timing check" (R09 Sudden step Oct 21 → alarm Oct 21, delay 0 days; R10 Slow drift Oct 17 → Oct 24, 7 days; other 8 None, no alarm, Correct). | Must | SRC-02, contract §19, R20 | Test |
 | DME-025 | Entities carrying human state (`alerts`, `alert_reviews`, `staff_notes`, `data_alerts`) shall keep their primary keys across rebuilds by natural-key upsert (contract R15). | Must | R15 | Test (TRD 06 AC-DB-02a) |
@@ -390,7 +390,7 @@ Alarm event at the first crossing of h; a flag for clinician review, not a diagn
 | `closed_at` | timestamptz | yes | Instant closed | Stage 9 |
 | `acknowledged_by` | uuid | yes | Reviewer of the first alert review | POST /alerts/{id}/reviews |
 | `acknowledged_at` | timestamptz | yes | Instant of the first alert review | POST /alerts/{id}/reviews |
-| `snoozed_until` | timestamptz | yes | "Remind me" time: now + alert_snooze_hours (24) when snoozed; hides "Not reviewed" emphasis until then; does not change alarm state | POST /alerts/{id}/snooze |
+| `snoozed_until` | timestamptz | yes | "Remind me" time: application-clock now + alert_snooze_hours (24) when snoozed (DME-022); hides "Not reviewed" emphasis until then; does not change alarm state | POST /alerts/{id}/snooze |
 | `snoozed_by` | uuid | yes | User who snoozed (set together with snoozed_until) | POST /alerts/{id}/snooze |
 | `pipeline_run_id` | uuid | no | Run that created or last reconciled it | Pipeline service |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
@@ -917,3 +917,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-06, F-08, F-09, F-10, F-11, F-35, F-37, F-41, F-44, F-54) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-07) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |

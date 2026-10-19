@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -563,7 +563,7 @@ Mapping from the current interim stack:
 
 - Paths to create in Phase 14A: `/netlify.toml`, `/railway.toml`, `/backend/Dockerfile`, `/frontend/Dockerfile`, `/.dockerignore`, `/docker-compose.yml` (replace the current stub `version: "3"`; the top-level `version` key is obsolete in Compose v2 and must be removed), `/alembic.ini`, `/backend/cli.py`, `/tests/smoke/`, `/.env.example`, `/.env.development.example`, `/.env.production.example`, `/docs/deployment.md`, `/DEPLOYMENT_CONFIGURATION_GUIDE.md`.
 - The backend must be started from the repository root (module path `backend.main:app`, and `analytics` imported as a top-level package). In the Dockerfile set `WORKDIR /app` and copy `backend/` to `/app/backend`, `analytics/` to `/app/analytics`; add `ENV PYTHONPATH=/app`.
-- psycopg 3 behind the Neon pooler (PgBouncer transaction mode) requires disabling server-side prepared statements: pass `connect_args={"prepare_threshold": None}` to `create_engine`. Alembic uses the direct endpoint, so it is unaffected.
+- psycopg 3 server-side prepared statements are disabled in every environment by the one engine factory of TRD 05 API-125 (`connect_args={"prepare_threshold": None}`): required behind the Neon pooler (PgBouncer transaction mode) and after a schema reset under a running backend (D-71, D-73).
 - Normalize `postgres://` and `postgresql://` URLs to `postgresql+psycopg://` in settings (TRD 21) because Neon and Railway hand out the former.
 - `backend/requirements.txt` currently lists `psycopg2-binary`; replace with `psycopg[binary]==3.2.*` to match the contract pin (psycopg 3.x).
 - Railway's `$PORT` must be expanded by a shell; keep the `sh -c '...'` wrapper in `railway.toml`.
@@ -589,3 +589,4 @@ Mapping from the current interim stack:
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-02, R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-01, R4-02, R4-03, R4-06) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-10, R5-11) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-02) | — |

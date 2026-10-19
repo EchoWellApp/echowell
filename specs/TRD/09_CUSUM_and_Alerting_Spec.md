@@ -1,6 +1,6 @@
 # 09 CUSUM and Alerting Spec
 
-Document ID: ECHOWELL-TRD-09 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-09 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -251,7 +251,7 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 |---|---|---|---|---|
 | CUS-037 | The alarm queue shall show one card per non-closed change alarm of a current epoch with the texts and ordering defined above. | Must | SRC-18 | Test |
 | CUS-038 | The review form shall offer the explanation checklist from config key `review_explanations` (codes and labels: cold_cough_sore_throat "Cold, cough or sore throat"; dental_dentures "Dental problem or dentures out"; medication_change "New or changed medication"; poor_sleep_unusual_day "Poor sleep or unusual day"; room_device_moved "Room or device moved"; multi-select, optional; provisional, OQ-25) and a required single outcome: no_concern "Checked on resident, no concern"; known_cause "Explained by a known cause"; referred "Referred to nurse or provider"; data_problem "Looks like a data problem: send to study team". Unknown codes return 422. | Must | SRC-18, OQ-25 | Test |
-| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; while `snoozed_until` is in the future the card shall not show the "Not reviewed" emphasis; snoozing shall not change alert status, tally or alarm state, and is audit-logged (action `alert.snoozed`, TRD 12 §4.12). | Must | SRC-18, §19 | Test |
+| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now (application clock, TRD 23 DME-022) + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; while `snoozed_until` is in the future the card shall not show the "Not reviewed" emphasis; snoozing shall not change alert status, tally or alarm state, and is audit-logged (action `alert.snoozed`, TRD 12 §4.12). | Must | SRC-18, §19 | Test |
 | CUS-040 | A review with outcome `data_problem` shall create or link a `data_alerts` row of kind `review_flagged_data_problem` as TRD 02 FR-273 specifies, with the title and detail strings of TRD 11 §4.17.2; the pipeline never creates, modifies or resolves this kind (TRD 07 ANL-060). | Must | SRC-18, §19 | Test |
 | CUS-041 | "Leaning most" shall be computed as defined above and returned with each alarm on `GET /api/v1/alerts`; it shall be absent (empty list) when no feature has a positive mean. | Must | SRC-18, §19 | Test |
 | CUS-042 | Who may review and the required review time are not enforced in the MVP (roles clinician and admin may review; no SLA; OQ-26); the page footer shall read "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | Must | OQ-26, BR-18 | Inspection |
@@ -354,3 +354,4 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-08, F-25) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-17) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |

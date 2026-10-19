@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -240,7 +240,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Inputs | TRD 04, 11, 19, 03, 05, 12 (CSP, §4.9), 21 (frontend env vars); SRC-09, SRC-10, SRC-11, SRC-18 (Alert review), SRC-19 (Analytics) |
 | Outputs | Pages `/login`, `/residents` (with Devices panel `#devices`), `/residents/[residentCode]`, `/admissions` (experimental banner), `/alerts` (Alert review), `/analytics` (Analytics, researcher and admin), `/admin`; `frontend/lib/wording.ts` (D-18); components, `frontend/services/api.ts` client; loading, error and empty states; `docs/reports/FRONTEND_IMPLEMENTATION_REPORT.md` |
 | Definition of done | With test data as of Oct 30 the overview tiles read 2 / 7 / 1 / 19; R09 detail shows the alarm line labelled "alarm line 5.0", grey baseline bars and accent post-freeze bars; 7 measurement cards plus the "12 other measurements" card; Alert review shows R09 (since Oct 21, open 9 days, tally 26.8) and R10 (since Oct 24, open 6 days, tally 13.4) and the four data alerts; Analytics shows 281 of 300 received (94%), 267 of 300 used (89%), baselines 9 of 10, alarms 2, and the alarm timing table (R09 0 days, R10 7 days); CUSUM bars follow D-30; chrome follows D-31; OQ-05 note and OQ-12 marker present; frontend line coverage ≥ 80% (D-39); WCAG 2.1 AA (status never by colour alone, chart has a text table); no mock values in production builds |
-| Required tests | Vitest + React Testing Library component and page tests (sort orders, badges, 30-day counts, empty states); Playwright E2E: login → overview → R09 detail → add note → "Mark as reviewed" opens the review form → save review → Alerts badge shows "Reviewed" and the tally is unchanged (tagged `@mutating`, run after all read-only scenarios on a freshly re-seeded database, TRD 13 §4.10, TRD 24 D-73); researcher opens `/analytics`; clinician is refused `/analytics` |
+| Required tests | Vitest + React Testing Library component and page tests (sort orders, badges, 30-day counts, empty states); Playwright E2E: login → overview → R09 detail → add note → "Mark as reviewed" opens the review form → save review → Alerts badge shows "Reviewed" and the tally is unchanged (tagged `@mutating`, the D-73 group E2E-18 → E2E-09/FE-187 → FE-193 snooze step, run after all read-only scenarios on a freshly re-seeded database, TRD 13 §4.10, TRD 24 D-73); researcher opens `/analytics`; clinician is refused `/analytics` |
 | Commands | `cd frontend && npm run lint && npm run build && npm run test && npx playwright test` |
 | Pitfalls | Natural sort of resident codes; never display duplicates; dates shown in facility local time; footer "No audio is stored or played here — only extracted voice measurements." |
 
@@ -370,3 +370,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-03) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-09) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-03) | — |

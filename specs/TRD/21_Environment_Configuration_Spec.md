@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -69,7 +69,7 @@ the AWS target.
 | `LOG_LEVEL` | Minimum log level | No | `INFO` | `INFO` | all | No | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `LOG_FORMAT` | Log output format | No | `json` | `json` | all | No | `json` or `console`; `console` refused in `staging`/`production` |
 | `SENTRY_DSN` | Sentry project DSN; empty disables Sentry | No | empty | `https://****@o0.ingest.us.sentry.io/0` | staging, production | Yes | empty or https URL |
-| `RATE_LIMIT_LOGIN` | Login rate limit per client IP | No | `5/minute` | `5/minute` | all | No | `<int>/<second|minute|hour|day>` |
+| `RATE_LIMIT_LOGIN` | Login rate limit per client IP | No | `5/minute` | `5/minute` (E2E stack `60/minute`, D-74) | all | No | `<int>/<second|minute|hour|day>`; must be `5/minute` when APP_ENV is `staging` or `production` (ENV-054) |
 | `RATE_LIMIT_INGEST` | Ingest rate limit per API key | No | `600/minute` | `600/minute` | all | No | same format |
 | `GIT_SHA` | Deployed commit SHA, reported as `version` by health | No | `unknown` | `3f9c2ab…` (40 hex) | all | No | `unknown` or 7–40 hex chars; set by platform (Railway: `${{RAILWAY_GIT_COMMIT_SHA}}`; Compose: `git rev-parse HEAD` via `.env`; App Runner: image build arg) |
 | `DATA_SOURCE_LABEL` | Text shown in header "Showing <label> as of …" | No | `pipeline test data v0.1` | `demo data (synthetic)` | all | No | 1–60 chars |
@@ -96,6 +96,7 @@ the AWS target.
 | ENV-016 | The backend shall expose `facilities.name` (`meta.facility_name`; FACILITY_NAME only seeds that row), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
 | ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
+| ENV-054 | RATE_LIMIT_LOGIN may differ from `5/minute` only when APP_ENV ∈ {`local`, `test`} (the E2E stack sets `60/minute`, TRD 16 `e2e.yml`, TRD 24 D-74); with APP_ENV `staging` or `production` the backend shall refuse to start (exit code 1) unless it is `5/minute`. | Must | contract §12, BR-16 | Test |
 | ENV-053 | Operator commands (`python -m backend.cli ...` and `database/seeds/load_evaluation_ground_truth.py`) shall validate only the variables they use: DATABASE_URL and DATABASE_MIGRATION_URL (both may be the migrator URL), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ, LOG_LEVEL, LOG_FORMAT, and for `seed` the four SEED_* variables; JWT_SECRET, CORS_ORIGINS, CORS_ORIGIN_REGEX and DATABASE_READONLY_URL are required only by the web application (the ground-truth loader connects with DATABASE_MIGRATION_URL). | Must | TRD 15 §4.8, TRD 16 §4.4 | Test (seed with only these variables succeeds) |
 
 ### 4.4 Config parameters (database) vs environment
@@ -232,6 +233,7 @@ NEXT_PUBLIC_APP_ENV=production
 | FACILITY_NAME | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` |
 | FACILITY_TZ | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `test_v0_1` | `production` | `production` |
+| RATE_LIMIT_LOGIN | `5/minute` (E2E stack in CI: `60/minute`, D-74) | `5/minute` (pytest: limiter reset per test, TST-131 sets its own) | `5/minute` | `5/minute` | `5/minute` |
 | PIPELINE_AS_OF | `2026-10-30T15:00:00-05:00` | set per test | `2026-10-30T15:00:00-05:00` | empty | empty |
 | LOG_FORMAT / LOG_LEVEL | `console` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` |
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
@@ -279,7 +281,7 @@ NEXT_PUBLIC_APP_ENV=production
 - Parse `CORS_ORIGINS` with a `field_validator(mode="before")` splitting on commas and stripping spaces; pydantic-settings otherwise expects JSON for list types.
 - Only `backend/services/analytics_summary.py` may create an engine from DATABASE_READONLY_URL; the pipeline and every other module must never use it (the answer key never touches the analytics, SRC-02).
 - Alembic `env.py` must import `get_settings()` and use `DATABASE_MIGRATION_URL or DATABASE_URL`, so the same validation applies to migrations.
-- For psycopg 3 behind the Neon pooler pass `connect_args={"prepare_threshold": None}` (TRD 15 Implementation Notes).
+- Every engine is created by the one engine factory of TRD 05 API-125, which passes `connect_args={"prepare_threshold": None}` in every environment (Neon pooler and local/CI alike; TRD 15 Implementation Notes).
 - Do not log the `Settings` object; log only a startup summary (`env`, `version`, `pipeline_profile`, `facility_tz`, `sentry_enabled` boolean, `as_of_fixed` boolean).
 - Next.js inlines `NEXT_PUBLIC_*` at build time: changing them on Netlify requires a rebuild ("Clear cache and deploy").
 
@@ -302,3 +304,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-07, R4-08) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-11) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02) | — |

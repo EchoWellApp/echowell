@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -303,6 +303,7 @@ frontend/out/
 frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
+frontend/tests/e2e/.auth/
 frontend/next-env.d.ts
 .netlify/
 # Environment and secrets
@@ -429,3 +430,4 @@ updates:
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-45) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-21) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |

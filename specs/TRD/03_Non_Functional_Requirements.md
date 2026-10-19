@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -271,4 +271,5 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-19, F-23, F-40) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |
-| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-05) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-05) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-08) | — |

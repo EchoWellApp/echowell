@@ -1,6 +1,6 @@
 # 14 Test Data and Validation Spec
 
-Document ID: ECHOWELL-TRD-14 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-14 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -707,7 +707,7 @@ Across 100 other seeds, 10% of those no-change residents raised a false alarm wi
 | TDV-080 | `tests/validation/robustness.py` shall, for each seed in 1..100, run the generator (`python -I generate_pipeline_test_v0_1.py <tmpdir> <seed>`), run the Tier A pipeline on the generated CSV with profile `test_v0_1`, and record for R01–R08 (the eight no-change residents) whether any alarm rang. | Should | SRC-03 README note 5, RSK-03 | Test |
 | TDV-081 | The check shall report the false-alarm count over R01–R06 (the no-change residents that reach at least 6 scored sessions in every seed), rate = count / 600 (6 residents × 100 seeds), and per-resident counts for R01–R08 (R07, with 2 scored sessions in epoch 2, and R08, which never forms a baseline, are reported but excluded from the rate) in report section 7 and in `validation_results.json.robustness`; a rate near 10 % is expected (TRD 09 §4.6: 61 of 600 = 10.2 %). The result shall never fail a build. | Should | RSK-03, OQ-13 | Inspection |
 | TDV-082 | For each seed the same run shall also compare the pipeline output with that seed's generated answer key (multi-seed reproduction); a mismatch there is an S2 defect logged by the nightly job (it shows a rule difference that seed 20261004 does not exercise). | Should | BR-15, SRC-04 | Test |
-| TDV-083 | The robustness check shall run nightly and on manual dispatch only (TRD 13 TST-151). | Should | TRD 16 | Inspection |
+| TDV-083 | The robustness check shall run nightly and on manual dispatch only, in the `e2e.yml` job `nightly-validation` (TRD 13 TST-151, TRD 16 CIC-037). | Should | TRD 16 | Inspection |
 
 ### 4.12 Team 1 50-resident, 120-day dataset (future, DS-04)
 
@@ -789,3 +789,4 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-24, F-51, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-19) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-07) | — |

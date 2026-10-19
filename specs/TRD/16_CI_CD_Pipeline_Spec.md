@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -107,7 +107,7 @@ Jobs (run in parallel unless noted):
 |---|---|---|---|
 | `repo-hygiene` | Policy checks | audio-file check, `.env` check, file size check, forbidden-term check ("Edge4Care", "diagnoses", "severity"), LLM-dependency check, Conventional Commit title check (PR only) | 1 min |
 | `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend`, `lint-imports` (import-linter: `analytics/` purity, TRD 01 ARC-041) | 3 min |
-| `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest tests/unit tests/integration tests/contract tests/security tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
+| `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest -p no:randomly tests/unit tests/integration tests/contract tests/security tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
 | `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/api_reference/openapi.json /tmp/openapi.json`; regenerate `frontend/lib/api-types.ts` with `openapi-typescript` and `git diff --exit-code` | 2 min |
 | `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test -- --coverage`, `npm run build` | 6 min |
 | `security-audit` | Known vulnerabilities, secrets, insecure code | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev`, `gitleaks detect` (8.x), `bandit -r backend analytics -ll` | 3 min |
@@ -217,7 +217,7 @@ jobs:
       - run: alembic upgrade head
       - run: alembic downgrade base && alembic upgrade head   # migrations reversible in test
       - run: >
-          pytest tests/unit tests/integration tests/contract tests/security tests/validation
+          pytest -p no:randomly tests/unit tests/integration tests/contract tests/security tests/validation
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
           --cov-report=html:build/htmlcov --junitxml=build/junit.xml
           --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md
@@ -329,7 +329,7 @@ jobs:
 Triggers: `pull_request` to `main` and `staging` (every PR; job `playwright` is a required check, CIC-070); `push` to
 `main` and `staging`; `schedule` daily at `0 8 * * *` (08:00 UTC, 03:00 America/Chicago during CDT, after the nightly run
 window); `workflow_dispatch`. On pull requests and pushes the suite runs in Chromium (including `a11y.spec.ts`, TRD 13
-TST-110); on the schedule it runs in Chromium, Firefox and WebKit (TRD 13 TST-100, TST-151).
+TST-110); on the schedule it runs in Chromium, Firefox and WebKit (TRD 13 TST-100, TST-151), and the schedule also runs the jobs `performance` and `nightly-validation` (CIC-035, CIC-037).
 
 ```yaml
 name: E2E
@@ -346,6 +346,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.development.example .env && echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+      - run: sed -i 's#^RATE_LIMIT_LOGIN=.*#RATE_LIMIT_LOGIN=60/minute#' .env   # E2E stack only, main and isolated runs (D-74, TRD 21 ENV-054)
       - name: Per-job seed credentials (TRD 21 SEED_*, masked, never printed)
         run: |
           for v in SEED_ADMIN_PASSWORD SEED_CLINICIAN_PASSWORD SEED_RESEARCHER_PASSWORD; do
@@ -362,10 +363,10 @@ jobs:
       - name: Main run, one browser project at a time (TRD 24 D-73)
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001" }   # logins: seeded admin/clinician/researcher@example.com with the masked SEED_* values from $GITHUB_ENV
-        run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) runs seed test_v0_1 --reset + DS-10 loader before each invocation
+        run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) before each invocation: seed test_v0_1 --reset + DS-10 loader, docker compose restart backend, one login per role (D-73, D-74)
           for p in ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}; do
             npx playwright test --project=$p --grep-invert "@isolated|@mutating"   # read-only scenarios on the pristine seed
-            npx playwright test --project=$p --grep @mutating --workers=1          # E2E-18, then E2E-09: one serial group
+            npx playwright test --project=$p --grep @mutating --workers=1          # D-73 group: E2E-18; E2E-09 (FE-187); FE-193 snooze step
           done
       - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays exactly the test_v0_1 seed)
         run: |
@@ -387,15 +388,31 @@ jobs:
         with: { name: playwright-report, path: "frontend/playwright-report/\ne2e-compose.log", retention-days: 14 }
       - if: always()
         run: docker compose down -v
+  nightly-validation:   # CIC-037: schedule and manual dispatch only; informational, not a required check (CIC-070)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # services, env, Python setup, provisioning and `alembic upgrade head` steps identical to ci.yml backend-test (section 4.2)
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql && alembic upgrade head
+      - run: pytest -p randomly tests/unit tests/integration tests/contract tests/security tests/validation   # random order, seed printed (TST-005)
+      - run: python tests/validation/robustness.py   # multi-seed reproduction + false-alarm rate, TDV-080..TDV-083 (TST-084)
+        continue-on-error: true                       # informational, never gates
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: nightly-validation-report, path: build/, retention-days: 30 }
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze: E2E-18, then E2E-09) run afterwards as one serial group, so every read-only assertion sees the pristine seed. The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts` (no `globalSetup`). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
+| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze) run afterwards as the `@mutating` group of TRD 24 D-73 (`frontend/tests/e2e/mutating.spec.ts`, serial, in this order: E2E-18; E2E-09, implemented by TRD 04 FE-187; the FE-193 snooze step on R10), so every read-only assertion sees the pristine seed. After the reset `globalSetup` restarts the backend container (`docker compose restart backend`, waiting for `/api/v1/health`), so the connection pool and the in-memory login limiter start empty, and then logs in once per role and stores the sessions in `frontend/tests/e2e/.auth/` (TRD 24 D-74); only the login scenarios perform form logins. Both runs use RATE_LIMIT_LOGIN=`60/minute` (D-74, TRD 21 ENV-054). The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts` (no `globalSetup`). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
 | CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
 | CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and, in the `@mutating` group after all read-only assertions (D-73), a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
 | CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s. | Must | contract R8, TRD 03, TRD 13 | Test |
+| CIC-037 | `e2e.yml` shall contain a job `nightly-validation`, run only on the nightly schedule and manual dispatch, with the PostgreSQL service and setup of `ci.yml` `backend-test`, that runs the pytest suites in random order (`pytest -p randomly`, pytest-randomly 3.x; seed printed in the log; TRD 13 TST-005) and the multi-seed robustness check `tests/validation/robustness.py` (TRD 14 TDV-080..TDV-083, TRD 13 TST-084) as an informational step (`continue-on-error: true`); it is not a required check (CIC-070), and a failure opens or comments on the `ci-failure` issue like the other nightly jobs (CIC-033). `backend-test` runs with `-p no:randomly` so pull-request order stays fixed. | Should | TRD 13 TST-005, TST-084, TST-151 | Inspection |
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
 | CIC-034 | The E2E credentials (SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY) shall be generated per job, masked with `::add-mask::` before use, passed to the stack through `.env` and to Playwright through `$GITHUB_ENV`, and shall never be valid on staging or production; Playwright logs in as the seeded admin, clinician and researcher users (TRD 06 DB-057, TRD 24 D-71). | Must | BR-16 | Inspection |
 | CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
@@ -454,7 +471,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-070 | Branch protection on `main` and `staging` shall require these checks to pass: `repo-hygiene` (incl. forbidden-term and LLM-dependency checks), `backend-lint` (incl. import-linter), `backend-test` (incl. the PR-scope performance budget, CIC-036), `openapi-contract`, `frontend`, `security-audit` (incl. gitleaks and Bandit), `docker-build`, `playwright` (E2E Chromium and accessibility). This list implements TRD 13 TST-150. | Must | contract §13, TRD 18 | Inspection |
+| CIC-070 | Branch protection on `main` and `staging` shall require these checks to pass: `repo-hygiene` (incl. forbidden-term and LLM-dependency checks), `backend-lint` (incl. import-linter), `backend-test` (incl. the PR-scope performance budget, CIC-036), `openapi-contract`, `frontend`, `security-audit` (incl. gitleaks and Bandit), `docker-build`, `playwright` (E2E Chromium and accessibility). This list implements TRD 13 TST-150. The `e2e.yml` jobs `performance`, `lighthouse` and `nightly-validation` (CIC-035, CIC-116, CIC-037) are not required checks. | Must | contract §13, TRD 18 | Inspection |
 | CIC-071 | Required checks shall be evaluated on the PR head merged with the latest base ("Require branches to be up to date before merging"). | Must | TRD 18 | Inspection |
 | CIC-072 | A newly disclosed vulnerability that makes `security-audit` fail on an unchanged dependency may be waived for at most 7 days by an `ignore` entry (`pip-audit --ignore-vuln <ID>` or an `npm audit` override documented in the PR) that references a tracking issue. | May | BR-16 | Inspection |
 
@@ -491,6 +508,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 |---|---|---|---|
 | `backend-reports` | ci.yml backend-test | 30 days | `build/coverage.xml`, `build/htmlcov/`, `build/junit.xml`, `docs/reports/ALGORITHM_VALIDATION_REPORT.md`, `docs/reports/validation_results.json` |
 | `performance-report` | e2e.yml performance | 30 days | `build/performance.json` (p95 timings per budget) |
+| `nightly-validation-report` | e2e.yml nightly-validation | 30 days | random-order junit, robustness report (TDV-081) |
 | `frontend-coverage` | ci.yml frontend | 30 days | Vitest coverage (lcov + html) |
 | `playwright-report` | e2e.yml | 14 days | HTML report, traces of failures, compose logs |
 | `smoke-report` | deploy-*.yml | 30 days | smoke junit |
@@ -507,7 +525,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 |---|---|---|---|---|
 | CIC-110 | The wall-clock time of `ci.yml` from trigger to all required checks complete shall be under 15 minutes at the 90th percentile over the last 20 runs on `main`. | Must | contract task | Analysis (Actions run history) |
 | CIC-111 | Every job shall define `timeout-minutes` no greater than 20. | Must | timing budget | Inspection |
-| CIC-112 | Each `e2e.yml` job (`playwright`, `performance`) shall complete within 20 minutes. | Should | timing budget | Analysis |
+| CIC-112 | Each `e2e.yml` job (`playwright`, `performance`, `lighthouse`, `nightly-validation`) shall complete within 20 minutes. | Should | timing budget | Analysis |
 | CIC-113 | If the 90th percentile of `ci.yml` exceeds 12 minutes for a week, the team shall split `backend-test` into a matrix (unit+validation / integration) before adding further tests. | Should | CIC-110 | Analysis |
 
 ## 5. Assumptions
@@ -519,7 +537,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 ## 6. Dependencies
 
-- `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt` (ruff, mypy, pytest 8.x, pytest-cov, httpx, openpyxl 3.1.x, pip-audit).
+- `backend/requirements.txt` (runtime, exact pins) and `backend/requirements-dev.txt` (ruff, mypy, pytest 8.x, pytest-cov, pytest-randomly 3.x, httpx, openpyxl 3.1.x, pip-audit).
 - Root `pyproject.toml` with `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` (markers `smoke`, `authenticated`, `validation`) and `[tool.coverage]`.
 - `frontend/package.json` scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:e2e`; `frontend/package-lock.json` committed.
 - `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/api_reference/openapi.json` (TRD 19).
@@ -568,3 +586,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-05, R4-07) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-02, R5-04, R5-05, R5-07, R5-11) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02, R6-03, R6-07) | — |

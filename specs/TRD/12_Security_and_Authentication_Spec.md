@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -261,7 +261,7 @@ AWS API origin replaces these entries in the same change that switches NEXT_PUBL
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-090 | `POST /api/v1/sessions` and `POST /api/v1/ingest` shall be limited to RATE_LIMIT_INGEST (600/minute) per API key or admin user. | Must | contract §12 | Test |
-| SEC-091 | `POST /api/v1/auth/login` shall be limited to RATE_LIMIT_LOGIN (5/minute) per client IP. | Must | contract §12 | Test |
+| SEC-091 | `POST /api/v1/auth/login` shall be limited to RATE_LIMIT_LOGIN (5/minute) per client IP; staging and production always use 5/minute, and a higher value (60/minute on the E2E stack) is accepted only when APP_ENV ∈ {local, test} (TRD 21 ENV-054, TRD 24 D-74). | Must | contract §12 | Test |
 | SEC-092 | Other authenticated endpoints shall be limited to 300/minute per user (TRD 05 API-102). | Should | T-13 | Test |
 | SEC-093 | Exceeding a limit shall return 429 `RATE_LIMITED` with `Retry-After` and write no audit row except for login (where `auth.login.failed` with reason `rate_limited` is written). | Must | T-13 | Test |
 | SEC-094 | CORS shall allow only the exact origins in CORS_ORIGINS and, in staging only, origins matching CORS_ORIGIN_REGEX (Netlify deploy previews, TRD 21), with `allow_credentials=False` (TRD 05 API-101); a request from another origin receives no `Access-Control-Allow-Origin` header. | Must | contract §12, T-08 | Test |
@@ -456,3 +456,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-02, R3-07, R3-09) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-06, R4-07) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-10, R5-11) | — |
+| 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
