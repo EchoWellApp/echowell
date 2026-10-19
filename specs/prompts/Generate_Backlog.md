@@ -2,7 +2,7 @@
 
 Read all completed TRDs located in:
 
-specs/TRDS/
+specs/TRD/
 
 Read all supporting project documents:
 
@@ -81,7 +81,7 @@ specs/backlog/BACKLOG.md
 
 Read all documents under:
 
-specs/TRDS/
+specs/TRD/
 
 Generate a feature specification document for every feature in the backlog.
 

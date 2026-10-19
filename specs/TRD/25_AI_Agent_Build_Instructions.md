@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -31,7 +31,7 @@ Out of scope:
 | SRC-09 / 10 / 11 | specs/UI-wireframe/Main.dc.html, Resident.dc.html, Admission.dc.html |
 | SRC-18 / 19 | specs/UI-wireframe/Alerts.dc.html (Alert review), Analytics.dc.html (Analytics) |
 | SRC-12 | specs/prompts/TRD_Generation_Prompt.md |
-| SRC-17 | specs/prompts/Implement_Feature_Batches.md, TRD_Implementation_Audit_Checklist.md, Generate_Backlog.md, Generate_Documentation_Audit_Prompt.md |
+| SRC-17 | specs/prompts/Implement_Feature_Batches.md, TRD_Implementation_Audit_Checklist.md (TRD audit, PR #1), Implementation_Audit_Checklist.md (build and implementation audit, PR #3), Generate_Backlog.md, Generate_Documentation_Audit_Prompt.md |
 
 Related TRDs: all of 00–24. TRD 24 holds every OQ, ASM, RSK, DSC and D identifier cited here.
 
@@ -100,7 +100,7 @@ Rules: IDs are never renumbered or reused. Code, tests and PR descriptions cite 
 | AGT-008 | Agents shall not change any expected result, tolerance or parameter of the `test_v0_1` profile to make a test pass. | Must | BR-15; D-26 | Inspection (diff review) |
 | AGT-009 | When a TRD or source does not settle a question, the agent shall stop work on the unsettled part, add an OQ row to TRD 24 (next free number) with owner, status Open, raised date and proposed interim decision, and report it, instead of guessing. | Must | RAQ-014 | Inspection |
 | AGT-010 | Agents shall keep existing skeleton file names and fill them in; the known skeleton gaps (DSC-13) are closed by D-53 (driver, Phase 3) and D-55 (legacy compose and CI stubs, Phase 9) (e.g. `backend/api/alarms.py` serves `/api/v1/alerts`; `backend/models/alarm.py` holds the Alert model); missing modules may be added but existing files shall not be renamed, moved or deleted. | Must | D-24 | Inspection |
-| AGT-011 | Agents shall read every `specs/TRDS/` reference in the prompts as `specs/TRD/`. | Must | D-22; OQ-22 | Inspection |
+| AGT-011 | Agents shall use `specs/TRD/` for the TRDs; any `specs/TRDS/` in an older copy of a prompt means `specs/TRD/`. | Must | D-22; OQ-22 | Inspection |
 | AGT-012 | Agents shall not commit changes; after each batch the agent shall stop, report, and wait for human review. Commits and the PR are made only after review (consistent with "Action: Do not commit changes" in TRD_Implementation_Audit_Checklist.md). | Must | SRC-17; TRD 18 | Inspection |
 | AGT-013 | Each build batch (phase in 4.5) shall be delivered as exactly one pull request reviewed and approved by the algorithm lead before the next batch starts. | Must | TRD 18; contract team workflow | Inspection (PR history) |
 | AGT-014 | HARD RULE: Agents shall never load, upload, seed, migrate or connect real patient or resident data to the interim Netlify / Railway / Neon stack, in any environment; the interim stack holds synthetic and test data only. Agents shall not take any go-live step (real residents, real devices, real data) until AWS is approved. | Must | D-28 (owner decision D-OWNER-4); OQ-23 (answered); RSK-14 | Inspection (seed and upload scripts reference only specs/data-samples or tests/fixtures) |
@@ -156,7 +156,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 
 ### 4.6 Phase details
 
-#### Phase 1 — TRD validation (TRD_Implementation_Audit_Checklist.md Phase 1)
+#### Phase 1 — TRD validation (TRD_Implementation_Audit_Checklist.md Steps 1–3)
 
 | Item | Content |
 |---|---|
@@ -165,9 +165,9 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Definition of done | Every BR-01..BR-18 maps to at least one TRD requirement; every OQ/ASM/RSK/D ID used in TRDs exists in TRD 24; checks listed in the prompt (DB supports APIs, APIs support frontend, analytics supports BRs, tests cover critical functions, deployment supports architecture) each have a pass/fail line; no TRD file is modified |
 | Required tests | None (documents only) |
 | Commands | `grep -rhoE "(OQ\|ASM\|RSK\|DSC\|D)-[0-9]{2}" specs/TRD \| sort -u`; `grep -rnE "T[B]D\|T[O]DO\|l[o]rem" specs/TRD` (must return nothing) |
-| Pitfalls | Do not "fix" TRDs in this phase; findings only. Read `specs/TRDS` as `specs/TRD`. |
+| Pitfalls | Do not "fix" TRDs in this phase; findings only. The prompts use `specs/TRD`. |
 
-#### Phase 2 — Design documents (Implement_Feature_Batches.md Phase 7; Checklist Phase 2)
+#### Phase 2 — Design documents (Implement_Feature_Batches.md Phase 7; Implementation_Audit_Checklist.md Phase 2)
 
 | Item | Content |
 |---|---|
@@ -178,7 +178,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `grep -rnE "T[B]D\|T[O]DO" docs/design` (must return nothing) |
 | Pitfalls | Pages are exactly `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/login`, `/admin` (D-23). Do not add an EWMA chart (OQ-18). |
 
-#### Phase 3 — Project skeleton (Implement_Feature_Batches.md Phase 8; Checklist Phase 3)
+#### Phase 3 — Project skeleton (Implement_Feature_Batches.md Phase 8; Implementation_Audit_Checklist.md Phase 3)
 
 | Item | Content |
 |---|---|
@@ -189,7 +189,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `docker compose up -d`; `pytest -q`; `cd frontend && npm ci && npm run lint && npm run build && npm run test` |
 | Pitfalls | Do not delete the empty skeleton files; `.env` files must be gitignored; no secrets in compose files beyond local-only defaults. |
 
-#### Phase 4 — Database layer (Implement_Feature_Batches.md Phase 9; Checklist Sprint 1)
+#### Phase 4 — Database layer (Implement_Feature_Batches.md Phase 9; Implementation_Audit_Checklist.md Sprint 1)
 
 | Item | Content |
 |---|---|
@@ -200,7 +200,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `alembic upgrade head && alembic downgrade base && alembic upgrade head` from the repository root (`alembic.ini` is at the root, TRD 15 DEP-024; Alembic connects with `DATABASE_MIGRATION_URL` as `echowell_migrator`); `pytest tests/unit tests/integration -q -k "db or model or repository"` |
 | Pitfalls | Create roles `echowell_migrator`, `echowell_app`, `echowell_readonly` with the grants of D-49: the app role has no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes` and no SELECT on `evaluation_ground_truth`; the app never connects as the migrator. All timestamps `timestamptz` in UTC; local dates are derived, not stored as text. Seed data uses study IDs only. Do not implement APIs. |
 
-#### Phase 5 — Backend API (Implement_Feature_Batches.md Phase 10; Checklist Sprint 2)
+#### Phase 5 — Backend API (Implement_Feature_Batches.md Phase 10; Implementation_Audit_Checklist.md Sprint 2)
 
 | Item | Content |
 |---|---|
@@ -211,7 +211,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/integration -q`; `python -m backend.cli export-openapi` then `git diff --exit-code docs/api_reference/openapi.json`; `curl -fsS http://localhost:8000/api/v1/health` |
 | Pitfalls | Residents are addressed by `resident_code`, not UUID (DSC-11). Saving a review or snoozing never resets the tally or closes the alarm (D-03, D-35, D-37). Never log request bodies containing feature values at INFO level with resident context beyond study IDs. |
 
-#### Phase 6 — Analytics engine (Implement_Feature_Batches.md Phase 11; Checklist Sprint 3)
+#### Phase 6 — Analytics engine (Implement_Feature_Batches.md Phase 11; Implementation_Audit_Checklist.md Sprint 3)
 
 | Item | Content |
 |---|---|
@@ -222,7 +222,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/unit -q`; `pytest tests/integration -q -k pipeline`; `python -m backend.jobs.nightly_run` (exits without running outside 02:xx facility-local time or when that night already ran) |
 | Pitfalls | See 4.8 — all of them apply here. |
 
-#### Phase 7 — R01–R10 validation (Implement_Feature_Batches.md Phase 12; Checklist Sprint 4)
+#### Phase 7 — R01–R10 validation (Implement_Feature_Batches.md Phase 12; Implementation_Audit_Checklist.md Sprint 4)
 
 | Item | Content |
 |---|---|
@@ -233,7 +233,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/validation -q` |
 | Pitfalls | The workbook is read only by tests and the `evaluation_ground_truth` loader (AGT-007, AGT-057); comparison happens after the run. Do not edit expected values (AGT-008). Read the CSV in file row order (arrival order). |
 
-#### Phase 8 — Frontend (Implement_Feature_Batches.md Phase 13; Checklist Sprint 5)
+#### Phase 8 — Frontend (Implement_Feature_Batches.md Phase 13; Implementation_Audit_Checklist.md Sprint 5)
 
 | Item | Content |
 |---|---|
@@ -266,7 +266,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | migrations run only as the Railway pre-deploy command `alembic upgrade head` (from the repository root, TRD 15 DEP-040, D-58; on AWS the one-off migration task), never by hand against the target; `curl -fsS "$BACKEND_URL/api/v1/health"`; `curl -fsSI "$FRONTEND_URL/residents"` |
 | Pitfalls | Do not change requirements or application logic during deployment except to fix a deployment-specific defect, and report any such change. Never set `PIPELINE_PROFILE=test_v0_1` on production (AGT-015); the seeded R01–R10 demo data uses staging. If cloud is not ready by 5 Nov 2026, the demo uses the local docker-compose server (RSK-12). |
 
-#### Phase 11 — Audits (Implement_Feature_Batches.md Phase 15; Checklist Sprint 6; Generate_Documentation_Audit_Prompt.md)
+#### Phase 11 — Audits (Implement_Feature_Batches.md Phase 15; Implementation_Audit_Checklist.md Sprint 6; Generate_Documentation_Audit_Prompt.md)
 
 | Item | Content |
 |---|---|
@@ -277,7 +277,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium`; grep commands from 4.3 |
 | Pitfalls | An audit does not modify code; it records findings. |
 
-#### Phase 12 — Backlog (Generate_Backlog.md Prompts 1–3; Checklist Sprint 7)
+#### Phase 12 — Backlog (Generate_Backlog.md Prompts 1–3; Implementation_Audit_Checklist.md Sprint 7)
 
 | Item | Content |
 |---|---|
@@ -373,3 +373,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-03) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (observation: pytest configuration in pyproject.toml) | — |
+| 0.10 | 19 Oct 2026 | Audit checklist split into TRD audit (PR #1) and Implementation_Audit_Checklist.md (PR #3); prompts corrected to specs/TRD (OQ-22) | — |

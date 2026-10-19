@@ -2,7 +2,7 @@
 
 Review all documentation generated for EchoWell:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/BACKLOG.md
 - specs/backlog/features/
 - specs/backlog/IMPLEMENTATION_ROADMAP.md
