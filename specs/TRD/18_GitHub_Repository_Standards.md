@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -412,7 +412,7 @@ updates:
 ## 8. Implementation Notes
 
 - Configure branch protection with rulesets (Settings → Rules → Rulesets) targeting `main` and `staging`; required check names are the job ids listed in TRD 16 CIC-070 (from `ci.yml` and `e2e.yml`, including `playwright`).
-- The preprint PDF was removed from the working tree by commit `cd6da8f` but remains in earlier history (commit `4e9b883`) of the public repository. Whether to purge it from history (e.g. `git filter-repo`, which rewrites all SHAs and requires force-push to protected branches) is an owner decision; this TRD does not perform or require it — raise it with the owner before Phase 8 starts, because rewriting history later is more disruptive.
+- The preprint PDF was removed from the working tree and, on 19 Oct 2026, purged from the git history of `main` and `trd-generation` (history rewritten and force-pushed with the owner's and reviewer's approval; D-29). Any clone made before that date must be re-cloned. Clearing GitHub's cached copies of the old commit IDs requires a request to GitHub Support by the repository owner.
 - `specs/business-requirements/EchoWell_PROSPERO.pdf` is a public registration record and may stay; if its licence is restrictive, apply GIT-093.
 - Keep `docs/api_reference/openapi.json` formatted with `json.dumps(..., indent=2, sort_keys=True)` so diffs are stable (TRD 16 CIC-018).
 - AI agents must read this TRD before opening PRs (TRD 25). Reports named by SRC-17 (e.g. `ALGORITHM_VALIDATION_REPORT.md`, `validation_results.json`, implementation reports) live in `docs/reports/` (contract R6) and are committed only by the phase PR that produces them; transient test output goes to `build/` (gitignored).
@@ -433,3 +433,4 @@ updates:
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-06) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-03) | — |
+| 0.10 | 19 Oct 2026 | Preprint purged from git history (PR #1 review); OQ-21/D-29 resolved | — |
