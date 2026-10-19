@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -55,10 +55,10 @@ Out of scope:
 | DME-002 | The 19 feature keys shall be defined once, in order, in `analytics/config.py` as `FEATURE_KEYS`, with `COMPOSITE_KEYS` (first 7) and `COMPOSITE_SIGNS` `{loudness_dbfs: -1, total_phrase_duration_s: +1, speech_rate_syl_per_s: -1, articulation_rate_syl_per_s: -1, number_of_pauses: +1, pause_fraction: +1, voiced_fraction: -1}`; models, schemas and tests shall import them rather than repeat the list. | Must | SRC-03, SRC-04, BR-10 | Test (equality with SRC-05 header columns 12–30) |
 | DME-003 | Python enums mirroring the 15 PostgreSQL enum types (`str`-valued `enum.Enum`, same labels) shall be defined in `backend/models/__init__.py` and reused by Pydantic schemas; `analytics/` shall use plain string constants with the same values. | Must | TRD 20 PGS-005 | Test (labels equal `pg_enum`) |
 | DME-004 | The API shall identify residents and devices by `resident_code` and `device_code` in paths and payloads, and shall never expose `residents.id` or `devices.id`. | Must | BR-16, contract §10 | Test (OpenAPI schema scan) |
-| DME-005 | No Pydantic response schema shall contain `password_hash`, `key_hash`, `raw_sessions.payload`, any `evaluation_ground_truth` column outside the Analytics `alarm_timing` block, or `ingest_rejections.raw_body` except `GET /api/v1/ingest/batches/{id}` (admin, researcher), which returns `raw_body` and `errors` of rejections. | Must | BR-16, TRD 12 | Test |
+| DME-005 | No Pydantic response schema shall contain `password_hash`, `key_hash`, `raw_sessions.payload`, any `evaluation_ground_truth` column outside the Analytics `alarm_timing` block, or `ingest_rejections.raw_body`; `GET /api/v1/ingest/batches/{id}` returns for each rejection only the TRD 19 `IngestRejection` fields (`row_number`, `session_id`, `received_at`, `errors`), never `raw_body`. | Must | BR-16, TRD 12 | Test |
 | DME-006 | `processed_sessions.status` shall take exactly the transitions of section 4.3.1; `pending_screen` shall exist only in memory inside `analytics/` and shall never be persisted. | Must | BR-03, BR-04, BR-05, SRC-04 | Test (status counts of test_v0_1 = 267/12/2/2) |
 | DME-007 | `alerts.status` shall change only along section 4.3.2; the first `alert_reviews` row sets `open` → `acknowledged` with `acknowledged_by`/`acknowledged_at`; neither a review nor a snooze shall change `scores`, `cusum_state` or `alarm_state` in v0.1 (OQ-05). | Must | BR-11, OQ-05, contract §19, R5 | Test |
-| DME-021 | `alert_reviews` rows shall be immutable and several may exist per alert; a review with outcome `data_problem` shall insert, in the same transaction, one `data_alerts` row of kind `review_flagged_data_problem` linked by `alert_review_id`; `explanations` codes shall be validated against config `review_explanations`. | Must | Contract §19, OQ-25 | Test |
+| DME-021 | `alert_reviews` rows shall be immutable and several may exist per alert; a review with outcome `data_problem` shall, in the same transaction, create or link one `data_alerts` row of kind `review_flagged_data_problem` by `alert_review_id` (TRD 02 FR-273); `explanations` codes shall be validated against config `review_explanations`. | Must | Contract §19, OQ-25 | Test |
 | DME-022 | A snooze shall set `alerts.snoozed_until = now() + alert_snooze_hours` and `snoozed_by`, leaving `status` unchanged; the UI shows "Not reviewed" emphasis again once `snoozed_until` has passed. | Must | Contract §19 | Test |
 | DME-023 | `data_alerts` shall follow the lifecycle of section 4.3.7 and the natural keys of TRD 06 DB-036; for test_v0_1 as of 2026-10-30 exactly 4 rows are open: R08 baseline_stalled, R05 possible_other_speaker, R03 high_set_aside, D02 device_silent. | Must | Contract §19, OQ-24 | Test |
 | DME-024 | `evaluation_ground_truth` shall hold rows only in databases running the test_v0_1 profile, shall never be read by `analytics/` or the pipeline service, and shall feed only the Analytics "Alarm timing check" (R09 Sudden step Oct 21 → alarm Oct 21, delay 0 days; R10 Slow drift Oct 17 → Oct 24, 7 days; other 8 None, no alarm, Correct). | Must | SRC-02, contract §19, R20 | Test |
@@ -223,7 +223,7 @@ Immutable copy of every accepted arrival, including duplicates (SRC-02 raw store
 | `extraction_software_version` | text | no | Extractor and version, e.g. `openSMILE 3.0.2`; epoch key | Device field |
 | `device_firmware_version` | text | no | Firmware, e.g. `fw-1.0.0`; epoch key | Device field |
 | `speech_duration_s` | double precision | no | Detected speech length, s; quality gate minimum 1.0 | Device field |
-| `phrase_id` | text | yes | Phrase spoken, `P01` in v0.1; nullable while OQ-04 is open | Device field |
+| `phrase_id` | text | no | Phrase spoken, `P01` in v0.1; 1–16 characters, required by schema v0.1 (TRD 10); whether it is kept in a later schema is OQ-04 | Device field |
 | `loudness_dbfs` | double precision | no | Acoustic feature (placeholder name, OQ-03); unit dBFS; composite, sign -1, morning offset -1.50 | Device field (Team 1 extractor) |
 | `total_phrase_duration_s` | double precision | no | Acoustic feature (placeholder name, OQ-03); unit s; composite, sign +1, morning offset +0.10 | Device field (Team 1 extractor) |
 | `speech_rate_syl_per_s` | double precision | no | Acoustic feature (placeholder name, OQ-03); unit syllables/s; composite, sign -1, morning offset -0.12 | Device field (Team 1 extractor) |
@@ -253,14 +253,14 @@ One execution of the pipeline. Read by `/api/v1/pipeline/runs/{id}`, `/api/v1/an
 | `trigger` | pipeline_trigger | no | `ingest` (after POST), `nightly` (02:00 local), `manual` (POST /pipeline/run), `test` | Pipeline service |
 | `scope` | jsonb | no | `{"type": "all"}` or `{"type": "residents", "resident_codes": ["R01", …]}` | Pipeline service |
 | `config_profile` | text | no | `production` or `test_v0_1`; must equal PIPELINE_PROFILE | Pipeline service |
-| `config_snapshot` | jsonb | no | All 16 config_parameters keys and values used, as one JSON object | Pipeline service |
-| `code_version` | text | no | Git SHA (GIT_SHA) or `local` | Pipeline service |
+| `config_snapshot` | jsonb | no | All 23 config_parameters keys and values of the profile used, plus `config_hash` (algorithm keys only, TRD 07 ANL-030) and `as_of`, as one JSON object | Pipeline service |
+| `code_version` | text | no | Git SHA (GIT_SHA) or `unknown` when unset (TRD 21) | Pipeline service |
 | `as_of` | timestamptz | no | Instant up to which the day ledger runs: explicit `as_of` of POST /pipeline/run → PIPELINE_AS_OF (not in production) → now() (contract R21); test 2026-10-30T20:00:00Z | Pipeline service |
 | `started_at` | timestamptz | no | Start instant | Pipeline service |
 | `finished_at` | timestamptz | yes | End instant; NULL while running | Pipeline service |
 | `status` | pipeline_run_status | no | `running`, `succeeded`, `failed` | Pipeline service |
-| `counts` | jsonb | no | JSON object: usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, scored, alerts_opened (+ db_size_bytes nightly) | Pipeline service |
-| `warnings` | jsonb | no | JSON array of objects, each with `type` (e.g. `late_arrival`), `resident_code`, and detail fields | Pipeline service |
+| `counts` | jsonb | no | JSON object with exactly the keys arrivals, usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, late_arrival, scored, alerts_opened, excluded_after_as_of, residents (+ db_size_bytes on nightly runs); this list is the single definition (TRD 06 DB-020, TRD 07 `PipelineResult.counts`, TRD 17 LOG-065, TRD 19 `PipelineRun`) | Pipeline service |
+| `warnings` | jsonb | no | JSON array of objects `{code, resident_code, session_id, detail}` with a lower-case `code` from TRD 07 ANL-052 (e.g. `late_arrival`); this shape is the single definition | Pipeline service |
 | `error_message` | text | yes | Failure summary when status = failed (no record content) | Pipeline service |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
@@ -291,17 +291,18 @@ Pipeline interpretation of one raw record. Read by overview 30-day counts and la
 | `raw_session_id` | uuid | no | The raw record this row interprets (1:1) | Pipeline service |
 | `session_id` | text | no | Copy of raw session_id | Stage 1 |
 | `resident_id` | uuid | no | Resident | Stage 1 |
-| `epoch_id` | uuid | yes | Epoch; NULL only for duplicates | Stage 3 |
+| `epoch_id` | uuid | yes | Epoch; NULL for duplicates and for a late arrival that precedes the resident's first epoch (TRD 08 BSC-040) | Stage 3 |
 | `status` | session_status | no | `usable`, `set_aside`, `quarantined`, `duplicate` | Stages 1, 2, 4 |
-| `reasons` | text[] | no | Ordered reason list: duplicate `session_id already received`; set_aside subset of `quality flag poor`, `noise above limit`, `speech too short` in that order; quarantined one `possible other speaker (F0 z=<2dp>; composite features with \|z\|>=3: <n>)`; usable empty | Stages 1, 2, 4 |
+| `reasons` | text[] | no | Ordered reason list: duplicate `session_id already received`; set_aside subset of `quality flag poor`, `noise above limit`, `speech too short` in that order; quarantined one `possible other speaker (F0 z=<2dp>; composite features with \|z\|>=3: <n>)`; usable empty; a late arrival (`late_arrival` true) that is usable has exactly `late arrival (not used for baseline or scores)`, and one that is quarantined has that text as its second reason | Stages 1, 2, 4 |
 | `reason_text` | text | no | reasons joined with `; ` (`''` for usable); equals workbook expected_reason | Stages 1, 2, 4 |
 | `timestamp_utc` | timestamptz | no | Copy of raw timestamp_utc | Stage 1 |
 | `local_date` | date | no | Local calendar date in facilities.timezone | Stage 5 |
 | `local_time` | time(0) | no | Local clock time (seconds precision) | Stage 5 |
 | `is_morning` | boolean | no | local hour < morning_cutoff_hour (12) | Stage 5 |
 | `screen_detail` | text | yes | `F0 z=<2dp>; composite features with \|z\|>=3: <n>` when the screen ran; NULL when fewer than screen_min_n prior usable sessions or not screened | Stage 4 |
-| `baseline_ordinal` | integer | yes | 1-based position among usable sessions of the epoch (timestamp order); NULL unless usable | Stage 6 |
-| `in_baseline` | boolean | no | true for usable sessions with baseline_ordinal ≤ baseline_n | Stage 6 |
+| `baseline_ordinal` | integer | yes | 1-based position among usable, non-late sessions of the epoch (timestamp order); NULL unless usable and not late | Stage 6 |
+| `in_baseline` | boolean | no | true for usable, non-late sessions with baseline_ordinal ≤ baseline_n | Stage 6 |
+| `late_arrival` | boolean | no | true when TRD 07 ANL-024 classifies the record as a late arrival; such a row is never in a baseline, never scored and has no `baseline_ordinal` (TRD 08 BSC-040, TRD 20 CHECKs) | Late-arrival step (TRD 07) |
 | `adjusted_features` | jsonb | yes | JSON object of 19 feature keys → morning-adjusted value (raw − offset if morning, else raw); NULL for duplicates | Stage 5 |
 | `pipeline_run_id` | uuid | no | Run that wrote the row | Pipeline service |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
@@ -384,9 +385,9 @@ Alarm event at the first crossing of h; a flag for clinician review, not a diagn
 | `triggered_at` | timestamptz | no | timestamp_utc of that session | Stage 9 |
 | `local_date` | date | no | Local date of that session (UI "Alarm since") | Stage 9 |
 | `cusum_value` | double precision | no | Tally at the crossing (≥ h) | Stage 9 |
-| `status` | alert_status | no | `open`, `acknowledged` (set by the first alert review), `closed` | Stage 9; POST /alerts/{id}/reviews; admin |
-| `closed_reason` | text | yes | `epoch ended`, `admin`, `superseded by rebuild`; NULL unless closed | Stage 9 / admin |
-| `closed_at` | timestamptz | yes | Instant closed | Stage 9 / admin |
+| `status` | alert_status | no | `open`, `acknowledged` (set by the first alert review), `closed` (pipeline only, TRD 02 FR-110) | Stage 9; POST /alerts/{id}/reviews |
+| `closed_reason` | text | yes | `epoch ended`, `superseded by rebuild` (pipeline); `admin` is reserved and not set in v0.1 (TRD 02 FR-110); NULL unless closed | Stage 9 |
+| `closed_at` | timestamptz | yes | Instant closed | Stage 9 |
 | `acknowledged_by` | uuid | yes | Reviewer of the first alert review | POST /alerts/{id}/reviews |
 | `acknowledged_at` | timestamptz | yes | Instant of the first alert review | POST /alerts/{id}/reviews |
 | `snoozed_until` | timestamptz | yes | "Remind me" time: now + alert_snooze_hours (24) when snoozed; hides "Not reviewed" emphasis until then; does not change alarm state | POST /alerts/{id}/snooze |
@@ -460,7 +461,7 @@ Future arm (experimental): per-feature facility range. Read by `/api/v1/facility
 | `pipeline_run_id` | uuid | no | Run | Same |
 
 #### 4.2.22 Config parameter (`config_parameters`)
-Algorithm, data-alert and review parameters per profile (contract sections 7 and 19 plus 2 ingest keys of TRD 10; 23 keys). Read by `analytics.config.PipelineConfig.from_rows()`, snapshot into `pipeline_runs`. Primary key (profile, key).
+Algorithm, data-alert and review parameters per profile (contract sections 7 and 19 plus 2 ingest keys of TRD 10; 23 keys). Read by `analytics.config.PipelineConfig.from_mapping()` (TRD 07 §4.2; the backend turns the rows into a key → value mapping first), snapshot into `pipeline_runs`. Primary key (profile, key).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -480,7 +481,7 @@ Append-only audit trail. Read by admins via SQL (`echowell_readonly`); no MVP en
 | `occurred_at` | timestamptz | no | Instant of the action | Database default now() |
 | `actor_type` | actor_type | no | `user`, `api_key`, `system` | Every service |
 | `actor_id` | text | yes | users.id or api_keys.id as text; NULL for system | Every service |
-| `action` | text | no | `<domain>.<verb>` e.g. `auth.login`, `auth.logout`, `auth.login_failed`, `ingest.batch`, `note.created`, `alert.reviewed`, `alert.snoozed`, `pipeline.run`, `config.changed`, `user.changed`, `resident.cohort_changed`, `resident.withdrawn` (vocabulary owned by TRD 12) | Every service |
+| `action` | text | no | one value of the TRD 12 §4.12 audit vocabulary (the only source), e.g. `auth.login.succeeded`, `auth.logout`, `ingest.batch.received`, `alert.reviewed`, `pipeline.run.finished`, `resident.cohort_changed`; CHECK `^[a-z_]+(\.[a-z_]+){1,2}$` (TRD 20) | Every service |
 | `entity_type` | text | yes | Table name of the affected entity | Every service |
 | `entity_id` | text | yes | Affected id as text | Every service |
 | `details` | jsonb | no | JSON object of non-PII detail (never record content or passwords) | Every service |
@@ -534,8 +535,8 @@ stateDiagram-v2
   open --> open: snooze (snoozed_until set; status unchanged)
   open --> acknowledged: first POST /alerts/{id}/reviews (clinician, admin)
   acknowledged --> acknowledged: further reviews (history) or snooze
-  open --> closed: new epoch starts (epoch ended) / admin / superseded by rebuild
-  acknowledged --> closed: new epoch starts (epoch ended) / admin / superseded by rebuild
+  open --> closed: new epoch starts (epoch ended) / superseded by rebuild
+  acknowledged --> closed: new epoch starts (epoch ended) / superseded by rebuild
   closed --> [*]
 ```
 
@@ -622,11 +623,11 @@ key). Rules (thresholds from config, provisional, OQ-24) — last 30 days ending
 
 | Kind | Raised when | Example (test data, as of Oct 30) |
 |---|---|---|
-| baseline_stalled | `data_alert_baseline_stalled_enabled` and resident baseline forming and days since current epoch start ≥ baseline_n | "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days" |
+| baseline_stalled | `data_alert_baseline_stalled_enabled` and resident baseline forming and days in the current epoch, counted inclusively ((as-of − epoch start) + 1), ≥ baseline_n (TRD 09 §4.9) | "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days" |
 | possible_other_speaker | ≥ 1 quarantined session | "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22" |
 | high_set_aside | received ≥ 10 and set_aside / received ≥ `data_alert_set_aside_fraction` (0.20); suppressed when the resident has baseline_stalled | "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short" |
 | device_silent | a shared device with no record from any assigned resident on a day, or ≥ `data_alert_device_silent_days` (2) consecutive silent days on a single-resident device | "D02 · device silent all day" / "Oct 12 · affects R02 and R03" |
-| review_flagged_data_problem | an alert review with outcome `data_problem` | title "<R> · flagged as data problem in review" |
+| review_flagged_data_problem | an alert review with outcome `data_problem` (create or link, TRD 02 FR-273) | strings of TRD 11 §4.17.2: "<R> · review flagged a data problem" / "Reviewed <Mon D> by <display name>" |
 
 ### 4.4 Derived values (computed on read, not stored)
 
@@ -662,7 +663,8 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | replaced-by / was | device of the assignment that follows / precedes on the same resident |
 | last upload | max `raw_sessions.timestamp_utc` for the device (local display) |
 | firmware | `devices.firmware_version_last` |
-| silent day | local day in the 30-day window where ≥ 1 `day_ledger` row has the device and none of them is `checked_in` (D02: Oct 12) |
+| silent day | local day in the 30-day window where ≥ 1 `day_ledger` row has the device and none of them is `checked_in` (TRD 02 §4.1, TRD 06 DB-044; API `silent_days_last_30`; D02: Oct 12; D08: R08's 12 missed days) |
+| device-gap day | silent day of a device shared that day (ledger `missing_device_gap`; API `device_gap_days_last_30`; D02: Oct 12) |
 
 #### 4.4.3 Resident display status
 
@@ -676,14 +678,14 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 
 | Event type | Source row | Date |
 |---|---|---|
-| alarm | `alerts` | `local_date` |
+| alarm_on | `alerts` | `local_date` |
 | watching_started | first `scores` row of an epoch | its `local_date` |
 | baseline_complete | `baselines` composite row ("N of N") | local date of `frozen_after_session_id` |
 | set_aside | `processed_sessions` status set_aside (reason_text) | `local_date` |
 | quarantined | `processed_sessions` status quarantined | `local_date` |
 | missed | `day_ledger` status missing_resident | `local_date` |
 | device_silent | `day_ledger` status missing_device_gap | `local_date` |
-| baseline_restarted | `epochs` with epoch_number > 1 | local date of `started_at` |
+| baseline_restarted | `epochs` with epoch_number > 1; `restart_cause`, `previous_device_code`, `from_value`, `to_value` derived from the previous epoch (TRD 06 DB-065) | local date of `started_at` |
 
 ### 4.5 JSON column shapes
 
@@ -695,8 +697,8 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | `pipeline_runs.scope` | `{"type": "all"}` or `{"type": "residents", "resident_codes": [...]}` | `{"type": "residents", "resident_codes": ["R04"]}` |
 | `pipeline_runs.config_snapshot` | object, 23 keys → JSON value | `{"baseline_n": 16, "cusum_h": 5.0, …}` |
 | `pipeline_runs.counts` | object of integers | `{"usable": 267, "set_aside": 12, "quarantined": 2, "duplicate": 2, "missing_resident": 17, "missing_device_gap": 2, "scored": 98, "alerts_opened": 2}` |
-| `pipeline_runs.warnings` | array of objects with `type`, `resident_code` + detail | `[{"type": "late_arrival", "resident_code": "R01", "epoch_number": 1, "session_id": "R01-20261005-02"}]` |
-| `ingest_rejections.errors` | non-empty array of objects with `field`, `message` (TRD 10) | `[{"field": "audio_quality_flag", "message": "must be ok or poor"}]` |
+| `pipeline_runs.warnings` | array of objects `{code, resident_code, session_id, detail}` | `[{"code": "late_arrival", "resident_code": "R01", "session_id": "R01-20261005-02", "detail": "epoch 1"}]` |
+| `ingest_rejections.errors` | non-empty array of objects `{field, code, message}`, identical to the 422 response `errors` (TRD 05 API-041, TRD 10 ING-004; no `value`) | `[{"field": "audio_quality_flag", "code": "invalid_enum", "message": "must be ok or poor"}]` |
 | `config_parameters.value` | number, boolean, string, object or array | `-40.0`, `"America/Chicago"`, morning_offsets object, `review_explanations` array of `{code, label}` |
 | `audit_logs.details` | object, no PII | `{"accepted": 283, "rejected": 0}` |
 
@@ -704,37 +706,38 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 
 Model files are in `backend/models/` (existing files `alarm.py`, `baseline.py`, `resident.py`, `score.py`,
 `session.py` are kept); `backend/models/__init__.py` holds the declarative `Base`, the Python enums (DME-003) and
-imports every model. Pydantic modules are in `backend/schemas/`; DTO field lists are defined by TRD 19.
+imports every model. Pydantic modules are in `backend/schemas/`; DTO class names and field lists are exactly the TRD 19
+component schema names (TRD 19 §8; the OAS contract test fails otherwise).
 
 | Entity / table | Model file : class | Pydantic module : schemas | Endpoints (base `/api/v1`) |
 |---|---|---|---|
 | facilities | `facility.py` : `Facility` | `Meta.facility_name` (from `facilities.name`) | header subline |
-| users | `user.py` : `User` | `user.py` : `UserOut`, `UserCreate`, `UserUpdate`; `auth.py` : `LoginRequest`, `TokenResponse`, `MeResponse` | `/auth/login`, `/auth/me`, `/users` |
-| residents | `resident.py` : `Resident` | `resident.py` : `ResidentOverviewRow`, `SummaryTiles`, `ResidentOverviewResponse`, `ResidentDetail` | `/residents`, `/residents/{resident_code}` |
-| devices | `device.py` : `Device` | `device.py` : `DevicePanelRow` | `/devices` |
-| device_assignments | `device.py` : `DeviceAssignment` | `device.py` : `DevicePanelRow` (assigned residents) | `/devices`, `/residents` |
+| users | `user.py` : `User` | `user.py` : `User`, `UserCreate`, `UserUpdate`, `UserList`; `auth.py` : `LoginRequest`, `Token` (`/auth/me` returns `User`) | `/auth/login`, `/auth/me`, `/users` |
+| residents | `resident.py` : `Resident` | `resident.py` : `ResidentOverviewRow`, `OverviewSummary`, `ResidentsOverviewResponse`, `ResidentDetail` | `/residents`, `/residents/{resident_code}` |
+| devices | `device.py` : `Device` | `device.py` : `Device`, `DeviceList` | `/devices` |
+| device_assignments | `device.py` : `DeviceAssignment` | `device.py` : `Device` (assigned residents) | `/devices`, `/residents` |
 | api_keys | `api_key.py` : `ApiKey` | — (CLI only) | auth dependency of `/sessions`, `/ingest`, `/pipeline/run` (scope pipeline:run) |
-| ingest_batches | `ingest_batch.py` : `IngestBatch` | `ingest.py` : `BatchIngestRequest`, `BatchIngestResponse`, `IngestBatchOut` | `/ingest`, `/ingest/batches/{id}` |
-| ingest_rejections | `ingest_batch.py` : `IngestRejection` | `ingest.py` : `IngestRejectionOut` | `/ingest/batches/{id}` |
-| raw_sessions | `session.py` : `RawSession` | `session.py` : `SessionRecordIn`, `SessionIngestResponse` | `/sessions`, `/ingest` |
-| processed_sessions | `session.py` : `ProcessedSession` | `checkin.py` : `CheckinEvent`; `feature.py` : `FeaturePanel` | `/residents/{code}/checkins`, `/residents/{code}/features`, `/residents` |
-| pipeline_runs | `pipeline_run.py` : `PipelineRun` | `pipeline.py` : `PipelineRunRequest`, `PipelineRunOut` | `/pipeline/run`, `/pipeline/runs`, `/pipeline/runs/{id}`, `/analytics` |
+| ingest_batches | `ingest_batch.py` : `IngestBatch` | `ingest.py` : `IngestBatchRequest`, `IngestBatchAccepted`, `IngestBatch` | `/ingest`, `/ingest/batches/{id}` |
+| ingest_rejections | `ingest_batch.py` : `IngestRejection` | `ingest.py` : `IngestRejection` | `/ingest/batches/{id}` |
+| raw_sessions | `session.py` : `RawSession` | `session.py` : `IngestRecord`, `IngestResult` | `/sessions`, `/ingest` |
+| processed_sessions | `session.py` : `ProcessedSession` | `checkin.py` : `CheckinEvent`, `CheckinEventList`; `feature.py` : `FeaturesResponse`, `FeatureSeries` | `/residents/{code}/checkins`, `/residents/{code}/features`, `/residents` |
+| pipeline_runs | `pipeline_run.py` : `PipelineRun` | `pipeline.py` : `PipelineRunRequest`, `PipelineRunAccepted`, `PipelineRun`, `PipelineRunList` | `/pipeline/run`, `/pipeline/runs`, `/pipeline/runs/{id}`, `/analytics` |
 | epochs | `epoch.py` : `Epoch` | `resident.py` : `ResidentDetail` (epoch fields) | `/residents/{code}`, `/scores` |
 | day_ledger | `day_ledger.py` : `DayLedgerEntry` | `checkin.py` : `CheckinEvent` | `/residents`, `/residents/{code}/checkins`, `/devices`, `/analytics` |
-| baselines | `baseline.py` : `Baseline` | `analytics.py` : `BaselineRow` | `/analytics/baselines`, `/residents/{code}` |
-| scores | `score.py` : `Score` | `score.py` : `ScoreOut` | `/scores`, `/residents/{code}/features` |
+| baselines | `baseline.py` : `Baseline` | `analytics.py` : `BaselineRow`, `BaselineRowList` | `/analytics/baselines`, `/residents/{code}` |
+| scores | `score.py` : `Score` | `score.py` : `ScoreRow`, `ScoresResponse`, `BaselinePeriod` | `/scores`, `/residents/{code}/features` |
 | cusum_state | `score.py` : `CusumState` | `resident.py` : `ResidentDetail` | `/residents`, `/residents/{code}` |
-| alerts | `alarm.py` : `Alert` | `alert.py` : `AlertOut`, `SnoozeRequest` | `/alerts`, `/alerts/{id}/snooze` |
-| alert_reviews | `alarm.py` : `AlertReview` | `alert.py` : `AlertReviewIn`, `AlertReviewOut` | `/alerts/{id}/reviews` (GET, POST) |
-| data_alerts | `alarm.py` : `DataAlert` | `alert.py` : `DataAlertOut` | `/data-alerts` |
-| staff_notes | `staff_note.py` : `StaffNote` | `note.py` : `StaffNoteIn`, `StaffNoteOut` | `/residents/{code}/notes` |
-| facility_reference_ranges | `reference_range.py` : `FacilityReferenceRange` | `reference_range.py` : `ReferenceRangeOut`; `admission.py` : `AdmissionRow`, `ComparisonRow` | `/facility/reference-ranges`, `/admissions`, `/admissions/{code}/comparison` |
-| config_parameters | `config_parameter.py` : `ConfigParameter` | — (snapshot in `PipelineRunOut`) | `/pipeline/runs/{id}` |
+| alerts | `alarm.py` : `Alert` | `alert.py` : `Alert`, `AlertList`, `SnoozeRequest` | `/alerts`, `/alerts/{id}/snooze` |
+| alert_reviews | `alarm.py` : `AlertReview` | `alert.py` : `AlertReviewCreate`, `AlertReview`, `AlertReviewList` | `/alerts/{id}/reviews` (GET, POST) |
+| data_alerts | `alarm.py` : `DataAlert` | `alert.py` : `DataAlert`, `DataAlertList` | `/data-alerts` |
+| staff_notes | `staff_note.py` : `StaffNote` | `note.py` : `StaffNoteCreate`, `StaffNote`, `StaffNoteList` | `/residents/{code}/notes` |
+| facility_reference_ranges | `reference_range.py` : `FacilityReferenceRange` | `reference_range.py` : `ReferenceRange`, `ReferenceRangeList`; `admission.py` : `AdmissionRow`, `AdmissionList`, `AdmissionComparison` | `/facility/reference-ranges`, `/admissions`, `/admissions/{code}/comparison` |
+| config_parameters | `config_parameter.py` : `ConfigParameter` | `config.py` : `UiConfig`, `ReviewExplanation` (snapshot also in `PipelineRun`) | `/config/ui`, `/pipeline/runs/{id}` |
 | audit_logs | `audit_log.py` : `AuditLog` | — | written by all mutating endpoints and `/auth/logout` |
 | evaluation_ground_truth | `evaluation.py` : `EvaluationGroundTruth` | `analytics.py` : `AlarmTimingRow` | `/analytics` (test_v0_1 only) |
 
-Cross-cutting schemas: `common.py` : `Page[T]` (`items`, `total`, `limit`, `offset`), `Problem` (RFC 7807 fields);
-`health.py` : `HealthResponse`; `analytics.py` : `AnalyticsSummary`, `ResidentOutcomeRow`, `ReviewOutcomeCount`;
+Cross-cutting schemas: `common.py` : `PageMeta` (`items`, `total`, `limit`, `offset`; generic helper `Page[T]` emits it), `Problem`, `ProblemFieldError` (RFC 7807 fields);
+`health.py` : `Health`; `analytics.py` : `AnalyticsResponse`, `AnalyticsKpis`, `Funnel`, `ByResidentRow`, `ResidentOutcome`, `ReviewOutcomes`;
 `common.py` : `Meta` (facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile; R3).
 
 `backend/models/evaluation.py` is an additional model file (not in the original list) holding `EvaluationGroundTruth`; it is read
@@ -868,7 +871,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 
 ## 7. Acceptance Criteria
 
-1. AC-DME-01: A model introspection test confirms each of the 21 SQLAlchemy classes has exactly the columns, types and nullability of section 4.2.
+1. AC-DME-01: A model introspection test confirms each of the 24 SQLAlchemy classes (one per entity of section 4.2, 4.2.1–4.2.24) has exactly the columns, types and nullability of section 4.2.
 2. AC-DME-02: `analytics.config.FEATURE_KEYS` equals SRC-05 header columns 12–30 in order; `COMPOSITE_KEYS` equals the first 7.
 3. AC-DME-03: For test_v0_1 as of 2026-10-30 15:00 CT, all 302 Annotated_sessions rows match the database by the mapping of 4.7.2 (status, reason, morning, epoch, in_baseline).
 4. AC-DME-04: All 180 Exp_baselines rows and 98 Exp_scores rows match within 1e-6 and exact strings/booleans.
@@ -911,3 +914,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-06, F-08, F-09, F-10, F-11, F-35, F-37, F-41, F-44, F-54) | — |

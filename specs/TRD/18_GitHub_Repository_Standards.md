@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -195,8 +195,8 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | Python format | `ruff format` (Black-compatible), double quotes, line length 100 |
 | Python types | mypy 1.11+; `[tool.mypy]` `python_version = "3.12"`, `strict = true` for `analytics.*`; `disallow_untyped_defs = true`, `warn_unused_ignores = true` for `backend.*`; plugin `pydantic.mypy` |
 | TypeScript | `tsconfig.json` `"strict": true`, `"noUncheckedIndexedAccess": true`, `"noImplicitOverride": true` |
-| JS/TS lint | ESLint 8.x with `next/core-web-vitals`, `@typescript-eslint/recommended`, `jsx-a11y/recommended`, `eslint-config-prettier`; `--max-warnings=0` |
-| JS/TS format | Prettier 3.x: `printWidth 100`, `singleQuote true`, `trailingComma "all"`, `semi true` |
+| JS/TS lint | ESLint 8.x with `next/core-web-vitals`, `@typescript-eslint/recommended`, `jsx-a11y/strict` (TRD 04 FE-200), `eslint-config-prettier`; `--max-warnings=0` |
+| JS/TS format | Prettier 3.x: `printWidth 100`, `singleQuote false`, `trailingComma "all"`, `semi true` (TRD 04 FE-201) |
 | Editor | `.editorconfig`: UTF-8, LF, final newline, 2 spaces (TS/JSON/YAML/MD), 4 spaces (Python) |
 | Line endings | `.gitattributes`: `* text=auto eol=lf`; `*.xlsx *.pdf *.docx *.png binary` |
 
@@ -260,7 +260,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | GIT-080 | No secret (password, token, API key, JWT secret, database URL with credentials, Sentry DSN) shall be committed in any file, including tests, examples and docs; templates (`.env*.example`) shall contain empty values or obviously local-only values for secrets. | Must | BR-16, contract §12 | Test (secret scanning) |
-| GIT-081 | GitHub secret scanning and push protection shall be enabled on the repository. | Must | BR-16 | Inspection |
+| GIT-081 | GitHub secret scanning and push protection shall be enabled on the repository where the plan allows it (available for the public repository; TRD 12 SEC-053). | Should | BR-16, TRD 12 SEC-053 | Inspection |
 | GIT-082 | If a secret is committed, it shall be revoked and rotated within 1 hour of discovery, regardless of whether the commit is removed; the incident shall be recorded in an `incident` issue without the secret value. | Must | BR-16, TRD 12 | Inspection |
 | GIT-083 | Test fixtures shall use generated credentials (e.g. `openssl rand`) or values obviously marked test-only (`e2e-Password-1`) that are never valid on staging or production. | Must | TRD 16 CIC-034 | Inspection |
 | GIT-084 | GitHub Actions secrets shall be limited to the list in TRD 16 §4.9. | Must | TRD 16 CIC-090 | Inspection |
@@ -427,3 +427,4 @@ updates:
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-45) | — |

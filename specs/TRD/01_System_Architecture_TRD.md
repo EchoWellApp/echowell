@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -76,7 +76,7 @@ flowchart TB
     end
     subgraph Railway
         API["FastAPI 0.115 (Python 3.12)<br/>backend/api routers -> services -> repositories -> models"]
-        ANA["analytics/ (pure Python package)<br/>pipeline.py + stage modules<br/>numpy 2.x, pandas 2.2.x"]
+        ANA["analytics/ (pure Python package)<br/>pipeline.py + stage modules<br/>numpy 2.x (pandas in tests only)"]
         SCH["Railway Cron Job service (separate)<br/>python -m backend.jobs.nightly_run<br/>cron 0 7,8 * * * UTC, runs only at 02:xx FACILITY_TZ"]
         API -- "import, in-process call" --> ANA
         SCH -- "same image; calls PipelineService" --> PG
@@ -92,7 +92,7 @@ flowchart TB
 |---|---|---|---|
 | Frontend | Next.js 14.2.x App Router, React 18.3.x, TypeScript 5.x, Recharts 2.x, Node.js 20 LTS | Dashboard pages, login, admin UI; calls backend REST API only | Netlify (prod from `main`, branch deploy `staging`) → AWS Amplify |
 | Backend API | Python 3.12, FastAPI 0.115.x, Pydantic 2.x, SQLAlchemy 2.0.x, Alembic 1.13.x, psycopg 3.x | Auth, ingest, validation, persistence, pipeline orchestration, read APIs, audit | Railway (production and staging services) → AWS App Runner |
-| Analytics engine | Python package `analytics/` (numpy 2.x, pandas 2.2.x) | Pure deterministic pipeline functions (stages 1–10 of TRD 07) | Imported by the backend; runs in the backend process |
+| Analytics engine | Python package `analytics/` (numpy 2.x only at runtime; pandas and openpyxl in tests only, TRD 07 ANL-005) | Pure deterministic pipeline functions (stages 1–12 of TRD 07 ANL-006) | Imported by the backend; runs in the backend process |
 | Database | PostgreSQL 16 | System of record: raw store, derived tables, users, config, audit | Neon (preferred) or Railway PostgreSQL → AWS RDS PostgreSQL (KMS-encrypted) |
 | CI/CD | GitHub Actions | Lint, type-check, tests, validation suite, build, deploy | GitHub |
 
@@ -103,7 +103,7 @@ flowchart TB
 | ARC-012 | The database shall be PostgreSQL 16, hosted on Neon (preferred) or Railway PostgreSQL in the current (interim) stack and on AWS RDS PostgreSQL in the target stack. | Must | BR-17, SRC-01, D-OWNER-3 | Inspection |
 | ARC-013 | The analytics engine shall be the Python package `analytics/` in the monorepo, imported by the backend and executed in the backend process. | Must | BR-17, SRC-01 ("contained within the backend codebase as a dedicated analytics module") | Inspection |
 | ARC-014 | The frontend shall access data only through the backend REST API at `NEXT_PUBLIC_API_BASE_URL`; it shall hold no database credentials. | Must | BR-16, BR-17 | Inspection |
-| ARC-015 | Only backend processes (API service, nightly job, CLI) shall hold database connection strings: `DATABASE_URL` for the `echowell_app` role and, for migrations only, `DATABASE_MIGRATION_URL` for the `echowell_migrator` role. | Must | BR-16, R20 | Inspection |
+| ARC-015 | Only backend processes (API service, nightly job, CLI) shall hold database connection strings: `DATABASE_URL` for the `echowell_app` role; `DATABASE_READONLY_URL` for the `echowell_readonly` role, opened only by `backend/services/analytics_summary.py` in the `test_v0_1` profile (contract R27); and, for migrations and the operator CLI only, `DATABASE_MIGRATION_URL` for the `echowell_migrator` role, read only by the Railway pre-deploy step and the CLI, never by request or pipeline code (TRD 15 DEP-040). | Must | BR-16, R20 | Inspection |
 | ARC-016 | All components shall live in the single GitHub monorepo `EchoWellApp/echowell` with the layout in section 4.6. | Must | BR-17, SRC-01 | Inspection |
 | ARC-017 | The backend shall serve its OpenAPI document at `/api/v1/openapi.json`, and the committed contract file `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` shall equal the generated schema (CI fails on difference); frontend types shall be generated from it to `frontend/lib/api-types.ts`. | Must | BR-17, TRD 19, R22 | Test (CI diff) |
 | ARC-018 | In the current stack the system shall not depend on any service other than Netlify, Railway, Neon/Railway PostgreSQL and GitHub (optional Sentry via `SENTRY_DSN`) to serve a request; in the target stack the equivalents are the AWS services of section 4.10. | Must | BR-17, SRC-01, D-OWNER-3, TRD 22 | Inspection |
@@ -196,7 +196,7 @@ Human-entered and operational data outside SRC-02's diagram: `alert_reviews`, `a
 
 ### 4.5 Processing flow (SRC-02 diagram 2) and stage mapping
 
-SRC-02 diagram 2 "Each day is scored against a frozen personal baseline" defines six stages and a final flag. The contract (§7) refines them into ten pure stages. The order of execution is fixed:
+SRC-02 diagram 2 "Each day is scored against a frozen personal baseline" defines six stages and a final flag. The contract (§7) refines them into ten pure stages, and TRD 07 ANL-006 adds two more (11 data alerts, 12 analytics aggregates), giving twelve. The order of execution is fixed:
 
 ```mermaid
 flowchart TB
@@ -236,6 +236,7 @@ flowchart TB
 | Flag for clinician review | 9 Alert generation | `analytics/alert_generator.py` | `alerts` |
 | (missing days, SRC-03) | 10 Day ledger | `analytics/day_ledger.py` | `day_ledger` |
 | (data-quality flags for the study team, SRC-18) | 11 Data-alert generation (after all other stages; rules baseline_stalled, possible_other_speaker, high_set_aside, device_silent over the last 30 days; thresholds from `config_parameters`) | `analytics/data_alerts.py` | `data_alerts` (kinds as above; `review_flagged_data_problem` is created by alarm review, not by the pipeline) |
+| (study-team analytics, SRC-19) | 12 Analytics aggregates (KPIs, check-ins per day, funnel, by resident; after stage 11) | `analytics/aggregates.py` | `GET /api/v1/analytics` (computed, not stored) |
 
 SRC-02's final box also mentions "EWMA trend shown against baseline band"; this display is deferred (OQ-18) and is not part of the MVP pipeline.
 
@@ -244,7 +245,7 @@ SRC-02's final box also mentions "EWMA trend shown against baseline band"; this 
 | ARC-040 | `analytics.pipeline.run_pipeline` shall execute the stages in the order of section 4.5, with data-alert generation last, and shall be the single entry point used by every trigger. | Must | BR-03..BR-11, SRC-02, SRC-04, SRC-18 | Inspection, Test |
 | ARC-041 | Modules in `analytics/` shall be pure: they shall not import `backend`, SQLAlchemy, psycopg, FastAPI, httpx, or perform file, network, clock or random-number access; current time is passed in as `as_of`. | Must | BR-15, SRC-01 | Inspection (import-lint in CI), Test |
 | ARC-042 | Given identical raw records (in arrival order), identical frozen baselines, identical configuration snapshot and identical `as_of`, `run_pipeline` shall return identical outputs (bit-identical float64 values and identical ordering). | Must | BR-15, SRC-02 | Test (run twice, compare) |
-| ARC-043 | A baseline that has been persisted as frozen shall be passed to the pipeline as an input on later runs and shall not be recomputed; a late record that would change its membership shall be recorded as a `late_arrival` warning in `pipeline_runs.warnings`. | Must | BR-09, ASM-07, OQ-10 | Test |
+| ARC-043 | A baseline that has been persisted as frozen shall be passed to the pipeline as an input on later runs and shall not be recomputed, except by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56); a late record that would change its membership shall be recorded as a `late_arrival` warning in `pipeline_runs.warnings`. | Must | BR-09, ASM-07, OQ-10 | Test |
 | ARC-044 | Re-running the pipeline shall preserve human-entered data: `staff_notes`, `alert_reviews`, data alerts of kind `review_flagged_data_problem`, and alert `status`, `acknowledged_by`, `acknowledged_at`, `snoozed_until`, `snoozed_by` for alerts whose natural key (epoch_id, session_id) is unchanged. | Must | BR-02, BR-13, R15 | Test |
 | ARC-045 | Derived rows shall be identified by natural keys (`raw_session_id` for processed_sessions; `(resident_id, epoch_number)` for epochs; `(epoch_id, feature_key)` for baselines; `processed_session_id` for scores; `(resident_id, local_date)` for day_ledger; `(epoch_id, session_id)` for alerts; `(kind, resident_id, device_id)` for pipeline-generated data_alerts, keeping `first_detected_at` and setting status `resolved` when a rule no longer holds) so that re-runs are idempotent upserts. | Must | BR-02, BR-15 | Test |
 | ARC-046 | The analytics engine shall compute in float64 (numpy) and shall use numpy median semantics (mean of the two middle values for an even count). | Must | BR-09, BR-15, SRC-03 README note 2 | Test |
@@ -295,7 +296,7 @@ echowell/
 | ARC-054 | Feature column names shall be mapped through a configurable feature-name mapping (external name → internal key of TRD 08 §6) so that Team 1 renaming requires no code change. | Must | BR-01, OQ-03, RSK-02 | Test |
 | ARC-055 | The frontend shall format all displayed times in the facility timezone returned by the API (`FACILITY_TZ`), never in the browser's local timezone. | Must | BR-07, BR-12, ASM-01 | Test |
 | ARC-056 | The backend shall refuse to start when `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1`; the `test_v0_1` profile (baseline_n = 16) is for build-out and testing only, and production uses baseline_n = 30. | Must | BR-09, ASM-04, D-OWNER-2 | Test |
-| ARC-057 | The backend shall refuse to start when `APP_ENV` is `staging` or `production` and `DATABASE_URL` does not specify `sslmode=require`, `verify-ca` or `verify-full`. | Must | BR-16, D-OWNER-3 | Test |
+| ARC-057 | The backend shall refuse to start when `APP_ENV` is `staging` or `production` and `DATABASE_URL`, `DATABASE_MIGRATION_URL` or `DATABASE_READONLY_URL` (when set) does not specify `sslmode=require` or `sslmode=verify-full` (the accepted values of TRD 21 ENV-011 and TRD 05 API-059). | Must | BR-16, D-OWNER-3 | Test |
 
 ### 4.7 Pipeline triggering and concurrency
 
@@ -312,7 +313,7 @@ echowell/
 | ARC-060 | Every pipeline execution shall create one `pipeline_runs` row recording trigger, scope, config profile, config snapshot, code version (`GIT_SHA`), start and finish times, status, counts and warnings. | Must | BR-15, BR-16, TRD 17 | Test |
 | ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when facility-local time is 02:xx and no nightly run exists for that local night, so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
 | ARC-062 | The nightly run shall recompute the day ledger up to the new as-of date so that a resident with no record on the previous local day receives a missing-day entry even when no record arrived. | Must | BR-06, SRC-03 | Test |
-| ARC-063 | Pipeline executions that touch the same resident shall be serialized using a PostgreSQL advisory lock keyed on the resident; a full-scope run shall hold a global advisory lock that excludes resident-scoped runs. | Must | BR-02, BR-15 | Test (concurrent ingest) |
+| ARC-063 | Pipeline executions that touch the same resident shall be serialized using a transaction-scoped PostgreSQL advisory lock keyed on the resident, taken by every run including full-scope runs (keys and helper in TRD 06 DB-021); there is no global run lock, because session-level advisory locks do not work over the Neon pooled endpoint. | Must | BR-02, BR-15 | Test (concurrent ingest) |
 | ARC-064 | The derived-table writes of one pipeline execution shall commit in a single database transaction per resident, so that readers never observe a partially processed resident. | Must | BR-12, BR-13 | Test |
 | ARC-065 | A resident-scoped run shall include all residents sharing a device with that resident on any affected local date, because `missing_device_gap` depends on all of them. | Must | BR-06, SRC-03 (R02/R03 day 12) | Test |
 | ARC-066 | The pipeline shall be runnable from the command line (`python -m backend.cli run-pipeline --scope all --profile <profile>` (TRD 15 §4.8)) for local use, CI and the demo fallback. | Should | BR-15, RSK-12 | Demo, Test |
@@ -323,7 +324,7 @@ echowell/
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ARC-070 | An admin shall be able to trigger a full rebuild (`POST /api/v1/pipeline/run` with scope `all`) that recomputes every derived table from `raw_sessions`, `residents`, `devices`, `device_assignments`, frozen `baselines` and the configuration snapshot. | Must | BR-02, SRC-02 ("every other table can be rebuilt") | Test |
+| ARC-070 | An admin shall be able to trigger a full rebuild (`POST /api/v1/pipeline/run` with scope `all`) that recomputes every derived table from `raw_sessions`, `residents`, `devices`, `device_assignments`, frozen `baselines` and the configuration snapshot; frozen baselines themselves are recomputed only by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56). | Must | BR-02, SRC-02 ("every other table can be rebuilt") | Test |
 | ARC-071 | Two consecutive full rebuilds with unchanged inputs and configuration shall produce identical derived-table contents (excluding surrogate ids, `pipeline_run_id` and run timestamps). | Must | BR-15, SRC-02 | Test |
 | ARC-072 | A rebuild into an empty derived schema (no frozen baselines persisted) on SRC-05 with profile `test_v0_1` shall reproduce the SRC-03 answer key. | Must | BR-15, SRC-03 | Test (validation suite) |
 | ARC-073 | Each `pipeline_runs.config_snapshot` shall contain every parameter of section 7 of the contract (TRD 07) as used by that run, so any run can be reproduced from raw data plus snapshot plus `code_version`. | Must | BR-15 | Inspection, Test |
@@ -430,7 +431,7 @@ flowchart LR
 | AC-ARC-06 | Two concurrent `POST /api/v1/sessions` for residents R02 and R03 (shared device D02) complete without deadlock and leave a consistent day ledger. |
 | AC-ARC-07 | The backend container image builds in CI and starts with only environment variables; `GET /api/v1/health` returns `status: "ok"` against `postgres:16`. |
 | AC-ARC-08 | The OpenAPI document contains no operation or schema property whose name contains "audio" other than `audio_quality_flag`. |
-| AC-ARC-09 | With `APP_ENV=production`, the backend refuses to start if `DATABASE_URL` lacks `sslmode=require` (or `verify-ca`/`verify-full`) or if `PIPELINE_PROFILE=test_v0_1`. |
+| AC-ARC-09 | With `APP_ENV=production`, the backend refuses to start if `DATABASE_URL` lacks `sslmode=require` (or `verify-full`) or if `PIPELINE_PROFILE=test_v0_1`. |
 | AC-ARC-10 | With `evaluation_ground_truth` populated and then emptied, two pipeline runs on SRC-05 give identical derived tables; with profile `production`, loading the table is refused. |
 | AC-ARC-11 | After a full rebuild, an existing `alert_reviews` row, a snooze on the R09 alert and a `review_flagged_data_problem` data alert are all still present and linked. |
 
@@ -462,3 +463,4 @@ flowchart LR
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-04, F-16, F-32, F-33) | — |

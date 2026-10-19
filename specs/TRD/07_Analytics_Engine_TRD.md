@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -70,7 +70,7 @@ Out of scope:
 | ANL-004 | The package shall contain exactly the modules listed in section 4.2, each owning the responsibility stated there; no stage logic shall be duplicated across modules. | Must | SRC-01, TRD 01 | Inspection |
 | ANL-005 | The only runtime dependencies of `analytics/` shall be the Python standard library (`dataclasses`, `datetime`, `zoneinfo`, `typing`, `math`, `hashlib`, `json`) and `numpy` 2.x. `pandas` and `openpyxl` shall be used only in tests. | Must | SRC-01 | Inspection |
 | ANL-006 | Stages shall execute in this fixed order: (1) duplicate detection, (2) quality gate, (3) epoch detection, (4) speaker screen, (5) context (morning) adjustment, (6) personal baseline, (7) daily deviation score, (8) CUSUM persistence rule, (9) alert generation, (10) day ledger, (11) data alerts, (12) analytics aggregates. | Must | SRC-02, SRC-04, SRC-18, SRC-19, BR-03..BR-12 | Inspection, Test |
-| ANL-007 | The engine shall be callable from the backend, from Pytest and from a command-line entry point `python -m analytics.pipeline --input <csv> --profile test_v0_1 --as-of "2026-10-30 15:00" --assignments <json> --residents <json> --out <dir>` that writes the result as JSON files; the CLI is a thin wrapper that performs file I/O outside the pure functions. | Should | BR-15, TRD 13 | Test |
+| ANL-007 | The engine shall be callable from the backend, from Pytest and from a command-line entry point `python scripts/run_engine.py --input <csv> --profile test_v0_1 --as-of "2026-10-30 15:00" --assignments <json> --residents <json> --out <dir>` that writes the result as JSON files; the CLI lives outside the `analytics/` package (in `scripts/`), so every module under `analytics/` stays free of file I/O (TRD 01 ARC-041). | Should | BR-15, TRD 13 | Test |
 
 ### 4.2 Module responsibilities
 
@@ -181,8 +181,9 @@ the screen did not run), `late_arrival: bool`, `local_datetime: datetime` (FACIL
 `epochs: tuple[EpochSummary, ...]`, `baselines: tuple[Baseline, ...]`, `scores: tuple[ScoreRow, ...]`,
 `alerts: tuple[AlertEvent, ...]`, `ledger: tuple[LedgerDay, ...]`, `data_alerts: tuple[DataAlert, ...]`,
 `analytics: AnalyticsSummary`, `warnings: tuple[RunWarning, ...]`,
-`counts: dict[str, int]` (keys: arrivals, usable, set_aside, quarantined, duplicate, missing_resident,
-missing_device_gap, late_arrival, scored, alerts, excluded_after_as_of).
+`counts: dict[str, int]` (keys, identical to the stored `pipeline_runs.counts` of TRD 23 §4.2.10: arrivals, usable,
+set_aside, quarantined, duplicate, missing_resident, missing_device_gap, late_arrival, scored, alerts_opened,
+excluded_after_as_of, residents).
 
 ### 4.4 Helper types defined by this TRD
 
@@ -289,19 +290,38 @@ backend pass persisted frozen baselines (TRD 01 ARC-043, TRD 06 DB-016). Algorit
 | morning_offsets | Mapping[str, float] | contract section 6 column "morning offset" (19 keys, 13 zeros) | same |
 | shared_device_min_residents | int | 2 | 2 |
 | features | tuple[FeatureSpec, ...] | 19 specs of contract section 6 | same |
+| operational | OperationalConfig | see table below | same |
+
+All fields above except `operational` are **algorithm keys**: they change derived results and are covered by
+`config_hash()`. `OperationalConfig` (also in `analytics/config.py`, loaded from the same `config_parameters` rows of the
+profile) holds the **operational keys**, which are excluded from `config_hash()` and take effect at the next run or
+request without a rebuild (TRD 24 D-56):
+
+| OperationalConfig field | Type | production | test_v0_1 | Read by |
+|---|---|---|---|---|
+| data_alert_set_aside_fraction | float | 0.20 | 0.20 | `generate_data_alerts` (step 14 of §4.5, TRD 09) |
+| data_alert_device_silent_days | int | 2 | 2 | `generate_data_alerts` (step 14 of §4.5, TRD 09) |
+| data_alert_baseline_stalled_enabled | bool | true | true | `generate_data_alerts` (step 14 of §4.5, TRD 09) |
+| alert_snooze_hours | int | 24 | 24 | backend only (snooze default, `GET /api/v1/config/ui`, TRD 05) |
+| review_explanations | tuple[ReviewExplanation(code, label), ...] | the 5 codes and labels of contract §19 | same | backend only (review validation, `GET /api/v1/config/ui`, TRD 05) |
+
+The two ingest keys `supported_schema_versions` and `feature_name_map` (TRD 10) are also operational: they are read by
+the ingestion service, not by `PipelineConfig`, and are excluded from `config_hash()`.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ANL-028 | `analytics/config.py` shall define `PRODUCTION` and `TEST_V0_1` as `PipelineConfig` constants with exactly the values in the table above; these constants shall also be the seed values for the `config_parameters` table (TRD 20). | Must | ASM-04, SRC-03 | Test |
-| ANL-029 | `PipelineConfig.from_mapping` shall validate each value: `baseline_n` ≥ `screen_min_n` ≥ 1; `mad_scale` > 0; floors ≥ 0; `cusum_k` ≥ 0; `cusum_h` > 0; `0 ≤ morning_cutoff_hour ≤ 24`; `facility_tz` resolvable by `zoneinfo`; `morning_offsets` keys equal to the 19 feature keys; on failure it shall raise `ConfigError` naming the key. | Must | TRD 21 | Test |
-| ANL-030 | `PipelineConfig.snapshot()` shall return a JSON-serialisable dict of all fields, and `config_hash()` shall return the SHA-256 hex digest of `json.dumps(snapshot, sort_keys=True, separators=(",", ":"))`; the backend shall store both in `pipeline_runs.config_snapshot` (hash under key `config_hash`). | Must | BR-15, TRD 06 | Test |
+| ANL-029 | `PipelineConfig.from_mapping` shall validate each value: `baseline_n` ≥ `screen_min_n` ≥ 1; `mad_scale` > 0; floors ≥ 0; `cusum_k` ≥ 0; `cusum_h` > 0; `0 ≤ morning_cutoff_hour ≤ 24`; `facility_tz` resolvable by `zoneinfo`; `morning_offsets` keys equal to the 19 feature keys; `data_alert_set_aside_fraction` in (0, 1]; `data_alert_device_silent_days` ≥ 1; `alert_snooze_hours` in 1..168; `review_explanations` 1–20 entries with unique lower-case codes; on failure it shall raise `ConfigError` naming the key. | Must | TRD 21 | Test |
+| ANL-030 | `PipelineConfig.snapshot()` shall return a JSON-serialisable dict of all fields (algorithm and operational keys), and `config_hash()` shall return the SHA-256 hex digest of `json.dumps(s, sort_keys=True, separators=(",", ":"))` where `s` is the snapshot restricted to the algorithm keys (every field except `operational`); the backend shall store the snapshot of all 23 `config_parameters` keys of the profile plus `config_hash` and `as_of` in `pipeline_runs.config_snapshot` (TRD 06 DB-020). | Must | BR-15, TRD 06 | Test (changing `alert_snooze_hours` leaves `config_hash()` unchanged; changing `cusum_h` changes it) |
 | ANL-031 | The backend shall select the profile from env var `PIPELINE_PROFILE` (`production` or `test_v0_1`) and load its rows from `config_parameters`; if a key is missing in the table, the value of the built-in constant shall be used and a warning `config_default_used` recorded; the backend shall refuse to start (and `POST /api/v1/pipeline/run` shall refuse) the `test_v0_1` profile when `APP_ENV = production` (D-OWNER-2: test_v0_1 is for build-out and testing only). | Must | TRD 21, ASM-04 | Test |
-| ANL-032 | A change of any algorithm parameter in `config_parameters` shall take effect only through an admin-triggered manual run with scope `all` (`POST /api/v1/pipeline/run`), which is audit-logged with old and new config hashes and is the only run allowed to delete and recompute frozen baselines; ingest and nightly runs shall end with status `failed` and warning code `config_changed_requires_rebuild` when the active config hash differs from the hash of the latest succeeded run. | Must | ASM-07, BR-16 | Test |
+| ANL-032 | A change of an algorithm key in `config_parameters` shall take effect only through the operator command `python -m backend.cli rebuild --profile <P> --confirm REBUILD` (TRD 15 §4.8), which connects with `DATABASE_MIGRATION_URL` (role `echowell_migrator`, the only role that may DELETE `baselines`; TRD 06 DB-009), runs `pipeline_runner.run(scope="all", trigger="manual", rebuild=True, ...)` on that connection, which deletes each resident's `baselines` rows inside that resident's transaction (TRD 06 DB-013) before writing the recomputed rows, and writes audit action `pipeline.rebuild` with old and new config hashes; it is the only path that deletes and recomputes frozen baselines. Every other run (ingest, nightly, `POST /api/v1/pipeline/run`) shall end with status `failed`, `error_message` "configuration changed; run the rebuild command" and warning code `config_changed_requires_rebuild` when the active `config_hash()` differs from the hash of the latest succeeded run. Changes of operational keys never trigger this rule (D-56). | Must | ASM-07, BR-16, D-56 | Test |
 
 ### 4.8 Backend persistence service
 
 The backend service `backend/services/pipeline_runner.py` (new orchestration module, the only caller of
-`run_pipeline` in the backend) performs: load → compute → reconcile → write, inside one database transaction per run.
+`run_pipeline` in the backend) performs: load → compute → reconcile → write. The run row is committed in its own
+transaction; the derived rows of each resident are then written in exactly one database transaction per resident
+(TRD 01 ARC-064, TRD 06 DB-013), so a failure of one resident never rolls back another.
 
 ```mermaid
 sequenceDiagram
@@ -310,29 +330,32 @@ sequenceDiagram
   participant DB as PostgreSQL
   participant E as analytics.run_pipeline
   T->>S: run(scope, trigger, profile, as_of)
-  S->>DB: INSERT pipeline_runs(status=running, config_snapshot, code_version=GIT_SHA)
-  S->>DB: pg_advisory_xact_lock per resident in scope (sorted)
+  S->>DB: INSERT pipeline_runs(status=running, config_snapshot, code_version=GIT_SHA); COMMIT
   S->>DB: SELECT raw_sessions (scope + device-sharing residents), residents, device_assignments, config_parameters
   S->>E: run_pipeline(records, residents, assignments, config, as_of)
   E-->>S: PipelineResult
-  S->>DB: replace derived rows for scope (epochs, processed_sessions, baselines*, scores, cusum_state, day_ledger)
-  S->>DB: reconcile alerts (insert new first crossings, close epoch-ended, never delete)
-  S->>DB: UPDATE pipeline_runs(status=succeeded, counts, warnings, finished_at)
-  S->>DB: INSERT audit_logs(action="pipeline_run")
+  loop each resident in scope (ascending resident_code)
+    S->>DB: BEGIN; per-resident advisory lock (TRD 06 DB-021)
+    S->>DB: replace derived rows of the resident (epochs, processed_sessions, baselines*, scores, cusum_state, day_ledger)
+    S->>DB: reconcile alerts and resident data alerts (insert new first crossings, close epoch-ended, never delete)
+    S->>DB: COMMIT (or ROLLBACK and record the resident failure)
+  end
+  S->>DB: UPDATE pipeline_runs(status=succeeded or failed, counts, warnings, error_message, finished_at)
+  S->>DB: INSERT audit_logs(action="pipeline.run.finished")
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ANL-033 | `pipeline_runner.run(scope, trigger, profile, as_of)` shall create a `pipeline_runs` row with `status = running`, `trigger` ∈ {ingest, nightly, manual, test}, `scope`, `config_profile`, `config_snapshot`, `code_version` = env `GIT_SHA` (or "unknown"), `started_at`, before loading data. | Must | TRD 06, BR-16 | Test |
-| ANL-034 | The runner shall take `pg_advisory_xact_lock(hashtext('pipeline:' || resident_code))` for every resident in scope in ascending `resident_code` order, so that concurrent runs on the same resident serialise and cannot deadlock. | Must | NFR (TRD 03) | Test |
+| ANL-033 | `pipeline_runner.run(scope, trigger, profile, as_of)` shall create a `pipeline_runs` row with `status = running`, `trigger` ∈ {ingest, nightly, manual, test}, `scope`, `config_profile`, `config_snapshot`, `code_version` = env `GIT_SHA` (default "unknown", TRD 21), `started_at`, before loading data. | Must | TRD 06, BR-16 | Test |
+| ANL-034 | The runner shall take the per-resident advisory lock of TRD 06 DB-021 (a) at the start of each resident's transaction, processing residents in ascending `resident_code` order, so that concurrent runs on the same resident serialise and cannot deadlock. | Must | NFR (TRD 03) | Test |
 | ANL-035 | The runner shall build `RawRecord` objects from the typed columns of `raw_sessions` (never from `payload` re-parsing), converting `timestamp_utc` to an aware UTC datetime. | Must | BR-02 | Test |
-| ANL-036 | For each resident in scope the runner shall replace (delete then insert, within the transaction) its rows in `processed_sessions`, `scores`, `cusum_state` and `day_ledger` with the rows derived from `PipelineResult`; `epochs` are upserted per ANL-038; `baselines`, `alerts`, `alert_reviews`, `staff_notes` and `raw_sessions` shall never be deleted by a run (TRD 06 DB-014). | Must | BR-02, SRC-02, R15 | Test |
+| ANL-036 | For each resident in scope the runner shall replace (delete then insert, within that resident's transaction) its rows in `processed_sessions`, `scores`, `cusum_state` and `day_ledger` with the rows derived from `PipelineResult`; `epochs` are upserted per ANL-038; `baselines`, `alerts`, `alert_reviews`, `staff_notes` and `raw_sessions` shall never be deleted by a run (TRD 06 DB-014). | Must | BR-02, SRC-02, R15 | Test |
 | ANL-037 | Baselines shall be written insert-only and passed back to the engine as `frozen_baselines` on later runs: a `baselines` row set (20 rows) is inserted when an epoch's baseline forms for the first time; when `frozen_baselines` contains an epoch, the engine shall score against the persisted values, and if its recomputed values differ by more than 1e-12 or its membership (`first_session_id`, `frozen_after_session_id`, `n_sessions`) differs, it shall emit `RunWarning(code="baseline_mismatch")` (logged at ERROR) and keep the persisted rows. | Must | ASM-07, BR-09, TRD 06 DB-016 | Test |
 | ANL-038 | Epoch rows shall be upserted on `(resident_id, epoch_number)`, reusing the existing `epochs.id` so that `baselines`, `alerts` and `cusum_state` foreign keys stay valid, and updating `ended_at`; epochs without a frozen baseline that the new computation no longer produces shall be deleted. If the computation would change the key of an epoch that has a frozen baseline, the runner shall leave all derived rows of that resident unchanged, record `RunWarning(code="late_arrival", detail="epoch renumbering blocked")` and continue with the next resident (TRD 06 DB-015, DB-017). | Must | BR-08, ASM-07 | Test |
 | ANL-039 | Alerts shall be upserted on the natural key `(epoch_id, session_id)` and never deleted: an `AlertEvent` without a matching row creates one with `status = open`; a matching row keeps its `id`, `status`, `acknowledged_by`, `acknowledged_at`, `snoozed_until`, `snoozed_by` and its `alert_reviews`; a non-closed alert the computation no longer produces is set to `closed` with `closed_reason = 'superseded by rebuild'`; an `AlertEvent` with `epoch_ended = True` closes its alert with `closed_reason = 'epoch ended'` (TRD 09; TRD 06 DB-018). | Must | BR-11, ASM-06, R15 | Test |
-| ANL-040 | On success the runner shall set `pipeline_runs.status = succeeded`, `finished_at`, `counts` (= `PipelineResult.counts`) and `warnings` (list of `{code, resident_code, session_id, detail}`), commit, and write one `audit_logs` row (actor_type `system` or the triggering user, action `pipeline_run`). | Must | BR-16 | Test |
-| ANL-041 | On any exception the runner shall roll back all derived writes, then in a separate transaction set `pipeline_runs.status = failed`, `finished_at`, and `warnings` containing `{code: "exception", detail: <exception class and message>}`; previously persisted derived data shall remain unchanged. | Must | TRD 17 | Test |
-| ANL-042 | Mapping of engine values to stored values: `alarm_state` "off"/"rings"/"on" ↔ workbook "off"/"RINGS (first crossing)"/"on"; `feature_key` "composite" ↔ workbook "COMPOSITE (raw signed mean of 7 z)"; `floor_applied` bool ↔ "yes"/"no"; `is_morning` bool ↔ "yes"/"no". The validation test and `GET /api/v1/analytics/baselines` shall use this mapping. | Must | SRC-03 | Test |
+| ANL-040 | On success the runner shall set `pipeline_runs.status = succeeded`, `finished_at`, `counts` (= `PipelineResult.counts`) and `warnings` (list of `{code, resident_code, session_id, detail}`), commit, and write one `audit_logs` row (actor_type `system` or the triggering user, action `pipeline.run.finished`; `pipeline.run.started` is written when the run row is created, TRD 05 API-063; vocabulary TRD 12 §4.12). | Must | BR-16 | Test |
+| ANL-041 | An exception inside a resident's transaction shall roll back only that resident's derived writes (its previously persisted rows stay unchanged), add `{code: "exception", resident_code, detail: <exception class and message>}` to the run warnings, and the runner shall continue with the next resident; an exception outside the per-resident transactions (loading, configuration, `run_pipeline`) shall stop the run with no derived writes. In both cases the runner shall finally, in a separate transaction, set `pipeline_runs.status = failed`, `finished_at`, `warnings` and `error_message` (non-empty; it names the failed residents or the failing step, as required by TRD 20 `pipeline_runs_error_ck`); a run in which every resident committed ends `succeeded` (ANL-040). | Must | TRD 17 | Test |
+| ANL-042 | Mapping of engine values to stored values: `alarm_state` "off"/"rings"/"on" ↔ workbook "off"/"RINGS (first crossing)"/"on"; `feature_key` "composite" ↔ workbook "COMPOSITE (raw signed mean of 7 z)"; `floor_applied` bool ↔ "yes"/"no"; `is_morning` bool ↔ "yes"/"no" in Annotated_sessions `expected_morning` and ↔ the real boolean of Exp_scores `morning` (no string mapping there; TRD 14 §8). The validation test and `GET /api/v1/analytics/baselines` shall use this mapping. | Must | SRC-03 | Test |
 
 ### 4.9 Triggers
 
@@ -357,7 +380,7 @@ sequenceDiagram
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ANL-051 | `analytics/` shall define exactly two exception classes, `ContractError` (invalid inputs) and `ConfigError` (invalid configuration), both subclasses of `AnalyticsError(Exception)`; no other exception types shall be raised intentionally. | Must | TRD 17 | Inspection |
-| ANL-052 | Data-quality findings that are not errors shall be returned as `RunWarning` objects with these codes: `after_as_of`, `late_arrival` (including detail "epoch renumbering blocked"), `zero_spread` (TRD 08), `baseline_mismatch`, `config_default_used`, `config_mismatch` (FACILITY_TZ differs from the profile's `facility_tz`, TRD 21 ENV-022), `no_device_assignment` (a missing ledger day of a resident without a covering assignment; one warning per resident per run), `alert_first_crossing_changed` (TRD 09); `config_changed_requires_rebuild` is a failure code (ANL-032). | Must | TRD 17 LOG-064 | Test |
+| ANL-052 | Data-quality findings that are not errors shall be returned as `RunWarning` objects with these codes: `after_as_of`, `late_arrival` (including detail "epoch renumbering blocked"), `zero_spread` (TRD 08), `baseline_mismatch`, `config_default_used`, `config_mismatch` (FACILITY_TZ differs from the profile's `facility_tz`, TRD 21 ENV-022), `no_device_assignment` (a missing ledger day of a resident without a covering assignment; one warning per resident per run), `alert_first_crossing_changed` (TRD 09), `device_assignment_mismatch` (TRD 05 API-055); the runner adds `exception` (ANL-041) and `run_abandoned` (TRD 05 API-068); `config_changed_requires_rebuild` is a failure code (ANL-032). All warning codes are lower-case and every warning is stored as `{code, resident_code, session_id, detail}` (TRD 23 §4.2.10). | Must | TRD 17 LOG-064 | Test |
 | ANL-053 | `analytics/` shall not log; the backend runner shall emit structured JSON log events (`LOG_FORMAT=json`) `pipeline_run_started` and `pipeline_run_finished` with fields `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`, `duration_ms`, `counts`, `warning_count`, and one event `pipeline_warning` per warning at level WARNING (ERROR for `baseline_mismatch` and `epoch_key_changed`). | Must | TRD 17 | Test |
 | ANL-054 | Logs shall not contain feature values, payloads or any field other than study IDs (resident_code, device_code, session_id) and run metadata. | Must | BR-16 | Inspection |
 
@@ -385,10 +408,10 @@ Internal `AnalyticsSummary` shapes (engine output; `backend/services/analytics_s
 | `kpis.checkins_received` | `{value: n, expected: d, percent: pct}` | 281 of 300, 94% |
 | `kpis.used_for_scoring` | `{value: usable, expected: d, percent}` (usable = status usable, incl. baseline sessions) | 267 of 300, 89% |
 | `kpis.baselines_formed` | `{value, total, forming: [codes], restarts: {code: n}, note}`; value = active residents whose current epoch has a formed baseline; restarts = current epoch number − 1 where > 0; note = "<forming codes> still forming; <code> restarted once\|<n> times" | 9 of 10, note "R08 still forming; R07 restarted once" |
-| `kpis.alarms_raised` | `{value, residents: [codes], not_reviewed: n, note}`; alerts (not superseded) whose `local_date` is in the period; note = codes joined ", " + " · " + review phrase ("both not yet reviewed" when 2 of 2 open; "not yet reviewed" for 1 of 1; "all not yet reviewed" for > 2; "<k> not yet reviewed" when 0 < k < n; "all reviewed" when k = 0) | 2, "R09, R10 · both not yet reviewed" |
-| `daily_series[]` | one item per local day: `{local_date, used, set_aside, quarantined, missed, annotation}`; missed = missing_resident + missing_device_gap ledger rows; duplicates excluded; annotation = "<Mon D> · <device> silent" for days of a device_silent data alert, else null | Oct 12: used 8, missed 2, annotation "Oct 12 · D02 silent"; Σ of all segments over 30 days = 300 |
+| `kpis.alarms_raised` | `{value, residents: [codes], not_reviewed: n, note}`; alerts (not superseded) whose `local_date` is in the period; note = codes joined ", " + " · " + the review state of TRD 11 UX-355 (the only wording source: "not yet reviewed" for 1 alarm, "both not yet reviewed" for 2, "none reviewed yet" for ≥ 3 when none is reviewed, "<k> not yet reviewed" when some are, "reviewed" / "both reviewed" / "all reviewed" when none is outstanding; with 0 alarms the note is "none in this period") | 2, "R09, R10 · both not yet reviewed" |
+| `daily_series[]` | one item per local day: `{local_date, used, set_aside, quarantined, missed, silent_device_codes}` (TRD 19 `DailySeriesPoint`); missed = missing_resident + missing_device_gap ledger rows; duplicates excluded; silent_device_codes = devices with a device_silent data alert covering that day (the UI renders "<Mon D> · <device> silent") | Oct 12: used 8, missed 2, silent_device_codes ["D02"] (rendered "Oct 12 · D02 silent"); Σ of all segments over 30 days = 300 |
 | `funnel[]` | 4 steps `{step, value, note}`: expected ("<n> residents × <days> days"); received ("<missed> missed · <dup> duplicate copies removed"); passed_quality = received − set_aside ("<s> set aside: quality flag <a>, noise <b>, too short <c> (<m> had two reasons)", each reason occurrence counted); used = passed_quality − quarantined ("<q> quarantined as possible other speaker") | 300 → 281 ("19 missed · 2 duplicate copies removed") → 269 ("12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)") → 267 ("2 quarantined as possible other speaker") |
-| `by_resident[]` | `{resident_code, used_days, set_aside_or_quarantined_days, missed_days, days, percent}`; percent = pct(days with ≥ 1 usable record, days enrolled in period); sorted by percent ascending, then resident_code | R08 43, R03 73, R02 80, R05 93, R01/R04/R06/R07/R09/R10 100 |
+| `by_resident[]` | `{resident_code, days, used_days, set_aside_days, quarantined_days, missed_days, used_percent}` (TRD 19 `ByResidentRow`); a day counts once, in the first of used, set aside, quarantined that has a record; used_percent = pct(days with ≥ 1 usable record, days enrolled in period); sorted by used_percent ascending, then resident_code | R08 43, R03 73, R02 80, R05 93, R01/R04/R06/R07/R09/R10 100 |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -473,3 +496,4 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-04, F-05, F-12, F-26, F-30, F-32, F-38, F-41, F-52) | — |

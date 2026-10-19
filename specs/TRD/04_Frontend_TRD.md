@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -106,6 +106,8 @@ frontend/
       error.tsx                     Route-level error boundary
       residents/page.tsx            Residents overview + Devices panel (#devices)
       residents/[residentCode]/page.tsx   Resident detail
+      alerts/page.tsx               Alert review (AlertsPage; roles admin, clinician, researcher read; review: admin, clinician)
+      analytics/page.tsx            Analytics (AnalyticsPage; roles researcher, admin)
       admissions/page.tsx           New admissions (experimental)
       admin/page.tsx                Admin (role admin only)
   components/                       One folder per component: Component.tsx, Component.module.css, Component.test.tsx
@@ -123,7 +125,7 @@ frontend/
   styles/
     tokens.css                      Design tokens as CSS custom properties
     globals.css                     Reset, base typography, focus styles, utility classes
-  middleware.ts                     Per-request CSP nonce and security headers
+  middleware.ts                     `Cache-Control: private, no-store` on protected pages (FE-042); no CSP (TRD 12 §4.9, FE-060)
   tests/
     unit/                           Pure function tests (format, wording, deviceGroups, auth)
     fixtures/                       JSON API responses for the test_v0_1 data set as of 2026-10-30 15:00
@@ -184,9 +186,9 @@ flowchart LR
 | FE-027 | The navigation link of the current route shall carry `aria-current="page"` and the active style (2px solid ink border, font-weight 600); other links shall use 1px solid `--color-border`. | Must | SRC-09 | T |
 | FE-028 | When the signed-in user's role is `admin`, the navigation shall add a fifth link "Admin" to `/admin` after "New admissions"; for other roles the link shall not render. The "Analytics" link shall render only for roles `admin` and `researcher` (clinicians have no analytics access in the MVP). | Must | contract §19, §20 R2 | T |
 | FE-029 | The `AppHeader` shall show the signed-in user's display name and a button "Sign out" at the end of the navigation row. | Must | BR-16 | T |
-| FE-030 | The `[residentCode]` route parameter shall be validated against `^[A-Za-z0-9_-]{1,32}$`; a value that does not match shall render the resident not-found state (TRD 11 UX state "Resident <code> was not found.") without calling the API. | Must | BR-16 | T |
+| FE-030 | The `[residentCode]` route parameter shall be validated against the TRD 19 `ResidentCode` pattern `^[A-Z0-9]{1,16}$`; a value that does not match shall render the resident not-found state (TRD 11 UX state "Resident <code> was not found.") without calling the API. | Must | BR-16 | T |
 | FE-031 | The `[residentCode]` value shall be passed to the API through `encodeURIComponent`. | Must | BR-16 | T |
-| FE-032 | Every page shall set a document title of the form "<Page name> – EchoWell": "Residents – EchoWell", "R09 – EchoWell", "New admissions – EchoWell", "Admin – EchoWell", "Sign in – EchoWell". | Must | WCAG 2.4.2 | T |
+| FE-032 | Every page shall set a document title of the form "<Page name> – EchoWell": "Residents – EchoWell", "R09 – EchoWell", "Alert review – EchoWell", "Analytics – EchoWell", "New admissions – EchoWell", "Admin – EchoWell", "Sign in – EchoWell". | Must | WCAG 2.4.2 | T |
 | FE-033 | The root layout shall render a "Skip to main content" link as the first focusable element, targeting `<main id="main">`. | Must | WCAG 2.4.1 | T |
 | FE-034 | A signed-in user whose role is not `admin` who navigates to `/admin` shall see the access-denied state "You do not have access to this page." with a link "Back to all residents"; no admin API call shall be made. | Must | BR-16 | T |
 | FE-035 | When the API returns 403 for any call, the affected component shall render "You do not have access to this information." and shall not retry. | Must | BR-16 | T |
@@ -252,8 +254,8 @@ sequenceDiagram
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| FE-060 | `middleware.ts` shall generate a per-request random nonce (16 bytes, base64) and set the response header `Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-<n>' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' <NEXT_PUBLIC_API_BASE_URL origin>; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`, and pass the nonce to Next.js through the `x-nonce` request header so framework scripts receive it. | Must | BR-16, TRD 12 | T |
-| FE-061 | Responses shall carry `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Permissions-Policy: camera=(), microphone=(), geolocation=()` and `Strict-Transport-Security: max-age=31536000; includeSubDomains` (production and staging). | Must | BR-16, contract §12 | T |
+| FE-060 | The Content-Security-Policy shall be exactly the one of TRD 12 §4.9 (netlify.toml, SEC-070), whose `connect-src` lists the origin in NEXT_PUBLIC_API_BASE_URL; in the MVP the frontend shall not set a CSP in `middleware.ts`. The nonce-based CSP (`'nonce-<n>' 'strict-dynamic'`) is deferred to the AWS Amplify move (TRD 12 SEC-075). | Must | BR-16, TRD 12 | T |
+| FE-061 | Responses shall carry exactly the other headers of the TRD 12 §4.9 netlify.toml excerpt: `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()` and `Strict-Transport-Security: max-age=31536000; includeSubDomains` (production and staging). | Must | BR-16, contract §12 | T |
 | FE-062 | The codebase shall not use `dangerouslySetInnerHTML`, `eval`, `new Function` or `innerHTML`; ESLint rule `react/no-danger` shall be set to `error`. | Must | BR-16 | I |
 | FE-063 | Staff note bodies and every API-provided string shall be rendered as React text children (escaped), never as HTML or Markdown. | Must | BR-16 | T |
 | FE-064 | The frontend shall load no third-party script (no analytics, tag manager, chat widget or CDN script). | Must | BR-16 | I |
@@ -268,7 +270,7 @@ sequenceDiagram
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| FE-070 | `api.ts` shall build every URL as `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1<path>`; `NEXT_PUBLIC_API_BASE_URL` shall have no trailing slash. | Must | contract §10, §13 | T |
+| FE-070 | `api.ts` shall build every URL as `${apiBaseUrl}/api/v1<path>`, where `apiBaseUrl` is `NEXT_PUBLIC_API_BASE_URL` read in `frontend/lib/config.ts` (TRD 21 ENV-030): an origin only, with no path and no trailing slash. | Must | contract §10, §13 | T |
 | FE-071 | Every request shall send `Accept: application/json`, `Authorization: Bearer <token>` when a token exists, and `X-Request-ID: <crypto.randomUUID()>`. | Must | contract §10, TRD 17 | T |
 | FE-072 | Every request shall be aborted after 15 seconds (`AbortController`), except CSV upload which shall be aborted after 120 seconds. | Must | NFR (TRD 03) | T |
 | FE-073 | Non-2xx responses with `Content-Type: application/problem+json` shall be parsed as `{type, title, status, detail, request_id, errors}` where `type` is `urn:echowell:error:<CODE>` (UPPER_SNAKE code, catalogue in TRD 05 §4.7) and `errors[]` items are `{field, code, message}`; they shall be thrown as `ApiError` with fields `status`, `code` (the `<CODE>` suffix of `type`, or `"UNKNOWN"`), `title`, `detail`, `requestId` (from body or `X-Request-ID` header) and `errors` (default `[]`). A non-JSON error body shall produce `code: "UNKNOWN"`. | Must | contract §10, §21 R19 | T |
@@ -284,6 +286,7 @@ sequenceDiagram
 | `login(email, password)` | POST /auth/login | LoginForm |
 | `logout()` | POST /auth/logout (best-effort, audited; contract §20 R4) | AppHeader |
 | `getMe()` | GET /auth/me | AuthProvider |
+| `getUiConfig()` | GET /config/ui | AlertReviewForm (`review_explanations` checklist, `alert_snooze_hours` for "Remind me in <h> h") |
 | `getResidents({ sort })` | GET /residents?sort=alarm\|resident_id\|last_checkin&cohort=longitudinal&include_withdrawn=false&limit=500 | SummaryTiles, ResidentsTable, SortSelect, AppHeader subline |
 | `getResident(code)` | GET /residents/{code} | ResidentHeader, WhatThisMeans, StaffReviewForm |
 | `getCheckins(code, { from?, to? })` | GET /residents/{code}/checkins | CheckinLog |
@@ -313,81 +316,51 @@ sequenceDiagram
 
 #### 4.6.3 Response fields the frontend relies on
 
-The authoritative schemas are in TRD 19. The frontend depends on the following fields; field names are snake_case as returned by the API, and every timestamp is an ISO 8601 UTC string while every `*_date` / `local_date` is a facility-local `YYYY-MM-DD` string.
+The authoritative schemas are in TRD 19, and the TRD 19 names win over any name used here. The frontend shall not
+hand-write response types: it shall import them from `frontend/lib/api-types.ts`, generated from
+`docs/api_reference/openapi.json` with openapi-typescript (TRD 19, TRD 16 `openapi-contract`). The aliases below are
+the only names components use; every field name is the TRD 19 snake_case name, every timestamp is an ISO 8601 UTC
+string and every `*_date` / `local_date` / `alarm_since` / `in_use_*` is a facility-local `YYYY-MM-DD` string.
 
 ```ts
-// Common block returned by every list, detail and analytics response (contract §20 R3)
-interface Meta {
-  facility_name: string;        // facilities.name (seeded from FACILITY_NAME), e.g. "Edgewood"
-  facility_tz: string;          // FACILITY_TZ, e.g. "America/Chicago"
-  data_source_label: string;    // DATA_SOURCE_LABEL, e.g. "pipeline test data v0.1"
-  as_of: string;                // ISO UTC as_of of the latest succeeded pipeline run (contract §21 R21), e.g. "2026-10-30T20:00:00Z"
-  baseline_n: number;           // active profile baseline_n (16 in test_v0_1, 30 in production)
-  cusum_h: number;              // 5.0
-  pipeline_profile: "production" | "test_v0_1";
-}
-type DisplayStatus = "alarm_on" | "no_alarm" | "baseline_forming";
-interface ResidentRow {
-  resident_code: string;
-  status: DisplayStatus;
-  alarm_since_date: string | null;        // local date of first crossing of the open alert
-  baseline_restarted_on: string | null;   // local start date of current epoch when epoch_number > 1
-  baseline_progress: { n: number; N: number }; // usable sessions in current epoch / baseline_n
-  current_epoch_number: number;
-  device_code: string;
-  device_shared: boolean;
-  previous_device_code: string | null;    // set when the current device replaced another one
-  last_checkin_at: string | null;         // UTC instant of latest non-duplicate record (any status)
-  counts_30d: { used: number; set_aside: number; quarantined: number; missed: number };
-}
-interface ResidentsResponse {
-  meta: Meta;
-  summary: { alarm_on: number; no_alarm: number; baseline_forming: number; missed_30d: number };
-  items: ResidentRow[]; total: number; limit: number; offset: number;
-}
-type CheckinEventType = "alarm" | "watching_started" | "baseline_complete" | "set_aside"
-  | "quarantined" | "missed" | "device_silent" | "baseline_restarted";
-interface CheckinEvent {
-  id: string; event_type: CheckinEventType; local_date: string; occurred_at: string | null;
-  reason_text: string | null;   // pipeline reason, e.g. "quality flag poor; noise above limit"
-  device_code: string | null; previous_device_code: string | null;
-  restart_cause: "device" | "firmware" | "software" | null;  // baseline_restarted only
-  from_value: string | null; to_value: string | null;        // e.g. "fw-1.0.0" → "fw-1.1.0"
-  n: number | null; N: number | null; cusum_value: number | null;
-}
-interface DeviceItem {
-  device_code: string; active: boolean;
-  residents: string[];                  // resident codes currently assigned
-  shared: boolean;                      // ≥ 2 residents assigned on the as-of date
-  replaced_device_code: string | null;  // this device replaced that one ("replaced D07")
-  replaced_by_device_code: string | null;
-  in_use_since: string | null;          // local date of current assignment start
-  in_use_until: string | null;          // local date of last assignment day (inactive devices)
-  last_upload_at: string | null;        // UTC instant of latest non-duplicate record
-  firmware_version: string | null;
-  silent_days_30d: string[];            // local dates with day_ledger status missing_device_gap on this device
-  no_activity_days_30d: string[];       // local dates, while assigned, with no non-duplicate record from this device
-}
-interface ChangeAlarm {           // GET /alerts item
-  id: string; resident_code: string; device_code: string; epoch_number: number;
-  status: "open" | "acknowledged" | "closed";       // open = "Not reviewed", acknowledged = "Reviewed"
-  alarm_since_date: string; open_days: number;      // open_days = as_of local date − alarm local date
-  current_tally: number;                            // cusum_state.current_tally
-  snoozed_until: string | null; snooze_hours: number; // snooze_hours = config alert_snooze_hours (24)
-  leaning_most: string[];                           // up to 3 feature keys, mean signed z > 0, descending
-}
-type DataAlertKind = "baseline_stalled" | "possible_other_speaker" | "high_set_aside" | "device_silent"
-  | "review_flagged_data_problem";
-interface DataAlert { id: string; kind: DataAlertKind; resident_code: string | null; device_code: string | null;
-  title: string; detail: string; first_detected_at: string; last_detected_at: string; status: "open" | "resolved"; }
-type ReviewOutcome = "no_concern" | "known_cause" | "referred" | "data_problem";
-interface AlertReview { id: string; alert_id: string; reviewer_display_name: string; explanations: string[];
-  outcome: ReviewOutcome; note: string | null; created_at: string; }
-type BaselinePeriod = { firstDate: string; frozenAfterDate: string; n: number }; // from GET /scores baseline_period
-interface ScorePoint {
-  session_id: string; local_date: string; epoch_number: number;
-  composite_z: number; cusum_tally: number; alarm_state: "off" | "rings" | "on";
-}
+import type { components } from "./api-types"; // generated, never edited by hand
+type S = components["schemas"];
+
+export type Meta = S["Meta"];                          // facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile
+export type DisplayStatus = S["DisplayStatus"];        // "alarm_on" | "no_alarm" | "baseline_forming"
+export type ResidentRow = S["ResidentOverviewRow"];    // resident_code, status, alarm_since, open_alert_id, current_epoch,
+                                                       // baseline_restarted_on, baseline_progress {n_usable, n_required},
+                                                       // device_code, device_shared, previous_device_code,
+                                                       // last_checkin_at, last_checkin_local, last_30_days {used, set_aside, quarantined, missed}
+export type ResidentsResponse = S["ResidentsOverviewResponse"]; // meta, window, summary {alarm_on, no_alarm, baseline_forming,
+                                                       // missed_last_30_days}, items, total, limit, offset
+export type CheckinEventType = S["CheckinEventType"];  // "alarm_on" | "watching_started" | "baseline_complete" | "baseline_restarted"
+                                                       // | "set_aside" | "quarantined" | "missed" | "device_silent"
+export type CheckinEvent = S["CheckinEvent"];          // local_date, event_type, epoch_number, session_id, detail (pipeline reason
+                                                       // text or progress), cusum_tally, restart_cause ("device" | "firmware" |
+                                                       // "software" | null), previous_device_code, from_value, to_value
+export type DeviceItem = S["Device"];                  // device_code, room_label, active, resident_codes, shared,
+                                                       // replaces_device_code, replaced_by_device_code, in_use_since, in_use_until,
+                                                       // last_upload_at, last_upload_local, firmware_version,
+                                                       // silent_days_last_30 (silent days), device_gap_days_last_30 (device-gap days; TRD 02 §4.1)
+export type ChangeAlarm = S["Alert"];                  // id, resident_code, device_code, epoch_number, session_id, local_date (alarm since),
+                                                       // cusum_value, current_tally, open_days, status, reviewed, review_count,
+                                                       // last_reviewed_at, snoozed_until, snoozed_by, leaning_most, closed_reason
+export type DataAlertKind = S["DataAlertKind"];
+export type DataAlert = S["DataAlert"];                // id, kind, resident_code, device_code, title, detail, status,
+                                                       // first_detected_at, last_detected_at, pipeline_run_id
+export type ReviewOutcome = S["ReviewOutcome"];
+export type AlertReview = S["AlertReview"];            // id, alert_id, reviewer {id, display_name}, explanations, outcome, note, created_at
+export type UiConfig = S["UiConfig"];                  // meta, alert_snooze_hours, review_explanations [{code, label}] (GET /config/ui)
+export type BaselinePeriod = S["BaselinePeriod"];      // from GET /scores baseline_periods[]: resident_code, epoch_number,
+                                                       // first_local_date, frozen_after_local_date, frozen_after_session_id, n_sessions
+export type ScorePoint = S["ScoreRow"];                // session_id, resident_code, epoch_number, local_date, is_morning, z,
+                                                       // composite_raw, composite_z, cusum_tally, alarm_state ("off" | "rings" | "on")
+export type ComparisonStatus = S["ComparisonStatus"];  // "outside_range" | "within_range" | "not_enough_checkins" | "range_not_available"
+export type BaselineProgress = S["BaselineProgress"];  // n_usable, n_required
+export type ReviewExplanation = S["ReviewExplanation"]; // code, label
+export type DailySeriesPoint = S["DailySeriesPoint"]; export type Funnel = S["Funnel"]; export type ByResidentRow = S["ByResidentRow"];
+export type ReviewOutcomes = S["ReviewOutcomes"]; export type AnalyticsKpis = S["AnalyticsKpis"];
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -448,17 +421,19 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 
 | Component | Props (TypeScript) | Responsibility | UX ref |
 |---|---|---|---|
-| `AppHeader` | `{ meta: Meta \| undefined; active: "residents" \| "admissions" \| "devices" \| "admin" }` | Title "EchoWell", subline, nav, user name, Sign out | UX-010..UX-016 |
+| `AppHeader` | `{ meta: Meta \| undefined; active: "residents" \| "alerts" \| "analytics" \| "admin" }` | Title per FE-024, subline, nav "Residents", "Alerts (<n>)", "Analytics", "New admissions", user name, Sign out | UX-010..UX-018 |
+| `AlertsPage` | route component `app/(protected)/alerts/page.tsx` | Two-column Alert review page: `AlertQueue`, `DataAlertQueue`, `AlertReviewPanel` | UX-300–UX-322 |
+| `AnalyticsPage` | route component `app/(protected)/analytics/page.tsx` | Analytics page: `KpiTiles`, `DailyCheckinsChart`, `LossFunnel`, `UsableByResidentChart`, `AlarmTimingTable` or `ReviewOutcomesTable`, downloads; 403 view for clinicians | UX-350–UX-384 |
 | `BackLink` | `{ href?: string /* default "/residents" */ }` | "← Back to all residents" | UX-060, UX-180 |
 | `SummaryTiles` | `{ summary: ResidentsResponse["summary"] }` | Four tiles in fixed order | UX-020..UX-024 |
 | `SortSelect` | `{ value: "alarm" \| "resident_id" \| "last_checkin"; onChange(v): void; disabled?: boolean }` | Labelled native `<select id="sort">` | UX-030..UX-033 |
 | `ResidentsTable` | `{ rows: ResidentRow[]; meta: Meta; isFetching: boolean }` | Overview table, horizontal scroll container | UX-034..UX-046 |
-| `StatusBadge` | `{ status: DisplayStatus; alarmSinceDate?: string \| null; baselineRestartedOn?: string \| null; progress?: { n: number; N: number }; size?: "sm" \| "lg" }` | Status text + border style + glyph | UX-036, UX-062, TRD 11 §4.3.4 |
+| `StatusBadge` | `{ status: DisplayStatus; alarmSinceDate?: string \| null; baselineRestartedOn?: string \| null; progress?: BaselineProgress /* {n_usable, n_required} */; size?: "sm" \| "lg" }` | Status text + border style + glyph | UX-036, UX-062, TRD 11 §4.3.4 |
 | `DeviceCell` | `{ deviceCode: string; shared: boolean; previousDeviceCode: string \| null }` | "D02 (shared)" / "D07B (was D07)" | UX-035 |
 | `DevicePanel` | `{ devices: DeviceItem[]; meta: Meta }` | Device cards, grouped card, details disclosure | UX-050..UX-058 |
 | `ResidentHeader` | `{ resident: ResidentDetail; meta: Meta }` | H1 "<R> · Device <D>", baseline line, large badge | UX-061..UX-066 |
 | `WhatThisMeans` | `{ resident: ResidentDetail; meta: Meta }` | Two paragraphs from `lib/wording.ts` | UX-070..UX-075 |
-| `CusumChart` | `{ points: ScorePoint[]; baselinePeriod: { firstDate: string; frozenAfterDate: string; n: number } \| null; h: number; residentCode: string; tz: string }` | Running change tally chart | UX-080..UX-092 |
+| `CusumChart` | `{ points: ScorePoint[]; baselinePeriod: BaselinePeriod \| null; h: number; residentCode: string; tz: string }` | Running change tally chart | UX-080..UX-092 |
 | `CusumTable` | `{ points: ScorePoint[]; h: number }` | Text alternative table for the chart | UX-090 |
 | `FeatureCard` | `{ label: string; technicalName: string; sign: 1 \| -1; series: { localDate: string; z: number }[]; baselineForming: boolean }` | One of the 7 scored measurements with sparkline | UX-100..UX-105 |
 | `Sparkline` | `{ values: number[]; ariaLabel: string; width?: number /* 120 */; height?: number /* 32 */ }` | Recharts `LineChart` without axes, zero reference line | UX-102 |
@@ -476,15 +451,15 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 | `AlertReviewPanel` | `{ alarm: ChangeAlarm; points: ScorePoint[]; baselinePeriod: BaselinePeriod \| null; reviews: AlertReview[]; canReview: boolean; meta: Meta }` | Right-hand panel: title, link, mini chart, Leaning most, form, history | UX-310–UX-322 |
 | `MiniTallyChart` | `{ points: ScorePoint[]; baselinePeriod: BaselinePeriod \| null; h: number; residentCode: string }` | 90px-high variant of `CusumChart` | UX-311 |
 | `LeaningMost` | `{ featureKeys: string[] }` | Plain-language, lowercased, comma-joined labels | UX-312 |
-| `AlertReviewForm` | `{ alertId: string; snoozeHours: number; explanations: { code: string; label: string }[]; onSaved(): void }` | Checklist, outcome radio, note, Save review, Remind me | UX-313–UX-318, UX-136–UX-138 |
+| `AlertReviewForm` | `{ alertId: string; snoozeHours: number /* UiConfig.alert_snooze_hours */; explanations: ReviewExplanation[] /* UiConfig.review_explanations */; onSaved(): void }` | Checklist, outcome radio, note, Save review, Remind me | UX-313–UX-318, UX-136–UX-138 |
 | `ReviewHistory` | `{ reviews: AlertReview[]; tz: string }` | "Previous reviews" list | UX-320 |
 | `ReviewDialog` | `{ alarm: ChangeAlarm; open: boolean; onClose(): void }` | Resident detail modal wrapping `AlertReviewForm` | UX-136–UX-138 |
 | `KpiTiles` | `{ kpis: AnalyticsKpis }` | Four analytics tiles | UX-351–UX-355 |
-| `DailyCheckinsChart` | `{ series: { local_date: string; used: number; set_aside: number; quarantined: number; missed: number; device_silent: string[] }[]; meta: Meta }` | Stacked bars per day + legend + table alternative | UX-356–UX-361 |
-| `LossFunnel` | `{ funnel: AnalyticsFunnel }` | "Where check-ins are lost" | UX-362–UX-366 |
-| `UsableByResidentChart` | `{ rows: { resident_code: string; days: number; used: number; set_aside: number; quarantined: number; missed: number; usable_pct: number }[] }` | Horizontal stacked bars, lowest first | UX-367–UX-370 |
+| `DailyCheckinsChart` | `{ series: DailySeriesPoint[] /* local_date, used, set_aside, quarantined, missed, silent_device_codes */; meta: Meta }` | Stacked bars per day + legend + table alternative | UX-356–UX-361 |
+| `LossFunnel` | `{ funnel: Funnel }` | "Where check-ins are lost" | UX-362–UX-366 |
+| `UsableByResidentChart` | `{ rows: ByResidentRow[] /* resident_code, days, used_days, set_aside_days, quarantined_days, missed_days, used_percent */ }` | Horizontal stacked bars, lowest first | UX-367–UX-370 |
 | `AlarmTimingTable` | `{ rows: { label: string; planted_change: string; change_began: string \| null; alarm_rang: string \| null; delay: string }[] }` | Test-profile panel | UX-371–UX-374 |
-| `ReviewOutcomesTable` | `{ outcomes: { raised: number; reviewed: number; by_outcome: Record<ReviewOutcome, number> } }` | Production-profile panel | UX-375 |
+| `ReviewOutcomesTable` | `{ outcomes: ReviewOutcomes /* alarms_raised, reviewed, by_outcome */ }` | Production-profile panel | UX-375 |
 | `SectionState` | `{ state: "loading" \| "empty" \| "error"; message: string; onRetry?: () => void; requestId?: string }` | Uniform loading/empty/error rendering inside a section | UX-200..UX-206 |
 | `LoginForm` | `{ next: string \| null; reason: "expired" \| null }` | Email, password, Sign in | UX-170..UX-176 |
 | `AdminPanel` | `{}` (reads role from `useAuth`) | Tabs Users / Pipeline runs / Upload data | UX-210..UX-216 |
@@ -516,7 +491,7 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 | FE-133 | After a successful save the form shall clear the body, keep the selected note type, show the confirmation text of TRD 11 UX-130 in an `aria-live="polite"` region, and apply FE-085. | Must | BR-13 | T |
 | FE-134 | The frontend shall not change the displayed alarm state, badge or chart after a review is saved; it shall render the status returned by the API after refetch (a review sets the alarm to "Reviewed" but does not reset the tally or turn the alarm off in v0.1, OQ-05). | Must | OQ-05, contract §19 | T |
 | FE-135 | When `canWriteNotes(role)` is false, `StaffReviewForm` shall render the read-only message of TRD 11 UX-132 instead of the note controls and the "Mark as reviewed" button shall not render; `canReviewAlarms(role)` (admin, clinician) shall gate every review and snooze control. | Must | contract §10, §19 roles | T |
-| FE-136 | `AlertReviewForm` shall contain a checkbox fieldset (explanation codes from the API/config list `review_explanations`, OQ-25), a required radio group of the 4 outcomes, an optional note (≤ 2000 characters), and the buttons "Save review" and "Remind me in <snooze_hours> h"; "Save review" without an outcome shall not call the API and shall show the error of TRD 11 UX-316. | Must | SRC-18, contract §19 | T |
+| FE-136 | `AlertReviewForm` shall contain a checkbox fieldset (explanation codes and labels from `getUiConfig().review_explanations`, GET /api/v1/config/ui, OQ-25), a required radio group of the 4 outcomes, an optional note (≤ 2000 characters), and the buttons "Save review" and "Remind me in <alert_snooze_hours> h" (hours from `getUiConfig().alert_snooze_hours`); "Save review" without an outcome shall not call the API and shall show the error of TRD 11 UX-316. | Must | SRC-18, contract §19 | T |
 | FE-137 | "Save review" shall send `{ explanations: string[] /* codes */, outcome: ReviewOutcome, note?: string }`; an empty or whitespace-only note shall be omitted. | Must | contract §19 | T |
 | FE-138 | "Remind me in <h> h" shall call `snoozeAlert(id, {})` (server default `alert_snooze_hours`) and shall not create a review or change the alarm state. | Must | contract §19 | T |
 | FE-139 | The `/alerts` page shall keep the selected alarm in the URL as `?alert=<alert id>`; with no valid parameter it shall select the first card of the change-alarm queue; with an empty queue the review panel shall show the empty state of TRD 11 UX-319. | Must | SRC-18 | T |
@@ -534,7 +509,7 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 
 ### 4.11 Date, time and number formatting (`lib/format.ts`)
 
-All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, ... })`. The browser's own time zone is never used. Local dates (`YYYY-MM-DD` strings such as `local_date`, `alarm_since_date`) are calendar dates in the facility time zone already and are formatted without any time-zone conversion.
+All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, ... })`. The browser's own time zone is never used. Local dates (`YYYY-MM-DD` strings such as `local_date`, `alarm_since`) are calendar dates in the facility time zone already and are formatted without any time-zone conversion.
 
 | Function | Input | Output example | Rule |
 |---|---|---|---|
@@ -602,9 +577,9 @@ All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, 
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| FE-170 | The frontend shall read only the environment variables `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV`, and `frontend/.env.example` shall list exactly these two with local values. | Must | contract §13 | I |
+| FE-170 | The frontend shall read only the environment variables `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_APP_ENV` and the build-derived `NEXT_PUBLIC_GIT_SHA` (set by `next.config.js`, TRD 21 ENV-033), and only in `frontend/lib/config.ts` (TRD 21 ENV-030); `frontend/.env.example` shall list `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV` with local values (`NEXT_PUBLIC_GIT_SHA` is derived, not configured). | Must | contract §13 | I |
 | FE-171 | The build shall fail with a clear message when `NEXT_PUBLIC_API_BASE_URL` is missing or is not an absolute `http(s)` URL, or when it is `http://` while `NEXT_PUBLIC_APP_ENV` is `staging` or `production`. | Must | contract §12 (HTTPS only), TRD 21 | T |
-| FE-172 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the page shall render a fixed text marker "Environment: <value>" in IBM Plex Mono 12px at the top of `<body>`, above the skip link target. | Should | TRD 15 | T |
+| FE-172 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the page shall render the non-dismissable ribbon of TRD 21 ENV-032 ("STAGING – synthetic data" for `staging`, "LOCAL" for `local`) in IBM Plex Mono 12px at the top of `<body>`, above the skip link target. | Should | TRD 15 | T |
 | FE-173 | No secret (JWT secret, API key, database URL) shall be referenced from frontend code or from any `NEXT_PUBLIC_*` variable. | Must | BR-16, contract §12 | I |
 
 ### 4.14 Testing
@@ -630,7 +605,7 @@ Fixtures in `tests/fixtures/` are JSON responses captured from the backend runni
 | FE-187 | E2E test `staff-review.spec.ts` shall add an "Observation" note on R09 (asserting it appears in the notes list), then click "Mark as reviewed", choose the outcome "Checked on resident, no concern", click "Save review", and assert the dialog closes, the review appears in the alert's review history, the `/alerts` card for R09 shows "Reviewed", the nav shows "Alerts (1)", and the badge still reads "▲ Alarm since Oct 21". | Must | BR-13, OQ-05, contract §20 R5 | T |
 | FE-188 | E2E test `auth.spec.ts` shall assert redirect to `/login` without a token, redirect back to the `next` path after sign-in, rejection of an external `next` value, sign-out, and that a researcher sees no note form and an access-denied state on `/admin`. | Must | BR-16 | T |
 | FE-189 | E2E test `admissions.spec.ts` shall assert the experimental banner text and the empty state for the test data set (no new admissions). | Must | SRC-11, BR-14 | T |
-| FE-190 | E2E test `a11y.spec.ts` shall run axe on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/admissions` and `/admin` and fail on any `serious` or `critical` violation. | Must | WCAG 2.1 AA, NFR | T |
+| FE-190 | E2E test `a11y.spec.ts` shall run axe on exactly the route list of TRD 13 TST-110 (`/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions`, `/admin`) and fail on any `serious` or `critical` violation. | Must | WCAG 2.1 AA, NFR | T |
 | FE-191 | E2E test `responsive.spec.ts` shall load `/residents` and `/residents/R09` at 390×844 and assert `document.documentElement.scrollWidth <= window.innerWidth` (no page-level horizontal scroll). | Must | TRD 11 §4.12 | T |
 | FE-192 | E2E test `privacy.spec.ts` shall assert that no request made by the application targets a host other than the frontend origin and `NEXT_PUBLIC_API_BASE_URL`, and that no `<audio>` or `<video>` element exists on any route. | Must | BR-01, BR-16 | T |
 | FE-193 | E2E test `alerts.spec.ts` shall assert on `/alerts` with the test data: change-alarm cards "R09 · D09" / "Alarm since Oct 21 · open 9 days · tally 26.8" and "R10 · D10" / "Alarm since Oct 24 · open 6 days · tally 13.4", both "Not reviewed"; exactly the four data-alert cards of TRD 11 §4.17.6 in that order; R09 selected by default with "Leaning most" "more pauses, quieter, less voiced sound"; "Save review" without an outcome shows the required-outcome error; "Remind me in 24 h" changes the R09 badge text to the snoozed form of TRD 11 UX-303. | Must | SRC-18, contract §19 | T |
@@ -661,7 +636,7 @@ Fixtures in `tests/fixtures/` are JSON responses captured from the backend runni
 | FE-201 | Prettier shall use `printWidth: 100`, `singleQuote: false`, `trailingComma: "all"`, `semi: true`. | Should | TRD 18 | I |
 | FE-202 | CI shall run, in order, `npm ci`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run test`, `npm run build`, and E2E tests on pull requests to `main`; any failure shall fail the workflow. | Must | BR-17, TRD 16 | T |
 | FE-203 | `npm run build` shall complete with zero TypeScript errors and zero ESLint warnings. | Must | BR-17 | T |
-| FE-204 | The first-load JavaScript of `/residents` reported by `next build` shall be ≤ 250 kB (gzip). | Should | NFR (TRD 03) | T |
+| FE-204 | The first-load JavaScript of every dashboard route, including `/residents`, reported by `next build` shall be ≤ 300 kB (gzip), the budget of TRD 03 NFR-012. | Should | NFR (TRD 03) | T |
 
 ### 4.16 Traceability: component → API endpoint → requirements
 
@@ -681,7 +656,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | StaffReviewForm, NotesList, ReviewDialog | GET/POST /residents/{code}/notes, GET /alerts, POST /alerts/{id}/reviews | BR-13, BR-16 | UX-120–UX-138 | FE-130–FE-137, FE-187 |
 | AlertQueue, AlertCard | GET /alerts | BR-11, BR-13 | UX-300–UX-305 | FE-036, FE-139, FE-193 |
 | DataAlertQueue | GET /data-alerts | BR-04, BR-05, BR-06, BR-12 | UX-306–UX-309 | FE-193 |
-| AlertReviewPanel, MiniTallyChart, LeaningMost, AlertReviewForm, ReviewHistory | GET /scores, GET /alerts/{id}/reviews, POST /alerts/{id}/reviews, POST /alerts/{id}/snooze | BR-11, BR-13, BR-18 | UX-310–UX-322 | FE-093, FE-136–FE-139, FE-193 |
+| AlertReviewPanel, MiniTallyChart, LeaningMost, AlertReviewForm, ReviewHistory | GET /scores, GET /alerts/{id}/reviews, POST /alerts/{id}/reviews, POST /alerts/{id}/snooze, GET /config/ui | BR-11, BR-13, BR-18 | UX-310–UX-322 | FE-093, FE-136–FE-139, FE-193 |
 | KpiTiles, DailyCheckinsChart, LossFunnel, UsableByResidentChart, AlarmTimingTable, ReviewOutcomesTable | GET /analytics; CSV via GET /scores, GET /analytics/baselines (`Accept: text/csv`) | BR-03, BR-04, BR-05, BR-06, BR-15 | UX-350–UX-384 | FE-037, FE-194, FE-195 |
 | CheckinLog | GET /residents/{code}/checkins | BR-13, BR-04, BR-05, BR-06, BR-08 | UX-140–UX-150 | FE-101 |
 | ExperimentalBanner, AdmissionsTable | GET /admissions | BR-14 | UX-180–UX-188 | FE-189 |
@@ -697,7 +672,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 - ASM-04 / D-OWNER-2: Production `baseline_n` = 30 (owner decision 18 Oct 2026); the test_v0_1 profile (16) exists only for build-out and testing and is never used in production. The frontend renders N from the API, so the same build shows "of 16" on test data and "of 30" in production.
 - D-OWNER-3 / D-OWNER-4: AWS (Amplify for the frontend) is the target production platform; Netlify is the interim host and carries synthetic and test data only. The frontend shall stay portable (FE-044).
 - ASM-08: Fewer than 25 users and fewer than 100 residents; therefore lists are fetched in a single page of up to 500 rows and no virtualisation is used.
-- Note for lead (TRD-local): the API returns a `meta` block and the fields listed in section 4.6.3 on the endpoints named there; TRD 05/19 must define them with these names.
+- TRD 19 is the API contract: the frontend uses the TRD 19 schema and field names through the generated `frontend/lib/api-types.ts` (section 4.6.3); a name difference between this TRD and TRD 19 is resolved in favour of TRD 19.
 
 ## 6. Dependencies
 
@@ -720,7 +695,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | AC-FE-04 | `/residents/R08` shows "Baseline forming · 13 of 16 sessions" and no tally bars; setting `PIPELINE_PROFILE=production` and re-running shows "of 30" without any frontend change. |
 | AC-FE-05 | Opening any protected route without a token redirects to `/login`; after sign-in the user returns to that route; `next=https://example.com` is ignored. |
 | AC-FE-06 | Searching the built `.next/static` output for the token storage key shows only `sessionStorage` usage; no `localStorage` write of the token exists (FE-051 inspection). |
-| AC-FE-07 | Response headers of `/residents` on the staging deploy include the CSP with a nonce, HSTS, `X-Frame-Options: DENY` and `Cache-Control: private, no-store`. |
+| AC-FE-07 | Response headers of `/residents` on the staging deploy include the TRD 12 §4.9 CSP (connect-src lists the staging API origin), HSTS, `X-Frame-Options: DENY` and `Cache-Control: private, no-store`. |
 | AC-FE-08 | axe reports zero serious/critical violations on all routes (FE-190) and no page-level horizontal scroll at 390px width (FE-191). |
 | AC-FE-09 | No network request to any host other than the frontend origin and the API origin occurs during the E2E suite (FE-192). |
 | AC-FE-10 | After saving a review for R09 via "Mark as reviewed", the R09 alert shows "Reviewed", the nav shows "Alerts (1)" and the badge still reads "▲ Alarm since Oct 21" (FE-187). |
@@ -759,3 +734,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.1 (rev. c) | 18 Oct 2026 | Contract §21: problem+json error codes (R19), as_of from latest succeeded run (R21), generated types at `lib/api-types.ts` from `docs/api_reference/openapi.json` (R22); FE-079 added | — |
 | 0.1 (rev. b) | 18 Oct 2026 | Contract §19/§20: added `/alerts` and `/analytics` (SRC-18, SRC-19), unified navigation (R2), `meta.pipeline_profile` (R3), logout and pipeline-run list and CSV export (R4), review model replacing acknowledge (R5), coverage gate (R7), as-of handling (R11), tokens (R13); FE-026 retired | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-09, F-10, F-11, F-12, F-13, F-14, F-19, F-30, F-31, F-43, F-46) | — |

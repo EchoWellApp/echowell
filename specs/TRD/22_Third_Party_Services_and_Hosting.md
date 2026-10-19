@@ -1,6 +1,6 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -107,7 +107,7 @@ the services that are explicitly excluded.
 |---|---|---|
 | Purpose | Managed PostgreSQL 16 for staging (branch `staging`) and interim production (branch `main`) | Same, if Neon becomes unavailable to the team |
 | Plan | Free | Included in Railway Hobby usage |
-| Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days) | Volume-backed single instance; backups depend on plan; no branching; database runs as a service with continuous usage |
+| Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days), accepted for the interim synthetic/test-data stack under the waiver of TRD 03 NFR-024 (TRD 24 D-60); live data requires the AWS target (RDS automated backups, ≥ 7 days) | Volume-backed single instance; backups depend on plan; no branching; database runs as a service with continuous usage |
 | Data stored | All EchoWell tables (synthetic/test data only on the interim stack, D-OWNER-4) | Same |
 | Encryption | TLS required (`sslmode=require`), provider-managed encryption at rest | TLS via Railway proxy, provider-managed volume encryption per Railway documentation |
 | Region | `aws-us-east-1` | US East |
@@ -142,7 +142,7 @@ the services that are explicitly excluded.
 | Aspect | Specification |
 |---|---|
 | Purpose | Design tokens require IBM Plex Sans (body) and IBM Plex Mono (footnotes/captions) (contract §11) |
-| Decision | Self-host through `next/font/google` (`IBM_Plex_Sans` weights 400/500/600, `IBM_Plex_Mono` weight 400, subset `latin`, `display: "swap"`). Font files are downloaded once at build time and served from the EchoWell frontend origin. |
+| Decision | Self-host through `next/font/google` (`IBM_Plex_Sans` weights 400/600, `IBM_Plex_Mono` weight 400 (TRD 04 FE-004), subset `latin`, `display: "swap"`). Font files are downloaded once at build time and served from the EchoWell frontend origin. |
 | Data stored | None; browsers never contact Google; no user data reaches Google |
 | Limits / caveat | Build machines (Netlify, CI, Docker build) need outbound access to Google Fonts at build time; if unavailable, the build falls back to the CSS fallback stack (`system-ui, -apple-system, "Segoe UI", sans-serif` / `ui-monospace, Menlo, monospace`). |
 | Exit path | Switch to `next/font/local` with the OFL-licensed IBM Plex files if build-time network access is restricted (e.g. on AWS with no egress); fonts are not committed unless this switch happens (TRD 18 GIT-097) |
@@ -150,7 +150,7 @@ the services that are explicitly excluded.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TPS-050 | The frontend shall load IBM Plex Sans and IBM Plex Mono only through `next/font` self-hosting; no `<link>` to `fonts.googleapis.com` or `fonts.gstatic.com` shall exist in rendered HTML or CSS. | Must | BR-16, contract §11 | Test (E2E asserts no request to Google domains) |
-| TPS-051 | The frontend shall make network requests only to its own origin and to NEXT_PUBLIC_API_BASE_URL; a Content-Security-Policy with `default-src 'self'; connect-src 'self' <API origin>; font-src 'self'; img-src 'self' data:; frame-ancestors 'none'` shall enforce this (TRD 12). | Must | BR-16, TRD 12 | Test |
+| TPS-051 | The frontend shall make network requests only to its own origin and to NEXT_PUBLIC_API_BASE_URL; the Content-Security-Policy of TRD 12 §4.9 (SEC-070; `connect-src 'self'` plus the API origins) shall enforce this. | Must | BR-16, TRD 12 | Test |
 
 ### 4.7 Sentry (optional)
 
@@ -253,3 +253,4 @@ the services that are explicitly excluded.
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-14, F-23, F-45) | — |

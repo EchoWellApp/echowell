@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -114,7 +114,7 @@ tests/
     pipeline_input/               EchoWell_pipeline_test_input_v0_1.csv (copy of SRC-05; the ONLY pipeline input fixture)
     answer_key/                   EchoWell_pipeline_test_v0_1.xlsx (copy of SRC-03), SHA256SUMS
     legacy/                       echowell_mock_data_500.csv (copy of SRC-06; negative fixture)
-    seeds/                        pipeline_test_v0_1_registry.json (facility, residents, devices, device_assignments, users)
+    seeds/                        demo_overlay.json (E2E-15); the R01–R10 roster is read from database/seeds/test_v0_1/ (TRD 14 DS-07)
 frontend/
   tests/
     unit/                         lib/ helpers (formatters, sort rules, date formatting)
@@ -126,9 +126,9 @@ frontend/
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TST-010 | The test tree shall follow the layout in §4.2; a test file shall be named `test_<subject>.py` (Python) or `<Subject>.test.tsx` / `<subject>.spec.ts` (frontend/E2E). | Must | SRC-17 Phase 8 | Inspection |
-| TST-011 | Each analytics module listed in the contract layout (`duplicate_detection`, `quality_screening`, `speaker_screen`, `epoch_detection`, `morning_offset`, `baseline_builder`, `zscore_calculator`, `composite_score`, `cusum_engine`, `alert_generator`, `day_ledger`, `robust_stats`, `pipeline`, `config`) shall have a matching `tests/unit/analytics/test_<module>.py`. | Must | TRD 07 | Test (meta-test lists modules and asserts files exist) |
+| TST-011 | Each analytics module listed in the contract layout (`duplicate_detection`, `quality_screening`, `speaker_screen`, `epoch_detection`, `morning_offset`, `baseline_builder`, `zscore_calculator`, `composite_score`, `cusum_engine`, `alert_generator`, `day_ledger`, `robust_stats`, `data_alerts`, `aggregates`, `pipeline`, `config`; the module list of TRD 07 §4.2) shall have a matching `tests/unit/analytics/test_<module>.py`. | Must | TRD 07 | Test (meta-test lists modules and asserts files exist) |
 | TST-012 | Test function names shall include the test-case ID from §4.3 or TRD 14 where one exists (e.g. `test_rob_03_even_count_median`, `test_vc_r09_first_alarm`). | Should | Traceability | Inspection |
-| TST-013 | Every Must requirement in TRDs 02, 04, 05, 07–12 shall be referenced by at least one test via a `@pytest.mark.req("<ID>")` marker (Python) or a `// req: <ID>` comment (frontend); a script `tests/trace_report.py` shall list requirement IDs without a test. | Should | SRC-17 audit phases | Analysis |
+| TST-013 | Every Must requirement in TRDs 02, 04, 05, 07–12 shall be referenced by at least one test via a `@pytest.mark.req("<ID>")` marker (Python) or a `// req: <ID>` comment (frontend), or be listed with its inspection evidence in `docs/reports/traceability_inspections.md`; a script `tests/trace_report.py` shall list requirement IDs without a test or inspection and CI shall publish the report (TRD 03 NFR-111). | Must | SRC-17 audit phases | Analysis |
 
 ### 4.3 Unit test catalogue — analytics
 
@@ -225,7 +225,7 @@ Table 4.3-A Analytics unit test cases (inputs are literal; expected values are e
 | PIP-05 | pipeline | `run_pipeline` signature and inputs | no parameter, input object or module import carries evaluation ground truth (true onset, planted change) |
 | CFG-01 | config | load `test_v0_1` | all values equal TRD 14 Table 4.5-E (Parameters) |
 | CFG-02 | config | load `production` | baseline_n 30, all other keys as contract §7 |
-| CFG-03 | config | unknown key or wrong type | `ValueError` naming the key |
+| CFG-03 | config | unknown key or wrong type | `ConfigError` naming the key (TRD 07 ANL-029) |
 | CFG-04 | config | snapshot | snapshot dict round-trips to JSON and back unchanged |
 | CFG-05 | config | both profiles | data_alert_set_aside_fraction 0.20, data_alert_device_silent_days 2, data_alert_baseline_stalled_enabled true, alert_snooze_hours 24, review_explanations = [cold_cough_sore_throat, dental_dentures, medication_change, poor_sleep_unusual_day, room_device_moved] |
 | CFG-06 | backend core config | `APP_ENV=production` with `PIPELINE_PROFILE=test_v0_1` | startup refused with a configuration error naming both variables (D-OWNER-2) |
@@ -336,7 +336,7 @@ Table 4.3-B Data-alert and analytics-summary unit cases (contract §19; window =
 | TST-090 | Component tests shall exist for: StatusBadge, SummaryTiles, ResidentsTable (sort control), DevicesPanel, CusumChart (incl. text-table alternative), FeatureCard (×7 + "12 other measurements" card), CheckinLog, StaffReviewForm, BaselineLine, AppHeader (subline), Footer, AdmissionsTable, ExperimentalBanner, LoadingState, ErrorState, EmptyState; Alert review: AlarmQueueCard, DataAlertList, ReviewPanel (mini tally chart, Leaning most), ReviewForm (explanations, required outcome, note, Save review, Remind me in 24 h); Analytics: KpiTiles, DailyCheckinsChart, LossFunnel, UsableByResidentChart, AlarmTimingTable / ReviewOutcomesTable. | Must | BR-12, BR-13, BR-14, TRD 04, SRC-18, SRC-19 | Test |
 | TST-091 | StatusBadge tests shall assert the text "▲ Alarm since Oct 21" for an alarm since 2026-10-21, "No alarm · baseline restarted Oct 13" for an epoch-2 resident, and "Baseline forming · 13 of 16 sessions"; each badge shall convey state by text and glyph, not colour alone. | Must | contract §8, §11 | Test |
 | TST-092 | ResidentsTable tests shall assert the three sort orders on the DS-07 fixture rows exactly as listed in TRD 14 §4.9. | Must | contract §8 | Test |
-| TST-093 | CusumChart tests (contract R1) shall assert: one bar per scored session with height = cusum_tally; bars with alarm_state off use `#BDBDB8` with a 1px `#8A8A85` outline; bars with alarm_state rings or on use `#9A4508`; a leading grey slot labelled "Baseline <Mon D>–<Mon D>" (R09: "Baseline Oct 1–Oct 16"); a dashed line at cusum_h labelled "alarm line 5.0"; an x label containing "· alarm" on the first-crossing date; caption "Set-aside, quarantined and missed days leave the tally unchanged."; an accessible table with one row per bar. | Must | BR-13, SRC-10 | Test |
+| TST-093 | CusumChart tests (contract R1) shall assert: one bar per scored session with height = cusum_tally; bars with alarm_state off use `#BDBDB8` with a 1px `#8A8A85` outline; bars with alarm_state rings or on use `#9A4508`; a leading grey slot labelled "Baseline <Mon D>–<Mon D>" (R09: "Baseline Oct 1–16"); a dashed line at cusum_h labelled "alarm line 5.0"; an x label containing "· alarm" on the first-crossing date; caption "Set-aside, quarantined and missed days leave the tally unchanged."; an accessible table with one row per bar. | Must | BR-13, SRC-10 | Test |
 | TST-094 | Page tests (MSW-mocked API) shall cover for each route `/login`, `/residents`, `/residents/[residentCode]`, `/alerts`, `/analytics`, `/admissions`, `/admin`: loading state, populated state, empty state, API error state (RFC 7807 body shown as a readable message with request id), and 401 → redirect to `/login`. | Must | SRC-17 Phase 13 | Test |
 | TST-095 | A test shall assert that production builds contain no mock data: MSW handlers and fixture JSON are imported only from `frontend/tests/` and `frontend/tests/e2e/`. | Must | SRC-17 Phase 13 "No mock values in production builds" | Test |
 | TST-096 | The "What this means" text shall be read from the configuration string (OQ-12) and the test shall assert the marker "[Final clinical wording: confirm with PI]" is shown while that string is unapproved. | Must | OQ-12, BR-18 | Test |
@@ -363,26 +363,26 @@ Table 4.10-A E2E scenarios.
 | E2E-05 Sort by Resident ID | Choose "Resident ID" | R01 … R10 ascending |
 | E2E-06 Sort by Last check-in | Choose "Last check-in" | R02, R07, R05, R10, R06, R08, R09, R03, R04, R01 |
 | E2E-07 Devices panel | Open `/residents#devices` | Devices panel in view; "D02 · shared by R02, R03", "silent all day Oct 12", last upload Oct 30, 2:55 PM; "D07B · R07", "In use since Oct 13 (replaced D07)", last upload Oct 30, 2:52 PM |
-| E2E-08 Resident detail R09 | Open R09 | Header "R09 · Device D09"; "Baseline: first 16 usable check-ins, Oct 1–16 (then frozen) · watched since Oct 17"; badge "▲ Alarm since Oct 21"; no global nav, "← Back to all residents" link (R2); chart with leading slot "Baseline Oct 1–Oct 16" and 14 scored bars (Oct 17–20 grey, Oct 21–30 accent), label "alarm line 5.0", x label "Oct 21 · alarm"; 7 measurement cards with contract §6 labels; card "12 other measurements (pitch, jitter, MFCCs …)" "stored, not scored"; check-in log has "Oct 21 · Alarm on · tally crossed 5.0", "Oct 17 · Watching started", "Oct 16 · Baseline complete (16 of 16)" |
+| E2E-08 Resident detail R09 | Open R09 | Header "R09 · Device D09"; "Baseline: first 16 usable check-ins, Oct 1–16 (then frozen) · watched since Oct 17"; badge "▲ Alarm since Oct 21"; no global nav, "← Back to all residents" link (R2); chart with leading slot "Baseline Oct 1–16" and 14 scored bars (Oct 17–20 grey, Oct 21–30 accent), label "alarm line 5.0", x label "Oct 21 · alarm"; 7 measurement cards with contract §6 labels; card "12 other measurements (pitch, jitter, MFCCs …)" "stored, not scored"; check-in log has "Oct 21 · Alarm on · tally crossed 5.0", "Oct 17 · Watching started", "Oct 16 · Baseline complete (16 of 16)" |
 | E2E-09 Staff note and review from detail | On R09 add a staff note type "observation" with body "Resident has a cold; nurse notified."; then click "Mark as reviewed", which opens the review form; choose "Cold, cough or sore throat" and outcome "Explained by a known cause"; Save review | Note listed with author and time; alert status acknowledged; badge still "▲ Alarm since Oct 21"; tally values unchanged (OQ-05, R5) |
 | E2E-10 Device move R07 | Open R07 | Badge "No alarm · baseline restarted Oct 13"; check-in log contains baseline restarted (new device) on Oct 13 and baseline complete on Oct 28; chart shows epoch 2 only with 2 scored bars |
 | E2E-11 Baseline forming R08 | Open R08 | Badge "Baseline forming · 13 of 16 sessions"; chart empty state (no scored sessions); log shows 12 missed days and 5 set-aside entries; no error banner |
 | E2E-12 Set-aside reasons R03 | Open R03 | Log entry Oct 18 set aside "quality flag poor; noise above limit"; Oct 12 missed with device-gap wording (device silent) |
 | E2E-13 New admissions | Open `/admissions` | Banner "Future / experimental study arm"; empty state (no new-admission residents in DS-07) |
-| E2E-14 Role restriction | Log in as clinician; open `/admin` | Access denied page or redirect; admin link not shown in nav |
+| E2E-14 Role restriction | Log in as clinician; open `/admin` | The access-denied state "You do not have access to this page." with the link "Back to all residents" (no redirect, no admin API call; TRD 04 FE-034, TRD 11 UX-215); no "Admin" link in the navigation (UX-014) |
 | E2E-15 New check-in appears (demo path) | On an isolated DB loaded with DS-07 plus the overlay registry `tests/fixtures/seeds/demo_overlay.json` (resident R11, sex F, device D11, enrolled 2026-10-30), POST one valid record `R11-20261030-01` with `timestamp_utc` "2026-10-30 19:59:00" via API key, then as admin `POST /api/v1/pipeline/run` with `as_of` 2026-10-30T15:00:00-05:00; reload `/residents` | New row R11 with last check-in "Oct 30, 2:59 PM", status "Baseline forming · 1 of 16 sessions"; R11 detail check-in log lists the check-in; rows R01–R10 unchanged |
 | E2E-17 Alert review queues | Log in as clinician; open `/alerts` | Nav "Alerts (2)"; change-alarm cards in order "R09 · D09" "Not reviewed" "Alarm since Oct 21 · open 9 days · tally 26.8" and "R10 · D10" "Not reviewed" "Alarm since Oct 24 · open 6 days · tally 13.4"; data alerts exactly the 4 of TRD 14 Table 4.9-D |
 | E2E-18 Save review | Select R09; panel title "R09 · alarm since Oct 21", "Leaning most" "more pauses, quieter, less voiced sound"; click Save review without an outcome, then choose "Checked on resident, no concern" and Save review | First attempt: validation message, nothing saved; second: R09 card badge "Reviewed"; nav "Alerts (1)" (nav counts only not-yet-reviewed alarms; the alarm itself stays on); tally 26.8 unchanged; footer "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." |
 | E2E-19 Snooze | Select R10; click "Remind me in 24 h" | R10 card loses "Not reviewed" emphasis; status unchanged; after advancing the server clock 24 h (isolated stack) emphasis returns |
 | E2E-20 Analytics | Log in as researcher; open `/analytics` | Values of TRD 14 Table 4.9-E: tiles 94% / 89% / 9 of 10 / 2; funnel 300 → 281 → 269 → 267; by-resident order and percentages; alarm timing R09 0 days, R10 7 days, Other 8 Correct; footer "Counts only — no audio, no resident names." |
-| E2E-21 Analytics and review roles | Clinician opens `/analytics`; researcher opens `/alerts` and tries Save review | Clinician: no access (nav item hidden, page shows access denied); researcher: review form disabled and API returns 403 |
+| E2E-21 Analytics and review roles | Clinician opens `/analytics`; researcher opens `/alerts` and tries Save review | Clinician: no access (nav item hidden, page shows access denied); researcher: the checklist, outcome, note and buttons are replaced by "Only clinicians and admins can review alarms." (TRD 11 UX-322) and a direct `POST /alerts/{id}/reviews` returns 403 |
 | E2E-16 Phone width | Viewport 375×812 on `/residents` and `/residents/R09` | No horizontal page scroll; table scrolls within its container; touch targets ≥ 44 px |
 
 ### 4.11 Accessibility tests
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-110 | `frontend/tests/e2e/a11y.spec.ts` shall run axe (tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions` and `/admin`; zero violations of impact "serious" or "critical" shall be allowed. | Must | contract §11 (WCAG 2.1 AA), BR-12, BR-13 | Test |
+| TST-110 | `frontend/tests/e2e/a11y.spec.ts` (the single accessibility route list, referenced by TRD 00 SC-07, TRD 03 NFR-060/AC-NFR-04 and TRD 04 FE-190) shall run axe (tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions` and `/admin`; zero violations of impact "serious" or "critical" shall be allowed. | Must | contract §11 (WCAG 2.1 AA), BR-12, BR-13 | Test |
 | TST-111 | A keyboard-only test shall reach and operate the sort control, every "Open" link, the note textarea, the note type select, "Mark as reviewed", the alarm queue cards, the explanation checkboxes, the outcome radio group, "Save review" and "Remind me in 24 h", with visible focus. | Must | WCAG 2.1 AA | Test |
 | TST-112 | The CUSUM chart shall expose a text table alternative reachable by screen reader (role `table`, caption naming the resident) — asserted by RTL and by axe. | Must | contract §11 | Test |
 | TST-113 | Colour-contrast of all text tokens on their backgrounds shall be ≥ 4.5:1 (normal text) as checked by axe on the rendered pages. | Must | WCAG 2.1 AA | Test |
@@ -398,7 +398,7 @@ Budgets below are the canonical budgets of contract R8 (also stated in TRD 03).
 | TST-122 | `GET /api/v1/residents`, `GET /api/v1/residents/{resident_code}`, `GET /api/v1/scores`, `GET /api/v1/alerts`, `GET /api/v1/data-alerts` and `GET /api/v1/analytics` shall each have p95 ≤ 500 ms over 100 requests on the load dataset DS-08 (100 residents × 120 days, 10,800 records, TRD 14). | Must | TRD 03, ASM-08 | Test |
 | TST-123 | A full rebuild on DS-08 (100 residents, 10,800 records, generated by `tests/performance/make_load_dataset.py`) shall complete in ≤ 120 s. | Must | TRD 03, contract R8 | Test (nightly) |
 | TST-124 | `POST /api/v1/ingest` with SRC-05 as CSV shall return 202 in ≤ 2 s and the background processing shall finish in ≤ 30 s. | Must | TRD 03, TRD 10 | Test |
-| TST-125 | Lighthouse CI (desktop preset) on `/residents` of the Netlify deploy preview shall report Performance ≥ 80 and LCP ≤ 2.5 s. | Should | TRD 03, TRD 04 | Test |
+| TST-125 | Lighthouse CI (desktop preset) on `/residents` of the seeded Compose `demo` stack built from the PR (TRD 16 CIC-116) shall report Performance ≥ 80 and LCP ≤ 2.5 s. | Should | TRD 03, TRD 04 | Test |
 | TST-126 | PR runs shall execute TST-120, TST-121 (50 requests) and TST-124; the full TST-121/122/123 budgets shall run nightly. | Must | TRD 16 | Inspection |
 
 ### 4.13 Security tests
@@ -411,7 +411,7 @@ Budgets below are the canonical budgets of contract R8 (also stated in TRD 03).
 | TST-133 | The OpenAPI document shall contain no path or schema property containing "audio" except the field `audio_quality_flag`, and no request body content type `audio/*`; a request with `Content-Type: audio/wav` to any endpoint shall return 415 or 422 and store nothing. | Must | BR-01, BR-16, SRC-14 Part B | Test |
 | TST-134 | A CORS preflight from an origin not in `CORS_ORIGINS` shall receive no `Access-Control-Allow-Origin` header; from an allowed origin it shall echo that origin. | Must | contract §12 | Test |
 | TST-135 | Staging and production smoke tests shall assert `Strict-Transport-Security` on API responses and that `http://` requests are redirected to `https://`. | Must | contract §12, TRD 15 | Test |
-| TST-136 | A dependency audit (`pip-audit` and `npm audit --audit-level=high`) and a secret scan (gitleaks 8.x) shall run on every PR; any high or critical finding fails the build unless an exception with expiry date is recorded in `SECURITY_EXCEPTIONS.md`. | Should | TRD 12, TRD 16 | Test |
+| TST-136 | A dependency audit (`pip-audit` and `npm audit --audit-level=high`) and a secret scan (gitleaks 8.x) shall run on every PR (TRD 16 `security-audit`, CIC-115); any high or critical finding fails the build unless an exception with expiry date is recorded in `SECURITY_EXCEPTIONS.md`. | Should | TRD 12, TRD 16 | Test |
 | TST-137 | A test shall assert that API responses and logs for SRC-05 ingestion contain no field other than study IDs to identify a person (no name, date of birth, room number fields). | Must | BR-16 | Test |
 
 Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expected HTTP status; "anon" = no credentials; "key" = valid API key with
@@ -449,8 +449,8 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-150 | On every pull request to `main` or `staging`, the following shall run and all shall pass before merge: lint and type checks (ruff, mypy, eslint, tsc), analytics and backend unit tests, integration tests, contract tests, validation suite (Tier A and Tier B), security tests, frontend unit/component/page tests, E2E (Chromium), accessibility, PR-scope performance tests, coverage gates. Job names and wiring are defined in TRD 16; each item shall be a required status check under branch protection. | Must | BR-17, contract §13 | Inspection |
-| TST-151 | Nightly (08:00 UTC, `e2e.yml` schedule per TRD 16) on `main`: full E2E in Chromium, Firefox and WebKit; full performance budgets; random-order pytest run; multi-seed reproduction and false-alarm robustness (TRD 14 §4.11). Failures open a GitHub issue labelled `nightly-failure`. | Should | TRD 16 | Inspection |
+| TST-150 | On every pull request to `main` or `staging`, the following shall run and all shall pass before merge: lint and type checks (ruff, mypy, eslint, tsc), analytics and backend unit tests, integration tests, contract tests, validation suite (Tier A and Tier B), security tests, frontend unit/component/page tests, E2E (Chromium), accessibility, PR-scope performance tests, coverage gates. Job names and wiring are defined in TRD 16; each item shall be a required status check under branch protection (TRD 16 CIC-070: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`). | Must | BR-17, contract §13 | Inspection |
+| TST-151 | Nightly (08:00 UTC, `e2e.yml` schedule per TRD 16) on `main`: full E2E in Chromium, Firefox and WebKit; full performance budgets; random-order pytest run; multi-seed reproduction and false-alarm robustness (TRD 14 §4.11). Failures open a GitHub issue labelled `ci-failure` (TRD 16 CIC-033). | Should | TRD 16 | Inspection |
 | TST-152 | After each deploy to staging or production, a smoke suite shall check `GET /api/v1/health` = 200 with database "ok", login with the smoke user, `GET /api/v1/residents` = 200, frontend `/login` renders, and HSTS (TST-135). A failed production smoke shall trigger the rollback procedure of TRD 15. | Must | TRD 15, SRC-17 Phase 14B | Test |
 | TST-153 | Merges shall be blocked if any test was skipped without a `reason=` that names a requirement or OQ ID. | Must | Quality | Test (conftest hook) |
 
@@ -566,3 +566,4 @@ Table 4.17-A MVP acceptance criteria.
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-19, F-20, F-24, F-40, F-50, F-52) | — |

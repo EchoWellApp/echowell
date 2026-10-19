@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -78,8 +78,8 @@ the AWS target.
 
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
-| `DATABASE_MIGRATION_URL` | Connection used by Alembic only (role `echowell_migrator`, direct non-pooled endpoint) | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
-| `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes in local, staging and test; optional in production (the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
+| `DATABASE_MIGRATION_URL` | Connection used only by Alembic (Railway pre-deploy command) and the operator CLI (role `echowell_migrator`, direct non-pooled endpoint); set on the Railway `backend` service only, never on `nightly`; on AWS only on the one-off migration task (TRD 15 DEP-040); application code never reads it | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
+| `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes where PIPELINE_PROFILE=`test_v0_1` (local, staging, test); not set in production and on AWS (TRD 12 SEC-116; the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
@@ -93,7 +93,7 @@ the AWS target.
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
 | ENV-015 | FACILITY_NAME shall be rejected if it contains the string `Edge4Care` (case-insensitive). | Must | RSK-10, contract §2 | Test |
 | ENV-016 | The backend shall expose `facilities.name` (`meta.facility_name`; FACILITY_NAME only seeds that row), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
-| ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
+| ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
 
 ### 4.4 Config parameters (database) vs environment
@@ -119,7 +119,7 @@ Frontend variables are inlined at build time by Next.js and are therefore **publ
 
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | Backend base URL including `/api/v1` | Yes | — | `https://echowell-backend-production.up.railway.app/api/v1` | all | No | absolute URL ending in `/api/v1`; `https://` required unless host is `localhost` |
+| `NEXT_PUBLIC_API_BASE_URL` | Backend origin only (scheme, host and optional port; no path); the frontend appends `/api/v1<path>` (TRD 04 FE-070) and the CSP `connect-src` uses this origin (TRD 12 SEC-070) | Yes | — | `https://echowell-backend-production.up.railway.app` | all | No | absolute `http(s)` origin with no path and no trailing slash (must not contain `/api/v1`); `https://` required unless host is `localhost` |
 | `NEXT_PUBLIC_APP_ENV` | Environment label (shows a "STAGING" / "LOCAL" ribbon when not `production`) | Yes | — | `production` | all | No | `local`, `staging`, `production` |
 | `NEXT_PUBLIC_GIT_SHA` | Build commit, rendered as `<meta name="echowell-build">` (TRD 16 §4.4) | No (derived) | `process.env.COMMIT_REF` (Netlify) or `process.env.GIT_SHA` or `unknown`, computed in `next.config.js` | `3f9c2ab…` | all | No | never set manually |
 | `NEXT_TELEMETRY_DISABLED` | Disable Next.js telemetry | No | `1` | `1` | all | No | — |
@@ -152,8 +152,9 @@ Three committed templates; real `.env` files are gitignored (TRD 18 §4.11).
 ```dotenv
 # Local development (docker compose). Copy to .env. Local-only values; never reuse elsewhere.
 APP_ENV=local
-DATABASE_URL=postgresql+psycopg://echowell:echowell@db:5432/echowell
-DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly:local-dev-only-readonly@db:5432/echowell
+DATABASE_URL=postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell                 # app role, never the superuser
+DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell
+DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell
 JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
@@ -169,7 +170,7 @@ RATE_LIMIT_LOGIN=5/minute
 RATE_LIMIT_INGEST=600/minute
 GIT_SHA=unknown
 DATA_SOURCE_LABEL=pipeline test data v0.1
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_APP_ENV=local
 NEXT_TELEMETRY_DISABLED=1
 ```
@@ -183,7 +184,7 @@ NEXT_TELEMETRY_DISABLED=1
 APP_ENV=production                 # staging for the staging environment
 DATABASE_URL=                      # secret: Neon pooled URL, role echowell_app, must include sslmode=require
 DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_migrator, must include sslmode=require
-DATABASE_READONLY_URL=             # secret: Neon pooled URL, role echowell_readonly, sslmode=require; required in staging, optional in production
+DATABASE_READONLY_URL=             # secret: Neon pooled URL, role echowell_readonly, sslmode=require; staging only (test_v0_1); must be empty in production (TRD 12 SEC-116)
 JWT_SECRET=                        # secret: openssl rand -hex 32 (different per environment)
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://staging--echowell-und.netlify.app)
@@ -201,7 +202,7 @@ RATE_LIMIT_INGEST=600/minute
 GIT_SHA=${{RAILWAY_GIT_COMMIT_SHA}} # Railway reference variable
 DATA_SOURCE_LABEL=demo data (synthetic)
 # --- Frontend (Netlify environment variables, per deploy context) ---
-NEXT_PUBLIC_API_BASE_URL=          # production: https://<railway production domain>/api/v1
+NEXT_PUBLIC_API_BASE_URL=          # production: https://echowell-backend-production.up.railway.app (origin only, no /api/v1)
 NEXT_PUBLIC_APP_ENV=production
 ```
 
@@ -216,7 +217,7 @@ NEXT_PUBLIC_APP_ENV=production
 |---|---|---|---|---|---|
 | APP_ENV | `local` | `test` | `staging` | `production` | `production` |
 | DATABASE_URL | Compose `db`, `echowell_app_login` | CI service `localhost:5432/echowell_test`, `echowell_app_login` | Neon `staging` pooled, app role | Neon `main` pooled, app role | RDS endpoint, app role, `sslmode=require` (Secrets Manager) |
-| DATABASE_READONLY_URL | Compose `db`, `echowell_readonly_login` | CI service, `echowell_readonly_login` | Neon `staging` pooled, readonly role | optional (empty) | optional, RDS readonly role (Secrets Manager) |
+| DATABASE_READONLY_URL | Compose `db`, `echowell_readonly_login` | CI service, `echowell_readonly_login` | Neon `staging` pooled, readonly role | not set (SEC-116) | not set (SEC-116) |
 | DATABASE_MIGRATION_URL | Compose `db`, `echowell_migrator_login` | CI service, `echowell_migrator_login` | Neon `staging` direct, migrator role | Neon `main` direct, migrator role | RDS, migrator role (Secrets Manager) |
 | JWT_SECRET | local-dev-only value | generated per run | unique secret | unique secret | unique secret (Secrets Manager) |
 | CORS_ORIGINS | `http://localhost:3000,http://localhost:3001` | `http://localhost:3000` | `https://staging--echowell-und.netlify.app` | `https://echowell-und.netlify.app` | Amplify production domain |
@@ -229,7 +230,7 @@ NEXT_PUBLIC_APP_ENV=production
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
 | GIT_SHA | `unknown` | `${{ github.sha }}` | Railway reference | Railway reference | image build arg |
 | DATA_SOURCE_LABEL | `pipeline test data v0.1` | `pipeline test data v0.1` | `pipeline test data v0.1` | `demo data (synthetic)` | `Edgewood check-ins` |
-| NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000/api/v1` | `http://localhost:8000/api/v1` | staging backend | production backend | App Runner domain |
+| NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000` | `http://localhost:8000` | `https://echowell-backend-staging.up.railway.app` | `https://echowell-backend-production.up.railway.app` | App Runner origin |
 | NEXT_PUBLIC_APP_ENV | `local` | `local` | `staging` | `production` | `production` |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -289,3 +290,4 @@ NEXT_PUBLIC_APP_ENV=production
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-17, F-48) | — |

@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -63,7 +63,7 @@ tag releases.
 3. Railway "Wait for CI" makes a backend deploy conditional on green checks; Netlify deploys only commits that reached
    `main`/`staging` through protected PRs, whose checks already passed.
 4. Platform-native rollback ("publish previous deploy" / "redeploy") stays available (TRD 15 §4.12).
-5. Migrations run in the Railway start command (`alembic upgrade head && uvicorn ...`), so no workflow needs the
+5. Migrations run as the Railway pre-deploy command (`alembic upgrade head`, TRD 15 DEP-040), so no workflow needs the
    production database URL.
 
 ```mermaid
@@ -82,7 +82,7 @@ sequenceDiagram
   GH->>CI: push main
   GH->>NF: production build + publish
   CI-->>RW: checks green (Wait for CI)
-  RW->>RW: build image, alembic upgrade head, uvicorn, healthcheck
+  RW->>RW: build image, pre-deploy alembic upgrade head, start uvicorn, healthcheck
   GH->>DV: push main
   DV->>RW: poll /api/v1/health until version == sha
   DV->>NF: poll frontend build meta == sha
@@ -93,7 +93,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | CIC-001 | Code shall be deployed to Netlify and Railway only through their GitHub integrations; no workflow shall hold a Netlify or Railway deploy token. | Must | BR-17, SRC-01, BR-16 | Inspection |
 | CIC-002 | Workflow files shall be: `.github/workflows/ci.yml`, `e2e.yml`, `deploy-staging.yml`, `deploy-production.yml`, `uptime.yml`; no other workflow shall be added without a TRD change. | Must | SRC-17 Phase 14A | Inspection |
-| CIC-003 | Database migrations shall never be executed by a GitHub Actions workflow against production; they run only in the backend start command (TRD 15 DEP-040, DEP-060). | Must | BR-16, TRD 15 | Inspection |
+| CIC-003 | Database migrations shall never be executed by a GitHub Actions workflow against production; they run only as the Railway pre-deploy command (TRD 15 DEP-040, DEP-060). | Must | BR-16, TRD 15 | Inspection |
 
 ### 4.2 Workflow `ci.yml`
 
@@ -105,12 +105,12 @@ Jobs (run in parallel unless noted):
 
 | Job id | Purpose | Key commands | Time budget |
 |---|---|---|---|
-| `repo-hygiene` | Policy checks | audio-file check, `.env` check, file size check, Conventional Commit title check (PR only) | 1 min |
-| `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend` | 3 min |
+| `repo-hygiene` | Policy checks | audio-file check, `.env` check, file size check, forbidden-term check ("Edge4Care", "diagnoses", "severity"), LLM-dependency check, Conventional Commit title check (PR only) | 1 min |
+| `backend-lint` | Static checks | `ruff check .`, `ruff format --check .`, `mypy analytics backend`, `lint-imports` (import-linter: `analytics/` purity, TRD 01 ARC-041) | 3 min |
 | `backend-test` | Pytest with PostgreSQL | `alembic upgrade head`; `pytest tests/unit tests/integration tests/contract tests/security tests/validation --cov=analytics --cov=backend --cov-report=xml:build/coverage.xml --junitxml=build/junit.xml --validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`; coverage gates | 8 min |
 | `openapi-contract` | API contract unchanged unless intended | `python -m backend.cli export-openapi > /tmp/openapi.json`; `diff -u docs/api_reference/openapi.json /tmp/openapi.json`; regenerate `frontend/lib/api-types.ts` with `openapi-typescript` and `git diff --exit-code` | 2 min |
 | `frontend` | Frontend quality and build | `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test -- --coverage`, `npm run build` | 6 min |
-| `security-audit` | Known vulnerabilities | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev` | 2 min |
+| `security-audit` | Known vulnerabilities, secrets, insecure code | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt`, `npm audit --audit-level=high --omit=dev`, `gitleaks detect` (8.x), `bandit -r backend analytics -ll` | 3 min |
 | `docker-build` | Images build | `docker build -f backend/Dockerfile .`; `docker build frontend`; image check (non-root, no `.env`, no `tests/`) | 5 min |
 
 Outline:
@@ -147,6 +147,18 @@ jobs:
       - name: File size limit 10 MB
         run: |
           git ls-files -z | xargs -0 du -k | awk '$1 > 10240 {print; bad=1} END {exit bad}'
+      - name: Forbidden terms (TRD 00 VIS-008, TRD 03 NFR-067)
+        run: |
+          if git grep -n -I -i "edge4care" -- . ':!specs/' ':!docs/reports/'; then
+            echo "::error::'Edge4Care' must not be used (the facility is Edgewood)"; exit 1; fi
+          if git grep -n -I -w -i -E "diagnoses|severity" -- frontend/app frontend/components frontend/lib/wording.ts; then
+            echo "::error::Forbidden wording in UI copy (detection, not diagnosis)"; exit 1; fi
+      - name: No LLM SDK dependencies (TRD 12 SEC-128, TRD 03 NFR-115)
+        run: |
+          if grep -n -i -E "^(openai|anthropic|langchain[a-z_-]*|google-generativeai|cohere|mistralai)([=<>~ !\[]|$)" backend/requirements*.txt; then
+            echo "::error::LLM SDKs are not allowed"; exit 1; fi
+          if grep -n -E '"(openai|@anthropic-ai/[a-z-]+|langchain|@langchain/[a-z-]+|@google/generative-ai|cohere-ai|@mistralai/[a-z-]+)"' frontend/package.json; then
+            echo "::error::LLM SDKs are not allowed"; exit 1; fi
       - name: PR title is a Conventional Commit
         if: github.event_name == 'pull_request'
         env: { TITLE: "${{ github.event.pull_request.title }}" }
@@ -166,6 +178,7 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy analytics backend
+      - run: lint-imports    # import-linter contracts in pyproject.toml [tool.importlinter] (TRD 01 ARC-041, AC-ARC-01)
   backend-test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -234,7 +247,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     defaults: { run: { working-directory: frontend } }
-    env: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000/api/v1", NEXT_PUBLIC_APP_ENV: local, NEXT_TELEMETRY_DISABLED: "1" }
+    env: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000", NEXT_PUBLIC_APP_ENV: local, NEXT_TELEMETRY_DISABLED: "1" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -248,9 +261,10 @@ jobs:
         with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
   security-audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # full history for gitleaks
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install pip-audit
@@ -259,6 +273,10 @@ jobs:
         with: { node-version: "20" }
       - run: npm audit --audit-level=high --omit=dev
         working-directory: frontend
+      - name: Secret scan (TRD 12 SEC-052)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.18.4 detect --source /repo --redact --no-banner
+      - name: Bandit (TRD 12 SEC-153)
+        run: pip install "bandit==1.7.*" && bandit -r backend analytics -ll -q
   docker-build:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -308,8 +326,10 @@ jobs:
 
 ### 4.3 Workflow `e2e.yml`
 
-Triggers: `push` to `main` and `staging`; `schedule` daily at `0 8 * * *` (08:00 UTC, 03:00 America/Chicago during
-CDT, after the nightly run window); `workflow_dispatch`; `pull_request` with label `run-e2e`.
+Triggers: `pull_request` to `main` and `staging` (every PR; job `playwright` is a required check, CIC-070); `push` to
+`main` and `staging`; `schedule` daily at `0 8 * * *` (08:00 UTC, 03:00 America/Chicago during CDT, after the nightly run
+window); `workflow_dispatch`. On pull requests and pushes the suite runs in Chromium (including `a11y.spec.ts`, TRD 13
+TST-110); on the schedule it runs in Chromium, Firefox and WebKit (TRD 13 TST-100, TST-151).
 
 ```yaml
 name: E2E
@@ -317,11 +337,10 @@ on:
   push: { branches: [main, staging] }
   schedule: [{ cron: "0 8 * * *" }]
   workflow_dispatch:
-  pull_request: { types: [labeled, synchronize] }
+  pull_request: { branches: [main, staging] }
 permissions: { contents: read }
 jobs:
   playwright:
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -332,9 +351,9 @@ jobs:
       - run: printf 'e2e-Password-1\n' | docker compose exec -T backend python -m backend.cli create-user --email e2e@local.test --role admin --password-stdin
       - uses: actions/setup-node@v4
         with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - run: npm ci && npx playwright install --with-deps chromium
+      - run: npm ci && npx playwright install --with-deps ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}
         working-directory: frontend
-      - run: npx playwright test
+      - run: npx playwright test ${{ github.event_name == 'schedule' && '--project=chromium --project=firefox --project=webkit' || '--project=chromium' }}
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001", E2E_USER_EMAIL: e2e@local.test, E2E_USER_PASSWORD: e2e-Password-1 }
       - if: failure()
@@ -349,12 +368,15 @@ jobs:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `test_v0_1`. | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
-| CIC-031 | `e2e.yml` shall run on every push to `main` and `staging`, nightly at 08:00 UTC, on manual dispatch and on pull requests labelled `run-e2e`; it shall not be a required check for pull requests. | Must | TRD 13 | Inspection |
+| CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
 | CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
-| CIC-033 | A failing `e2e.yml` run on `main` shall open (or comment on) a GitHub issue labelled `ci-failure` via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
+| CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
 | CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s. | Must | contract R8, TRD 03, TRD 13 | Test |
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
 | CIC-034 | The E2E user credentials shall be generated for the ephemeral stack only and shall never be valid on staging or production. | Must | BR-16 | Inspection |
+| CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
+| CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
+| CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` and `staging` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.13.x, desktop preset) on `/residents` of the seeded Compose `demo` stack after a scripted login (`frontend/tests/lighthouse/login.js`) and fails below Performance 80 or above LCP 2.5 s (TRD 13 TST-125). | Should | TRD 13, TRD 03 | Test |
 
 ### 4.4 Workflow `deploy-staging.yml`
 
@@ -408,7 +430,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-070 | Branch protection on `main` and `staging` shall require these checks to pass: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`. | Must | contract §13, TRD 18 | Inspection |
+| CIC-070 | Branch protection on `main` and `staging` shall require these checks to pass: `repo-hygiene` (incl. forbidden-term and LLM-dependency checks), `backend-lint` (incl. import-linter), `backend-test` (incl. the PR-scope performance budget, CIC-036), `openapi-contract`, `frontend`, `security-audit` (incl. gitleaks and Bandit), `docker-build`, `playwright` (E2E Chromium and accessibility). This list implements TRD 13 TST-150. | Must | contract §13, TRD 18 | Inspection |
 | CIC-071 | Required checks shall be evaluated on the PR head merged with the latest base ("Require branches to be up to date before merging"). | Must | TRD 18 | Inspection |
 | CIC-072 | A newly disclosed vulnerability that makes `security-audit` fail on an unchanged dependency may be waived for at most 7 days by an `ignore` entry (`pip-audit --ignore-vuln <ID>` or an `npm audit` override documented in the PR) that references a tracking issue. | May | BR-16 | Inspection |
 
@@ -492,7 +514,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - AC-CIC-10 The nightly `performance` job passes all contract R8 budgets and uploads `performance-report`.
 - AC-CIC-06 `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SMOKE_EMAIL`, `STAGING_SMOKE_PASSWORD` (and `GITHUB_TOKEN`).
 - AC-CIC-07 A merge to `main` yields a green `deploy-production.yml` run whose log shows the health `version` equal to the merge SHA.
-- AC-CIC-08 Branch protection settings for `main` list exactly the seven required checks of CIC-070.
+- AC-CIC-08 Branch protection settings for `main` list exactly the eight required checks of CIC-070.
 - AC-CIC-09 The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before the demo freeze (15 Nov 2026).
 
 ## 8. Implementation Notes
@@ -518,3 +540,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-19, F-20, F-40) | — |

@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -142,7 +142,9 @@ sequenceDiagram
 
 ### 4.5 Error taxonomy
 
-Codes are UPPER_SNAKE (contract R19; full catalogue in TRD 05 §4.7).
+HTTP error codes are UPPER_SNAKE and come only from the TRD 05 §4.7 catalogue (contract R19), which is the single
+source; the table below is the subset this TRD logs, with log levels. Pipeline run outcomes are not HTTP errors: they
+are recorded as lower-case warning codes in `pipeline_runs.warnings` (TRD 07 ANL-052, TRD 23 §4.2.10).
 
 | Code | HTTP | Layer | Meaning | Log level |
 |---|---|---|---|---|
@@ -151,16 +153,16 @@ Codes are UPPER_SNAKE (contract R19; full catalogue in TRD 05 §4.7).
 | `UNKNOWN_DEVICE` | 422 | ingest | device_id not registered | WARNING |
 | `RESIDENT_WITHDRAWN` | 422 | ingest | resident status withdrawn | WARNING |
 | `UNSUPPORTED_SCHEMA_VERSION` | 422 | ingest | schema_version not in supported list | WARNING |
-| `AUTHENTICATION_REQUIRED` | 401 | API | Missing/invalid/expired token or API key | INFO |
+| `NOT_AUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `API_KEY_INVALID` | 401 | API | Missing, invalid or expired credentials (TRD 05 §4.7) | INFO |
 | `FORBIDDEN` | 403 | API | Role or scope insufficient | WARNING |
-| `NOT_FOUND` | 404 | API | Resource or route does not exist | INFO |
-| `CONFLICT` | 409 | API | State conflict (e.g. user e-mail exists, pipeline run already running for scope) | WARNING |
+| `NOT_FOUND` and the `*_NOT_FOUND` codes | 404 | API | Route or resource does not exist (TRD 05 §4.7) | INFO |
+| `ALERT_CLOSED`, `EMAIL_ALREADY_EXISTS`, `LAST_ADMIN`, `PIPELINE_RUN_IN_PROGRESS` | 409 | API | State conflict (TRD 05 §4.7) | WARNING |
 | `PAYLOAD_TOO_LARGE` | 413 | API | Batch above limit (TRD 10) | WARNING |
 | `RATE_LIMITED` | 429 | API | Rate limit exceeded (RATE_LIMIT_LOGIN / RATE_LIMIT_INGEST) | WARNING |
-| `DATABASE_UNAVAILABLE` | 503 | API | DB connection failed or timed out | ERROR |
+| `SERVICE_UNAVAILABLE` | 503 | API | DB connection failed or timed out (TRD 05 API-097) | ERROR |
 | `INTERNAL_ERROR` | 500 | API | Unhandled exception | ERROR |
-| `PIPELINE_STAGE_FAILED` | — (run record) | pipeline | A stage raised an exception | ERROR |
-| `PIPELINE_CONFIG_INVALID` | — (run record) | pipeline | Config profile missing or invalid | ERROR |
+| `exception` (warning code, not an HTTP code) | — (run record) | pipeline | A stage raised an exception (TRD 07 ANL-041) | ERROR |
+| `pipeline_config_invalid` (warning code, not an HTTP code) | — (run record) | pipeline | Config profile missing or invalid (TRD 21 ENV-021) | ERROR |
 
 RFC 7807-style body (contract §10):
 
@@ -179,9 +181,9 @@ RFC 7807-style body (contract §10):
 |---|---|---|---|---|
 | LOG-040 | Every non-2xx API response shall have `Content-Type: application/problem+json` and the body fields `type`, `title`, `status`, `detail`, `request_id`, and `errors` (array, empty when not applicable). | Must | contract §10, TRD 05, TRD 19 | Test |
 | LOG-041 | `type` shall be `urn:echowell:error:<CODE>` where `<CODE>` is an UPPER_SNAKE code from the catalogue in TRD 05 §4.7 (the codes in §4.5 are the subset this TRD relies on); `title` shall be the fixed English title for that code; each `errors[]` item shall be `{field, code, message}`. | Must | contract R19, TRD 05, TRD 19 | Test |
-| LOG-042 | 500 responses shall never include stack traces, exception messages, SQL or file paths; `detail` shall be "An unexpected error occurred. Quote the reference when reporting it." | Must | BR-16, TRD 12 | Test |
-| LOG-043 | Pydantic/FastAPI `RequestValidationError` shall be converted to `VALIDATION_ERROR` with `errors[]` items `{field (dotted location without the leading body/query segment), code (UPPER_SNAKE of the pydantic error type), message}` but without the `input` value (no echo of submitted data). | Must | BR-16, LOG-021 | Test |
-| LOG-044 | Exception handlers shall be registered in `backend/core/errors.py` for `HTTPException`, `RequestValidationError`, a domain base class `EchoWellError(code, status, detail)`, SQLAlchemy `OperationalError` (→ `DATABASE_UNAVAILABLE`) and `Exception` (→ `INTERNAL_ERROR`). | Must | TRD 05 | Inspection |
+| LOG-042 | 500 responses shall never include stack traces, exception messages, SQL or file paths; `detail` shall be exactly the TRD 05 API-096 text "An unexpected error occurred." (the request ID is carried in `request_id`). | Must | BR-16, TRD 12 | Test |
+| LOG-043 | Pydantic/FastAPI `RequestValidationError` shall be converted to `VALIDATION_ERROR` with `errors[]` items `{field (dotted location without the leading body/query segment), code, message}`, where `code` is the lower-case field-level code defined by TRD 05 §4.7 `VALIDATION_ERROR` (TRD 10 ING-023 codes on the ingest endpoints, the Pydantic error type such as `missing` elsewhere), but without the `input` value (no echo of submitted data). | Must | BR-16, LOG-021 | Test |
+| LOG-044 | Exception handlers shall be registered in `backend/core/errors.py` for `HTTPException`, `RequestValidationError`, a domain base class `EchoWellError(code, status, detail)`, SQLAlchemy `OperationalError` (→ `SERVICE_UNAVAILABLE`, TRD 05 API-097) and `Exception` (→ `INTERNAL_ERROR`). | Must | TRD 05 | Inspection |
 
 ### 4.6 Error handling per layer
 
@@ -191,7 +193,7 @@ RFC 7807-style body (contract §10):
 |---|---|---|---|---|
 | LOG-050 | A schema-invalid record shall be rejected with 422, written to `ingest_rejections` (raw_body, errors), logged once at WARNING `ingest_record_rejected` with `session_id` (if parseable), `resident_code` (if parseable) and error locations, and never written to `raw_sessions`. | Must | BR-01, contract §7 stage 1, TRD 10 | Test |
 | LOG-051 | A duplicate arrival shall be stored in `raw_sessions`, return 200 with status `duplicate`, and be logged at INFO `ingest_duplicate` with `session_id`; it shall not be logged as an error. | Must | BR-03 | Test |
-| LOG-052 | If the database is unavailable during ingest, the API shall return 503 `DATABASE_UNAVAILABLE` with header `Retry-After: 60`, and no partial record shall be persisted (single transaction per record; per batch, accepted rows commit together). | Must | BR-02, OQ-15 | Test |
+| LOG-052 | If the database is unavailable during ingest, the API shall return 503 `SERVICE_UNAVAILABLE` with header `Retry-After: 30` (TRD 05 API-097), and no partial record shall be persisted (single transaction per record; per batch, accepted rows commit together). | Must | BR-02, OQ-15 | Test |
 | LOG-053 | A batch ingest shall log one INFO `ingest_batch_completed` with `ingest_batch_id`, `accepted`, `rejected`, `duplicates`, `duration_ms`. | Must | TRD 10 | Test |
 | LOG-054 | A failure of the post-ingest pipeline run shall not undo or fail the ingest: the record stays in `raw_sessions`, the API returns 201 with `status_after_processing: "pending"`, and the failure is handled per §4.6.2. | Must | BR-02, SRC-02 | Test |
 
@@ -209,12 +211,12 @@ stateDiagram-v2
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-060 | Every pipeline run (trigger `ingest`, `nightly`, `manual`, `test`) shall insert a `pipeline_runs` row with status `running`, `config_profile`, `config_snapshot`, `code_version` (GIT_SHA) and `started_at` before the first stage executes, in its own committed transaction. | Must | contract §9, TRD 07 | Test |
-| LOG-061 | The derived-table writes of a run shall be committed in one transaction; if any stage raises, the transaction shall be rolled back so derived tables keep their previous consistent state. | Must | BR-02, SRC-02 | Test |
-| LOG-062 | On failure the run row shall be updated to status `failed` with `finished_at` and `warnings` containing an object `{"code":"PIPELINE_STAGE_FAILED","stage":"<stage name>","resident_code":"<code or null>","exc_type":"<type>","message":"<sanitised message>"}`; one ERROR `pipeline_run_failed` log shall be written with `pipeline_run_id`. | Must | TRD 07 | Test |
+| LOG-061 | The derived-table writes of a run shall be committed in one transaction per resident (TRD 06 DB-013, TRD 07 ANL-041); if processing of a resident raises, only that resident's transaction shall be rolled back, so its derived tables keep their previous consistent state, and the run continues with the next resident and ends `failed`. | Must | BR-02, SRC-02 | Test |
+| LOG-062 | On failure the run row shall be updated as TRD 07 ANL-041 specifies (status `failed`, `finished_at`, non-empty `error_message`, and per failed resident a warning `{"code": "exception", "resident_code": "<code or null>", "session_id": null, "detail": "<stage name>: <exception type>: <sanitised message>"}`, the warning shape of TRD 23 §4.2.10 `pipeline_runs.warnings`); one ERROR `pipeline_run_failed` log shall be written with `pipeline_run_id`. | Must | TRD 07 | Test |
 | LOG-063 | Stage names in warnings and logs shall be exactly: `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`. | Must | contract §7 | Inspection |
 | LOG-064 | Non-fatal conditions shall be recorded in `pipeline_runs.warnings` without failing the run, each as `{"code": ..., "resident_code": ..., "session_id": ..., "detail": ...}`, with codes at least `late_arrival` (ASM-07), `config_mismatch`, and `no_device_assignment`. | Must | ASM-07, OQ-10 | Test |
-| LOG-065 | On success the run row shall be updated to status `succeeded` with `finished_at` and `counts` = `{usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, scored, alerts_opened, residents}` and one INFO `pipeline_run_succeeded` log with the same counts and `duration_ms`. | Must | contract §9, BR-15 | Test |
-| LOG-066 | A `pipeline_runs` row left in status `running` for more than 30 minutes (process crash) shall be marked `failed` with warning code `run_abandoned` by the next run or at startup. | Must | — | Test |
+| LOG-065 | On success the run row shall be updated to status `succeeded` with `finished_at` and `counts` with the keys of TRD 23 §4.2.10 `pipeline_runs.counts` and one INFO `pipeline_run_succeeded` log with the same counts and `duration_ms`. | Must | contract §9, BR-15 | Test |
+| LOG-066 | A `pipeline_runs` row left in status `running` for more than 30 minutes (process crash) shall be marked `failed` with warning code `run_abandoned` by the next run or at startup (TRD 05 API-068 is the owning row). | Must | — | Test |
 | LOG-067 | A failed run shall never be retried automatically more than once; the single retry shall occur at the next ingest or nightly trigger, and repeated failure shall be visible on the admin page (`/admin`, pipeline runs list). | Should | TRD 04 | Test |
 
 #### 4.6.3 API layer
@@ -222,15 +224,15 @@ stateDiagram-v2
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-070 | An unhandled exception in a request shall be logged once at ERROR `unhandled_exception` with `exc_type`, sanitised `exc_message`, `stack`, `request_id`, and reported to Sentry when SENTRY_DSN is set. | Must | — | Test |
-| LOG-071 | `GET /api/v1/health` shall return 200 `{status:"ok", database:"ok", version, time}` when `SELECT 1` succeeds within 3 s, and 503 `{status:"degraded", database:"unavailable", version, time}` otherwise; it shall not require authentication and shall not reveal any other configuration. | Must | contract §10, TRD 15 DEP-041 | Test |
+| LOG-071 | `GET /api/v1/health` shall return 200 `{status:"ok", database:"ok", version, time}` when `SELECT 1` succeeds within 2 s (TRD 05 API-110), and 503 `{status:"degraded", database:"unavailable", version, time}` otherwise; it shall not require authentication and shall not reveal any other configuration. | Must | contract §10, TRD 15 DEP-041 | Test |
 | LOG-072 | Startup shall fail fast (exit code 1, CRITICAL `startup_config_invalid` listing invalid variable names but not values) when settings validation fails (TRD 21). | Must | TRD 21 | Test |
 
 #### 4.6.4 Frontend
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| LOG-080 | The frontend shall define `app/error.tsx` (route-segment error boundary) and `app/global-error.tsx`; each shall show "Something went wrong loading this page." with a "Try again" button (calls `reset()`) and the request reference when available, without technical details. | Must | TRD 04, TRD 11 | Test |
-| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to an inline "You do not have permission to view this." message, 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
+| LOG-080 | The frontend shall define `app/error.tsx` (route-segment error boundary) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
+| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
 | LOG-082 | The frontend shall not send telemetry, logs or errors to any third-party service; browser console logging in production builds shall be limited to `console.error` for caught errors without response bodies. | Must | BR-16, TRD 22 | Inspection |
 | LOG-083 | Data panels (residents table, chart, check-in log, device panel, alert queues and review panel on `/alerts`, KPI tiles and charts on `/analytics`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
 
@@ -287,9 +289,9 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| LOG-110 | The nightly pipeline run shall be executed by the Railway Cron Job service `nightly` (`python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding a PostgreSQL advisory lock; the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-042, TRD 21 | Test |
+| LOG-110 | The nightly pipeline run shall be executed by the Railway Cron Job service `nightly` (`python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding the transaction-scoped nightly advisory lock of TRD 06 DB-021 (d); the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-046, TRD 21 | Test |
 | LOG-111 | Each firing of `backend.jobs.nightly_run` that does not start a run shall check the most recent facility-local date whose 02:00 hour has passed and log ERROR `nightly_run_missing` (and report to Sentry when enabled) if no succeeded nightly run exists for it; independently, `/admin` shall show the banner "Nightly run missing for <date>" whenever no succeeded nightly run started within the previous 26 hours (computed at read time). | Must | RSK-05 | Test |
-| LOG-112 | The `/admin` page shall show the latest 20 `pipeline_runs` (trigger, status, started/finished local time, counts, warning count) and a banner while the most recent run of any trigger is `failed`. | Must | TRD 04 | Test |
+| LOG-112 | The `/admin` page shall show the latest 50 `pipeline_runs` (TRD 02 FR-225) (trigger, status, started/finished local time, counts, warning count) and a banner while the most recent run of any trigger is `failed`. | Must | TRD 04 | Test |
 | LOG-113 | Device silence and the other data alerts shall be shown only in the dashboard (`/alerts` data-alert queue, device panel, check-in log); the system shall not send e-mail, SMS or push notifications for data alerts or for clinical alarms in the MVP. | Must | BR-12, OQ-06, OQ-24, RSK-05 | Inspection |
 | LOG-115 | Data alerts (`data_alerts`) are research data-quality flags for the study team and shall not be logged as operational errors; a pipeline run shall log one INFO `data_alerts_updated` with counts per kind (open, resolved). | Must | contract §19 | Test |
 | LOG-114 | Operational alert notifications shall reach at least two team members (the DevOps owner and the algorithm lead) by watching the repository's issues with label `incident`. | Should | RSK-05 | Inspection |
@@ -360,3 +362,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-18, F-39, F-41) | — |

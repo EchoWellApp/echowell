@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -65,8 +65,8 @@ Out of scope:
 | PGS-008 | Every column holding an instant shall be `timestamptz`; calendar days in facility local time shall be `date`; local clock time shall be `time(0)`. | Must | Contract §9, ASM-01 | Inspection; Test (no `timestamp without time zone` columns) |
 | PGS-009 | `raw_sessions` shall contain one column per ingest field of TRD 10 / contract §5 and one column per feature of contract §6, named exactly `loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction, mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4`; all are `double precision NOT NULL` except `number_of_pauses integer NOT NULL`. | Must | SRC-03, SRC-05, BR-01 | Test (column list equals SRC-05 header feature names) |
 | PGS-010 | Every foreign key shall be `ON DELETE RESTRICT` (PostgreSQL default `NO ACTION` is not used) except `scores.processed_session_id`, which shall be `ON DELETE CASCADE`. | Must | BR-02 | Test (`pg_constraint.confdeltype` = 'r' for all FKs except one 'c') |
-| PGS-011 | `raw_sessions.audio_quality_flag` shall be constrained to `ok` or `poor`; `number_of_pauses` ≥ 0; `pause_fraction` and `voiced_fraction` in [0, 1]; `speech_duration_s` ≥ 0; `mean_f0_hz` > 0. | Must | SRC-03 Data_dictionary | Test (insert of each violating value fails with SQLSTATE 23514) |
-| PGS-012 | `processed_sessions` shall enforce status/reason consistency by CHECK: `usable` has no reasons; `duplicate` has exactly the reason `session_id already received` and `epoch_id IS NULL`; `set_aside` has 1–3 reasons drawn from `quality flag poor`, `noise above limit`, `speech too short`; `quarantined` has exactly one reason matching `possible other speaker (F0 z=…; composite features with \|z\|>=3: …)` and a non-null `screen_detail`; and `reason_text` equals the reasons joined by `"; "`. | Must | BR-03, BR-04, BR-05, SRC-03 | Test (section 7, checks 4–6) |
+| PGS-011 | `raw_sessions.audio_quality_flag` shall be constrained to `ok` or `poor`; `number_of_pauses` ≥ 0; `pause_fraction` and `voiced_fraction` in [0, 1]; `speech_duration_s` ≥ 0; `mean_f0_hz` > 0; `phrase_id` NOT NULL with 1–16 characters (the same rules as TRD 10 §4.4 validation, so no validated record can fail an insert). | Must | SRC-03 Data_dictionary | Test (insert of each violating value fails with SQLSTATE 23514) |
+| PGS-012 | `processed_sessions` shall enforce status/reason consistency by CHECK: `usable` has no reasons, except that a late arrival (`late_arrival = true`, TRD 08 BSC-040) has exactly the reason `late arrival (not used for baseline or scores)`, no `baseline_ordinal`, `in_baseline = false` and may have `epoch_id IS NULL` (late record before the first epoch); a late `quarantined` row has that reason as its second reason; `late_arrival` is never true for `duplicate` rows; `duplicate` has exactly the reason `session_id already received` and `epoch_id IS NULL`; `set_aside` has 1–3 reasons drawn from `quality flag poor`, `noise above limit`, `speech too short`; `quarantined` has exactly one reason matching `possible other speaker (F0 z=…; composite features with \|z\|>=3: …)` and a non-null `screen_detail`; and `reason_text` equals the reasons joined by `"; "`. | Must | BR-03, BR-04, BR-05, SRC-03 | Test (section 7, checks 4–6) |
 | PGS-013 | `processed_sessions.local_date` shall be constrained to within one calendar day of the UTC date of `timestamp_utc`. | Must | ASM-01, BR-07 | Test (insert with local_date two days off fails) |
 | PGS-014 | `day_ledger` shall enforce: `checked_in` ⇒ `reason = ''`; `missing_resident` ⇒ `reason = 'no record received'`; `missing_device_gap` ⇒ `device_id IS NOT NULL` and reason matching `all residents on shared device % have no record`; and at most one row per `(resident_id, local_date)`. | Must | BR-06, SRC-03 | Test (section 7, check 7) |
 | PGS-015 | `device_assignments` shall reject two assignments of the same resident whose inclusive date ranges overlap (exclusion constraint `device_assignments_no_overlap_ex`); assignments of different residents to the same device may overlap (shared device). | Must | BR-06, BR-08 | Test (section 7, check 8; R02 and R03 both on D02 succeeds) |
@@ -97,6 +97,7 @@ Out of scope:
 | PGS-041 | `data_alerts` shall enforce by CHECK that `device_silent` rows reference a device and no resident; `baseline_stalled`, `possible_other_speaker` and `high_set_aside` rows reference a resident and no device; `review_flagged_data_problem` rows reference a resident and an `alert_reviews` row and have no `pipeline_run_id`; all other kinds have a `pipeline_run_id`; and at most one `open` row per `(kind, resident_id, device_id)` for the rule kinds (partial unique index `data_alerts_open_subject_uq`, NULLS NOT DISTINCT). | Must | Contract §19, BR-12 | Test |
 | PGS-042 | `alert_reviews` shall be append-only for the application (SELECT, INSERT), shall require an `outcome` of enum `review_outcome`, shall store `explanations` as an array of 0–20 lower-case codes, and `note` NULL or 1–2000 characters. | Must | Contract §19, R5 | Test |
 | PGS-043 | `alerts.snoozed_until` and `alerts.snoozed_by` shall be both NULL or both set. | Must | Contract §19 | Test |
+| PGS-044 | `audit_logs.action` shall match `^[a-z_]+(\.[a-z_]+){1,2}$` (CHECK `audit_logs_action_ck`), which admits every action of the TRD 12 §4.12 audit vocabulary (one or two dots, e.g. `auth.logout`, `auth.login.succeeded`) and nothing else is written by the application (TRD 12 SEC-109). | Must | BR-16, TRD 12 | Test (insert of each TRD 12 action succeeds; `Auth.Login` and `login` fail with SQLSTATE 23514) |
 | PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Railway provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Inspection (provider settings recorded in TRD 22) |
 
 ### 4.2 Extensions
@@ -119,7 +120,7 @@ passwords read via psql `\getenv` from `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWEL
 | Login role | Member of | Used by | Connection string |
 |---|---|---|---|
 | `echowell_app_login` | `echowell_app` | FastAPI backend and pipeline workers | `DATABASE_URL` |
-| `echowell_migrator_login` | `echowell_migrator` | Alembic in the deploy step; `backend.cli seed`, `reset-test-db`, `purge-resident` | `DATABASE_MIGRATION_URL` |
+| `echowell_migrator_login` | `echowell_migrator` | Alembic in the deploy step; `backend.cli seed`, `reset-test-db`, `purge-resident`, `rebuild` (only path that deletes `baselines`, TRD 07 ANL-032) | `DATABASE_MIGRATION_URL` |
 | `echowell_readonly_login` | `echowell_readonly` | `backend/services/analytics_summary.py` Alarm timing check (test_v0_1); researchers' offline analysis and restore drills (separate credentials issued by admin) | `DATABASE_READONLY_URL` (`sslmode=require`) |
 
 `echowell_app_login` is a member of `echowell_app` only; it has no membership in `echowell_readonly` (PGS-040, contract R27).
@@ -276,7 +277,7 @@ CREATE TABLE residents (
   created_at     timestamptz     NOT NULL DEFAULT now(),
   updated_at     timestamptz     NOT NULL DEFAULT now(),
   CONSTRAINT residents_resident_code_uq UNIQUE (resident_code),
-  CONSTRAINT residents_resident_code_ck CHECK (resident_code ~ '^[A-Z0-9][A-Z0-9-]{0,31}$'),
+  CONSTRAINT residents_resident_code_ck CHECK (resident_code ~ '^[A-Z0-9]{1,16}$'),
   CONSTRAINT residents_sex_ck CHECK (sex IS NULL OR sex IN ('F', 'M')),
   CONSTRAINT residents_withdrawn_ck CHECK ((status = 'withdrawn') = (withdrawn_on IS NOT NULL)),
   CONSTRAINT residents_withdrawn_after_enrol_ck CHECK (withdrawn_on IS NULL OR withdrawn_on >= enrolled_on),
@@ -296,7 +297,7 @@ CREATE TABLE devices (
   created_at             timestamptz NOT NULL DEFAULT now(),
   updated_at             timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT devices_device_code_uq UNIQUE (device_code),
-  CONSTRAINT devices_device_code_ck CHECK (device_code ~ '^[A-Z0-9][A-Z0-9-]{0,31}$'),
+  CONSTRAINT devices_device_code_ck CHECK (device_code ~ '^[A-Z0-9]{1,16}$'),
   CONSTRAINT devices_room_label_ck CHECK (room_label IS NULL OR char_length(room_label) BETWEEN 1 AND 60)
 );
 ```
@@ -401,7 +402,7 @@ CREATE TABLE raw_sessions (
   extraction_software_version  text             NOT NULL,
   device_firmware_version      text             NOT NULL,
   speech_duration_s            double precision NOT NULL,
-  phrase_id                    text             NULL,
+  phrase_id                    text             NOT NULL,
   -- 19 acoustic features (contract section 6; names are placeholders, OQ-03)
   loudness_dbfs                double precision NOT NULL,
   total_phrase_duration_s      double precision NOT NULL,
@@ -432,6 +433,7 @@ CREATE TABLE raw_sessions (
   CONSTRAINT raw_sessions_pause_fraction_ck CHECK (pause_fraction BETWEEN 0 AND 1),
   CONSTRAINT raw_sessions_voiced_fraction_ck CHECK (voiced_fraction BETWEEN 0 AND 1),
   CONSTRAINT raw_sessions_mean_f0_ck CHECK (mean_f0_hz > 0),
+  CONSTRAINT raw_sessions_phrase_id_ck CHECK (char_length(phrase_id) BETWEEN 1 AND 16),
   CONSTRAINT raw_sessions_versions_ck CHECK (
     char_length(extraction_software_version) BETWEEN 1 AND 64
     AND char_length(device_firmware_version) BETWEEN 1 AND 64)
@@ -508,26 +510,35 @@ CREATE TABLE processed_sessions (
   screen_detail      text             NULL,
   baseline_ordinal   integer          NULL,
   in_baseline        boolean          NOT NULL DEFAULT false,
+  late_arrival       boolean          NOT NULL DEFAULT false,
   adjusted_features  jsonb            NULL,
   pipeline_run_id    uuid             NOT NULL REFERENCES pipeline_runs (id) ON DELETE RESTRICT,
   created_at         timestamptz      NOT NULL DEFAULT now(),
   CONSTRAINT processed_sessions_raw_session_uq UNIQUE (raw_session_id),
-  CONSTRAINT processed_sessions_epoch_ck CHECK ((status = 'duplicate') = (epoch_id IS NULL)),
+  CONSTRAINT processed_sessions_epoch_ck CHECK (
+       (status = 'duplicate' AND epoch_id IS NULL AND NOT late_arrival)
+    OR (status <> 'duplicate' AND (epoch_id IS NOT NULL OR late_arrival))),
   CONSTRAINT processed_sessions_local_date_ck CHECK (
     local_date BETWEEN (timestamp_utc AT TIME ZONE 'UTC')::date - 1
                    AND (timestamp_utc AT TIME ZONE 'UTC')::date + 1),
   CONSTRAINT processed_sessions_reason_text_ck CHECK (reason_text = array_to_string(reasons, '; ')),
   CONSTRAINT processed_sessions_status_reason_ck CHECK (
-       (status = 'usable'      AND cardinality(reasons) = 0)
+       (status = 'usable'      AND NOT late_arrival AND cardinality(reasons) = 0)
+    OR (status = 'usable'      AND late_arrival
+        AND reasons = ARRAY['late arrival (not used for baseline or scores)']::text[])
     OR (status = 'duplicate'   AND reasons = ARRAY['session_id already received']::text[])
     OR (status = 'set_aside'   AND cardinality(reasons) BETWEEN 1 AND 3
         AND reasons <@ ARRAY['quality flag poor', 'noise above limit', 'speech too short']::text[])
-    OR (status = 'quarantined' AND cardinality(reasons) = 1
-        AND reasons[1] LIKE 'possible other speaker (F0 z=%; composite features with |z|>=3: %)')),
+    OR (status = 'quarantined' AND NOT late_arrival AND cardinality(reasons) = 1
+        AND reasons[1] LIKE 'possible other speaker (F0 z=%; composite features with |z|>=3: %)')
+    OR (status = 'quarantined' AND late_arrival AND cardinality(reasons) = 2
+        AND reasons[1] LIKE 'possible other speaker (F0 z=%; composite features with |z|>=3: %)'
+        AND reasons[2] = 'late arrival (not used for baseline or scores)')),
   CONSTRAINT processed_sessions_screen_ck CHECK (status <> 'quarantined' OR screen_detail IS NOT NULL),
   CONSTRAINT processed_sessions_ordinal_ck CHECK (
-    (status = 'usable') = (baseline_ordinal IS NOT NULL) AND (baseline_ordinal IS NULL OR baseline_ordinal >= 1)),
-  CONSTRAINT processed_sessions_in_baseline_ck CHECK (NOT in_baseline OR status = 'usable'),
+    (status = 'usable' AND NOT late_arrival) = (baseline_ordinal IS NOT NULL)
+    AND (baseline_ordinal IS NULL OR baseline_ordinal >= 1)),
+  CONSTRAINT processed_sessions_in_baseline_ck CHECK (NOT in_baseline OR (status = 'usable' AND NOT late_arrival)),
   CONSTRAINT processed_sessions_adjusted_ck CHECK (
     (status = 'duplicate' AND adjusted_features IS NULL)
     OR (status <> 'duplicate' AND jsonb_typeof(adjusted_features) = 'object'
@@ -777,7 +788,7 @@ CREATE TABLE audit_logs (
   details      jsonb       NOT NULL DEFAULT '{}'::jsonb,
   ip           inet        NULL,
   request_id   text        NULL,
-  CONSTRAINT audit_logs_action_ck CHECK (action ~ '^[a-z_]+\.[a-z_]+$'),
+  CONSTRAINT audit_logs_action_ck CHECK (action ~ '^[a-z_]+(\.[a-z_]+){1,2}$'),
   CONSTRAINT audit_logs_details_ck CHECK (jsonb_typeof(details) = 'object'),
   CONSTRAINT audit_logs_actor_ck CHECK (actor_type = 'system' OR actor_id IS NOT NULL)
 );
@@ -927,7 +938,7 @@ Privilege matrix (summary of the grants above):
 | Table group | echowell_app | echowell_readonly | echowell_migrator |
 |---|---|---|---|
 | raw_sessions, audit_logs (trigger-protected) | SELECT, INSERT | SELECT | owner (DELETE/TRUNCATE only via purge path, PGS-019) |
-| ingest_rejections, staff_notes, baselines, alert_reviews (append-only by grant) | SELECT, INSERT | SELECT | owner |
+| ingest_rejections, staff_notes, baselines, alert_reviews (append-only by grant) | SELECT, INSERT | SELECT | owner (`baselines` rows are deleted only by the `rebuild` CLI, TRD 07 ANL-032) |
 | facilities, residents, devices, device_assignments, ingest_batches, pipeline_runs, config_parameters, alerts, data_alerts | SELECT, INSERT, UPDATE | SELECT | owner |
 | users, api_keys | SELECT, INSERT, UPDATE | SELECT on non-credential columns only | owner |
 | epochs, processed_sessions, day_ledger, scores, cusum_state, facility_reference_ranges | SELECT, INSERT, UPDATE, DELETE | SELECT | owner |
@@ -963,7 +974,7 @@ The contract lists key columns; the following columns were added in this TRD set
 | raw_sessions | `resident_id uuid`, `device_id uuid` (resolved FKs), `resident_code`, `device_code` (typed copies of the ingest fields `resident_id`, `device_id`), `api_key_id`, `ingest_warnings` (jsonb array, TRD 10 §4.4) | in the database `resident_id`/`device_id` are UUID FKs; the received study codes are kept verbatim in `*_code` and in `payload` |
 | pipeline_runs | `as_of`, `error_message`, `created_at`, `updated_at` | reproducible ledger end date (test as-of 2026-10-30 15:00 America/Chicago); failure detail |
 | epochs, day_ledger, baselines, scores, cusum_state, alerts | `pipeline_run_id` | every derived row names the run that wrote it |
-| processed_sessions | `timestamp_utc`, `created_at` | ordering and "last check-in" without joining raw_sessions |
+| processed_sessions | `timestamp_utc`, `created_at`; `late_arrival` | ordering and "last check-in" without joining raw_sessions; storage of late arrivals (TRD 08 BSC-040, TRD 24 D-57) |
 | alerts | `closed_at`, `created_at`, `updated_at`, `pipeline_run_id`; closed_reason value `superseded by rebuild` (contract §19 adds `snoozed_until`, `snoozed_by`) | alert lifecycle (TRD 23 §4.3) |
 | data_alerts (contract §19 table) | `alert_review_id`, `resolved_at`, `created_at`, `updated_at`; `pipeline_run_id` nullable (NULL for `review_flagged_data_problem`) | link to the review that flagged a data problem; resolution time |
 | alert_reviews (contract §19 table) | none beyond contract | — |
@@ -1136,7 +1147,7 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 11. AC-PGS-11: the schema diff test (PGS-016) and `alembic check` pass on a clean database.
 12. AC-PGS-12: `echowell_readonly_login` gets SQLSTATE 42501 on `SELECT password_hash FROM users` and succeeds on `SELECT email FROM users`.
 13. AC-PGS-13: `pg_constraint` shows every FK with `confdeltype = 'r'` except `scores_processed_session_id_fkey` with `'c'`.
-14. AC-PGS-14: as `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` and `SET ROLE echowell_readonly` both fail with 42501; as `echowell_readonly_login` the SELECT returns 10 (test seed).
+14. AC-PGS-14: as `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` and `SET ROLE echowell_readonly` both fail with 42501; as `echowell_readonly_login` the SELECT returns 10 after the separate ground-truth loader of section 4.12 has run (the rows are not part of the seed).
 15. AC-PGS-15: inserting a second `open` `device_silent` data alert for D02 fails with 23505; a `device_silent` row without `pipeline_run_id` fails with 23514; `DELETE FROM alerts` as `echowell_app` fails with 42501.
 
 ## 8. Implementation Notes
@@ -1157,8 +1168,9 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 - `UNIQUE NULLS NOT DISTINCT` (facility_reference_ranges) requires PostgreSQL ≥ 15; do not lower the server version.
 - Test isolation: integration tests create a fresh database per session from the migrations; never truncate
   `raw_sessions` in tests except through the purge path (PGS-019).
-- Pitfall: Neon pooled connection strings (`-pooler` host) use PgBouncer transaction mode; Alembic and the advisory locks
-  of TRD 06 DB-021 must use the direct (non-pooled) host.
+- Pitfall: Neon pooled connection strings (`-pooler` host) use PgBouncer transaction mode; Alembic (and its session-level
+  migration lock, TRD 15 DEP-064) must use the direct (non-pooled) host. The transaction-scoped advisory locks of TRD 06
+  DB-021 work over the pooled host.
 
 ## 9. Open Questions
 
@@ -1180,3 +1192,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-03, F-04, F-43, F-44, F-52) | — |

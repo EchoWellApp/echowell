@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -39,7 +39,7 @@ TRD 04 (Frontend) defines how these screens are built (components, API client, s
 | SRC-12 | specs/prompts/TRD_Generation_Prompt.md — "Frontend Requirements" |
 | SRC-18 | specs/UI-wireframe/Alerts.dc.html — Alert review (charge nurse or clinical lead) |
 | SRC-19 | specs/UI-wireframe/Analytics.dc.html — Analytics (study team) |
-| Contract §19–§21 | New wireframes, reconciliation decisions R1–R26 (18 Oct 2026) |
+| Contract §19–§21 | New wireframes, reconciliation decisions R1–R27 (18 Oct 2026) |
 | SRC-02 | Daily Data Storage and Processing Flowcharts (alerts are flags for clinician review) |
 | TRD 00 | BR-01..BR-18 |
 | TRD 02 | Functional requirements (FR-xxx) tracing to the same BR-xx |
@@ -112,7 +112,7 @@ Layout order (SRC-09): header → summary tiles → "Residents" table section �
 | 1 | "Alarm on" | count of residents with status `alarm_on` | `summary.alarm_on` | 2 |
 | 2 | "Being watched, no alarm" | count with status `no_alarm` | `summary.no_alarm` | 7 |
 | 3 | "Baseline still forming" | count with status `baseline_forming` | `summary.baseline_forming` | 1 |
-| 4 | "Missed check-ins, last 30 days" | sum of `missed` (missing_resident + missing_device_gap) over listed residents | `summary.missed_30d` | 19 |
+| 4 | "Missed check-ins, last 30 days" | sum of `missed` (missing_resident + missing_device_gap) over listed residents | `summary.missed_last_30_days` | 19 |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -195,10 +195,10 @@ SRC-09: a white section with heading "Devices" (20px) and a 3-column grid of car
 |---|---|---|---|---|
 | Shared device | device assigned to ≥ 2 residents on the as-of date | "<D> · shared by <R>, <R>" | "Last upload <date-time>" + silent text (below) | 1px solid `--color-border` |
 | Replacement device | device replaced another device within the last 30 days | "<D> · <R>" | "In use since <Mon D> (replaced <old D>) · last upload <date-time>" | 1px solid `--color-border` |
-| Device needing attention | active device with no upload on the as-of date, or with silent days in the last 30 days, or with a firmware version different from the most common one | "<D> · <R list>" | "Last upload <date-time>" + " · no upload on <as-of Mon D>" when applicable + silent text + " · firmware <version>" when it differs | 1px solid `--color-border` |
-| Grouped devices | all remaining active devices (uploaded on the as-of date, not shared, not replaced, no silent days), one card per firmware version | compressed device list, e.g. "D01, D04–D06, D08–D10" | "All uploaded on <as-of Mon D> · firmware <version>" | 1px dashed `--color-border` |
+| Device needing attention | active device with no upload on the as-of date, or with device-gap days in the last 30 days, or with a firmware version different from the most common one | "<D> · <R list>" | "Last upload <date-time>" + " · no upload on <as-of Mon D>" when applicable + silent text + " · firmware <version>" when it differs | 1px solid `--color-border` |
+| Grouped devices | all remaining active devices (uploaded on the as-of date, not shared, not replaced, no device-gap days), one card per firmware version | compressed device list, e.g. "D01, D04–D06, D08–D10" | "All uploaded on <as-of Mon D> · firmware <version>" | 1px dashed `--color-border` |
 
-Silent text: none → nothing; 1–3 days → " · silent all day <Mon D>[, <Mon D>…]"; more than 3 days → " · silent all day on <k> days (latest <Mon D>)". A silent day is a day in the last 30 days on which the day ledger recorded `missing_device_gap` for this device (shared device, no resident on it had a record).
+Silent text: none → nothing; 1–3 days → " · silent all day <Mon D>[, <Mon D>…]"; more than 3 days → " · silent all day on <k> days (latest <Mon D>)". The silent text lists the device's device-gap days (TRD 02 §4.1; API `device_gap_days_last_30`): days in the last 30 days on which the day ledger recorded `missing_device_gap` for this device (shared device, no resident on it had a record). A single-resident device's silent days (`silent_days_last_30`) are not shown in the card text; they appear in the UX-055 table.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -207,9 +207,9 @@ Silent text: none → nothing; 1–3 days → " · silent all day <Mon D>[, <Mon
 | UX-052 | Device silent periods shall be shown on the device's card using the silent text rule above (e.g. "silent all day Oct 12"). | Must | SRC-09, SRC-12, BR-06 | T |
 | UX-053 | A replacement device card shall show the replacement date and the previous device (e.g. "In use since Oct 13 (replaced D07) · last upload Oct 30, 2:52 PM"); the retired device shall not get its own card. | Must | SRC-09, BR-08 | T |
 | UX-054 | Remaining devices shall be grouped in one dashed card per firmware version whose title lists device codes in natural order, joining runs of 3 or more consecutive numbers with an en dash (e.g. "D01, D04–D06, D08–D10"). | Must | SRC-09 | T |
-| UX-055 | Below the cards, a disclosure (`<details>`) "Show all devices (<count>)" shall reveal a table with columns "Device", "Residents", "In use", "Last upload", "Firmware", "Days with no device activity (last 30 days)", "Silent days (shared device)", one row per device including inactive ones. | Must | SRC-12, BR-12 | T |
+| UX-055 | Below the cards, a disclosure (`<details>`) "Show all devices (<count>)" shall reveal a table with columns "Device", "Residents", "In use", "Last upload", "Firmware", "Days with no device activity (last 30 days)" (from `silent_days_last_30`), "Silent days (shared device)" (from `device_gap_days_last_30`), one row per device including inactive ones. | Must | SRC-12, BR-12 | T |
 | UX-056 | "Days with no device activity (last 30 days)" shall show the number of local days in the window on which the device was assigned to at least one resident and received no non-duplicate record, followed by up to 3 dates (e.g. "1 (Oct 12)") or "0". | Must | SRC-12, RSK-05 | T |
-| UX-057 | The "In use" cell shall read "Since <Mon D>" for active devices and "<Mon D>–<Mon D> · replaced by <D>" for retired devices (e.g. "Oct 1–12 · replaced by D07B"). | Must | SRC-09, BR-08 | T |
+| UX-057 | The "In use" cell shall read "Since <Mon D>" for active devices and "<Mon D>–<Mon D> · replaced by <D>" for retired devices (e.g. "Oct 1–12 · replaced by D07B"), from `in_use_since`, `in_use_until` and `replaced_by_device_code` (TRD 19 `Device`). | Must | SRC-09, BR-08 | T |
 | UX-058 | The device panel content shall be verifiable against the pipeline test data (SRC-05): for the as-of date 2026-10-30 it shall render exactly the cards and table rows in section 4.13.4. | Must | SRC-12, BR-15 | T |
 
 ### 4.5 Resident detail (`/residents/[residentCode]`)
@@ -334,7 +334,7 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 
 | Event type | Line text | Example |
 |---|---|---|
-| alarm | "<Mon D> · Alarm on · tally crossed <h>" | "Oct 21 · Alarm on · tally crossed 5.0" |
+| alarm_on | "<Mon D> · Alarm on · tally crossed <h>" | "Oct 21 · Alarm on · tally crossed 5.0" |
 | watching_started | "<Mon D> · Watching started" | "Oct 17 · Watching started" |
 | baseline_complete | "<Mon D> · Baseline complete (<N> of <N>)" | "Oct 16 · Baseline complete (16 of 16)" |
 | baseline_restarted (device) | "<Mon D> · Baseline restarted · new device <D> (was <old D>)" | "Oct 13 · Baseline restarted · new device D07B (was D07)" |
@@ -349,7 +349,7 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 |---|---|---|---|---|
 | UX-140 | The "Check-in log" section shall be the right column of the review row, with heading "Check-in log" and one line per event (15px, 1px solid `--color-rule` bottom border, padding-bottom 8px). | Must | SRC-10 | T |
 | UX-141 | Events shall be ordered newest local date first; events on the same date shall be ordered alarm, watching_started, baseline_complete, baseline_restarted, quarantined, set_aside, device_silent, missed. | Must | SRC-10 | T |
-| UX-142 | Each event shall use the line text of the table above; set-aside reasons shall be the pipeline's reason text verbatim, in the pipeline's fixed order (quality flag, noise, speech duration) joined by "; ". | Must | SRC-10, SRC-12, BR-04, contract §7 | T |
+| UX-142 | Each event shall use the line text of the table above (event types are TRD 19 `CheckinEventType` values; the baseline_restarted variant is chosen by `restart_cause`, with `<old D>` = `previous_device_code` and `<from>`/`<to>` = `from_value`/`to_value`, TRD 06 DB-065); set-aside reasons shall be the pipeline's reason text verbatim, in the pipeline's fixed order (quality flag, noise, speech duration) joined by "; ". | Must | SRC-10, SRC-12, BR-04, contract §7 | T |
 | UX-143 | The log shall include alarms, set-asides, quarantines, missed days (resident and device-gap) and baseline restarts, as well as baseline complete and watching started. | Must | SRC-12, BR-13 | T |
 | UX-144 | Ordinary usable check-ins and duplicates shall not appear as log lines. | Must | BR-03, SRC-10 | T |
 | UX-145 | The quarantined line shall not show the screen statistics (F0 z, feature counts); it shall show only "possible other speaker". | Must | BR-18, RSK-01 | T |
@@ -382,7 +382,7 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | UX-182 | The header shall show `<h1>` "New admissions" (28px) and the line "New residents don’t have their own baseline yet, so their first check-ins are compared with the facility’s usual range." (15px, secondary), with a 2px solid ink bottom border. | Must | SRC-11 | T |
 | UX-183 | The table shall have the columns "Resident", "Admitted", "Check-ins so far", "Compared with facility range", "Own baseline", header background `--color-table-header`, `min-width: 760px` inside a horizontally scrolling container. | Must | SRC-11, contract §11 | T |
 | UX-184 | "Resident" shall show the study ID; "Admitted" the admission date "<Mon D>"; "Check-ins so far" the number of usable check-ins since admission. | Must | SRC-11 | T |
-| UX-185 | "Compared with facility range" shall show a badge: "▲ Outside facility range" (2px solid accent, accent text, weight 600) when at least one feature value is outside the facility range; "Within facility range" (1px solid `--color-border`) when all are within; "Not enough check-ins yet" (1px dashed `--color-border`) when the API reports too few check-ins to compare. | Must | SRC-11, UX-004 | T |
+| UX-185 | "Compared with facility range" shall show a badge: "▲ Outside facility range" (2px solid accent, accent text, weight 600) when at least one feature value is outside the facility range; "Within facility range" (1px solid `--color-border`) when all are within; "Not enough check-ins yet" (1px dashed `--color-border`) when the API reports too few check-ins to compare (`not_enough_checkins`); "Facility range not available yet" (1px dashed `--color-border`) when the API reports `range_not_available` (TRD 02 FR-202, TRD 19 `ComparisonStatus`). | Must | SRC-11, UX-004 | T |
 | UX-186 | "Own baseline" shall read "<n> of <N> days" where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-11, OQ-08 | T |
 | UX-187 | Each row shall contain a button "Show comparison" (min-height 44px) that selects the resident for the comparison section; the selected row shall have `aria-selected="true"` and a 2px ink left border. | Must | SRC-11 | T |
 | UX-188 | The page shall list only residents of the new-admission cohort whose own baseline has not formed; when their baseline forms they shall leave this page and appear on the Residents overview, where they are compared with their own baseline only. | Must | SRC-12, BR-14 | T |
@@ -638,7 +638,7 @@ Purpose: one place for the charge nurse or clinical lead to review change alarms
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | UX-300 | The left column shall start with a white section (1px `--color-border`) headed "Change alarms · need a nurse review" (18px, padding 14px 16px, 1px `--color-rule` bottom border). | Must | SRC-18, BR-13 | T |
-| UX-301 | The queue shall contain one card per change alarm that is on in a resident's current epoch (alert status `open` or `acknowledged`), ordered: not reviewed and not snoozed (alarm date ascending), then snoozed, then reviewed; ties by resident code. Closed alerts (epoch ended) shall not be listed. | Must | SRC-18, contract §19, ASM-06 | T |
+| UX-301 | The queue shall contain one card per change alarm that is on in a resident's current epoch (alert status `open` or `acknowledged`), ordered as TRD 02 FR-261 defines: not reviewed and not snoozed, then snoozed, then reviewed; within each group alarm date ascending, then resident code. Closed alerts (epoch ended) shall not be listed. | Must | SRC-18, contract §19, ASM-06 | T |
 | UX-302 | Each card (padding 12px 16px, 1px `--color-rule` top border) shall show line 1 (weight 600) "<R> · <D>" with the review badge right-aligned, and line 2 (14px, secondary) "Alarm since <Mon D> · open <d> days · tally <tally>", where d = as-of local date − alarm local date ("open 1 day" for 1, "opened today" for 0) and tally = current tally with one decimal. | Must | SRC-18, contract §19 | T |
 | UX-303 | The review badge shall read "Not reviewed" (accent text, weight 600) for status `open` without an active reminder; "Not reviewed · reminder <Mon D, h:mm AM/PM>" (secondary text, weight 400) while `snoozed_until` is in the future; "Reviewed" (secondary text) for status `acknowledged`. A reminder never changes the alarm itself. | Must | SRC-18, contract §19 | T |
 | UX-304 | Each card shall be a button (full card, min-height 44px) that selects the alarm for the review panel and sets `?alert=<id>`; the selected card shall have a 2px solid ink left border and `aria-current="true"`. With no selection in the URL, the first card shall be selected. | Must | SRC-18 | T |
@@ -650,7 +650,7 @@ Data alerts are data-quality signals for the study team, not health alarms: they
 
 | Kind | Title (line 1) | Detail (line 2) | Rule (contract §19, last 30 days, thresholds provisional OQ-24) |
 |---|---|---|---|
-| baseline_stalled | "<R> · baseline stuck at <n> of <N>" | "<missed> missed and <set aside> set aside in 30 days" | baseline forming and days since current epoch start ≥ N |
+| baseline_stalled | "<R> · baseline stuck at <n> of <N>" | "<missed> missed and <set aside> set aside in 30 days" | baseline forming and days in the current epoch, counted inclusively ((as-of − epoch start) + 1), ≥ N (TRD 09 §4.9) |
 | possible_other_speaker | "<R> · possible other speaker" | "<k> check-ins quarantined: <Mon D>, <Mon D>" (k = 1: "1 check-in quarantined: <Mon D>") | ≥ 1 quarantined session |
 | high_set_aside | "<R> · many check-ins set aside" | "<set aside> of <received> received: <reason kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occurred | set aside / received ≥ 0.20 and received ≥ 10; suppressed when baseline_stalled is listed for the resident |
 | device_silent | "<D> · device silent all day" | "<Mon D>[, <Mon D>] · affects <R> and <R>" (one resident: "affects <R>"; three or more: "affects R01, R02 and R03") | shared device with no record from any resident that day, or ≥ 2 consecutive silent days on a single-resident device |
@@ -670,7 +670,7 @@ Data alerts are data-quality signals for the study team, not health alarms: they
 | UX-310 | The right column shall be a white section with a 2px solid ink border, padding 20px and gap 18px, starting with a row containing the heading "<R> · alarm since <Mon D>" (h2) and the link "Open full resident view →" (15px) to `/residents/<R>`. | Must | SRC-18 | T |
 | UX-311 | Below, the label "Change tally since watching began (alarm line <h>)" shall head a mini tally chart (plot height 90px) that follows contract §20 R1 exactly like UX-081–UX-085: a leading grey slot labelled "Baseline <Mon D>–<Mon D>", one bar per scored session of the current epoch, #BDBDB8 with #8A8A85 outline while `off`, #9A4508 when `rings`/`on`, dashed accent line at h; x labels show the first and last scored dates ("Oct 17", "Oct 30"); the chart has an accessible name in the form of UX-091. | Must | SRC-18, contract §20 R1 | T |
 | UX-312 | A block "Leaning most" (label weight 600) shall list up to 3 of the 7 scored measurements whose mean signed z since the alarm date is greater than 0, highest first (ties in the §4.5.4 order), as their plain-language labels in lower case joined by ", " (e.g. "more pauses, quieter, less voiced sound"); with none it shall read "No single measurement stands out." | Must | SRC-18, contract §19, BR-18 | T |
-| UX-313 | A fieldset with legend "Anything that could explain it?" (weight 600, 1px `--color-rule` border, padding 14px) shall list one checkbox per configured explanation (provisional list, OQ-25): "Cold, cough or sore throat", "Dental problem or dentures out", "New or changed medication", "Poor sleep or unusual day", "Room or device moved"; a hint line (13px, secondary) shall read "Provisional list — to be confirmed with the clinical team (OQ-25)." Any number may be checked. | Must | SRC-18, contract §19, OQ-25 | T |
+| UX-313 | A fieldset with legend "Anything that could explain it?" (weight 600, 1px `--color-rule` border, padding 14px) shall list one checkbox per configured explanation, in the order returned by GET /api/v1/config/ui `review_explanations` (provisional list, OQ-25): "Cold, cough or sore throat", "Dental problem or dentures out", "New or changed medication", "Poor sleep or unusual day", "Room or device moved"; a hint line (13px, secondary) shall read "Provisional list — to be confirmed with the clinical team (OQ-25)." Any number may be checked. | Must | SRC-18, contract §19, OQ-25 | T |
 | UX-314 | A fieldset with legend "Review outcome" shall offer exactly one required radio choice among "Checked on resident, no concern", "Explained by a known cause", "Referred to nurse or provider", "Looks like a data problem: send to study team"; no option is preselected. | Must | SRC-18, contract §19 | T |
 | UX-315 | A textarea labelled "Note" (3 rows, optional, at most 2000 characters, counter "<count> / 2000") with placeholder "What you saw or did" shall follow. | Must | SRC-18, contract §19 | T |
 | UX-316 | The button "Save review" (min-height 44px, padding 0 20px, weight 600, ink background, white text, 2px ink border) shall save the review; without an outcome it shall not save and shall show "Choose a review outcome." linked to the outcome fieldset and move focus to the first radio. | Must | SRC-18, contract §19 | T |
@@ -806,11 +806,11 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 
 | Dependency | For |
 |---|---|
-| GET /residents (meta, summary, rows incl. counts_30d, previous_device_code) | Overview |
-| GET /devices (silent_days_30d, no_activity_days_30d, replaced/replaced-by, firmware, last upload) | Devices panel |
+| GET /residents (meta, summary, rows incl. last_30_days, previous_device_code) | Overview |
+| GET /devices (silent_days_last_30, device_gap_days_last_30, in_use_until, replaces/replaced_by_device_code, firmware, last upload) | Devices panel |
 | GET /residents/{code}, /checkins, /features, /notes; GET /scores; GET /alerts | Resident detail |
 | POST /residents/{code}/notes (free staff notes) | Staff review |
-| GET /alerts, GET /data-alerts, GET/POST /alerts/{id}/reviews, POST /alerts/{id}/snooze | Alert review, Resident detail review dialog |
+| GET /alerts, GET /data-alerts, GET/POST /alerts/{id}/reviews, POST /alerts/{id}/snooze, GET /config/ui (review checklist, snooze hours) | Alert review, Resident detail review dialog |
 | GET /analytics (kpis, daily_series, funnel, by_resident, alarm_timing or review_outcomes); CSV via GET /scores and GET /analytics/baselines | Analytics |
 | GET /pipeline/runs; POST /pipeline/run with `as_of` | Admin; test conditions of §4.13 |
 | GET /admissions, /admissions/{code}/comparison, /facility/reference-ranges | New admissions |
@@ -826,7 +826,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | AC-UX-03 | The Devices panel shows the three cards of section 4.13.4, and "Show all devices (10)" lists 10 devices with D08 showing 12 days with no device activity. |
 | AC-UX-04 | `/residents/R09` shows header, badge, baseline line, "What this means" text, a chart with a "Baseline Oct 1–16" slot, 4 grey + 10 accent bars, "▲" on Oct 21, dashed "alarm line 5.0", caption, 7 feature cards plus the "12 other measurements" card, and the three log lines of section 4.13.3. |
 | AC-UX-05 | `/residents/R08` shows "Baseline forming · 13 of 16 sessions", the forming baseline line, no chart bars, and "Not scored yet" on all 7 cards; `/residents/R07` shows the restart suffix and the "Oct 13 · Baseline restarted · new device D07B (was D07)" log line. |
-| AC-UX-06 | A clinician can save a note of each type and mark R09 as reviewed; the note appears with its type, "Note saved and marked as reviewed." is announced, and the badge still reads "▲ Alarm since Oct 21". A researcher sees "Only clinicians and admins can add notes." |
+| AC-UX-06 | A clinician can save a note of each type (the note appears with its type and "Note saved." is announced, UX-130) and, separately, save a review of R09 through "Mark as reviewed" ("Review saved." is announced, UX-137); a note never marks the alarm reviewed (UX-123, contract R5), and the badge still reads "▲ Alarm since Oct 21". A researcher sees "Only clinicians and admins can add notes." |
 | AC-UX-07 | `/admissions` shows the experimental banner text of UX-181 and the empty state of UX-194. |
 | AC-UX-08 | No rendered page contains the words listed in UX-161 (except "not a diagnosis"), "Edge4Care" or "[Facility name]". |
 | AC-UX-09 | axe reports no serious/critical violations; keyboard-only navigation reaches every control with visible focus; at 390px width there is no page-level horizontal scroll. |
@@ -867,3 +867,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 (rev. b) | 18 Oct 2026 | Contract §19–§21: Alert review (§4.17) and Analytics (§4.18) from SRC-18/19; unified navigation (R2, UX-016 retired); review model (R5: UX-121–UX-127, UX-130, UX-136–UX-138); watched-since/last check-in (R9, R10); admin runs list, legacy rejection, CLI-managed entities (R4, R12); problem+json field errors and degraded health (R19); as-of (R21); tokens (R13) | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-09, F-10, F-11, F-12, F-24, F-25, F-28, F-37) | — |

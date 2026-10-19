@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -11,9 +11,9 @@ This document is the master register of open questions (OQ-xx), assumptions (ASM
 In scope:
 - Open questions OQ-01 to OQ-26, each with owner, status, raised date and the interim decision the MVP uses until it is answered (or the answer, once answered).
 - Assumptions ASM-01 to ASM-08 with rationale, impact if wrong and validation step.
-- Risks RSK-01 to RSK-14 with likelihood, impact, mitigation, contingency, owner and linked requirements.
+- Risks RSK-01 to RSK-15 with likelihood, impact, mitigation, contingency, owner and linked requirements.
 - Discrepancies found between source documents (DSC-01 to DSC-14) and how the TRDs resolve them.
-- The decision log D-01 to D-55 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator) and the lead's reconciliation decisions R1–R26 of 18 Oct 2026.
+- The decision log D-01 to D-66 of design decisions made in the TRDs, including the owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator), the lead's reconciliation decisions R1–R27 of 18 Oct 2026 and the Phase 1 validation decisions D-56 to D-66 of 19 Oct 2026.
 - Rules for maintaining this register (RAQ-xxx).
 
 Out of scope:
@@ -113,7 +113,7 @@ Status on 18 Oct 2026: all rows Open except OQ-21 and OQ-23 (Answered). "Raised"
 | ASM-04 | Test profile baseline_n = 16 (build-out and testing only); production baseline_n = 30. Confirmed by the owner on 18 Oct 2026 (D-01). | SRC-03 README note 2; SRC-02 uses 30; owner decision D-OWNER-2. | If the test profile ran in production, baselines would freeze after 16 sessions and false alarms would rise (RSK-03). | Backend startup test: `PIPELINE_PROFILE=test_v0_1` with `APP_ENV=production` is refused; R01–R10 suite runs only with `test_v0_1`. |
 | ASM-05 | Records arrive by HTTPS POST from Team 1's device or by CSV upload; transport is Team 1's. | SRC-14 B.3; SRC-13 §1 (transport is Team 1's decision); SRC-15 step 3. | If Team 1 delivers to object storage instead, an import job reading that store is needed before ingest. | Agree the transport at the joint meeting (OQ-07); run demo step 3 "a record made on the device appears in cloud storage". |
 | ASM-06 | A new epoch closes any open alert of the previous epoch (reason "epoch ended") and restarts CUSUM from 0. | SRC-03 Parameters: epoch keys restart the baseline count; a device change is not a health change (SRC-13 §5). | Staff might lose sight of an alarm raised just before a device move. | PI review of alarm lifecycle together with OQ-05; R07 test confirms restart. |
-| ASM-07 | Frozen baselines are never recomputed after freeze; late arrivals are flagged. | SRC-12 "Baseline must never drift after freeze"; SRC-03 R10 "baseline unchanged by drift". | If the PI requires late records to enter the baseline, rebuild rules change (OQ-10). | Close OQ-10; test that a late record leaves `baselines` unchanged and adds a `late_arrival` warning. |
+| ASM-07 | Frozen baselines are never recomputed after freeze (the only exception is the explicit operator rebuild after an algorithm-key change, D-56); late arrivals are flagged (stored as D-57). | SRC-12 "Baseline must never drift after freeze"; SRC-03 R10 "baseline unchanged by drift". | If the PI requires late records to enter the baseline, rebuild rules change (OQ-10). | Close OQ-10; test that a late record leaves `baselines` unchanged and adds a `late_arrival` warning. |
 | ASM-08 | Dashboard users are a small research and clinical team (< 25 users), < 100 residents, < 1 session per resident per day. | SRC-13 §5 (50 residents), single facility, research study. | Free-tier hosting limits (RSK-07) and full nightly recompute time could be exceeded. | Measure nightly run duration on a 100-resident, 120-day synthetic set; review with grant team (OQ-02). |
 
 ### 4.4 Risks
@@ -136,6 +136,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | RSK-12 | Timeline: build block 19 Oct–15 Nov 2026; demo video and presentations (Solution 1 Dec, Impact 8 Dec 2026). | H | H | Batch build sequence (TRD 25) with one reviewed PR per batch; R01–R10 suite as the gate. | If cloud or device is not ready by 5 Nov 2026, film the demo on the local server (docker-compose). | Megan Stubbs; Shaba Rahavi | BR-15, BR-17; TRD 25 |
 | RSK-13 | Facility-norm comparison (new-admission arm) is between-person, which the systematic review supports only weakly. | H | M | Arm labelled "Future / experimental study arm"; no alerts from the arm; longitudinal arm unaffected; method recorded per range. | Remove the arm from the demo and keep only the longitudinal arm. | Shaba Rahavi and PI Dr. Zvika Shinar | BR-14; OQ-08, OQ-20; SRC-07 |
 | RSK-14 | Interim hosting providers (Netlify, Railway, Neon) may not offer a BAA or HIPAA-eligible plan on the tiers used, so live PHI-derived data there could breach obligations. | M | H | Only synthetic and test data ever on the interim stack; no go-live until AWS is approved (D-28, OQ-23 answered); TLS 1.2+ everywhere including `sslmode=require` to PostgreSQL; provider-managed encryption at rest; least privilege; audit logging; no PII in logs; AWS migration path kept ready (D-27). | Go-live only on AWS (RDS encrypted with KMS, Secrets Manager, CloudWatch) under a BAA; if AWS approval is delayed, EchoWell stays in synthetic-data demo mode. | Grant team / UND IT (approval); Shaba Rahavi (migration readiness) | BR-16, BR-17; OQ-07, OQ-23; TRD 12, TRD 15, TRD 22 |
+| RSK-15 | On the interim Railway stack the migrator credential (DATABASE_MIGRATION_URL) is a variable of the `backend` service, because the pre-deploy migration command shares the service variables (D-58); a compromise of the web container could expose it. | L | M | Application code never reads it (import-boundary test, TRD 15 DEP-040); not set on `nightly`; interim stack holds synthetic and test data only (D-28); credential rotated after each environment rebuild. | On AWS the credential is given only to the one-off migration task; if exposure is suspected, rotate the `echowell_migrator_login` password and redeploy. | Shaba Rahavi | BR-16; TRD 12 SEC-111; TRD 15 DEP-040 |
 
 ### 4.5 Documentation discrepancies
 
@@ -162,7 +163,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 |---|---|---|---|
 | D-01 | Owner decision 18 Oct 2026 (D-OWNER-2): production baseline_n = 30 usable sessions. Profile `test_v0_1` (baseline_n 16, all other parameters identical) exists only so the 30-day build/test dataset reaches scoring; it is for build-out and testing only and shall never be used in production: the backend refuses to start when `PIPELINE_PROFILE=test_v0_1` and `APP_ENV=production`. | SRC-02, SRC-03 README note 2; DSC-01; ASM-04 | 07, 08, 14, 21 |
 | D-02 | Morning offsets are configured per feature, not estimated; morning = local hour < 12 after converting UTC to FACILITY_TZ. | SRC-03 README note 3; OQ-09 | 07, 08 |
-| D-03 | Alarm persists from first crossing ("RINGS (first crossing)", then "on") until the epoch ends or an admin closes it; saving a review does not reset the tally or close the alarm. | SRC-03 Exp_scores; SRC-10; SRC-18; OQ-05 | 09, 04, 11 |
+| D-03 | Alarm persists from first crossing ("RINGS (first crossing)", then "on") until the epoch ends ("epoch ended") or a rebuild no longer produces that first crossing ("superseded by rebuild"); v0.1 has no manual (admin) closure, `admin` is a reserved `closed_reason` (TRD 02 FR-110, TRD 09 CUS-019); saving a review does not reset the tally or close the alarm. | SRC-03 Exp_scores; SRC-10; SRC-18; OQ-05 | 09, 04, 11 |
 | D-04 | Dashboard authentication by JWT bearer token (HS256, 60 min, no refresh token, re-login); devices authenticate with hashed `X-API-Key` (scope ingest:write). | SRC-12 security requirement; SRC-01 | 05, 12, 19, 21 |
 | D-05 | Alerts are delivered in the dashboard only (nav "Alerts (<open count>)", Alert review page, resident badge and detail); no SMS, email or push. | SRC-02 "for clinician review"; OQ-06 | 09, 11 |
 | D-06 | New-admission arm is built as experimental: banner "Future / experimental study arm", no alerts, isolated from the longitudinal pipeline. | SRC-11; SRC-14 B.2; OQ-08; RSK-13 | 02, 04, 07, 11 |
@@ -215,6 +216,17 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-53 | Database driver is psycopg 3 (`psycopg[binary]`), replacing `psycopg2-binary` in `backend/requirements.txt` (R24). | DSC-13 | 01, 22, 25 |
 | D-54 | Regions: Neon aws-us-east-1, Railway US East, AWS target us-east-1 (R25). | D-27 | 15, 22 |
 | D-55 | Legacy stubs (`docker-compose.yml` with `version: "3"`, `ci.yml` stub) are replaced in the deployment-configuration phase (R26). | DSC-13 | 15, 16, 25 |
+| D-56 | Configuration keys are split (F-03, F-26). Algorithm keys (the `PipelineConfig` fields of TRD 07 §4.7) are covered by `config_hash()`; a change takes effect only through the operator command `python -m backend.cli rebuild --profile P --confirm REBUILD`, which runs as `echowell_migrator` (the only role that may DELETE `baselines`), recomputes frozen baselines resident by resident and is audited `pipeline.rebuild`; until then ingest, nightly and API runs fail with `config_changed_requires_rebuild`. Operational keys (`data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, and the ingest keys `supported_schema_versions`, `feature_name_map`) are excluded from the hash and take effect at the next run or request. | Phase 1 validation F-03, F-26; ASM-07; NFR-084; CUS-046 | 03, 06, 07, 08, 09, 12, 15, 20 |
+| D-57 | A late arrival (TRD 07 ANL-024) is stored as a normal `processed_sessions` row with status `usable`, `quarantined` or `set_aside`, flag `late_arrival = true`, no `baseline_ordinal`, `in_baseline = false`, `epoch_id` NULL when it precedes the first epoch, and (when it passes the gate) the reason "late arrival (not used for baseline or scores)"; the TRD 20 CHECKs admit these combinations only for late rows. | Phase 1 validation F-02; ASM-07; OQ-10 | 08, 20, 23 |
+| D-58 | Migrations run only as the Railway pre-deploy command `alembic upgrade head`; the web start command is `uvicorn` only. Railway runs the pre-deploy command with the `backend` service variables, so DATABASE_MIGRATION_URL is a variable of that service (never of `nightly`); application code never reads it (import-boundary test). On AWS a one-off migration task alone receives it. Residual risk RSK-15. | Phase 1 validation F-16; R20; TRD 06 least privilege | 01, 06, 12, 15, 16, 21 |
+| D-59 | Staging keeps the fixed PIPELINE_AS_OF 2026-10-30T15:00-05:00 so it always reproduces the answer key; because later records are excluded there (ANL-015), the live demo check-in of SRC-15 steps 4–5 is posted to the interim production environment under a `T`-prefixed demo study ID (profile `production`, as-of = request time; DEP-008, DEP-093). | Phase 1 validation F-17; SRC-15; D-28 | 00, 15, 21 |
+| D-60 | Backup target (TRD 03 NFR-024/NFR-025 own it): live data only on AWS with RDS automated backups and point-in-time recovery (≥ 7 days), RPO ≤ 24 h, RTO ≤ 8 working hours, restore drill before go-live and every 6 months. The interim stack (synthetic/test data only) is waived: Neon plan restore window (hours on Free) plus the weekly logical dump, one restore drill before 15 Nov 2026. | Phase 1 validation F-23; D-28; RSK-07 | 03, 06, 12, 15, 22 |
+| D-61 | The analytics engine is the root package `analytics/` of the monorepo (matching the existing skeleton), imported by the backend and deployed inside the backend image and process; this is how the TRDs read SRC-01 "contained within the backend codebase". | Phase 1 validation F-55; SRC-01; contract §3 | 01, 07, 15, 25 |
+| D-62 | Concurrency uses only transaction-scoped advisory locks keyed by one helper `advisory_key(namespace, value)` (TRD 06 DB-021): per resident (every run), per session_id (ingest), device data alerts and the nightly date; there is no global full-run lock, because session-level locks do not work over the Neon pooled endpoint. | Phase 1 validation F-04 | 01, 05, 06, 07, 10, 15, 17, 20 |
+| D-63 | Pipeline writes commit in one transaction per resident (TRD 01 ARC-064, TRD 06 DB-013); a failing resident is rolled back alone, the run continues and ends `failed` with `error_message`. | Phase 1 validation F-05 | 01, 06, 07, 17 |
+| D-64 | The API carries everything the UI needs: `GET /api/v1/config/ui` (E-32) returns `review_explanations` and `alert_snooze_hours`; check-in events carry `restart_cause`, `previous_device_code`, `from_value`, `to_value` and devices carry `in_use_until`, all derived on read (TRD 06 DB-065, DB-066); by-resident analytics rows split `set_aside_days` and `quarantined_days`; `ComparisonStatus` adds `range_not_available`. TRD 19 names are binding for the frontend (generated types). | Phase 1 validation F-10, F-11, F-12 | 04, 05, 06, 07, 11, 19, 23 |
+| D-65 | `NEXT_PUBLIC_API_BASE_URL` is an origin only (no `/api/v1`); TRD 12 §4.9 is the only owner of the frontend header set and CSP (netlify.toml, Railway hosts `echowell-backend-staging/-production.up.railway.app`); the nonce-based CSP is deferred to AWS Amplify. | Phase 1 validation F-13, F-14 | 04, 12, 15, 16, 21, 22 |
+| D-66 | CORS uses exact origins only, except CORS_ORIGIN_REGEX, which is allowed in staging only for the anchored Netlify deploy-preview pattern and refused in production. | Phase 1 validation F-47 | 05, 12, 21 |
 
 ## 5. Assumptions
 
@@ -232,7 +244,7 @@ This document defines ASM-01 to ASM-08 (section 4.3). No TRD-local assumptions a
 |---|---|
 | AC-RAQ-01 | All OQ rows OQ-01 to OQ-26 have non-empty Question, Why it matters, Affected TRDs, Owner, Status, Raised and Interim decision (or answer) cells. |
 | AC-RAQ-02 | All ASM rows ASM-01 to ASM-08 have non-empty Statement, Rationale, Impact if wrong and Validation step cells. |
-| AC-RAQ-03 | All RSK rows RSK-01 to RSK-14 have L and I values in {L, M, H} and non-empty Mitigation, Contingency, Owner and Linked requirements cells. |
+| AC-RAQ-03 | All RSK rows RSK-01 to RSK-15 have L and I values in {L, M, H} and non-empty Mitigation, Contingency, Owner and Linked requirements cells. |
 | AC-RAQ-04 | A grep of specs/TRD for `OQ-\d\d`, `ASM-\d\d`, `RSK-\d\d` and `D-\d\d` returns only IDs defined in this document. |
 | AC-RAQ-05 | No interim decision contradicts SRC-01 (architecture) or the fixed constraints of SRC-14 Part B (checked at TRD validation, TRD 25 Phase 1). |
 | AC-RAQ-06 | After any OQ answer is applied, `pytest tests/validation -q` still passes with the `test_v0_1` profile (RAQ-013). |
@@ -242,7 +254,7 @@ This document defines ASM-01 to ASM-08 (section 4.3). No TRD-local assumptions a
 
 - Agents cite IDs from this register in code comments only where behaviour depends on an interim decision, e.g. `# OQ-05 interim: a saved review does not reset the tally (D-03, D-35)`. This makes the change point easy to find when the OQ is answered.
 - Interim decisions that are config values (OQ-09 offsets, OQ-13 baseline_n, k, h) live in `config_parameters` per profile; never hard-code them in analytics functions.
-- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-56 onward). Report each new ID to the algorithm lead in the PR description.
+- New OQs take the next free number (OQ-27 onward); new decisions take the next free D number (D-67 onward); new risks the next free RSK number (RSK-16 onward). Report each new ID to the algorithm lead in the PR description.
 - Never reference the removed preprint PDF path; cite SRC-07 by its link in specs/business-requirements/REFERENCES.md (D-29).
 - Never load real resident data into the interim stack (D-28; OQ-23 answered), and never run the `test_v0_1` profile in production (D-01).
 
@@ -256,3 +268,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-26). OQ-21 and OQ-23 (
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03, F-04, F-05, F-06, F-07, F-10, F-11, F-12, F-13, F-14, F-16, F-17, F-23, F-26, F-28, F-47, F-55) | — |

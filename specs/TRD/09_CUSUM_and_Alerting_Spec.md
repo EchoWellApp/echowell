@@ -1,6 +1,6 @@
 # 09 CUSUM and Alerting Spec
 
-Document ID: ECHOWELL-TRD-09 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-09 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -127,9 +127,9 @@ stateDiagram-v2
 |---|---|---|---|---|
 | CUS-014 | The persistence service shall upsert alerts on the natural key `(epoch_id, session_id)` (contract §20 R15): an `AlertEvent` without a matching row inserts one with `status = open`; at most one non-closed alert shall exist per epoch. | Must | contract §7 step 9, R15, TRD 06 DB-018 | Test |
 | CUS-015 | An existing alert shall never be deleted and its `session_id`, `triggered_at`, `local_date` and `cusum_value` shall never be rewritten; its reviews and snooze survive every rebuild. If a rebuild produces a different first crossing for the epoch (possible only after an out-of-order post-freeze record, TRD 07 ANL-027) or none, the existing non-closed alert shall be set to `closed` with `closed_reason = 'superseded by rebuild'`, a new alert is inserted for the new first crossing (if any), and `RunWarning(code="alert_first_crossing_changed")` is recorded. | Must | BR-02, ASM-07, R15 | Test |
-| CUS-016 | `POST /api/v1/alerts/{id}/reviews` (roles clinician, admin; body `{explanations: [code, ...], outcome, note?}`) shall insert one `alert_reviews` row (`alert_id`, `reviewer_user_id`, `explanations` text[], `outcome`, `note` ≤ 2000 chars, `created_at`), set the alert `status = acknowledged` (and `acknowledged_by`/`acknowledged_at` on the first review), write `audit_logs` (action `alert_reviewed`), and shall not change the tally, `alarm_state`, `cusum_state.alarm_on` or the resident's display status (OQ-05). A review of a closed alert returns 409 `ALERT_CLOSED`; `POST /api/v1/alerts/{id}/acknowledge` does not exist (contract §20 R5). | Must | OQ-05, BR-16, SRC-18 | Test |
+| CUS-016 | `POST /api/v1/alerts/{id}/reviews` (roles clinician, admin; body `{explanations: [code, ...], outcome, note?}`) shall insert one `alert_reviews` row (`alert_id`, `reviewer_user_id`, `explanations` text[], `outcome`, `note` ≤ 2000 chars, `created_at`), set the alert `status = acknowledged` (and `acknowledged_by`/`acknowledged_at` on the first review), write `audit_logs` (action `alert.reviewed`, TRD 12 §4.12), and shall not change the tally, `alarm_state`, `cusum_state.alarm_on` or the resident's display status (OQ-05). A review of a closed alert returns 409 `ALERT_CLOSED`; `POST /api/v1/alerts/{id}/acknowledge` does not exist (contract §20 R5). | Must | OQ-05, BR-16, SRC-18 | Test |
 | CUS-017 | Multiple reviews per alert shall be allowed and kept as history (`GET /api/v1/alerts/{id}/reviews`, newest first); the Resident detail "Mark as reviewed" button shall open the same review form (single review model); staff notes remain a separate free-note feature and do not change alert status. | Must | SRC-18, R5 | Test |
-| CUS-018 | When a resident has an epoch newer than an alert's epoch, the persistence service shall set that alert's `status = closed` and `closed_reason = "epoch ended"` (if not already closed), and write an `audit_logs` row (actor_type `system`, action `alert_closed`); closure time is `updated_at`. | Must | ASM-06, contract §7 step 8 | Test |
+| CUS-018 | When a resident has an epoch newer than an alert's epoch, the persistence service shall set that alert's `status = closed` and `closed_reason = "epoch ended"` (if not already closed), and write an `audit_logs` row (actor_type `system`, action `alert.closed`, TRD 12 §4.12); closure time is `updated_at`. | Must | ASM-06, contract §7 step 8 | Test |
 | CUS-019 | The value `closed_reason = 'admin'` is reserved; the v0.1 API has no endpoint that closes an alert manually, so manual closure is not implemented in the MVP (OQ-05). | Must | OQ-05, TRD 20 | Inspection |
 | CUS-020 | A resident's display status shall be `alarm_on` when an alert of the resident's current epoch has status `open` or `acknowledged` (acknowledgement does not turn the alarm off in v0.1); the badge text shall be "▲ Alarm since <Mon D>" using the alert's `local_date`. | Must | SRC-09, SRC-10, contract §8 | Test |
 | CUS-021 | After an epoch ends, the resident's display status shall follow the new epoch (`baseline_forming` until its baseline forms, then `no_alarm` with " · baseline restarted <Mon D>" or `alarm_on` if the new epoch alarms). | Must | BR-08, contract §8 | Test |
@@ -231,7 +231,7 @@ an inserted change, 0.994 below the alarm line.
 
 ### 4.8 Alert review page logic (SRC-18)
 
-Alarm queue card (one per non-closed change alarm of a current epoch, ordered by `local_date` ascending then resident_code):
+Alarm queue card (one per non-closed change alarm of a current epoch, in the queue order of TRD 02 FR-261: not reviewed and not snoozed, then snoozed, then reviewed; within a group `local_date` ascending then resident_code):
 line 1 "<resident_code> · <device_code>" + badge "Not reviewed" (status open) or "Reviewed" (status acknowledged);
 line 2 "Alarm since <Mon D> · open <d> days · tally <t>" where d = (local date of as_of − alert `local_date`) in days and
 t = `cusum_state.current_tally` of the epoch formatted with 1 decimal, half-up. SRC-05 expected: "R09 · D09", "Alarm since
@@ -251,8 +251,8 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 |---|---|---|---|---|
 | CUS-037 | The alarm queue shall show one card per non-closed change alarm of a current epoch with the texts and ordering defined above. | Must | SRC-18 | Test |
 | CUS-038 | The review form shall offer the explanation checklist from config key `review_explanations` (codes and labels: cold_cough_sore_throat "Cold, cough or sore throat"; dental_dentures "Dental problem or dentures out"; medication_change "New or changed medication"; poor_sleep_unusual_day "Poor sleep or unusual day"; room_device_moved "Room or device moved"; multi-select, optional; provisional, OQ-25) and a required single outcome: no_concern "Checked on resident, no concern"; known_cause "Explained by a known cause"; referred "Referred to nurse or provider"; data_problem "Looks like a data problem: send to study team". Unknown codes return 422. | Must | SRC-18, OQ-25 | Test |
-| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; while `snoozed_until` is in the future the card shall not show the "Not reviewed" emphasis; snoozing shall not change alert status, tally or alarm state, and is audit-logged (action `alert_snoozed`). | Must | SRC-18, §19 | Test |
-| CUS-040 | A review with outcome `data_problem` shall create (or, if one is open for the resident, link to) a `data_alerts` row of kind `review_flagged_data_problem`, title "<resident_code> · review flagged a data problem", detail "From alarm review on <Mon D>"; the pipeline never creates, modifies or resolves this kind (TRD 07 ANL-060). | Must | SRC-18, §19 | Test |
+| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; while `snoozed_until` is in the future the card shall not show the "Not reviewed" emphasis; snoozing shall not change alert status, tally or alarm state, and is audit-logged (action `alert.snoozed`, TRD 12 §4.12). | Must | SRC-18, §19 | Test |
+| CUS-040 | A review with outcome `data_problem` shall create or link a `data_alerts` row of kind `review_flagged_data_problem` as TRD 02 FR-273 specifies, with the title and detail strings of TRD 11 §4.17.2; the pipeline never creates, modifies or resolves this kind (TRD 07 ANL-060). | Must | SRC-18, §19 | Test |
 | CUS-041 | "Leaning most" shall be computed as defined above and returned with each alarm on `GET /api/v1/alerts`; it shall be absent (empty list) when no feature has a positive mean. | Must | SRC-18, §19 | Test |
 | CUS-042 | Who may review and the required review time are not enforced in the MVP (roles clinician and admin may review; no SLA; OQ-26); the page footer shall read "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | Must | OQ-26, BR-18 | Inspection |
 
@@ -285,7 +285,7 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 | CUS-043 | `generate_data_alerts` shall implement the four rules, texts, suppression and ordering of this section exactly. | Must | SRC-18, §19 | Test |
 | CUS-044 | On SRC-05 (test_v0_1, as_of 2026-10-30 15:00 America/Chicago) the engine shall produce exactly the four data alerts listed above, in that order, and no other. | Must | SRC-18, BR-15 | Test |
 | CUS-045 | `GET /api/v1/data-alerts?status=open` shall list data alerts (kind, resident_code, device_code, title, detail, first_detected_at, last_detected_at, status) in the order of this section; data alerts shall never appear in the change-alarm queue, badges or alarm counts. | Must | SRC-18, §19 | Test |
-| CUS-046 | Data-alert thresholds shall be read from `config_parameters` only; changing them shall need no code change and shall not require a full rebuild (data alerts are recomputed every run). | Must | OQ-24 | Test |
+| CUS-046 | Data-alert thresholds shall be read from `config_parameters` only (as `PipelineConfig.operational`, TRD 07 §4.7); changing them shall need no code change and shall not require a full rebuild, because they are operational keys excluded from the config hash (TRD 24 D-56) and data alerts are recomputed every run. | Must | OQ-24 | Test |
 
 ### 4.10 Alarm timing check and review outcomes (SRC-19)
 
@@ -352,3 +352,4 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-08, F-25) | — |

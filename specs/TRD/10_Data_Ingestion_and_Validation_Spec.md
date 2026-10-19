@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -53,7 +53,7 @@ Out of scope:
 | ING-001 | `POST /api/v1/sessions` shall accept one record as a JSON object (`Content-Type: application/json`, body ≤ 64 KB, TRD 05 API-104) authenticated by header `X-API-Key` with scope `ingest:write`. | Must | BR-01, ASM-05, contract §10 | Test |
 | ING-002 | For a valid record that is not a duplicate, `POST /api/v1/sessions` shall store it, run the pipeline for the resident synchronously (TRD 07 ANL-043, `as_of` per contract R21 precedence: request → PIPELINE_AS_OF (non-production) → current time) and return 201 `{raw_session_id, arrival_seq, session_id, status_after_processing, reasons, pipeline_run_id}` where `status_after_processing` ∈ {usable, set_aside, quarantined} and `reasons` lists the gate or screen reasons; if the pipeline run failed, it shall return 201 with `status_after_processing = "pending"` (the record stays stored and is processed by the next run; TRD 05 API-047, TRD 17 LOG-054). | Must | contract §10, TRD 05 API-046 | Test |
 | ING-003 | For a valid record whose `session_id` was already received, `POST /api/v1/sessions` shall store the arrival and return 200 with `status_after_processing = "duplicate"`, `reasons = ["session_id already received"]` and `pipeline_run_id = null`. | Must | BR-03, contract §10, TRD 05 API-044 | Test |
-| ING-004 | For an invalid record `POST /api/v1/sessions` shall return 422 `application/problem+json` with `type` = `urn:echowell:error:<CODE>`, where CODE is `UNSUPPORTED_SCHEMA_VERSION`, `UNKNOWN_RESIDENT`, `UNKNOWN_DEVICE`, `RESIDENT_WITHDRAWN` or `SESSION_ID_MISMATCH` when that is a violation (first in this order), else `VALIDATION_ERROR`; the `errors` array lists every violation as `{field, code, message}` (codes of ING-023); it shall write one `ingest_rejections` row (whose `errors` additionally keep the offending `value`) and shall not write to `raw_sessions`. | Must | BR-02, contract §7 step 1, §21 R19, TRD 05 §4.7 | Test |
+| ING-004 | For an invalid record `POST /api/v1/sessions` shall return 422 `application/problem+json` with `type` = `urn:echowell:error:<CODE>`, where CODE is `UNSUPPORTED_SCHEMA_VERSION`, `UNKNOWN_RESIDENT`, `UNKNOWN_DEVICE`, `RESIDENT_WITHDRAWN` or `SESSION_ID_MISMATCH` when that is a violation (first in this order), else `VALIDATION_ERROR`; the `errors` array lists every violation as `{field, code, message}` (codes of ING-023); it shall write one `ingest_rejections` row (whose `errors` are identical to the response `errors`, TRD 05 API-041, with no `value` echo; the offending values remain available in `raw_body`) and shall not write to `raw_sessions`. | Must | BR-02, contract §7 step 1, §21 R19, TRD 05 §4.7 | Test |
 | ING-005 | `POST /api/v1/ingest` shall accept either `Content-Type: application/json` with body `{"records": [ … ]}` (≤ 5,000 records, ≤ 5 MB) or `multipart/form-data` with one part named `file` holding a CSV (≤ 5 MB, ≤ 5,000 data rows), authenticated by `X-API-Key` (scope `ingest:write`) or by a JWT of role `admin`. | Must | BR-01, contract §10 | Test |
 | ING-006 | `POST /api/v1/ingest` shall validate every record synchronously, store accepted records, write one `ingest_rejections` row per invalid record, create one `ingest_batches` row (`source` = `api_batch` for JSON, `csv_upload` for CSV, `seed` for the seeding script; `filename`; `record_count`; `accepted_count`; `rejected_count`; `uploaded_by` = admin user id or null for API keys; `received_at`), enqueue the background pipeline run (TRD 07 ANL-044) and return 202 `{ingest_batch_id, accepted, rejected, duplicates}`. | Must | contract §10 | Test |
 | ING-007 | Record-level errors shall not fail the batch: valid records shall be accepted even when other records of the batch are rejected (202 also when `accepted = 0`). Request-level errors shall store nothing: malformed JSON or missing `records` array → 422 `VALIDATION_ERROR`; zero records → 422 `EMPTY_BATCH`; CSV header not equal to the schema v0.1 field set (ING-031, ING-053, ING-055) → 422 `CSV_HEADER_MISMATCH`; size limits → 413. | Must | BR-02, TRD 05 §4.7 | Test |
@@ -76,7 +76,7 @@ Out of scope:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ING-016 | Incoming field names shall be translated to canonical names through the configuration value `feature_name_map` (`config_parameters` key, both profiles; JSON object `{ "<external name>": "<canonical key>" }`, seeded as the identity map of the 11 record fields and 19 features, TRD 20 §4.11) before validation, so that Team 1's final extractor names can be adopted without a code change. | Must | OQ-03, RSK-02, SRC-13 §4 | Test |
-| ING-017 | The mapping shall be validated when loaded: each target shall be one of the 19 canonical feature keys, no two external names shall map to the same key, and no external name shall equal a different canonical key; an invalid mapping shall prevent startup with a configuration error. | Must | OQ-03 | Test |
+| ING-017 | The mapping shall be validated when loaded: each target shall be one of the 30 canonical record field names (the 11 record fields and the 19 feature keys of the schema v0.1 header, so the seeded identity map of TRD 20 §4.11 is valid), no two external names shall map to the same key, and no external name shall equal a different canonical key; an invalid mapping shall prevent startup with a configuration error. | Must | OQ-03 | Test |
 | ING-018 | `raw_sessions.payload` shall keep the original (unmapped) names and values; the typed columns shall use canonical names. | Must | BR-02 | Test |
 
 ### 4.4 Field-by-field validation (schema v0.1)
@@ -87,7 +87,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | Field | Type / format | Reject if | Warn if |
 |---|---|---|---|
 | schema_version | string | missing; not a string; not in `supported_schema_versions` | — |
-| session_id | string ≤ 64 chars matching `^([A-Za-z0-9]+)-(\d{8})-(\d{2})$` | missing; no match; group 1 ≠ `resident_id` (code `session_id_mismatch`) | group 2 ≠ local date (FACILITY_TZ) of `timestamp_utc` as YYYYMMDD (`session_id_date_mismatch`) |
+| session_id | string ≤ 64 chars matching `^([A-Z0-9]{1,16})-(\d{8})-(\d{2})$` (group 1 uses the resident-code pattern of TRD 19/20) | missing; no match; group 1 ≠ `resident_id` (code `session_id_mismatch`) | group 2 ≠ local date (FACILITY_TZ) of `timestamp_utc` as YYYYMMDD (`session_id_date_mismatch`) |
 | resident_id | string ≤ 16 chars | missing; no `residents.resident_code` equal to it (`unknown_resident`); resident `status = withdrawn` (`resident_withdrawn`, detail "resident withdrawn") | `timestamp_utc` local date before `enrolled_on` (`before_enrollment`) |
 | device_id | string ≤ 16 chars | missing; no `devices.device_code` equal to it (`unknown_device`) | device `active = false` (`device_inactive`); device differs from the resident's assigned device on the local date (`device_assignment_mismatch`) |
 | timestamp_utc | string `YYYY-MM-DD HH:MM:SS` (UTC) | missing; format mismatch; invalid calendar date/time | later than `received_at` + 24 h (`timestamp_in_future`) |
@@ -104,7 +104,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | number_of_pauses | integer | missing; not an integer (JSON number with a fractional part; CSV text not matching `^\d+(\.0+)?$`); < 0 | > 3 |
 | pause_fraction | number | missing; non-finite; < 0 or > 1 | outside 0.05..0.25 |
 | voiced_fraction | number | missing; non-finite; < 0 or > 1 | outside 0.50..0.75 |
-| mean_f0_hz | number | missing; non-finite; < 0 | outside 165..200 (sex F), 110..145 (sex M), 110..200 (sex null) |
+| mean_f0_hz | number | missing; non-finite; ≤ 0 (TRD 20 `raw_sessions_mean_f0_ck` requires > 0) | outside 165..200 (sex F), 110..145 (sex M), 110..200 (sex null) |
 | f0_variability_st | number | missing; non-finite | outside 2.0..4.5 |
 | jitter_local_pct | number | missing; non-finite; < 0 | outside 0.2..1.0 |
 | shimmer_local_pct | number | missing; non-finite; < 0 | outside 2.0..6.0 |
@@ -151,7 +151,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | ING-035 | Duplicate detection shall run before the quality gate and before any sorting by timestamp; duplicates shall not be gated, screened, given an epoch, counted toward any baseline, scored or counted as a record for the day ledger. | Must | SRC-04, contract §7 | Test |
 | ING-036 | Duplicates shall be logged (processed_sessions row with status `duplicate`, counted in pipeline run counts) but never shown in the resident UI ("Duplicate records are removed quietly and not shown"). | Must | SRC-09, contract §8 | Test |
 | ING-037 | A later arrival with the same `session_id` but different field values shall still be a duplicate (first arrival wins) and shall carry warning `duplicate_payload_differs`. | Must | BR-03 | Test |
-| ING-038 | The ingest service shall take `pg_advisory_xact_lock(hashtext('session:' || session_id))` before checking `raw_sessions` for the `session_id` and inserting, so that the duplicate verdict returned to the caller agrees with the arrival-order rule under concurrent requests. | Must | BR-03 | Test |
+| ING-038 | The ingest service shall take the session advisory lock of TRD 06 DB-021 (b) before checking `raw_sessions` for the `session_id` and inserting, so that the duplicate verdict returned to the caller agrees with the arrival-order rule under concurrent requests. | Must | BR-03 | Test |
 | ING-039 | Re-sending a record or re-uploading a file shall be safe: the repeated arrivals are stored as duplicates, change no derived result and return status `duplicate`; no `Idempotency-Key` header is required. | Must | BR-03, SRC-03 R04 | Test |
 
 Fixture check: R04-20261005-01 arrives at arrival_seq 88 and again at 89 (adjacent copy); R04-20261018-01 arrives at 102
@@ -209,7 +209,7 @@ Residents, devices and device assignments have no API endpoints in the MVP; they
 
 ```
 for each resident X (sorted by resident_code):
-    last_day = min(local date of as_of, withdrawn_on - 1 day if withdrawn_on else +inf)
+    last_day = min(local date of as_of, withdrawn_on if withdrawn_on else +inf)   # inclusive (TRD 02 FR-120)
     for d in enrolled_on .. last_day:
         recs_X_d = non-duplicate records of X with local_date == d and timestamp_utc <= as_of   # any status
         if recs_X_d: status = "checked_in"; device = device_id of the earliest of them; reason = ""
@@ -225,7 +225,7 @@ for each resident X (sorted by resident_code):
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ING-048 | The ledger shall contain one row per resident per facility-local calendar day from `enrolled_on` through the local date of `as_of` (stopping the day before `withdrawn_on` for withdrawn residents). | Must | BR-06, contract §7 step 10 | Test |
+| ING-048 | The ledger shall contain one row per resident per facility-local calendar day from `enrolled_on` through the local date of `as_of`, or through `withdrawn_on` (inclusive) when that is earlier (TRD 02 FR-120). | Must | BR-06, contract §7 step 10 | Test |
 | ING-049 | A day with at least one non-duplicate record of the resident (any status: usable, set_aside, quarantined, including late arrivals) shall be `checked_in`; duplicates alone do not make a day checked in. | Must | BR-06, SRC-03 | Test |
 | ING-050 | A day without such a record shall be `missing_device_gap` with reason "all residents on shared device <device_code> have no record" when the resident's device that day is shared (ING-046) and none of the residents sharing it has a non-duplicate record of any status that day; otherwise it shall be `missing_resident` with reason "no record received". | Must | BR-06, SRC-03 Parameters | Test |
 | ING-051 | Missing days shall never be backfilled, carried forward or imputed; they create no processed session and no score and do not update the CUSUM. The ledger is recomputed on each run, so a day changes from missing to `checked_in` only if a real record for that day arrives. | Must | BR-06, SRC-13 §6 | Test |
@@ -252,7 +252,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ING-057 | Each ingest request shall emit one structured log event `ingest_request` with `request_id`, `endpoint`, `api_key_id` or `user_id`, `ingest_batch_id`, `record_count`, `accepted`, `rejected`, `duplicates`, `warning_count`, `duration_ms`; feature values and payloads shall not be logged. | Must | TRD 17, BR-16 | Test |
-| ING-058 | Each batch ingest (JSON or CSV) shall write one `audit_logs` row (action `ingest_batch`, entity `ingest_batches`, details with counts); `api_keys.last_used_at` shall be updated on each authenticated ingest. | Must | BR-16, contract §12 | Test |
+| ING-058 | Each batch ingest (JSON or CSV) shall write one `audit_logs` row (action `ingest.batch.received`, TRD 12 §4.12; entity `ingest_batch`, details with counts); `api_keys.last_used_at` shall be updated on each authenticated ingest. | Must | BR-16, contract §12 | Test |
 | ING-059 | The seeding script shall load SRC-05 through the same validation and insertion code path as `POST /api/v1/ingest` (source `seed`), never by direct SQL inserts into `raw_sessions`. | Must | BR-02, TRD 14 | Inspection |
 
 ## 5. Assumptions
@@ -315,3 +315,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-04, F-21, F-22, F-35, F-43, F-44) | — |

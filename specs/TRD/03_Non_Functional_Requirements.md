@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -65,12 +65,12 @@ These targets are honest for a research prototype on free/trial tiers with no on
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| NFR-020 | During the demo and presentation window (16 Nov – 8 Dec 2026), the production environment shall achieve ≥ 99.0% monthly availability of `GET /api/v1/health` measured by a 5-minute external uptime check, excluding announced maintenance. | Should | BR-17, RSK-07 | Analysis (uptime monitor report) |
+| NFR-020 | During the demo and presentation window (16 Nov – 8 Dec 2026), the production environment shall achieve ≥ 99.0% monthly availability of `GET /api/v1/health` measured by the 30-minute uptime check of TRD 16 CIC-060 (`uptime.yml`), excluding announced maintenance. | Should | BR-17, RSK-07 | Analysis (uptime monitor report) |
 | NFR-021 | The system shall not lose an acknowledged record: every record for which `POST /api/v1/sessions` returned 200 or 201 shall exist in `raw_sessions` after any subsequent failure of the pipeline, backend restart or redeploy. | Must | BR-02 | Test (fault injection: kill process after commit) |
 | NFR-022 | A pipeline failure shall not prevent ingestion: raw records shall continue to be accepted while runs fail, and the next successful run shall process them. | Must | BR-02, ARC-025 | Test |
 | NFR-023 | A failed nightly run shall not be retried automatically within the same night (the cron fires at 07:00 and 08:00 UTC and proceeds only at 02:xx local); the failure shall be recorded in `pipeline_runs`, shown on the Admin page (NFR-103), and recoverable by a manual run. | Must | BR-06, BR-11, R18 | Test |
-| NFR-024 | The production database shall have provider point-in-time recovery or daily backups with ≥ 7 days retention, encrypted at rest. | Must | BR-02, BR-16, D-OWNER-3 | Inspection (provider settings evidence, TRD 22) |
-| NFR-025 | Recovery point objective shall be ≤ 24 h and recovery time objective ≤ 8 working hours for production; a restore shall be rehearsed once before go-live on AWS. | Should | BR-02, D-OWNER-4 | Demo (restore drill record) |
+| NFR-024 | The production database that holds live data (AWS target) shall have RDS automated backups with point-in-time recovery and ≥ 7 days retention, encrypted at rest. The interim stack, which holds synthetic and test data only (D-OWNER-4), is waived from this target: it uses the point-in-time restore window of the Neon plan in use (hours on Neon Free, TRD 22) plus the weekly logical dump of TRD 15 DEP-096, and its data can be regenerated from SRC-05 and the seeds (TRD 24 D-60). This row is the single backup target; TRD 06, 12, 15 and 22 reference it. | Must | BR-02, BR-16, D-OWNER-3, D-OWNER-4 | Inspection (provider settings evidence, TRD 22) |
+| NFR-025 | For production with live data (AWS target), the recovery point objective shall be ≤ 24 h and the recovery time objective ≤ 8 working hours; a restore drill shall be run before go-live on AWS and every 6 months thereafter. On the interim stack (waiver of NFR-024) one restore drill shall be run before 15 Nov 2026 to rehearse the procedure; no RPO/RTO applies there. | Should | BR-02, D-OWNER-4 | Demo (restore drill record) |
 | NFR-026 | Batch ingest shall be atomic per record: a failure on one record shall not roll back other accepted records of the batch. | Must | BR-01, BR-02 | Test |
 | NFR-027 | When the database is unreachable, API endpoints shall return 503 `application/problem+json` within 10 s and `GET /api/v1/health` shall return 503 with status "degraded". | Must | BR-17, TRD 17, R19 | Test |
 
@@ -113,7 +113,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| NFR-060 | The dashboard shall conform to WCAG 2.1 Level AA. | Must | BR-12, BR-13 | Test (axe-core in Playwright: 0 serious/critical violations on `/login`, `/residents`, `/residents/R09`, `/alerts`, `/analytics`, `/admissions`, `/admin`), Inspection (manual keyboard and screen-reader pass) |
+| NFR-060 | The dashboard shall conform to WCAG 2.1 Level AA. | Must | BR-12, BR-13 | Test (axe-core in Playwright: 0 serious/critical violations on the route list of TRD 13 TST-110), Inspection (manual keyboard and screen-reader pass) |
 | NFR-061 | Status shall never be conveyed by colour alone: alarm states shall combine the ▲ glyph, text ("Alarm on", "Alarm since …") and a 2 px #9A4508 border. | Must | BR-12, SRC-09, SRC-10 | Inspection, Test |
 | NFR-062 | Text contrast shall be ≥ 4.5:1 for body text and ≥ 3:1 for large text and non-text UI elements; the specified tokens meet this (#1F1F1E on #F6F6F4 = 15.2:1; #4A4A47 on #F6F6F4 = 8.2:1; #9A4508 on #FFFFFF = 6.5:1). | Must | BR-12, SRC-09 | Test (contrast check) |
 | NFR-063 | Baseline-period chart bars (#BDBDB8, 1.9:1 on white) shall carry a 1 px #8A8A85 outline (3.5:1) or equivalent so that they meet the 3:1 non-text contrast criterion, and the chart shall have a text-table alternative. | Must | BR-13, SRC-10, WCAG 1.4.11 | Test, Inspection |
@@ -133,7 +133,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-081 | Python code shall pass `ruff` lint and `ruff format --check`; TypeScript shall pass `tsc --noEmit` in strict mode, ESLint and Prettier. | Must | BR-17 | Test (CI) |
 | NFR-082 | Line coverage shall be ≥ 95% for `analytics/`, ≥ 85% for `backend/`, and ≥ 80% for `frontend/` (Vitest), enforced in CI. | Must | BR-15, BR-17, SRC-01, R7 | Test (CI coverage gate) |
 | NFR-083 | Every analytics stage function shall have unit tests covering its boundary values (e.g. noise exactly −40.0 is not set aside; speech exactly 1.0 s is not set aside; local hour 12:00 is not morning; tally exactly 5.0 rings). | Must | BR-04, BR-07, BR-11, BR-15 | Test |
-| NFR-084 | Pipeline parameters shall be changeable through `config_parameters` without code change and without redeploy (effective from the next run). | Must | BR-09, BR-11, ARC-053 | Test |
+| NFR-084 | Pipeline parameters shall be changeable through `config_parameters` without code change and without redeploy: operational keys (data-alert thresholds, `alert_snooze_hours`, `review_explanations`, ingest keys) take effect from the next run or request; algorithm keys take effect through the operator rebuild command (TRD 07 ANL-032), until which ingest and nightly runs fail with `config_changed_requires_rebuild` (TRD 24 D-56). | Must | BR-09, BR-11, ARC-053 | Test |
 | NFR-085 | Public functions in `analytics/` and service methods in `backend/services/` shall carry docstrings stating inputs, outputs and the TRD requirement IDs they implement. | Should | BR-17, VIS-014 | Inspection |
 | NFR-086 | Database schema changes shall be delivered only as Alembic migrations that upgrade and downgrade cleanly on an empty database and on a database with the reference dataset. | Must | BR-17 | Test (CI migration job) |
 | NFR-087 | A new developer shall be able to start the full local stack with one command (`docker compose up`) and load the reference dataset with one documented command in < 10 min on a laptop with 8 GB RAM. | Should | BR-17 | Demo |
@@ -158,7 +158,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-101 | Every pipeline run shall log start, finish, duration, counts per status and warnings, and shall be queryable via `GET /api/v1/pipeline/runs/{id}`. | Must | BR-15, ARC-060 | Test |
 | NFR-102 | Unhandled exceptions shall be reported to Sentry when `SENTRY_DSN` is set, with request ID and without PII or feature values; with `SENTRY_DSN` empty, nothing shall be sent. | Should | BR-16, BR-17 | Test |
 | NFR-103 | The absence of a successful nightly run in the previous 26 h shall be detectable from `pipeline_runs` and shall be shown on the Admin page as a warning. | Should | BR-06, RSK-05, RSK-07 | Test |
-| NFR-104 | An uptime monitor shall poll `GET /api/v1/health` every 5 minutes in staging and production. | Should | BR-17 | Inspection |
+| NFR-104 | An uptime monitor shall poll `GET /api/v1/health` every 30 minutes in staging and production (TRD 16 CIC-060; the interval is limited by the Neon Free compute hours, TRD 15 DEP-102, CIC-061). | Should | BR-17 | Inspection |
 | NFR-105 | Silent devices shall be visible to staff within one nightly run: a shared device with no record from any resident on a local day shall appear in the Devices panel after the next nightly run. | Must | BR-06, BR-12, RSK-05 | Test |
 
 ### 4.10 Compliance posture and traceability
@@ -232,7 +232,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | AC-NFR-01 | Load test report on DS-08 shows p95 ≤ 500 ms for the read endpoints of NFR-001–NFR-003 and p95 ≤ 1,000 ms for `POST /api/v1/sessions`, warm, on staging. |
 | AC-NFR-02 | CI validation job runs the in-memory pipeline on SRC-05 in ≤ 5 s, rebuilds SRC-05 with database writes in ≤ 30 s, and matches SRC-03 within 1e-6; a second rebuild produces identical outputs. |
 | AC-NFR-03 | CI coverage gate reports analytics ≥ 95%, backend ≥ 85%, frontend ≥ 80% line coverage. |
-| AC-NFR-04 | axe-core reports 0 serious or critical violations on the five main pages; all interactive targets measure ≥ 44 × 44 px. |
+| AC-NFR-04 | axe-core reports 0 serious or critical violations on the 8 routes of TRD 13 TST-110; all interactive targets measure ≥ 44 × 44 px. |
 | AC-NFR-05 | TLS scan of staging frontend and backend shows only TLS 1.2/1.3; the backend refuses to start in staging/production when `DATABASE_URL` lacks `sslmode=require` or stricter. |
 | AC-NFR-06 | Provider evidence (screenshots or configuration exports) shows encryption at rest and backups enabled for the interim database; the AWS go-live checklist includes RDS KMS encryption, encrypted backups and Secrets Manager. |
 | AC-NFR-07 | Every `ingest_batches` row in staging and production has a synthetic/test source and DATA_SOURCE_LABEL names test or synthetic data (interim stack). |
@@ -268,3 +268,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-19, F-23, F-40) | — |

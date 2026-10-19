@@ -1,6 +1,6 @@
 # 08 Baseline and Scoring Algorithm Spec
 
-Document ID: ECHOWELL-TRD-08 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-08 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -184,7 +184,7 @@ R06 has 10 morning sessions (days 1, 4, …, 28): 6 inside its baseline, 4 score
 | BSC-027 | If an epoch has fewer than N usable sessions, `baseline_formed = false`, no baseline rows are produced, no session of the epoch is scored, and the resident status is "Baseline forming · n of N sessions" (n = usable count of the current epoch); this is not an error. | Must | BR-09, SRC-03 R07 epoch 1, R08 | Test |
 | BSC-028 | The baseline shall record `n_sessions` (= N), `first_session_id` (ordinal 1), `frozen_after_session_id` (ordinal N) and `frozen_at` (= `timestamp_utc` of the frozen-after session). | Must | SRC-03 Exp_baselines | Test |
 | BSC-029 | Set-aside, quarantined, duplicate and late-arrival records and missing days shall never count toward N; the baseline therefore freezes later in calendar time when such records occur (R02 after R02-20261021-01, R03 after R03-20261023-01, R05 after R05-20261017-01). | Must | BR-04, BR-05, BR-06, SRC-03 | Test |
-| BSC-030 | A baseline once persisted shall never be recomputed or updated (ASM-07); production value N = 30, test N = 16 (ASM-04, OQ-13). | Must | BR-09, ASM-07 | Test |
+| BSC-030 | A baseline once persisted shall never be recomputed or updated (ASM-07), except by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56); production value N = 30, test N = 16 (ASM-04, OQ-13). | Must | BR-09, ASM-07 | Test |
 
 ### 4.7 Per-feature and composite baseline
 
@@ -224,7 +224,7 @@ for r in usable, non-late sessions of a formed epoch with baseline_ordinal > N, 
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| BSC-040 | A record classified `late_arrival` (TRD 07 ANL-024) shall receive its own status as follows: quality gate as normal; if it passes the gate, the speaker screen shall run with reference = the first N usable non-late sessions that precede it in time order within the epoch assigned to it in section 4.3 (the epoch of the last non-late record at or before it; no screen if it has no epoch) (screen skipped if fewer than 5); it shall then be `usable` or `quarantined`, with `in_baseline = false`, no `baseline_ordinal`, no score, and reason text suffix "late arrival (not used for baseline or scores)". | Must | ASM-07, OQ-10 | Test |
+| BSC-040 | A record classified `late_arrival` (TRD 07 ANL-024) shall receive its own status as follows: quality gate as normal; if it passes the gate, the speaker screen shall run with reference = the first N usable non-late sessions that precede it in time order within the epoch assigned to it in section 4.3 (the epoch of the last non-late record at or before it; no screen if it has no epoch) (screen skipped if fewer than 5); it shall then be `usable` or `quarantined`, with `in_baseline = false`, no `baseline_ordinal`, no score, and the reason "late arrival (not used for baseline or scores)" appended as the last element of `reasons` (the only reason of a usable late record; the second reason of a quarantined one; a late record that fails the quality gate keeps only its quality reasons). It is stored with `processed_sessions.late_arrival = true` and, when it has no epoch, `epoch_id = NULL`, which the TRD 20 `processed_sessions` CHECKs admit only for late rows. | Must | ASM-07, OQ-10 | Test |
 | BSC-041 | A late arrival shall never alter any other record's status, epoch, screen result, baseline membership, baseline value, score or tally. | Must | ASM-07, BR-09 | Test |
 
 ### 4.10 Edge cases
@@ -334,3 +334,4 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03) | — |

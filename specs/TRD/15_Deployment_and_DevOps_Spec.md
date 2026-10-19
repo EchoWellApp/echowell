@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -101,7 +101,7 @@ flowchart LR
 | APP_ENV | `local` | `staging` | `production` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `production` |
 | Seed data | `test_v0_1` allowed | `test_v0_1` allowed | never |
-| Data | synthetic only | synthetic only (+ demo check-ins of synthetic demo resident) | interim stack: synthetic and team test check-ins only (D-OWNER-4); AWS target (go-live): live study feature data (study IDs only, no audio) |
+| Data | synthetic only | synthetic only (`test_v0_1` seed; fixed PIPELINE_AS_OF, so no live demo check-ins, D-59) | interim stack: synthetic and team test check-ins only, including the live demo check-ins of `T`-prefixed demo study IDs (DEP-008, DEP-093, D-OWNER-4); AWS target (go-live): live study feature data (study IDs only, no audio) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -124,6 +124,7 @@ flowchart LR
 | DEP-011 | The `db` service shall persist data in the named volume `pgdata`, expose port 5432 on 127.0.0.1 only, and define a healthcheck `pg_isready -U echowell -d echowell` every 5 s with 10 retries. | Must | SRC-01 | Test |
 | DEP-012 | The `backend` service shall start only after `db` is healthy (`depends_on: condition: service_healthy`) and shall run `alembic upgrade head` before starting uvicorn. | Must | TRD 06 | Test |
 | DEP-013 | The `backend` service shall bind-mount `backend/` and `analytics/` and run uvicorn with `--reload` so source edits take effect without rebuild. | Should | SRC-01 | Demo |
+| DEP-119 | The `backend` service shall also bind-mount `database/` and `tests/fixtures/` read-only at `/app/database` and `/app/tests/fixtures`, so that `backend.cli seed test_v0_1` (master data `database/seeds/test_v0_1/`, input `tests/fixtures/pipeline_input/`) and `database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/…` find their files locally and in E2E CI (TRD 16 §4.3); the image itself stays free of `tests/` (DEP-021). Staging re-seeding runs from the CI checkout, which has these files (TRD 16 §4.4). | Must | BR-15, SRC-05 | Test (E2E job seeds successfully) |
 | DEP-014 | `docker compose up` from a clean clone with `.env` copied from `.env.development.example` shall make `http://localhost:8000/api/v1/health` return HTTP 200 with `database: "ok"` within 180 s on a machine with Docker 24+. | Must | BR-17 | Test |
 | DEP-015 | The local test data shall be loaded by `docker compose exec backend python -m backend.cli seed test_v0_1`, which shall load the `test_v0_1` dataset defined in TRD 14 and run the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00` (America/Chicago). | Must | BR-15, SRC-03, SRC-05 | Test |
 | DEP-016 | After DEP-015, the Residents overview at `http://localhost:3000/residents` shall show summary tiles 2 / 7 / 1 / 19 (Alarm on / Being watched, no alarm / Baseline still forming / Missed check-ins last 30 days). | Must | BR-12, BR-15, SRC-09 | Test (E2E) |
@@ -183,14 +184,14 @@ services:
       PORT: "8000"
     command: sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     ports: ["127.0.0.1:8000:8000"]
-    volumes: ["./backend:/app/backend", "./analytics:/app/analytics"]
+    volumes: ["./backend:/app/backend", "./analytics:/app/analytics", "./database:/app/database:ro", "./tests/fixtures:/app/tests/fixtures:ro"]  # DEP-119: seed and fixture files
     depends_on: { db: { condition: service_healthy } }
   frontend:
     image: node:20-alpine
     working_dir: /app
     env_file: .env
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000          # origin only (TRD 21)
     command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3000"
     ports: ["127.0.0.1:3000:3000"]
     volumes: ["./frontend:/app", "frontend_node_modules:/app/node_modules"]
@@ -199,7 +200,7 @@ services:
     profiles: ["demo"]
     build:
       context: frontend
-      args: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000/api/v1", NEXT_PUBLIC_APP_ENV: local }
+      args: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000", NEXT_PUBLIC_APP_ENV: local }
     ports: ["127.0.0.1:3001:3000"]
     depends_on: [backend]
 volumes:
@@ -213,7 +214,7 @@ volumes:
 |---|---|---|---|---|
 | DEP-020 | `backend/Dockerfile` shall build from `python:3.12-slim` with the repository root as build context, copy `backend/`, `analytics/` and `alembic.ini`, and install only `backend/requirements.txt` (runtime pins). | Must | SRC-01, TRD 01 | Inspection |
 | DEP-021 | The backend image shall run as a non-root user (UID 10001) and shall not contain `.env` files, tests, `specs/` or `frontend/` (enforced by a root `.dockerignore`). | Must | BR-16, TRD 12 | Test (CI inspects image) |
-| DEP-022 | The backend image default command shall be `sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` so the same image runs on Railway, Docker Compose and AWS App Runner. | Must | SRC-01 Future AWS | Test |
+| DEP-022 | The backend image default command shall be `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` (no migration step) so the same image runs on Railway, Docker Compose and AWS App Runner; migrations run as a separate step before the new version serves traffic (DEP-040, DEP-060). | Must | SRC-01 Future AWS | Test |
 | DEP-023 | `frontend/Dockerfile` shall be a multi-stage `node:20-alpine` build (`npm ci`, `npm run build`, `next start -p 3000`) that takes NEXT_PUBLIC_API_BASE_URL and NEXT_PUBLIC_APP_ENV as build arguments; it is used for local demo and E2E only, never for Netlify. | Must | SRC-17 Phase 14A, RSK-12 | Test |
 | DEP-024 | `alembic.ini` shall live at the repository root with `script_location = backend/alembic`, so `alembic upgrade head` works from the repository root in every environment. | Must | contract §3, TRD 06 | Test |
 
@@ -226,7 +227,7 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 3. The default branch is renamed or confirmed as `main` (production).
 4. Create roles: `echowell_migrator` (owns the schema; used by Alembic only via DATABASE_MIGRATION_URL), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
 5. Create child branch `staging` from `main` immediately after step 4 (empty schema).
-6. Copy the connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Also copy, per branch, the pooled string for `echowell_readonly` (DATABASE_READONLY_URL; required for staging, optional for production). Store them only in Railway variables (DEP-033).
+6. Copy the connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Also copy, per branch, the pooled string for `echowell_readonly` (DATABASE_READONLY_URL; required for staging, never set for production). Store them only in Railway variables (DEP-033).
 7. Set compute autosuspend to the plan default (5 min) for `staging`; for `main` keep the default as well (cost, TRD 22) and accept cold starts (RSK-07).
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -247,7 +248,8 @@ Procedure:
    - Source branch: `main` (production) / `staging` (staging).
    - Root directory: repository root (`/`); config-as-code file: `/railway.toml`.
    - Builder: Dockerfile, path `backend/Dockerfile`.
-   - Start command (from `railway.toml`): `alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT`.
+   - Pre-deploy command (from `railway.toml`): `alembic upgrade head` (runs in its own container before the new deployment starts; a failure aborts the deployment, DEP-065).
+   - Start command (from `railway.toml`): `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`.
    - Healthcheck path `/api/v1/health`, timeout 120 s.
    - Watch paths: `backend/**`, `analytics/**`, `alembic.ini`, `railway.toml` (other changes do not redeploy the backend).
    - "Wait for CI" enabled (deploy only after GitHub checks of the commit pass, TRD 16).
@@ -282,7 +284,8 @@ dockerfilePath = "backend/Dockerfile"
 watchPatterns = ["backend/**", "analytics/**", "alembic.ini", "railway.toml"]
 
 [deploy]
-startCommand = "sh -c 'alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT'"
+preDeployCommand = ["alembic upgrade head"]   # DEP-040: migrations never run in the web start command
+startCommand = "sh -c 'uvicorn backend.main:app --host 0.0.0.0 --port $PORT'"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
@@ -292,7 +295,7 @@ numReplicas = 1
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-040 | The Railway start command shall be `alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. | Must | contract task, TRD 06 | Inspection |
+| DEP-040 | The Railway `backend` service shall run migrations only as its pre-deploy command `alembic upgrade head`, and its start command shall be `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` (no migration step). Because Railway runs the pre-deploy command with the service's variables, DATABASE_MIGRATION_URL is a variable of the `backend` service only (never of `nightly`); application code (request handling, pipeline, jobs) shall never read it: only `backend/alembic/env.py` and the operator CLI commands of §4.8 that TRD 20 §4.3 lists may, enforced by an import-boundary test (TRD 06, TRD 24 D-58, RSK-15). | Must | contract task, TRD 06, TRD 12 SEC-111 | Inspection; Test |
 | DEP-041 | The Railway healthcheck path shall be `/api/v1/health`; a deployment whose healthcheck does not return 200 within 120 s shall not receive traffic (Railway keeps the previous deployment active). | Must | TRD 17 | Demo |
 | DEP-042 | The backend service shall run exactly 1 replica in staging and production; app sleeping may be enabled to save cost, except on demo days when it shall be disabled. | Must | RSK-07 | Inspection |
 | DEP-046 | The nightly full pipeline run shall be executed by a separate Railway Cron Job service `nightly` running `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` UTC; there shall be no in-process scheduler in the backend. | Must | contract R18, contract §7 trigger | Inspection |
@@ -300,7 +303,7 @@ numReplicas = 1
 | DEP-048 | The `nightly` service shall never run `alembic upgrade`; it shall exit non-zero if the database schema revision differs from the revision bundled in its image. | Must | DEP-060 | Test |
 | DEP-043 | Railway "Wait for CI" shall be enabled so that a commit is deployed only after its required GitHub checks (TRD 16) pass. | Must | BR-17, TRD 16 | Demo |
 | DEP-044 | The Railway configuration shall be stored as code in `/railway.toml`; dashboard-only settings (branch, variables, domain, region, sleeping, cron service) shall be listed; the `nightly` service configuration shall be stored in `/railway.nightly.toml` and its other settings listed in `docs/deployment.md`. | Must | SRC-17 Phase 14A | Inspection |
-| DEP-045 | The backend shall serve only HTTPS through the Railway edge; HTTP requests shall be redirected by the platform, and the backend shall send `Strict-Transport-Security: max-age=31536000` in staging and production. | Must | BR-16, TRD 12 | Test |
+| DEP-045 | The backend shall serve only HTTPS through the Railway edge; HTTP requests shall be redirected by the platform, and the backend shall send `Strict-Transport-Security: max-age=31536000; includeSubDomains` in staging and production (TRD 12 SEC-062). | Must | BR-16, TRD 12 | Test |
 
 ### 4.6 Frontend site (Netlify)
 
@@ -308,7 +311,7 @@ Procedure:
 
 1. In Netlify (team-owned team, TRD 22) "Add new site → Import from Git" → `EchoWellApp/echowell`.
 2. Site name `echowell-und` (if taken, record the actual name in `docs/deployment.md`).
-3. Build settings (also in `/netlify.toml`): base directory `frontend/`, build command `npm run build`, publish directory `.next`, Node version 20, plugin `@netlify/plugin-nextjs`.
+3. Build settings (also in `/netlify.toml`): base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), publish directory `.next`, Node version 20, plugin `@netlify/plugin-nextjs`.
 4. Production branch `main`. Branch deploys: `staging` only. Deploy previews: on for pull requests.
 5. Environment variables per deploy context (TRD 21 §4.7): `NEXT_PUBLIC_API_BASE_URL` (production → production backend; branch-deploy `staging` and deploy-preview → staging backend), `NEXT_PUBLIC_APP_ENV` (`production` / `staging` / `staging`).
 6. Trigger a deploy, open the site, confirm the login page renders and the browser network tab shows calls only to the backend domain of the matching environment.
@@ -318,7 +321,7 @@ Procedure:
 ```toml
 [build]
   base    = "frontend"
-  command = "npm run build"
+  command = "node scripts/check-csp.mjs && npm run build"
   publish = ".next"
   ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
@@ -336,28 +339,31 @@ Procedure:
 [context.deploy-preview.environment]
   NEXT_PUBLIC_APP_ENV = "staging"
 
+# Copied verbatim from TRD 12 §4.9 (the only owner of this header set; do not edit here).
 [[headers]]
   for = "/*"
   [headers.values]
-    Strict-Transport-Security = "max-age=31536000"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer"
     X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-backend-staging.up.railway.app https://echowell-backend-production.up.railway.app; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-050 | The Netlify site shall use base directory `frontend/`, build command `npm run build`, Node 20 and the `@netlify/plugin-nextjs` plugin. | Must | SRC-01, contract task | Inspection |
+| DEP-050 | The Netlify site shall use base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), Node 20 and the `@netlify/plugin-nextjs` plugin. | Must | SRC-01, contract task | Inspection |
 | DEP-051 | NEXT_PUBLIC_API_BASE_URL shall be set per Netlify deploy context so that production builds call only the production backend and branch/preview builds call only the staging backend. | Must | BR-16, TRD 21 | Test |
 | DEP-052 | Netlify shall skip a build when no file under `frontend/` and no `netlify.toml` changed between commits (ignore command), to conserve build minutes. | Should | RSK-07, TRD 22 | Demo |
-| DEP-053 | The frontend shall send the security headers listed in the `netlify.toml` outline on every response. | Must | BR-16, TRD 12 | Test |
+| DEP-053 | The frontend shall send the security headers of TRD 12 §4.9 (copied verbatim into the `netlify.toml` outline) on every response. | Must | BR-16, TRD 12 | Test |
 | DEP-054 | Netlify deploy previews shall never be configured with the production backend URL. | Must | BR-16 | Inspection |
 
 ### 4.7 Migrations on deploy
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-060 | Database schema changes shall be applied only by Alembic (`alembic upgrade head`) as part of the backend start command; no manual DDL shall be run against staging or production. | Must | TRD 06, TRD 20 | Inspection |
+| DEP-060 | Database schema changes shall be applied only by Alembic (`alembic upgrade head`) as the Railway pre-deploy command (DEP-040; on AWS a one-off migration task, DEP-117); no manual DDL shall be run against staging or production. | Must | TRD 06, TRD 20 | Inspection |
 | DEP-061 | Every migration merged to `main` shall be backward compatible with the previous release (expand/contract: add columns/tables first, remove in a later release), so that the previous backend deployment keeps working if the new deployment fails its healthcheck. | Must | DEP-041 | Inspection (PR review) |
 | DEP-062 | Every migration shall be applied to the Neon `staging` branch (via a `staging` deploy) and pass the staging smoke tests before the same migration is merged to `main`. | Must | BR-17 | Inspection |
 | DEP-063 | Before a release that contains a migration is merged to `main`, the DevOps owner shall create a Neon branch `pre-<short-sha>` from `main` as a restore point and delete it after 7 days if unused. | Must | BR-02 | Inspection |
@@ -375,9 +381,10 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | `create-api-key --name N [--device D] [--scope S]` | Creates an API key (default scope `ingest:write`); prints the key once. | all |
 | `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024). | all |
 | `import-master-data --dir D` | Idempotent upsert of residents, devices and device assignments from CSV files `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format in TRD 14/TRD 06); master data has no API endpoints in the MVP (contract R4). | all |
-| `withdraw-resident --code R --date YYYY-MM-DD` | Sets resident status `withdrawn` (audited). | all |
+| `withdraw-resident <resident_code> --on <YYYY-MM-DD>` | Sets resident status `withdrawn` and `withdrawn_on` (audited `resident.withdrawn`; TRD 06 DB-062, TRD 23 DME-009). | all |
 | `seed test_v0_1 [--reset]` | Imports `database/seeds/test_v0_1/` master data (as `import-master-data`, facility named "Edgewood"), then loads the `test_v0_1` dataset (TRD 14) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`; `--reset` truncates all tables except `users`, `api_keys`, `audit_logs` and `config_parameters` first. It does not load `evaluation_ground_truth`; run `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` afterwards (refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`; `backend/cli.py` never references that table). | local, staging, test |
 | `run-pipeline --scope all [--profile P]` | Runs the full pipeline and records a `pipeline_runs` row with trigger `manual`. | all |
+| `rebuild --profile P --confirm REBUILD` | After an algorithm-key change only: connects with DATABASE_MIGRATION_URL (`echowell_migrator`), runs the full pipeline (trigger `manual`) with `rebuild=True`, which deletes and recomputes each resident's `baselines` inside that resident's transaction; audited `pipeline.rebuild` (TRD 07 ANL-032, TRD 24 D-56). Run from an operator workstation (`railway run`), never by the web service. | all |
 | `export-openapi` | Prints the OpenAPI JSON (used by CI, TRD 16). | all |
 | `reset-test-db` | Removes all rows and re-applies migrations and seeds (TRD 06 DB-024). | local, test |
 | `purge-resident <code> --confirm <code>` | IRB-directed deletion of a withdrawn resident's data (TRD 06 DB-064, OQ-11). | all |
@@ -386,7 +393,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DEP-070 | `python -m backend.cli seed` shall exit with code 2 and message "seeding is not allowed in production" without touching the database when APP_ENV is `production`. | Must | BR-16, DEP-007 | Test |
-| DEP-071 | `seed --reset` shall refuse to run unless APP_ENV is `local`, `staging` or `test`, and shall write an `audit_logs` row (actor_type system, action `seed_reset`). | Must | BR-16 | Test |
+| DEP-071 | `seed --reset` shall refuse to run unless APP_ENV is `local`, `staging` or `test`, and shall write an `audit_logs` row (actor_type system, action `seed.reset`, TRD 12 §4.12). | Must | BR-16 | Test |
 | DEP-072 | `bootstrap` shall be idempotent: running it twice shall leave the database identical to running it once. | Must | TRD 06 | Test |
 | DEP-073 | Production shall contain only the facility row, `config_parameters`, users, API keys and data received from devices or CSV upload of study data; no row with `ingest_batches.source = seed` shall exist in production. | Must | DEP-007 | Test (SQL check in smoke test) |
 | DEP-074 | Staging shall be re-seeded with `seed test_v0_1 --reset` after every deploy that contains a migration or a change under `analytics/`, so that staging always reflects the answer key. | Should | BR-15 | Demo |
@@ -396,7 +403,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 
 1. Open a PR from `feat/...` (or `fix/...`) to `staging`; CI (TRD 16) must be green; Netlify posts a deploy preview pointing to the staging backend.
 2. Merge the PR into `staging`.
-3. Railway `staging` waits for CI, builds `backend/Dockerfile`, runs `alembic upgrade head`, starts uvicorn, passes the healthcheck.
+3. Railway `staging` waits for CI, builds `backend/Dockerfile`, runs the pre-deploy command `alembic upgrade head`, starts uvicorn, passes the healthcheck.
 4. Netlify builds the `staging` branch deploy.
 5. GitHub Actions `deploy-staging.yml` (TRD 16) waits until `GET /api/v1/health` reports `version` = merged SHA, re-seeds if DEP-074 applies, and runs the staging smoke tests (DEP-080).
 6. Algorithm lead reviews the staging dashboard (tiles 2 / 7 / 1 / 19, R09 detail with alarm) before a `staging → main` PR is opened.
@@ -428,7 +435,7 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 | Backend fails healthcheck | Nothing to do immediately; Railway keeps the previous deployment. Fix forward by PR. | 0 min |
 | Backend healthy but functionally broken, no migration | Railway → Deployments → previous deployment → "Redeploy". Revert commit on `main` by PR. | 10 min |
 | Backend broken after an additive migration | Redeploy previous backend (schema is backward compatible, DEP-061). Do not run `alembic downgrade` in production. | 10 min |
-| Data damaged by a migration or bug | Stop ingestion (deactivate API keys with `python -m backend.cli deactivate-api-key`), restore Neon `main` from `pre-<short-sha>` branch or PITR timestamp (4.13), redeploy the matching backend, re-run `run-pipeline --scope all`, re-activate keys. Record incident in GitHub issue labelled `incident`. | 60 min |
+| Data damaged by a migration or bug | Stop ingestion (deactivate API keys with `python -m backend.cli revoke-api-key --name N`, §4.8), restore Neon `main` from `pre-<short-sha>` branch or PITR timestamp (4.13), redeploy the matching backend, re-run `run-pipeline --scope all`, re-activate keys. Record incident in GitHub issue labelled `incident`. | 60 min |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -440,9 +447,9 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-095 | Production data shall be protected by Neon point-in-time restore for at least the history window of the chosen Neon plan (TRD 22); the window in force shall be recorded in `docs/deployment.md`. | Must | BR-02, TRD 22 | Inspection |
+| DEP-095 | Interim production data shall be protected by Neon point-in-time restore for the history window of the Neon plan in use (TRD 22) plus the weekly dump of DEP-096, under the interim waiver of TRD 03 NFR-024 (TRD 24 D-60); the window in force shall be recorded in `docs/deployment.md`. | Must | BR-02, TRD 22 | Inspection |
 | DEP-096 | A logical backup `pg_dump --format=custom --no-owner` of the production database shall be taken weekly (Mondays) and before every release containing a migration, by the data steward from a UND-managed workstation, encrypted at rest, and stored only on storage approved for the study's research data (OQ-01). On AWS, RDS automated backups and manual snapshots (KMS-encrypted) replace this procedure. | Must | BR-02, BR-16, OQ-01, D-OWNER-3 | Inspection |
-| DEP-097 | A restore drill (restore the latest dump into a new Neon branch `restore-drill`, run `run-pipeline --scope all`, compare row counts of `raw_sessions` and `alerts`) shall be performed once before 15 Nov 2026 and then monthly. | Should | BR-02 | Demo |
+| DEP-097 | A restore drill (restore the latest dump into a new Neon branch `restore-drill`, run `run-pipeline --scope all`, compare row counts of `raw_sessions` and `alerts`) shall be performed at the cadence of TRD 03 NFR-025: once before 15 Nov 2026 on the interim stack; on AWS before go-live and every 6 months. | Should | BR-02 | Demo |
 | DEP-098 | Backups and dumps shall never be committed to the repository or uploaded as GitHub Actions artifacts. | Must | BR-16, TRD 18 | Inspection |
 
 PITR restore procedure: Neon console → project `echowell` → branch `main` → "Restore" → choose timestamp (UTC) → restore creates a backup branch of the pre-restore state automatically → verify with `SELECT max(received_at) FROM raw_sessions` → redeploy the backend version that matches the restored schema → `run-pipeline --scope all`.
@@ -490,7 +497,7 @@ Target configuration (region `us-east-1`, AWS account owned by UND per OQ-07):
 | Frontend | AWS Amplify Hosting app connected to `EchoWellApp/echowell`, app root `frontend`, build `npm ci && npm run build`, Node 20; branches `main` → production, `staging` → staging; environment variables NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_APP_ENV. |
 | Backend | Amazon ECR repository `echowell-backend` (scan on push, KMS encryption); App Runner service `echowell-backend-production` from the same `backend/Dockerfile` image, port 8000, health check HTTP `/api/v1/health`, 1 vCPU / 2 GB, min 1 / max 1 instance, VPC connector to the private subnets of the RDS VPC. |
 | Database | Amazon RDS for PostgreSQL 16, `db.t4g.micro` (staging) / `db.t4g.small` (production), storage encrypted with KMS customer-managed key `alias/echowell-rds`, not publicly accessible, private subnets in 2 AZs, parameter `rds.force_ssl = 1`, automated backups 14 days, deletion protection on. |
-| Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/DATABASE_READONLY_URL` (optional), `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21). |
+| Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21), except `DATABASE_MIGRATION_URL`, which is injected only into the one-off migration task (an ECS task from the same image running `alembic upgrade head` before the App Runner deployment), so the web service never holds it on AWS. |
 | Logs and monitoring | CloudWatch Logs (App Runner application + service logs, JSON format unchanged, TRD 17), retention 90 days, KMS-encrypted; CloudWatch alarms on health check failures, 5xx rate and RDS CPU/storage; SNS topic to the DevOps owner's email. |
 | Nightly run | EventBridge Scheduler rule `cron(0 2 * * ? *)` with time zone America/Chicago invoking `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (alternative: an ECS scheduled task running `python -m backend.jobs.nightly_run`); App Runner has no cron facility. |
 | Network | Only App Runner (HTTPS) and Amplify (HTTPS) are public; the RDS security group allows 5432 only from the App Runner VPC connector security group. |
@@ -501,7 +508,7 @@ Mapping from the current interim stack:
 |---|---|---|
 | Netlify site (`frontend/`, `@netlify/plugin-nextjs`) | AWS Amplify Hosting (Next.js SSR) | New Amplify app with base `frontend/`, build `npm run build`; same NEXT_PUBLIC_* variables. No code change. |
 | Railway service `backend` (`backend/Dockerfile`) | AWS App Runner from ECR image | Push the same image to ECR; App Runner port 8000 via PORT; health path `/api/v1/health`; nightly run via EventBridge (DEP-116). |
-| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_migrator` / `echowell_app` / `echowell_readonly`; update DATABASE_URL, DATABASE_MIGRATION_URL and (optional) DATABASE_READONLY_URL. |
+| Neon PostgreSQL 16 | Amazon RDS for PostgreSQL 16 (KMS) | Fresh schema via Alembic (DEP-117); recreate roles `echowell_migrator` / `echowell_app` / `echowell_readonly`; update DATABASE_URL and DATABASE_MIGRATION_URL (DATABASE_READONLY_URL is not set in production, TRD 12 SEC-116). |
 | Railway / Netlify variables | AWS Secrets Manager + App Runner env | Same variable names (TRD 21). |
 | Railway logs | CloudWatch Logs | JSON log format unchanged (TRD 17). |
 | GitHub Actions deploy verification | GitHub Actions with AWS OIDC role | Smoke tests unchanged; URLs change in Actions variables. |
@@ -537,7 +544,7 @@ Mapping from the current interim stack:
 
 ## 7. Acceptance Criteria
 
-- AC-DEP-01 From a clean clone, steps 1–8 of the local procedure produce a dashboard with tiles 2 / 7 / 1 / 19 and R09 "Alarm on" in under 15 minutes.
+- AC-DEP-01 On a laptop with 8 GB RAM and Docker already installed, steps 2–8 of the local procedure produce a dashboard with tiles 2 / 7 / 1 / 19 and R09 "Alarm on" in under 10 minutes (TRD 03 NFR-087).
 - AC-DEP-02 `docker compose exec backend python -m backend.cli seed test_v0_1` with APP_ENV=production exits with code 2 and leaves `raw_sessions` row count unchanged.
 - AC-DEP-03 A merge to `staging` results, without manual steps, in a Railway staging deployment whose health `version` equals the merge SHA and a Netlify branch deploy, followed by a green `deploy-staging.yml` run.
 - AC-DEP-04 A merge to `main` results in production health `version` equal to the merge SHA and a green `deploy-production.yml` run that created tag `vX.Y.Z`.
@@ -559,7 +566,7 @@ Mapping from the current interim stack:
 - Railway's `$PORT` must be expanded by a shell; keep the `sh -c '...'` wrapper in `railway.toml`.
 - Netlify's `ignore` command runs inside the base directory, therefore paths are relative to `frontend/`.
 - Never put `NEXT_PUBLIC_API_BASE_URL` for production in `netlify.toml` (it differs per context and is configured in the Netlify UI); `NEXT_PUBLIC_APP_ENV` is safe in `netlify.toml`.
-- `backend/jobs/nightly_run.py` must take a PostgreSQL advisory lock before inserting the nightly `pipeline_runs` row so the two cron firings (07:00 and 08:00 UTC) or a manual re-run cannot start two nightly runs for the same local date.
+- `backend/jobs/nightly_run.py` must take the transaction-scoped nightly advisory lock of TRD 06 DB-021 (d) before inserting the nightly `pipeline_runs` row so the two cron firings (07:00 and 08:00 UTC) or a manual re-run cannot start two nightly runs for the same local date.
 
 ## 9. Open Questions
 
@@ -574,3 +581,4 @@ Mapping from the current interim stack:
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-03, F-04, F-13, F-14, F-15, F-16, F-17, F-23, F-48, F-49) | — |

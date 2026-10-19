@@ -1,6 +1,6 @@
 # 00 Project Vision and Scope
 
-Document ID: ECHOWELL-TRD-00 · Version 0.1 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-00 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -34,10 +34,10 @@ Every requirement in TRDs 01 to 25 SHALL trace to at least one BR-xx defined in 
 | S-07 | Authentication, roles (admin, clinician, researcher), audit trail, HTTPS, secrets management | 12 |
 | S-08 | Automated validation against the pipeline test workbook v0.1 (residents R01 to R10) | 13, 14 |
 | S-09 | Monorepo, CI/CD with GitHub Actions, deployment to the current (interim) hosting — Netlify (frontend), Railway (backend), Neon or Railway PostgreSQL (database) — and a local Docker Compose environment, designed for migration to the target AWS platform (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) without significant code change | 01, 15, 16, 18, 21, 22 |
+| S-10 | Data model for the future new-admission arm (facility reference ranges, admission cohort) and an experimental UI page | 02, 06, 11 |
+| S-11 | Protection of live feature data as sensitive, potentially PHI-derived data: encryption in transit and at rest, least privilege, audit logging, no PII in logs | 03, 12, 17 |
 | S-12 | Rule-based data-quality alerts for the study team (baseline stalled, possible other speaker, many check-ins set aside, device silent, review-flagged data problem), separate from health alarms | 02, 07, 09 |
 | S-13 | Evaluation ground truth (answer key) loaded only in the `test_v0_1` profile into a table the pipeline never reads, used only for the Analytics alarm timing check | 01, 06, 14 |
-| S-11 | Protection of live feature data as sensitive, potentially PHI-derived data: encryption in transit and at rest, least privilege, audit logging, no PII in logs | 03, 12, 17 |
-| S-10 | Data model for the future new-admission arm (facility reference ranges, admission cohort) and an experimental UI page | 02, 06, 11 |
 
 ### 2.2 Out of scope
 
@@ -236,7 +236,7 @@ The MVP is the smallest system that achieves the end-of-semester demo goal (SRC-
 | 5. Dashboard shows the result | Team 2 | The new check-in shows up on the dashboard | Residents overview "Last check-in" and Resident detail check-in log update |
 | 6. Full run recorded on video | Both teams | Two videos: spoken phrase to cloud (Team 1), cloud to dashboard (Team 2) | Staging or production deployment usable for recording |
 
-MVP feature set: all items S-01 to S-10 in section 2.1, with the New admissions page delivered as an experimental page whose comparison status reads "Facility range not available yet" or "Not enough check-ins yet" unless facility reference ranges exist (OQ-08; TRD 02 FR-202).
+MVP feature set: all items S-01 to S-13 in section 2.1, with the New admissions page delivered as an experimental page whose comparison status reads "Facility range not available yet" or "Not enough check-ins yet" unless facility reference ranges exist (OQ-08; TRD 02 FR-202).
 
 All data used for the demo, including the record spoken in the demo video, is test data (team members' voices or synthetic data), never real resident data (VIS-024, D-OWNER-4). Whose voices appear in the demo is an open item of SRC-15 item 8.
 
@@ -287,7 +287,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | SC-04 | No audio, no PII | Audio-like fields or endpoints; name-like fields | 0 | Inspection, schema test |
 | SC-05 | Reproducibility | Two full rebuilds of SRC-05 with the same config produce identical derived tables | Byte-identical comparison of exported derived tables | Test |
 | SC-06 | Deployed | Frontend on Netlify and backend on Railway reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
-| SC-07 | Accessibility | Automated axe-core checks on the 4 main pages | 0 serious or critical violations | Test (TRD 13) |
+| SC-07 | Accessibility | Automated axe-core checks on the 8 routes of TRD 13 TST-110 | 0 serious or critical violations | Test (TRD 13) |
 | SC-08 | Traceability | Requirements without BR trace | 0 | Inspection |
 
 ### 4.11 Phases and milestones
@@ -388,7 +388,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 |---|---|
 | AC-VIS-01 | The validation suite (TRD 14) passes 100% of SRC-03 comparisons for R01–R10 on the `test_v0_1` profile. |
 | AC-VIS-02 | With the SRC-05 data loaded and as-of 2026-10-30 15:00 America/Chicago, the Residents overview shows tiles 2 / 7 / 1 / 19 and the R09 row reads "▲ Alarm since Oct 21". |
-| AC-VIS-03 | A record posted to `POST /api/v1/sessions` in staging appears in the Resident detail check-in log after a page reload, demonstrated on video. |
+| AC-VIS-03 | A record posted to `POST /api/v1/sessions` in the interim production environment for a `T`-prefixed demo study ID (profile `production`, as-of = request time; TRD 15 DEP-093) appears in the Resident detail check-in log after a page reload, demonstrated on video. Staging is not used for this step because its fixed PIPELINE_AS_OF (2026-10-30) excludes later records (TRD 07 ANL-015, TRD 24 D-59). |
 | AC-VIS-04 | A repository search finds no audio upload/download endpoint, no audio column, no LLM dependency, and no use of "Edge4Care" to name the facility. |
 | AC-VIS-05 | Every requirement row in TRDs 01–25 contains at least one BR-xx trace (checked by script or review). |
 | AC-VIS-06 | Every page of the dashboard shows its no-audio footer (VIS-020) and the New admissions page shows the "Future / experimental study arm" banner. |
@@ -399,7 +399,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 
 ## 8. Implementation Notes
 
-- Treat this document as the dictionary of scope. If an implementation task is not traceable to S-01..S-10 and a BR-xx, do not build it; raise it to the lead.
+- Treat this document as the dictionary of scope. If an implementation task is not traceable to S-01..S-13 and a BR-xx, do not build it; raise it to the lead.
 - Use the glossary in TRD 23 and the shared terms exactly: check-in/session, record/arrival, usable, set aside, quarantined, duplicate, missed day, epoch, baseline (frozen), baseline forming, baseline restart, scored session, composite, running change tally, alarm, watching, facility range.
 - Never hard-code the facility name; read FACILITY_NAME. Never hard-code baseline_n; read the active pipeline profile.
 - Seed and demo data on the interim stack are synthetic only (VIS-024); set DATA_SOURCE_LABEL accordingly (for example "pipeline test data v0.1").
@@ -423,10 +423,10 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | OQ-13 | Alarm-limit calibration on the larger dataset and the participant-criteria 90-day minimum stay question (production baseline_n = 30 is decided, D-OWNER-2) | VIS-011 |
 | OQ-16 | Smart-home wake phrase vs no-raw-audio rule | X-16, C-01 |
 | OQ-17 | Edgewood site access | Phase P3 |
+| OQ-19 | Who owns "compare to baseline" between teams | Team boundary; this TRD set assumes Team 2 owns everything downstream of the ingest endpoint |
 | OQ-24 | Confirmation of data-alert thresholds (study team) | S-12 |
 | OQ-25 | Confirmation of the alarm-review explanation checklist (clinical team) | S-05 |
 | OQ-26 | Who may review alarms and how soon (PI / clinical lead) | S-05 |
-| OQ-19 | Who owns "compare to baseline" between teams | Team boundary; this TRD set assumes Team 2 owns everything downstream of the ingest endpoint |
 
 ## Revision History
 
@@ -434,3 +434,4 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 |---|---|---|---|
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
+| 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-17, F-19, F-27) | — |
