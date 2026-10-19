@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -78,11 +78,11 @@ the AWS target.
 
 | Variable | Description | Required | Default | Example | Envs | Secret | Validation |
 |---|---|---|---|---|---|---|---|
-| `DATABASE_MIGRATION_URL` | Connection used only by Alembic (Railway pre-deploy command) and the operator CLI (role `echowell_migrator`, direct non-pooled endpoint); set on the Railway `backend` service only, never on `nightly`; on AWS only on the one-off migration task (TRD 15 DEP-040); application code never reads it | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
+| `DATABASE_MIGRATION_URL` | Connection used only by the closed list of TRD 20 §4.3: Alembic (Railway pre-deploy command) and the listed operator commands (role `echowell_migrator`, direct non-pooled endpoint); set on the Railway `backend` service only, never on `nightly`; on AWS only on the one-off migration task (TRD 15 DEP-040); application code never reads it | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
 | `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes where PIPELINE_PROFILE=`test_v0_1` (local, staging, test); not set in production and on AWS (TRD 12 SEC-116; the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
 | `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
-| `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@echowell.test`, `clinician@echowell.test`, `researcher@echowell.test` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: values in `.env.development.example`; CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 2 when any is non-empty and APP_ENV=`production` |
+| `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@echowell.test`, `clinician@echowell.test`, `researcher@echowell.test` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: the `local-dev-only-change-me` placeholders of `.env.development.example` (ENV-041); CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 2 when any is non-empty and APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -164,10 +164,10 @@ FACILITY_NAME=Edgewood
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=test_v0_1
 PIPELINE_AS_OF=2026-10-30T15:00:00-05:00
-SEED_ADMIN_PASSWORD=local-dev-only-Admin-1
-SEED_CLINICIAN_PASSWORD=local-dev-only-Clinician-1
-SEED_RESEARCHER_PASSWORD=local-dev-only-Researcher-1
-SEED_INGEST_API_KEY=ewk_local-dev-only-0123456789abcdef0123
+SEED_ADMIN_PASSWORD=local-dev-only-change-me                  # placeholder (ENV-041); never valid in staging/production
+SEED_CLINICIAN_PASSWORD=local-dev-only-change-me
+SEED_RESEARCHER_PASSWORD=local-dev-only-change-me
+SEED_INGEST_API_KEY=ewk_local-dev-only-change-me-change-me
 NIGHTLY_RUN_HOUR_LOCAL=2
 LOG_LEVEL=INFO
 LOG_FORMAT=console
@@ -216,7 +216,7 @@ NEXT_PUBLIC_APP_ENV=production
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-040 | The three template files shall exist at the repository root with the content above (`.env.example` being the union of all variables with comments) and shall be kept in sync with this TRD; a unit test shall assert that every field of `Settings` appears in `.env.example`. | Must | SRC-17 Phase 14A | Test |
-| ENV-041 | `JWT_SECRET` in `.env.development.example` shall contain the substring `local-dev-only` and the backend shall refuse any JWT_SECRET containing `local-dev-only` when APP_ENV is `staging` or `production`. | Must | BR-16 | Test |
+| ENV-041 | `JWT_SECRET` and the SEED_* values in `.env.development.example` shall be obviously fake local placeholders containing the substring `local-dev-only` (e.g. `local-dev-only-change-me`); the backend and every CLI command shall refuse to start (exit code 2) when JWT_SECRET or any SEED_* value contains `local-dev-only` and APP_ENV is `staging` or `production` (TRD 06 DB-057, TRD 12 SEC-050). | Must | BR-16 | Test |
 
 ### 4.7 Per-environment matrix
 
@@ -300,3 +300,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-17, F-48) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-12, R2-18) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-07) | — |
+| 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-07, R4-08) | — |

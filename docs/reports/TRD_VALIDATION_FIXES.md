@@ -125,3 +125,35 @@ Mechanical checks re-run: no duplicate/dangling requirement IDs; D/OQ/ASM/RSK/DS
 | R3-08 | Minor | TRD 13: demo overlay is a CSV directory tests/fixtures/seeds/demo_overlay/ (DB-060 format) loaded by import-master-data (E2E-15 and fixture tree); fixture tree lists evaluation_ground_truth_v0_1.csv under answer_key/ (as TDV-012) | Fixed |
 | R3-09 | Minor | TRD 12: TRD 12 §4.12 user.created and user.updated actor = user (API) or system (CLI/seed), matching SEC-103 | Fixed |
 | R3-10 | Minor | TRD 06: DB-025 priority Should -> Must (FR-205, TST-185) | Fixed |
+
+## Round 4 fixes
+
+
+Changed TRDs (Version 0.5 and a "0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (...)" row, only in these): 01, 05, 06, 12, 13, 15, 16, 20, 21, 24, 25.
+New decision: D-72. D-71 amended (no new D). Next free decision: D-73.
+
+Mechanical checks re-run:
+- No duplicate or dangling requirement IDs. The only script hits are the known artefacts: source/BR/ASM/OQ reference rows, AC-DB-02a, and E2E rows whose names follow the ID.
+- D-70..D-72 are all defined in TRD 24.
+- Endpoints, `table.column` references and env vars agree with TRD 19, 20 and 21. The remaining hits are the same as in round 3 (error codes, workflow-local and GitHub variables, file names). No new env var was introduced.
+- Code fences are balanced in all 26 files.
+- No TBD, TODO or lorem outside GIT-053.
+
+R4-02 verification on scratch PostgreSQL 16 (script `t_r4_ext2.sh`, using all `sql` fences of TRD 20):
+- Without extensions, the migration-0001 check run as migrator fails with the clear message (exit 3).
+- Provisioning as superuser (extensions, then roles) succeeded with exit 0.
+- DDL as migrator: exit 0, with 24 tables, 17 triggers and 46 config rows.
+- Drop-all as migrator: exit 0, with 0 tables, and pgcrypto and btree_gist kept.
+- DDL as migrator again: exit 0, with 24/17/46. Grants are restored: app has INSERT but not DELETE on `raw_sessions`, and readonly has SELECT on `evaluation_ground_truth`.
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R4-01 | Major | TRD 06, 15 and 24. DB-029 and DEP-060 now state one exception: on staging, the D-71 `reset-test-db` (downgrade base, then upgrade head) may run only from the deploy-staging GitHub Actions re-seed step, only with PIPELINE_PROFILE=test_v0_1, and never in production. The TRD 15 §4.8 `reset-test-db` row was aligned with this. D-71 was amended to match. | Fixed |
+| R4-02 | Major | TRD 06, 13, 15, 16, 20 and 24. New D-72: the provisioning step creates the extensions, never Alembic as migrator. Locally and in CI this is `provision_login_roles.sql` as superuser; on Neon it is the project owner role (TRD 15 §4.4 step 4); on AWS RDS it is the master user (DEP-117). The step runs `CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS btree_gist;` before any migration. Migration 0001 only checks for them and fails with a clear message (TRD 20 §4.2, PGS-002). `downgrade base` never drops them (DB-029). Also updated: TRD 15 §4.2, TRD 20 §4.3 and the project-owner note, TRD 16 CIC-015 and the ci.yml provisioning comment, and TRD 13 TST-040. Verified on PG16 (see above). | Fixed |
+| R4-03 | Minor | TRD 15, 20 and 25. In the TRD 15 seed row, `--reset` now reads "see `reset-test-db` (D-71)". The TRD 20 §8 test note now says to use a fresh database from the migrations and never truncate `raw_sessions`, since the purge path is IRB-only. In TRD 25 Phase 4, `--master-only` loads the roster, users and key, and users and key are upserted from SEED_* (DB-057/DB-058). | Fixed |
+| R4-04 | Minor | TRD 06. The DB-024 verification now expects `config_parameters` with 46 rows, `audit_logs` with exactly 1 row (`seed.reset`, written after the upgrade, D-71), and every other table empty. | Fixed |
+| R4-05 | Minor | TRD 13 and 16. In `e2e.yml` the main Playwright run uses `--grep-invert @isolated`. A new step creates `echowell_demo` in the same Postgres service and provisions it with the same `provision_login_roles.sql` as superuser (extensions and roles). It restarts the backend on that database (the start command runs `alembic upgrade head`), then runs `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`. The `@isolated` scenarios E2E-15, TST-187 and E2E-19 then run serially in Chromium. The main database stays exactly the test_v0_1 seed. CIC-030, E2E-15, E2E-19 (first ingests SRC-05 via `/ingest` and runs the pipeline at as_of 2026-10-30), TST-187 (a new session ID for R11) and TRD 13 §8 were updated. | Fixed |
+| R4-06 | Minor | TRD 12 and 15. SEC-022: one or more scopes from {ingest:write, pipeline:run}, a non-empty subset matching `api_keys_scopes_ck`. SEC-020 and the TRD 15 `create-api-key` row: `--scope` is repeatable. | Fixed |
+| R4-07 | Minor | TRD 06, 12, 16 and 21. In `.env.development.example`, SEED_* now hold obvious placeholders (`local-dev-only-change-me`, and `ewk_local-dev-only-change-me-change-me` for the key). The TRD 21 SEED_* row was updated to match. DB-057 and SEC-050 add the exception: placeholders are allowed and never valid in staging or production. ENV-041 makes the backend and CLI refuse (exit 2) any JWT_SECRET or SEED_* value containing `local-dev-only` when APP_ENV is staging or production. CIC-115 adds a gitleaks allow-list entry limited to these placeholders. | Fixed |
+| R4-08 | Minor | TRD 01, 05, 06 and 21. ARC-019, TRD 05 §6 (DATABASE_MIGRATION_URL), the TRD 06 §8 note and the TRD 21 DATABASE_MIGRATION_URL row now refer to the binding closed list of TRD 20 §4.3. TRD 15 §4.4 step 4 was already updated under R4-02. | Fixed |
+| R4-09 | Minor | TRD 20. The §2 scope line now reads "3 group roles", with the extensions "created by provisioning, checked by migration 0001". | Fixed |

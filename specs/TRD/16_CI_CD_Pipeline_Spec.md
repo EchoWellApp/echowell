@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -213,7 +213,7 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
       - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql   # as superuser
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql   # as superuser: extensions (D-72), then roles
       - run: alembic upgrade head
       - run: alembic downgrade base && alembic upgrade head   # migrations reversible in test
       - run: >
@@ -310,7 +310,7 @@ jobs:
 | CIC-012 | `backend-test` shall run against a `postgres:16-alpine` service container, never against SQLite, so integration tests exercise PostgreSQL-specific behaviour (jsonb, triggers, roles). | Must | contract §3, TRD 13 | Inspection |
 | CIC-013 | `backend-test` shall run the unit, integration and validation suites (`tests/unit`, `tests/integration`, `tests/validation`) in one pytest invocation and fail if any test fails or errors. | Must | SRC-01, BR-15 | Test |
 | CIC-014 | The validation suite shall compare pipeline output against the SRC-03 answer key for R01–R10 with absolute tolerance 1e-6 and exact string match for statuses, reasons and alarm states; any mismatch shall fail the job. | Must | BR-15, SRC-03, TRD 14 | Test |
-| CIC-015 | `backend-test` shall first run `database/roles/provision_login_roles.sql` as the service superuser (creating `echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login`, TRD 20 §4.3, TRD 15 §4.2; passwords are CI-only throwaway values in the workflow env), then run all tests with DATABASE_URL = `echowell_app_login`, DATABASE_MIGRATION_URL = `echowell_migrator_login` and DATABASE_READONLY_URL = `echowell_readonly_login`; it shall then apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error. | Must | TRD 06, TRD 15 DEP-060 | Test |
+| CIC-015 | `backend-test` shall first run `database/roles/provision_login_roles.sql` as the service superuser (creating the extensions `pgcrypto` and `btree_gist` before any migration, TRD 24 D-72, then `echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login`, TRD 20 §4.3, TRD 15 §4.2; passwords are CI-only throwaway values in the workflow env), then run all tests with DATABASE_URL = `echowell_app_login`, DATABASE_MIGRATION_URL = `echowell_migrator_login` and DATABASE_READONLY_URL = `echowell_readonly_login`; it shall then apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head` again, failing on any migration error; migrations run as `echowell_migrator` and never create or drop extensions (D-72). | Must | TRD 06, TRD 15 DEP-060 | Test |
 | CIC-016 | Line coverage shall be at least 95 % for `analytics/` and at least 85 % for `backend/`; the job shall fail below either gate. | Must | contract R7, TRD 13 | Test |
 | CIC-017 | The `frontend` job shall run `npm ci`, `npm run lint` (ESLint, zero warnings allowed: `--max-warnings=0`), `npm run typecheck` (`tsc --noEmit`), `npm run test` (Vitest + React Testing Library, line coverage at least 80 %) and `npm run build`, failing on any non-zero exit. | Must | contract §3, TRD 04, TRD 13 | Test |
 | CIC-018 | The `openapi-contract` job shall fail when the OpenAPI document generated from the backend differs from the committed `docs/api_reference/openapi.json`; intentional API changes shall update `docs/api_reference/openapi.json` and the generated `frontend/lib/api-types.ts` in the same PR; the job shall also fail if `frontend/lib/api-types.ts` differs from the output of openapi-typescript. | Must | TRD 19 | Test |
@@ -359,9 +359,22 @@ jobs:
         with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci && npx playwright install --with-deps ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}
         working-directory: frontend
-      - run: npx playwright test ${{ github.event_name == 'schedule' && '--project=chromium --project=firefox --project=webkit' || '--project=chromium' }}
+      - run: npx playwright test --grep-invert @isolated ${{ github.event_name == 'schedule' && '--project=chromium --project=firefox --project=webkit' || '--project=chromium' }}
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001" }   # logins: seeded admin/clinician/researcher@echowell.test with the masked SEED_* values from $GITHUB_ENV
+      - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays exactly the test_v0_1 seed)
+        run: |
+          docker compose exec -T db psql -U echowell -d echowell -v ON_ERROR_STOP=1 -c "CREATE DATABASE echowell_demo"
+          docker compose exec -T db psql -U echowell -d echowell_demo -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/10_provision_login_roles.sql   # same provisioning: extensions (D-72), roles (idempotent)
+          DEMO="-e DATABASE_URL=postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell_demo -e DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell_demo -e DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell_demo"
+          docker compose stop backend
+          docker compose run -d --no-deps --service-ports $DEMO backend      # service command: alembic upgrade head, then uvicorn on :8000
+          curl -fsS --retry 30 --retry-all-errors --retry-delay 2 http://localhost:8000/api/v1/health
+          docker compose run --rm --no-deps $DEMO backend python -m backend.cli seed test_v0_1 --master-only
+          docker compose run --rm --no-deps $DEMO backend python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay
+      - run: npx playwright test --grep @isolated --project=chromium --workers=1   # E2E-15, TST-187, E2E-19 in this order
+        working-directory: frontend
+        env: { E2E_BASE_URL: "http://localhost:3001" }
       - if: failure()
         run: docker compose logs --no-color > e2e-compose.log
       - if: always()
@@ -373,7 +386,7 @@ jobs:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
+| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database, which stays exactly the `test_v0_1` seed. The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database. | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
 | CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
 | CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
@@ -381,7 +394,7 @@ jobs:
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
 | CIC-034 | The E2E credentials (SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY) shall be generated per job, masked with `::add-mask::` before use, passed to the stack through `.env` and to Playwright through `$GITHUB_ENV`, and shall never be valid on staging or production; Playwright logs in as the seeded admin, clinician and researcher users (TRD 06 DB-057, TRD 24 D-71). | Must | BR-16 | Inspection |
 | CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
-| CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
+| CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136; the only allow-list entry is the `local-dev-only` placeholder values of `.env.development.example`, TRD 21 ENV-041) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
 | CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` and `staging` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.14.x, the version of TRD 13 §4, desktop preset) on `/residents` of the seeded Compose `demo` stack after a scripted login (`frontend/tests/lighthouse/login.js`) and fails below Performance 80 or above LCP 2.5 s (TRD 13 TST-125). | Should | TRD 13, TRD 03 | Test |
 
 ### 4.4 Workflow `deploy-staging.yml`
@@ -548,3 +561,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-13, F-16, F-19, F-20, F-40) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-18, R2-20) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |
+| 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-05, R4-07) | — |

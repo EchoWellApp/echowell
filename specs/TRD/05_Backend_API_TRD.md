@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -478,7 +478,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Seed scripts in `database/seeds/` that register residents, devices and device assignments (TRD 14).
 - Owner decisions D-OWNER-2 (test_v0_1 never in production), D-OWNER-3 (AWS target) and D-OWNER-4 (interim stack synthetic/test data only; go-live on AWS only) from the shared contract §18.
 - Note: the current `backend/requirements.txt` lists `psycopg2-binary`; it shall be replaced by `psycopg[binary]` 3.x (contract §21 R24).
-- DATABASE_URL (role `echowell_app`) for the API and nightly job; DATABASE_MIGRATION_URL (role `echowell_migrator`) for Alembic only (contract §21 R20); DATABASE_READONLY_URL (role `echowell_readonly`) for the alarm-timing read only (contract R27).
+- DATABASE_URL (role `echowell_app`) for the API and nightly job; DATABASE_MIGRATION_URL (role `echowell_migrator`) only for the closed list of TRD 20 §4.3 (Alembic and the listed operator commands; contract §21 R20); DATABASE_READONLY_URL (role `echowell_readonly`) for the alarm-timing read only (contract R27).
 - `python database/seeds/load_evaluation_ground_truth.py <csv_path>` loads the DS-10 CSV fixture into `evaluation_ground_truth` (refuses when APP_ENV=production or PIPELINE_PROFILE is not test_v0_1); it is run directly, not wrapped by `backend/cli.py`, which never references that table.
 - OpenAPI artefact `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` (TRD 19, contract §21 R22).
 
@@ -555,3 +555,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-08, F-09, F-10, F-12, F-34, F-36, F-39, F-41, F-47, F-49) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-16, R2-24, R2-25) | — |
+| 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-08) | — |

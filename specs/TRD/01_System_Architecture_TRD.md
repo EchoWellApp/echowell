@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -107,7 +107,7 @@ flowchart TB
 | ARC-016 | All components shall live in the single GitHub monorepo `EchoWellApp/echowell` with the layout in section 4.6. | Must | BR-17, SRC-01 | Inspection |
 | ARC-017 | The backend shall serve its OpenAPI document at `/api/v1/openapi.json`, and the committed contract file `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` shall equal the generated schema (CI fails on difference); frontend types shall be generated from it to `frontend/lib/api-types.ts`. | Must | BR-17, TRD 19, R22 | Test (CI diff) |
 | ARC-018 | In the current stack the system shall not depend on any service other than Netlify, Railway, Neon/Railway PostgreSQL and GitHub (optional Sentry via `SENTRY_DSN`) to serve a request; in the target stack the equivalents are the AWS services of section 4.10. | Must | BR-17, SRC-01, D-OWNER-3, TRD 22 | Inspection |
-| ARC-019 | The database shall have three roles: `echowell_migrator` (owns the schema; used only by Alembic), `echowell_app` (DML; no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes`; no SELECT on `evaluation_ground_truth`) and `echowell_readonly` (SELECT for researcher read-outs and exports, including `evaluation_ground_truth` in the test profile). | Must | BR-02, BR-16, R20 | Test (privilege tests in CI) |
+| ARC-019 | The database shall have three roles: `echowell_migrator` (owns the schema; its credential is used only by the closed list of TRD 20 §4.3: Alembic and the listed operator commands), `echowell_app` (DML; no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes`; no SELECT on `evaluation_ground_truth`) and `echowell_readonly` (SELECT for researcher read-outs and exports, including `evaluation_ground_truth` in the test profile). | Must | BR-02, BR-16, R20 | Test (privilege tests in CI) |
 
 ### 4.3 Data flow of one check-in
 
@@ -467,3 +467,4 @@ flowchart LR
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-04, F-16, F-32, F-33) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-06, R2-07, R2-10, R2-24, R2-25) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03, R3-04) | — |
+| 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-08) | — |

@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -18,8 +18,8 @@ diff test (PGS-016) fails.
 
 In scope:
 - DDL for all 24 tables (the 21 of contract section 9 plus `alert_reviews`, `data_alerts` and `evaluation_ground_truth`
-  of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions,
-  2 trigger functions, 17 triggers, 4 group roles and their grants.
+  of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions (created by
+  provisioning, checked by migration 0001, D-72), 2 trigger functions, 17 triggers, 3 group roles and their grants.
 - Seed SQL for `config_parameters` (profiles `production` and `test_v0_1`).
 - The synthetic test roster (facility "Edgewood", residents R01–R10, devices, assignments) as CSV files, and the
   test-only evaluation answer key CSV (section 4.12).
@@ -56,7 +56,7 @@ Out of scope:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | PGS-001 | The database shall run on PostgreSQL major version 16 with encoding UTF8, and the database-level setting `timezone` shall be `UTC` (`ALTER DATABASE <db> SET timezone = 'UTC'`). | Must | SRC-01, BR-17 | Test (`SHOW server_version_num` ≥ 160000 and < 170000; `SHOW timezone` = UTC) |
-| PGS-002 | The schema shall create the extensions `pgcrypto` (for `gen_random_uuid()`) and `btree_gist` (for the device-assignment exclusion constraint) and no other extension. | Must | SRC-01 | Inspection of migration 0001; Test (`pg_extension` lists exactly plpgsql, pgcrypto, btree_gist) |
+| PGS-002 | The database shall have the extensions `pgcrypto` (for `gen_random_uuid()`) and `btree_gist` (for the device-assignment exclusion constraint) and no other extension. They shall be created by the provisioning step with owner/superuser rights (section 4.2), never by Alembic as `echowell_migrator`; migration 0001 shall only check that both exist and fail with a clear message otherwise, and no downgrade shall drop them (TRD 24 D-72). | Must | SRC-01, D-72 | Inspection of migration 0001; Test (`pg_extension` lists exactly plpgsql, pgcrypto, btree_gist; 0001 on a database without them fails with the 0001 message) |
 | PGS-003 | All EchoWell objects shall live in schema `public` and shall be owned by group role `echowell_migrator`. | Must | BR-16 | Test (`pg_tables.tableowner` = echowell_migrator for all 24 tables) |
 | PGS-004 | Exactly three group roles shall exist: `echowell_migrator` (schema owner; Alembic connects through `DATABASE_MIGRATION_URL`), `echowell_app` (backend runtime and pipeline; `DATABASE_URL`), `echowell_readonly` (SELECT for researchers and exports, including `evaluation_ground_truth`); each is `NOLOGIN` and environments connect through the login roles of section 4.3. | Must | BR-16, TRD 12 | Test (`pg_roles`, `pg_auth_members`) |
 | PGS-005 | The schema shall define exactly the 15 enumerated types of section 4.4 with the listed labels in the listed order. | Must | Contract §9 | Test (query `pg_enum` ordered by `enumsortorder`) |
@@ -102,9 +102,28 @@ Out of scope:
 
 ### 4.2 Extensions
 
+Created by the provisioning step that has owner/superuser rights, before any migration (TRD 24 D-72): locally and in CI
+by `database/roles/provision_login_roles.sql` run as the PostgreSQL superuser; on Neon once by the project owner role
+(TRD 15 §4.4); on AWS RDS by the master user. `echowell_migrator` has no `CREATE` privilege on the database and never
+creates or drops an extension.
+
 ```sql
+-- Provisioning step (superuser / Neon project owner / RDS master user), never Alembic:
 CREATE EXTENSION IF NOT EXISTS pgcrypto;     -- gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- uuid equality inside GiST exclusion constraints
+```
+
+Migration 0001 (runs as `echowell_migrator`) only verifies them; its `downgrade()` (and `alembic downgrade base`, D-71)
+never drops them:
+
+```sql
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM pg_extension WHERE extname IN ('pgcrypto', 'btree_gist')) < 2 THEN
+    RAISE EXCEPTION 'EchoWell needs extensions pgcrypto and btree_gist; run the provisioning step as the database owner or superuser first (TRD 15 §4.2/§4.4, TRD 20 §4.2)';
+  END IF;
+END
+$$;
 ```
 
 ### 4.3 Roles
@@ -113,7 +132,7 @@ Group roles are created once per cluster by the provisioning procedure of TRD 15
 on RDS by the master user). Login roles are created by the same procedure with generated passwords stored only in the
 platform secret store (TRD 21). Locally (docker-compose) and in CI the procedure is the script
 `database/roles/provision_login_roles.sql`, run as the PostgreSQL superuser right after the server starts: it idempotently creates
-the three group roles below (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the three login roles with
+the extensions of section 4.2, the three group roles below (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the three login roles with
 passwords read via psql `\getenv` from `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD` and
 `ECHOWELL_READONLY_DB_PASSWORD` (local/CI only). Tests run as `echowell_app_login` (TRD 16 CIC-015):
 
@@ -1142,7 +1161,8 @@ R10,Slow drift,2026-10-17,EchoWell_pipeline_test_v0_1.xlsx
 - ASM-03 Single facility in the MVP; every resident and device carries `facility_id` so more facilities need no migration.
 - ASM-08 Fewer than 100 residents, fewer than 25 users, at most one session per resident per day.
 - Note for lead (TRD-local): the managed PostgreSQL service permits `CREATE ROLE` and `CREATE EXTENSION btree_gist`
-  for the project owner role (true for Neon, Railway PostgreSQL and RDS PostgreSQL 16).
+  for the project owner role (true for Neon, Railway PostgreSQL and RDS PostgreSQL 16); that role, not the migrator, therefore
+  runs the extension step of section 4.2 (D-72).
 
 ## 6. Dependencies
 
@@ -1189,8 +1209,9 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
   `now()` or a facility time-zone lookup.
 - Convert pipeline floats with `float(numpy.float64)` before binding; psycopg 3 does not adapt numpy scalars.
 - `UNIQUE NULLS NOT DISTINCT` (facility_reference_ranges) requires PostgreSQL ≥ 15; do not lower the server version.
-- Test isolation: integration tests create a fresh database per session from the migrations; never truncate
-  `raw_sessions` in tests except through the purge path (PGS-019).
+- Test isolation: integration tests use a fresh database per session created from the migrations (after the
+  provisioning step of section 4.2); never truncate `raw_sessions` in tests (the purge path of PGS-019 is reserved for the
+  IRB purge).
 - Pitfall: Neon pooled connection strings (`-pooler` host) use PgBouncer transaction mode; Alembic (and its session-level
   migration lock, TRD 15 DEP-064) must use the direct (non-pooled) host. The transaction-scoped advisory locks of TRD 06
   DB-021 work over the pooled host.
@@ -1218,3 +1239,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-02, F-03, F-04, F-43, F-44, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-02) | — |
+| 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-03, R4-09) | — |
