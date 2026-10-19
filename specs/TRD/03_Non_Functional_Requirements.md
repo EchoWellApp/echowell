@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -238,7 +238,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | AC-NFR-07 | Every `ingest_batches` row in staging and production has a synthetic/test source and DATA_SOURCE_LABEL names test or synthetic data (interim stack). |
 | AC-NFR-08 | A log-capture test of ingest, note creation and login finds no feature values, note text, passwords, tokens or API keys in logs. |
 | AC-NFR-09 | DST and midnight test vectors of NFR-131 and NFR-132 pass. |
-| AC-NFR-10 | Playwright suites pass on Chromium, Firefox and WebKit; a run with browser timezone Europe/London shows times in CT. |
+| AC-NFR-10 | The main-run Playwright suites pass on Chromium, Firefox and WebKit (the `@isolated` scenarios run in Chromium only, TRD 13 TST-100); a run with browser timezone Europe/London shows times in CT. |
 | AC-NFR-11 | An attempt to UPDATE or DELETE `raw_sessions` or `audit_logs` with the application role fails; invariant checks of NFR-125 pass after every pipeline run in the validation suite. |
 | AC-NFR-12 | The ground-truth isolation test of NFR-127 and the OpenAPI drift check of NFR-088 pass in CI. |
 
@@ -271,3 +271,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-03, F-19, F-23, F-40) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-05) | — |

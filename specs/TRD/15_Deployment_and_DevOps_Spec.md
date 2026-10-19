@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -129,7 +129,7 @@ flowchart LR
 | DEP-015 | The local test data shall be loaded by `docker compose exec backend python -m backend.cli seed test_v0_1` (no option; TRD 06 DB-056/DB-058), which shall load the roster CSVs, ingest the `test_v0_1` dataset defined in TRD 14 and run the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00` (America/Chicago). | Must | BR-15, SRC-03, SRC-05 | Test |
 | DEP-016 | After DEP-015, the Residents overview at `http://localhost:3000/residents` shall show summary tiles 2 / 7 / 1 / 19 (Alarm on / Being watched, no alarm / Baseline still forming / Missed check-ins last 30 days). | Must | BR-12, BR-15, SRC-09 | Test (E2E) |
 | DEP-017 | A `demo` Compose profile shall add the service `frontend-prod`, built from `frontend/Dockerfile` (`next build` then `next start`), on port 3001, for E2E tests (TRD 16) and the demo fallback (DEP-090). | Must | RSK-12, SRC-17 | Test |
-| DEP-018 | The Compose file shall not contain any secret other than local development defaults that are also present in `.env.development.example` (e.g. Postgres password `echowell`); production secrets shall never be referenced. | Must | BR-16, TRD 12 | Inspection |
+| DEP-018 | The Compose file shall not contain any secret other than local-only placeholder passwords matching `local-dev-only-*` (the Postgres superuser password `local-dev-only-postgres` and the login-role passwords `local-dev-only-migrator`, `local-dev-only-app`, `local-dev-only-readonly`, the last three also in the `.env.development.example` URLs; TRD 06 DB-057 exception, TRD 21 ENV-041); staging and production secrets shall never be referenced. | Must | BR-16, TRD 12 | Inspection |
 
 Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `DEPLOYMENT_CONFIGURATION_GUIDE.md`):
 
@@ -145,7 +145,7 @@ Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `DE
 
 Database login roles (local and CI): `database/roles/provision_login_roles.sql` runs as the PostgreSQL superuser right after the
 server starts (Compose: `/docker-entrypoint-initdb.d`; CI: TRD 16). It first runs `CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS btree_gist;` (extensions are created only by provisioning, never by Alembic; TRD 20 §4.2,
+CREATE EXTENSION IF NOT EXISTS btree_gist;` and sets the current database's `timezone` to `UTC` (`ALTER DATABASE … SET timezone = 'UTC'`, TRD 20 PGS-001; extensions are created only by provisioning, never by Alembic; TRD 20 §4.2,
 TRD 24 D-72), then idempotently creates the group roles `echowell_migrator`,
 `echowell_app`, `echowell_readonly` (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the login roles
 `echowell_migrator_login`, `echowell_app_login`, `echowell_readonly_login` (TRD 20 §4.3) with passwords read via psql `\getenv` from
@@ -163,11 +163,11 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: echowell
-      POSTGRES_PASSWORD: echowell
+      POSTGRES_PASSWORD: local-dev-only-postgres   # local-only placeholder (TRD 06 DB-057 exception)
       POSTGRES_DB: echowell
-      ECHOWELL_MIGRATOR_DB_PASSWORD: migrator-local   # local-only values, read by \getenv in the provisioning script
-      ECHOWELL_APP_DB_PASSWORD: app-local
-      ECHOWELL_READONLY_DB_PASSWORD: readonly-local
+      ECHOWELL_MIGRATOR_DB_PASSWORD: local-dev-only-migrator   # local-only values, read by \getenv in the provisioning script
+      ECHOWELL_APP_DB_PASSWORD: local-dev-only-app
+      ECHOWELL_READONLY_DB_PASSWORD: local-dev-only-readonly
     ports: ["127.0.0.1:5432:5432"]
     volumes:
       - "pgdata:/var/lib/postgresql/data"
@@ -180,9 +180,9 @@ services:
     build: { context: ., dockerfile: backend/Dockerfile }
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell
-      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell
-      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:local-dev-only-app@db:5432/echowell
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:local-dev-only-migrator@db:5432/echowell
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:local-dev-only-readonly@db:5432/echowell
       PORT: "8000"
     command: sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     ports: ["127.0.0.1:8000:8000"]
@@ -227,7 +227,7 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 1. Sign in to Neon with the team-owned account (TRD 22, TPS ownership rules).
 2. Create project `echowell`, PostgreSQL version **16**, region **AWS US East 1 (N. Virginia)** (`aws-us-east-1`), database name `echowell`.
 3. The default branch is renamed or confirmed as `main` (production).
-4. As the Neon project owner role (SQL editor, once per branch-tree before any migration), run `CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS btree_gist;` (TRD 20 §4.2, D-72; migration 0001 only checks them; on AWS RDS the master user runs the same statements). Then create roles: `echowell_migrator` (owns the schema; used through DATABASE_MIGRATION_URL only by the closed list of TRD 20 §4.3), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
+4. As the Neon project owner role (SQL editor, once per branch-tree before any migration), run `CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS btree_gist; ALTER DATABASE echowell SET timezone = 'UTC';` (TRD 20 §4.2, PGS-001, D-72; migration 0001 only checks the extensions; on AWS RDS the master user and on Railway PostgreSQL the `postgres` superuser run the same statements). Then create roles: `echowell_migrator` (owns the schema; used through DATABASE_MIGRATION_URL only by the closed list of TRD 20 §4.3), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
 5. Create child branch `staging` from `main` immediately after step 4 (empty schema).
 6. Copy the connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Also copy, per branch, the pooled string for `echowell_readonly` (DATABASE_READONLY_URL; required for staging, never set for production). Store them only in Railway variables (DEP-033).
 7. Set compute autosuspend to the plan default (5 min) for `staging`; for `main` keep the default as well (cost, TRD 22) and accept cold starts (RSK-07).
@@ -239,7 +239,7 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 | DEP-032 | The runtime backend shall connect with role `echowell_app` through the Neon pooled endpoint; Alembic shall connect with role `echowell_migrator` through the direct (non-pooled) endpoint supplied in DATABASE_MIGRATION_URL (TRD 21). | Must | BR-16, TRD 12, TRD 21 | Test |
 | DEP-033 | Database connection strings shall be stored only in Railway service variables and, for staging re-seeding only, in the GitHub Actions secret `STAGING_DATABASE_URL`; the production connection string shall never be stored in GitHub. | Must | BR-16, TRD 12, TRD 16 | Inspection |
 | DEP-034 | All connections to Neon shall use TLS (`sslmode=require` in the connection string). | Must | BR-16, TRD 12 | Test |
-| DEP-035 | Railway PostgreSQL 16 may replace Neon for either environment only if Neon is unavailable to the team; the switch shall require only a change of DATABASE_URL and DATABASE_MIGRATION_URL followed by `pg_dump`/`pg_restore` of the data. | May | SRC-01 | Analysis |
+| DEP-035 | Railway PostgreSQL 16 may replace Neon for either environment only if Neon is unavailable to the team; the switch shall require only the D-72 provisioning step run as the Railway `postgres` superuser first (extensions, `timezone` = `UTC`, group and login roles, `echowell_migrator` as schema owner; TRD 20 §4.2–§4.3), then a change of DATABASE_URL, DATABASE_MIGRATION_URL and DATABASE_READONLY_URL, followed by `pg_dump`/`pg_restore` of the data (restored as `echowell_migrator`, `--no-owner`). | May | SRC-01, D-72 | Analysis |
 
 ### 4.5 Backend service (Railway)
 
@@ -380,7 +380,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 |---|---|---|
 | `bootstrap` | Idempotent: creates the facility row from FACILITY_NAME and FACILITY_TZ if missing; inserts missing `config_parameters` rows for profiles `production` and `test_v0_1` from `analytics/config.py` defaults (never overwrites existing rows). | all |
 | `create-user --email E --role R` | Creates a user; password read from an interactive prompt (`getpass`) or from stdin with `--password-stdin`. | all |
-| `create-api-key --name N [--device D] [--scope S]…` | Creates an API key with one or more scopes (`--scope` repeatable; default `ingest:write`; TRD 12 SEC-020/SEC-022); prints the key once. | all |
+| `create-api-key --name N [--device D] [--scope S]…` | Creates an API key with one or more scopes (`--scope` optional and repeatable, default `ingest:write`; syntax defined by TRD 12 SEC-020, scopes by SEC-022); prints the key once. | all |
 | `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024). | all |
 | `import-master-data --dir D` | Idempotent upsert of the facility, residents, devices and device assignments from CSV files `facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format TRD 06 DB-060; the test roster is `database/seeds/test_v0_1/`, TRD 20 §4.12); master data has no API endpoints in the MVP (contract R4). | all |
 | `withdraw-resident <resident_code> --on <YYYY-MM-DD>` | Sets resident status `withdrawn` and `withdrawn_on` (audited `resident.withdrawn`; TRD 06 DB-062, TRD 23 DME-009). | all |
@@ -525,7 +525,7 @@ Mapping from the current interim stack:
 | DEP-114 | The AWS BAA shall be accepted for the account, and every AWS service on the live-data path (Amplify, App Runner, ECR, RDS, KMS, Secrets Manager, CloudWatch, EventBridge, SNS) shall be confirmed against the AWS HIPAA Eligible Services Reference before live data is loaded; a service not listed shall be replaced or removed from the live-data path. | Must | D-OWNER-3, D-OWNER-4, RSK-14 | Inspection |
 | DEP-115 | Application logs on AWS shall go to CloudWatch Logs with 90-day retention and KMS encryption; CloudWatch alarms shall notify the DevOps owner on health check failure and on a 5xx rate above 5 % over 10 minutes. | Must | D-OWNER-3, TRD 17 | Demo |
 | DEP-116 | On AWS the nightly pipeline run shall be triggered by EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an `X-API-Key` of scope `pipeline:run` (accepted alongside admin JWT, contract R18; such a call is recorded as `trigger = nightly` with the once-per-night dedupe, TRD 05 API-065), or by an ECS scheduled task running `python -m backend.jobs.nightly_run`; either way the nightly-missing checks (TRD 17 LOG-111, TRD 03 NFR-103) see a `nightly` run. | Must | contract §7 trigger, SRC-01 | Test |
-| DEP-117 | Cut-over from the interim stack to AWS shall follow: (1) provision AWS per the target table; (2) deploy the same `main` commit to Amplify and App Runner; (3) as the RDS master user create the extensions `pgcrypto` and `btree_gist` and the roles (TRD 20 §4.2–§4.3, D-72), then run `alembic upgrade head` against RDS (one-off migration task); (4) run `bootstrap` and create users and API keys anew (credentials are not migrated); (5) run DEP-081 smoke tests against the AWS URLs; (6) re-point Team 1 devices to the App Runner URL; (7) keep the interim stack read-only for 14 days, then delete the Neon project and the Railway services. Because the interim stack holds only synthetic/test data (DEP-008), no data is migrated; AWS starts empty and receives the first real resident data. | Must | SRC-01, D-OWNER-3 | Demo |
+| DEP-117 | Cut-over from the interim stack to AWS shall follow: (1) provision AWS per the target table; (2) deploy the same `main` commit to Amplify and App Runner; (3) as the RDS master user create the extensions `pgcrypto` and `btree_gist`, set the database `timezone` to `UTC` and create the roles (TRD 20 §4.2–§4.3, PGS-001, D-72), then run `alembic upgrade head` against RDS (one-off migration task); (4) run `bootstrap` and create users and API keys anew (credentials are not migrated); (5) run DEP-081 smoke tests against the AWS URLs; (6) re-point Team 1 devices to the App Runner URL; (7) keep the interim stack read-only for 14 days, then delete the Neon project and the Railway services. Because the interim stack holds only synthetic/test data (DEP-008), no data is migrated; AWS starts empty and receives the first real resident data. | Must | SRC-01, D-OWNER-3 | Demo |
 
 ## 5. Assumptions
 
@@ -588,3 +588,4 @@ Mapping from the current interim stack:
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-03, R2-05, R2-10, R2-25) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-02, R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-01, R4-02, R4-03, R4-06) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-10, R5-11) | — |

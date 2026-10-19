@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -55,7 +55,7 @@ Out of scope:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| PGS-001 | The database shall run on PostgreSQL major version 16 with encoding UTF8, and the database-level setting `timezone` shall be `UTC` (`ALTER DATABASE <db> SET timezone = 'UTC'`). | Must | SRC-01, BR-17 | Test (`SHOW server_version_num` ≥ 160000 and < 170000; `SHOW timezone` = UTC) |
+| PGS-001 | The database shall run on PostgreSQL major version 16 with encoding UTF8, and the database-level setting `timezone` shall be `UTC` (`ALTER DATABASE <db> SET timezone = 'UTC'`, run by the provisioning step of section 4.2 with owner/superuser rights, never by a migration; TRD 24 D-72). | Must | SRC-01, BR-17 | Test (`SHOW server_version_num` ≥ 160000 and < 170000; `SHOW timezone` = UTC) |
 | PGS-002 | The database shall have the extensions `pgcrypto` (for `gen_random_uuid()`) and `btree_gist` (for the device-assignment exclusion constraint) and no other extension. They shall be created by the provisioning step with owner/superuser rights (section 4.2), never by Alembic as `echowell_migrator`; migration 0001 shall only check that both exist and fail with a clear message otherwise, and no downgrade shall drop them (TRD 24 D-72). | Must | SRC-01, D-72 | Inspection of migration 0001; Test (`pg_extension` lists exactly plpgsql, pgcrypto, btree_gist; 0001 on a database without them fails with the 0001 message) |
 | PGS-003 | All EchoWell objects shall live in schema `public` and shall be owned by group role `echowell_migrator`. | Must | BR-16 | Test (`pg_tables.tableowner` = echowell_migrator for all 24 tables) |
 | PGS-004 | Exactly three group roles shall exist: `echowell_migrator` (schema owner; Alembic connects through `DATABASE_MIGRATION_URL`), `echowell_app` (backend runtime and pipeline; `DATABASE_URL`), `echowell_readonly` (SELECT for researchers and exports, including `evaluation_ground_truth`); each is `NOLOGIN` and environments connect through the login roles of section 4.3. | Must | BR-16, TRD 12 | Test (`pg_roles`, `pg_auth_members`) |
@@ -104,13 +104,15 @@ Out of scope:
 
 Created by the provisioning step that has owner/superuser rights, before any migration (TRD 24 D-72): locally and in CI
 by `database/roles/provision_login_roles.sql` run as the PostgreSQL superuser; on Neon once by the project owner role
-(TRD 15 §4.4); on AWS RDS by the master user. `echowell_migrator` has no `CREATE` privilege on the database and never
-creates or drops an extension.
+(TRD 15 §4.4); on Railway PostgreSQL (TRD 15 DEP-035) by its superuser `postgres`; on AWS RDS by the master user.
+`echowell_migrator` has no `CREATE` privilege on the database, does not own it, and never creates or drops an extension
+or sets database-level parameters.
 
 ```sql
--- Provisioning step (superuser / Neon project owner / RDS master user), never Alembic:
+-- Provisioning step (superuser / Neon project owner / Railway postgres / RDS master user), never Alembic:
 CREATE EXTENSION IF NOT EXISTS pgcrypto;     -- gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- uuid equality inside GiST exclusion constraints
+DO $$ BEGIN EXECUTE format('ALTER DATABASE %I SET timezone = %L', current_database(), 'UTC'); END $$;  -- PGS-001, current database
 ```
 
 Migration 0001 (runs as `echowell_migrator`) only verifies them; its `downgrade()` (and `alembic downgrade base`, D-71)
@@ -132,7 +134,7 @@ Group roles are created once per cluster by the provisioning procedure of TRD 15
 on RDS by the master user). Login roles are created by the same procedure with generated passwords stored only in the
 platform secret store (TRD 21). Locally (docker-compose) and in CI the procedure is the script
 `database/roles/provision_login_roles.sql`, run as the PostgreSQL superuser right after the server starts: it idempotently creates
-the extensions of section 4.2, the three group roles below (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the three login roles with
+the extensions and the `timezone` setting of section 4.2 (for the current database), the three group roles below (NOLOGIN), makes `echowell_migrator` owner of schema `public`, and creates the three login roles with
 passwords read via psql `\getenv` from `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD` and
 `ECHOWELL_READONLY_DB_PASSWORD` (local/CI only). Tests run as `echowell_app_login` (TRD 16 CIC-015):
 
@@ -229,7 +231,7 @@ $$;
 
 -- Rejects UPDATE, DELETE and TRUNCATE on append-only tables.
 -- Single escape hatch: role echowell_migrator with session setting echowell.allow_purge = 'on'
--- (used only by the documented test-database reset and IRB withdrawal purge procedures).
+-- (used only by the IRB withdrawal purge, PGS-019; the test-database reset drops and recreates the schema instead).
 CREATE FUNCTION reject_mutation() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -1195,10 +1197,11 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 
 ## 8. Implementation Notes
 
-- Migration layout: `backend/alembic/versions/0001_initial_schema.py` (sections 4.2–4.8 except role creation, which is
-  provisioning), `0002_seed_config_parameters.py` (section 4.11). Use `op.execute()` with the SQL of this document for
+- Migration layout: `backend/alembic/versions/0001_initial_schema.py` (from section 4.2 only the extension check block;
+  sections 4.4–4.8; never the provisioning fence of section 4.2 or the role creation of section 4.3, which are
+  provisioning, D-72), `0002_seed_config_parameters.py` (section 4.11). Use `op.execute()` with the SQL of this document for
   enum types, trigger functions, triggers, exclusion constraint, partial/INCLUDE indexes and grants; use
-  `op.create_table` only if the generated SQL is identical. Downgrade of 0001 drops everything in reverse order.
+  `op.create_table` only if the generated SQL is identical. Downgrade of 0001 drops only the EchoWell objects it created, in reverse order; it never drops an extension, a role or a database setting (D-72).
 - SQLAlchemy: use `postgresql.ENUM(..., name='session_status', create_type=False)` so models never try to create types;
   declare `CheckConstraint(..., name='processed_sessions_status_reason_ck')` etc. with the exact names; map
   `double precision` to `sqlalchemy.Double` (float64), never `Numeric`, so values compare with absolute tolerance 1e-6
@@ -1240,3 +1243,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-02) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-03, R4-09) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-08) | — |

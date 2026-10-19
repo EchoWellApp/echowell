@@ -157,3 +157,48 @@ R4-02 verification on scratch PostgreSQL 16 (script `t_r4_ext2.sh`, using all `s
 | R4-07 | Minor | TRD 06, 12, 16 and 21. In `.env.development.example`, SEED_* now hold obvious placeholders (`local-dev-only-change-me`, and `ewk_local-dev-only-change-me-change-me` for the key). The TRD 21 SEED_* row was updated to match. DB-057 and SEC-050 add the exception: placeholders are allowed and never valid in staging or production. ENV-041 makes the backend and CLI refuse (exit 2) any JWT_SECRET or SEED_* value containing `local-dev-only` when APP_ENV is staging or production. CIC-115 adds a gitleaks allow-list entry limited to these placeholders. | Fixed |
 | R4-08 | Minor | TRD 01, 05, 06 and 21. ARC-019, TRD 05 §6 (DATABASE_MIGRATION_URL), the TRD 06 §8 note and the TRD 21 DATABASE_MIGRATION_URL row now refer to the binding closed list of TRD 20 §4.3. TRD 15 §4.4 step 4 was already updated under R4-02. | Fixed |
 | R4-09 | Minor | TRD 20. The §2 scope line now reads "3 group roles", with the extensions "created by provisioning, checked by migration 0001". | Fixed |
+
+## Round 5 fixes
+
+
+Changed TRDs (Version 0.6 and a "0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (...)" row, only in these): 03, 04, 05, 06, 12, 13, 15, 16, 20, 21, 24, 25.
+New decision: D-73. D-71 and D-72 amended. New test: TST-188. Next free IDs: D-74, TST-189.
+
+## Verification
+
+**R5-01**, using the reviewer's libraries (`r5lib`: pydantic 2.9.2, email-validator 2.2.0), script `r5chk/emails.py`:
+- `EmailStr` emits `{format: email, type: string}`.
+- `admin@example.com`, `clinician@example.com` and `researcher@example.com` are accepted.
+- `admin@echowell.test` is rejected.
+
+**R5-06 and R5-07**, script `t_r5b.sh` (the reviewer's `t_r5.sh` with a timezone check added). All 33 sql fences of the current TRD 20 were re-extracted into `r5/`; the reviewer's copy is kept in `r5_reviewer_bak/`. Results:
+- (0) Without extensions, migration 0001 as the migrator fails with the 0001 message (exit 3).
+- (1) The provisioning fence as superuser (extensions plus `timezone`, on a database preset to America/Chicago), then roles: exit 0.
+- (2) Migrations 0001 and 0002 as the migrator: exit 0, with 24 tables, 17 triggers, 15 enums and 46 config rows. `SHOW timezone` as the app login returns `UTC`.
+- (2b) The provisioning fence run as the migrator is refused ("must be owner of database"). That is why 0001 never contains it.
+- (3) Downgrade base as the migrator: exit 0, with 0 tables and the extensions kept.
+- (3b) `DROP EXTENSION` as the migrator: "must be owner". That is why the downgrade never drops extensions.
+- (4) Re-migrate: 24/17/15/46, and `timezone` is UTC.
+- (5) All permission and trigger checks behave as specified.
+- (6) Second database (the `echowell_demo` pattern): provisioning re-runs idempotently and migration succeeds.
+
+## Mechanical checks
+
+- **Requirement IDs:** no duplicate or dangling IDs. 2003 IDs are defined and referenced. The script hits are the same known artefacts as in round 4.
+- **Decisions:** D-70..D-73 are all defined in TRD 24.
+- **Endpoints, columns and env vars:** they agree with TRD 19, 20 and 21; the hits are the same as in round 4. No new env var was introduced: `PIPELINE_AS_OF` is set to empty with `-e`, which means current time.
+- **Text hygiene:** code fences are balanced in all 26 files. There is no TBD, TODO or lorem outside GIT-053. No `@echowell.test` remains, and no old local/CI password (`*-local`, `*-ci`, `echowell`) remains.
+
+| Finding | Severity | What changed (TRDs and requirement IDs) | Status |
+|---|---|---|---|
+| R5-01 | Major | TRD 06, 13, 15, 16, 20, 21 and 24. The seeded accounts are now `admin@example.com`, `clinician@example.com` and `researcher@example.com` (RFC 2606) everywhere: DB-057, D-71, TRD 20 §4.12, TRD 21 SEED_*/SMOKE_*/E2E rows, TRD 13 Table 4.10-A, the TRD 15 quick start and DEP-080, and TRD 16 §4.4 and e2e.yml. DB-057 and D-71 state that `example.com` passes standard `format: email` validation and that `.test` must not be used. New TST-188 logs in as each seeded user and validates the strings against `LoginRequest`. | Fixed |
+| R5-02 | Major | TRD 03, 04, 13, 16, 24 and 25. New D-73: the e2e.yml main run is one Playwright invocation per browser project and group. The `globalSetup` `frontend/tests/e2e/global-setup.ts` resets and re-seeds the main database (`seed test_v0_1 --reset` plus the DS-10 loader) at the start of each. Read-only scenarios run first. The `@mutating` group (E2E-18, then E2E-09) runs last, serially. Updated: CIC-030, CIC-032, TRD 13 §4.10 preamble, TST-100, TST-004, E2E-09, E2E-18 and §8; TRD 04 E2E row, AC-NFR-10 and the TRD 25 Phase-frontend tests. | Fixed |
+| R5-03 | Minor | TRD 13 and 24. E2E-19 advances no clock. It asserts the snoozed UI state and that `GET /api/v1/alerts` returns `snoozed_until` = click time + 24 h ± 2 min. Expiry is covered by TST-065, an integration test (`tests/integration/test_alert_snooze.py`) using time-machine. This is noted in D-73. | Fixed |
+| R5-04 | Minor | TRD 13, 16 and 24. The `echowell_demo` backend runs with `PIPELINE_AS_OF` empty, so as-of is the current time (e2e.yml `-e PIPELINE_AS_OF=`, CIC-030, §8). E2E-15 and TST-187 post R11 records with `timestamp_utc` set to the current UTC time and fresh session IDs `R11-<local date>-01` and `-02`. E2E-15 no longer pins the as-of, and its last check-in is the local time of the posted timestamp. The overlay's R11 enrolment and D11 assignment moved from 2026-10-30 to 2026-10-01, so a current-time record is never before enrolment. | Fixed |
+| R5-05 | Minor | TRD 03, 04 and 13. TST-100 and the §4.10 preamble are scoped to the main run and name the `@isolated` exception (Chromium only, `echowell_demo`). TST-004 now names `frontend-prod` :3001 and `playwright.isolated.config.ts` (no globalSetup), which the e2e.yml isolated run uses. AC-NFR-10 and the TRD 04 E2E row were aligned. | Fixed |
+| R5-06 | Minor | TRD 15, 20 and 24. TRD 20 §8: 0001 takes only the §4.2 check block plus §4.4–§4.8, never the provisioning fence or role creation. Its downgrade drops only EchoWell objects, never an extension, role or setting. DEP-035: the D-72 provisioning step runs first as the Railway `postgres` superuser (and DATABASE_READONLY_URL is included). D-72 now lists Railway PostgreSQL and TRD 13. | Fixed |
+| R5-07 | Minor | TRD 15, 16, 20 and 24. The provisioning step sets the current database's `timezone` to UTC: the TRD 20 §4.2 fence (a `DO … EXECUTE format('ALTER DATABASE %I …', current_database())` block), the §4.3 script description, PGS-001, TRD 15 §4.2, Neon step 4, Railway and the RDS step (DEP-117), the ci.yml comment and D-72. | Fixed |
+| R5-08 | Minor | TRD 20. The `reject_mutation()` comment now reads "used only by the IRB withdrawal purge, PGS-019". | Fixed |
+| R5-09 | Minor | TRD 24 and 25. The TRD 24 scope line and numbering rule, and AGT-002, now say "every D-xx of the TRD 24 §4.6 decision log" or "next free D after the last row", so they no longer go stale. TRD 13 was added to D-72. | Fixed |
+| R5-10 | Minor | TRD 05, 12 and 15. SEC-020 is the single definition of the syntax: `[--scope …]…`, optional and repeatable, default `ingest:write`. TRD 05 §8 and the TRD 15 row use the same form and refer to it. | Fixed |
+| R5-11 | Minor | TRD 06, 12, 15, 16 and 21. The committed local/CI database passwords were renamed: `local-dev-only-postgres`, `local-dev-only-migrator`, `local-dev-only-app` and `local-dev-only-readonly` in Compose, the template URLs and the e2e.yml demo step; `ci-only-postgres`, `ci-only-migrator`, `ci-only-app` and `ci-only-readonly` in ci.yml. The DB-057, SEC-050 and CIC-115 exceptions now cover `local-dev-only-*` and `ci-only-*` in Compose, ci.yml and the template. ENV-041 also refuses these patterns in the passwords of the DB URLs when APP_ENV is staging or production. SEC-056 is scoped to staging, production and AWS. DEP-018 was rewritten (no nonexistent template line). TRD 21 POSTGRES_* and ECHOWELL_*_DB_PASSWORD rows were updated. | Fixed |

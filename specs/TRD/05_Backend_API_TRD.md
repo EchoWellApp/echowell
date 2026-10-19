@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -526,7 +526,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - Pitfall: `CORSMiddleware` must be added after the request-ID middleware so that preflight responses also
   carry `X-Request-ID`.
 - `backend/cli.py` (Typer or argparse): `create-user --email --display-name --role`, prompting for the password;
-  `create-api-key --name --scope ingest:write|pipeline:run [--device D01]` printing the key once; `revoke-api-key --name`;
+  `create-api-key --name [--scope ingest:write|pipeline:run]… [--device D01]` (`--scope` optional and repeatable, default `ingest:write`; TRD 12 SEC-020) printing the key once; `revoke-api-key --name`;
   `export-openapi` writing `docs/api_reference/openapi.json`. These are the only ways to
   create the first admin and device keys (TRD 12).
 
@@ -556,3 +556,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-08, F-09, F-10, F-12, F-34, F-36, F-39, F-41, F-47, F-49) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-16, R2-24, R2-25) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-08) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-10) | — |

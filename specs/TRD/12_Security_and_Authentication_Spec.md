@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -107,7 +107,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> --scope <ingest:write|pipeline:run> [--scope …] [--device <device_code>]`; `--scope` is repeatable (TRD 24 D-71 seed key `test-ingest` carries both). | Must | contract §12, §21 R18 | Test |
+| SEC-020 | API keys shall be generated as `ewk_` + `secrets.token_urlsafe(32)` (256 bits of entropy) by `python -m backend.cli create-api-key --name <name> [--scope <ingest:write|pipeline:run>]… [--device <device_code>]`; `--scope` is optional and repeatable, and defaults to `ingest:write` when omitted (this requirement is the single definition of the syntax; TRD 05 and TRD 15 §4.8 refer to it; the D-71 seed key `test-ingest` carries both scopes). | Must | contract §12, §21 R18 | Test |
 | SEC-021 | Only the SHA-256 hex digest of the key shall be stored (`api_keys.key_hash`, unique); the plaintext key shall be printed once by `create-api-key` and never stored, logged or retrievable; the seeded test key comes from SEED_INGEST_API_KEY and is never printed (TRD 06 DB-057). | Must | contract §12 | Test |
 | SEC-022 | Every API key shall carry one or more scopes from the set {`ingest:write` (devices, test harnesses), `pipeline:run` (the AWS EventBridge scheduler calling `POST /pipeline/run`)} (non-empty subset, TRD 20 `api_keys_scopes_ck`); a key used on an endpoint outside its scope receives 403 `FORBIDDEN`. No other scopes exist in the MVP. | Must | contract §9, §21 R18 | Test |
 | SEC-023 | A key used by a device in a deployment shall be bound to that device (`api_keys.device_id`), and a record from another device shall be refused with 403 `DEVICE_KEY_MISMATCH` (TRD 05 API-040). Unbound keys are permitted only for test harnesses and the seed/CI pipeline. | Must | T-01 | Test |
@@ -188,13 +188,13 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* credentials of TRD 21 (never in production), database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. Exception: `.env.development.example` may hold obviously fake local placeholders containing `local-dev-only` (e.g. `local-dev-only-change-me`); they are never valid in staging or production, and startup refuses them when APP_ENV is `staging` or `production` (TRD 21 ENV-041, TRD 06 DB-057). | Must | contract §12, D-OWNER-3 | Inspection |
+| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* credentials of TRD 21 (never in production), database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. Exception: obviously fake local/CI-only placeholders following the patterns `local-dev-only-*` and `ci-only-*` may be committed: the SEED_* values and JWT_SECRET of `.env.development.example` (e.g. `local-dev-only-change-me`) and the local/CI database passwords (Postgres superuser and login roles) in `docker-compose.yml`, `ci.yml` and the `.env.development.example` connection URLs; they are never valid in staging or production, and startup refuses them when APP_ENV is `staging` or `production` (TRD 21 ENV-041, TRD 06 DB-057). | Must | contract §12, D-OWNER-3 | Inspection |
 | SEC-051 | `.env`, `.env.*` (except `.env.example`) shall be listed in `.gitignore`; `.env.example` shall contain variable names with non-secret dummy values only. | Must | contract §12 | Inspection |
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
 | SEC-054 | `NEXT_PUBLIC_*` variables shall contain no secrets (they are embedded in the browser bundle). | Must | T-09 | Inspection |
 | SEC-055 | JWT_SECRET shall be generated with `python -c "import secrets; print(secrets.token_urlsafe(48))"`, differ per environment, and be rotated every 180 days and immediately on suspected exposure or departure of a team member with access. | Must | T-03 | Inspection |
-| SEC-056 | Database role passwords shall differ per environment and per role, be at least 32 random characters, and be rotated every 180 days and on team-member departure. | Must | T-09 | Inspection |
+| SEC-056 | Database role passwords of staging, production and AWS shall differ per environment and per role (local/CI placeholders: SEC-050 exception), be at least 32 random characters, and be rotated every 180 days and on team-member departure. | Must | T-09 | Inspection |
 | SEC-057 | Device API keys shall be rotated every 365 days, on device replacement and on suspected exposure (create new key, deploy to device, revoke old key). | Must | T-01 | Inspection |
 | SEC-058 | Each rotation shall be recorded as an audit row (`config.changed` with the secret name, never its value) or, for platform-side secrets, in the operations log in `docs/deployment.md`. | Should | T-07 | Inspection |
 
@@ -455,3 +455,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-02, R3-07, R3-09) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-06, R4-07) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-10, R5-11) | — |

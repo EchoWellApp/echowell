@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -185,20 +185,20 @@ jobs:
     services:
       postgres:
         image: postgres:16-alpine
-        env: { POSTGRES_USER: echowell, POSTGRES_PASSWORD: echowell, POSTGRES_DB: echowell_test }
+        env: { POSTGRES_USER: echowell, POSTGRES_PASSWORD: ci-only-postgres, POSTGRES_DB: echowell_test }
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U echowell -d echowell_test"
           --health-interval 5s --health-retries 10
     env:
       APP_ENV: test
-      PGPASSWORD: echowell                       # superuser, used only by the provisioning step
-      ECHOWELL_MIGRATOR_DB_PASSWORD: migrator-ci # CI-only throwaway values (ephemeral service container)
-      ECHOWELL_APP_DB_PASSWORD: app-ci
-      ECHOWELL_READONLY_DB_PASSWORD: readonly-ci
-      DATABASE_URL: postgresql+psycopg://echowell_app_login:app-ci@localhost:5432/echowell_test
-      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:migrator-ci@localhost:5432/echowell_test
-      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:readonly-ci@localhost:5432/echowell_test
+      PGPASSWORD: ci-only-postgres               # superuser, used only by the provisioning step
+      ECHOWELL_MIGRATOR_DB_PASSWORD: ci-only-migrator # CI-only throwaway values (ephemeral service container)
+      ECHOWELL_APP_DB_PASSWORD: ci-only-app
+      ECHOWELL_READONLY_DB_PASSWORD: ci-only-readonly
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:ci-only-app@localhost:5432/echowell_test
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
       FACILITY_NAME: Edgewood
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
@@ -213,7 +213,7 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
       - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql   # as superuser: extensions (D-72), then roles
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql   # as superuser: extensions + timezone UTC (D-72), then roles
       - run: alembic upgrade head
       - run: alembic downgrade base && alembic upgrade head   # migrations reversible in test
       - run: >
@@ -359,20 +359,25 @@ jobs:
         with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci && npx playwright install --with-deps ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}
         working-directory: frontend
-      - run: npx playwright test --grep-invert @isolated ${{ github.event_name == 'schedule' && '--project=chromium --project=firefox --project=webkit' || '--project=chromium' }}
+      - name: Main run, one browser project at a time (TRD 24 D-73)
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001" }   # logins: seeded admin/clinician/researcher@example.com with the masked SEED_* values from $GITHUB_ENV
+        run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) runs seed test_v0_1 --reset + DS-10 loader before each invocation
+          for p in ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}; do
+            npx playwright test --project=$p --grep-invert "@isolated|@mutating"   # read-only scenarios on the pristine seed
+            npx playwright test --project=$p --grep @mutating --workers=1          # E2E-18, then E2E-09: one serial group
+          done
       - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays exactly the test_v0_1 seed)
         run: |
           docker compose exec -T db psql -U echowell -d echowell -v ON_ERROR_STOP=1 -c "CREATE DATABASE echowell_demo"
           docker compose exec -T db psql -U echowell -d echowell_demo -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/10_provision_login_roles.sql   # same provisioning: extensions (D-72), roles (idempotent)
-          DEMO="-e DATABASE_URL=postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell_demo -e DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell_demo -e DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell_demo"
+          DEMO="-e PIPELINE_AS_OF= -e DATABASE_URL=postgresql+psycopg://echowell_app_login:local-dev-only-app@db:5432/echowell_demo -e DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:local-dev-only-migrator@db:5432/echowell_demo -e DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:local-dev-only-readonly@db:5432/echowell_demo"
           docker compose stop backend
           docker compose run -d --no-deps --service-ports $DEMO backend      # service command: alembic upgrade head, then uvicorn on :8000
           curl -fsS --retry 30 --retry-all-errors --retry-delay 2 http://localhost:8000/api/v1/health
           docker compose run --rm --no-deps $DEMO backend python -m backend.cli seed test_v0_1 --master-only
           docker compose run --rm --no-deps $DEMO backend python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay
-      - run: npx playwright test --grep @isolated --project=chromium --workers=1   # E2E-15, TST-187, E2E-19 in this order
+      - run: npx playwright test -c playwright.isolated.config.ts --grep @isolated --project=chromium --workers=1   # no globalSetup; E2E-15, TST-187, E2E-19 in this order
         working-directory: frontend
         env: { E2E_BASE_URL: "http://localhost:3001" }
       - if: failure()
@@ -386,15 +391,15 @@ jobs:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database, which stays exactly the `test_v0_1` seed. The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database. | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
+| CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze: E2E-18, then E2E-09) run afterwards as one serial group, so every read-only assertion sees the pristine seed. The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts` (no `globalSetup`). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
 | CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
-| CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
+| CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and, in the `@mutating` group after all read-only assertions (D-73), a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
 | CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s. | Must | contract R8, TRD 03, TRD 13 | Test |
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
 | CIC-034 | The E2E credentials (SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY) shall be generated per job, masked with `::add-mask::` before use, passed to the stack through `.env` and to Playwright through `$GITHUB_ENV`, and shall never be valid on staging or production; Playwright logs in as the seeded admin, clinician and researcher users (TRD 06 DB-057, TRD 24 D-71). | Must | BR-16 | Inspection |
 | CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
-| CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136; the only allow-list entry is the `local-dev-only` placeholder values of `.env.development.example`, TRD 21 ENV-041) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
+| CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136; the only allow-list entries are the `local-dev-only-*` and `ci-only-*` placeholder values in `.env.development.example`, `docker-compose.yml` and `ci.yml`, TRD 06 DB-057, TRD 21 ENV-041) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
 | CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` and `staging` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.14.x, the version of TRD 13 §4, desktop preset) on `/residents` of the seeded Compose `demo` stack after a scripted login (`frontend/tests/lighthouse/login.js`) and fails below Performance 80 or above LCP 2.5 s (TRD 13 TST-125). | Should | TRD 13, TRD 03 | Test |
 
 ### 4.4 Workflow `deploy-staging.yml`
@@ -562,3 +567,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-18, R2-20) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-01, R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-05, R4-07) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-02, R5-04, R5-05, R5-07, R5-11) | — |

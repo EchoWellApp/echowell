@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.6 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -125,8 +125,8 @@ Frontend variables are inlined at build time by Next.js and are therefore **publ
 | `NEXT_PUBLIC_APP_ENV` | Environment label (shows a "STAGING" / "LOCAL" ribbon when not `production`) | Yes | — | `production` | all | No | `local`, `staging`, `production` |
 | `NEXT_PUBLIC_GIT_SHA` | Build commit, rendered as `<meta name="echowell-build">` (TRD 16 §4.4) | No (derived) | `process.env.COMMIT_REF` (Netlify) or `process.env.GIT_SHA` or `unknown`, computed in `next.config.js` | `3f9c2ab…` | all | No | never set manually |
 | `NEXT_TELEMETRY_DISABLED` | Disable Next.js telemetry | No | `1` | `1` | all | No | — |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Compose `db` / CI service container init (superuser; used only to run `database/roles/provision_login_roles.sql`) | Compose, CI | `echowell` / `echowell` / `echowell` (CI DB `echowell_test`) | — | local, CI | local/CI-only | — |
-| `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD`, `ECHOWELL_READONLY_DB_PASSWORD` | Passwords of the login roles created by `database/roles/provision_login_roles.sql` (read via psql `\getenv`; TRD 15 §4.2, TRD 16 CIC-015, TRD 20 §4.3) | Compose, CI | — | `app-local` | local, CI | local/CI-only throwaway values | never set in staging or production |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Compose `db` / CI service container init (superuser; used only to run `database/roles/provision_login_roles.sql`) | Compose, CI | `echowell` / `local-dev-only-postgres` (CI `ci-only-postgres`) / `echowell` (CI DB `echowell_test`) | — | local, CI | local/CI-only placeholders (ENV-041) | — |
+| `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD`, `ECHOWELL_READONLY_DB_PASSWORD` | Passwords of the login roles created by `database/roles/provision_login_roles.sql` (read via psql `\getenv`; TRD 15 §4.2, TRD 16 CIC-015, TRD 20 §4.3) | Compose, CI | — | `local-dev-only-app` | local, CI | local/CI-only placeholders `local-dev-only-*` / `ci-only-*` (ENV-041) | never set in staging or production |
 | `SMOKE_API_BASE_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_EXPECTED_SHA`, `SMOKE_ENV` | Smoke test targets (TRD 15 §4.11) | smoke runs | — | `https://…/api/v1` | CI | No | `SMOKE_ENV` ∈ `staging`, `production` |
 | `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` | Staging smoke user = the seeded `researcher@example.com` with `secrets.STAGING_SEED_RESEARCHER_PASSWORD` (TRD 16 §4.4) | staging smoke | — | `researcher@example.com` | CI (staging) | Yes | never set for production |
 | `E2E_BASE_URL` | Playwright target (TRD 16 §4.3); Playwright logs in as the seeded users `admin@example.com`, `clinician@example.com`, `researcher@example.com` with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD (the `E2E_USER_*` pair is retired) | E2E runs | `http://localhost:3001` | — | CI, local | No | — |
@@ -154,9 +154,9 @@ Three committed templates; real `.env` files are gitignored (TRD 18 §4.11).
 ```dotenv
 # Local development (docker compose). Copy to .env. Local-only values; never reuse elsewhere.
 APP_ENV=local
-DATABASE_URL=postgresql+psycopg://echowell_app_login:app-local@db:5432/echowell                 # app role, never the superuser
-DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:migrator-local@db:5432/echowell
-DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:readonly-local@db:5432/echowell
+DATABASE_URL=postgresql+psycopg://echowell_app_login:local-dev-only-app@db:5432/echowell                 # app role, never the superuser
+DATABASE_MIGRATION_URL=postgresql+psycopg://echowell_migrator_login:local-dev-only-migrator@db:5432/echowell
+DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:local-dev-only-readonly@db:5432/echowell
 JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
@@ -216,7 +216,7 @@ NEXT_PUBLIC_APP_ENV=production
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-040 | The three template files shall exist at the repository root with the content above (`.env.example` being the union of all variables with comments) and shall be kept in sync with this TRD; a unit test shall assert that every field of `Settings` appears in `.env.example`. | Must | SRC-17 Phase 14A | Test |
-| ENV-041 | `JWT_SECRET` and the SEED_* values in `.env.development.example` shall be obviously fake local placeholders containing the substring `local-dev-only` (e.g. `local-dev-only-change-me`); the backend and every CLI command shall refuse to start (exit code 2) when JWT_SECRET or any SEED_* value contains `local-dev-only` and APP_ENV is `staging` or `production` (TRD 06 DB-057, TRD 12 SEC-050). | Must | BR-16 | Test |
+| ENV-041 | `JWT_SECRET`, the SEED_* values and the database passwords in `.env.development.example`, `docker-compose.yml` and `ci.yml` shall be obviously fake placeholders following `local-dev-only-*` (local, e.g. `local-dev-only-change-me`) or `ci-only-*` (CI); the backend and every CLI command shall refuse to start (exit code 2) when JWT_SECRET, any SEED_* value or the password of DATABASE_URL, DATABASE_MIGRATION_URL or DATABASE_READONLY_URL contains `local-dev-only` or `ci-only` and APP_ENV is `staging` or `production` (TRD 06 DB-057, TRD 12 SEC-050). | Must | BR-16 | Test |
 
 ### 4.7 Per-environment matrix
 
@@ -301,3 +301,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-12, R2-18) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-07) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-07, R4-08) | — |
+| 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-11) | — |
