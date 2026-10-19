@@ -1073,7 +1073,7 @@ Analytics "Alarm timing check" (SRC-19) are NOT part of this seed: they are load
 `python database/seeds/load_evaluation_ground_truth.py <csv_path>` directly (refuses when APP_ENV=production or PIPELINE_PROFILE is not
 `test_v0_1`); the seed CLI does not call it and `backend/cli.py` never references `evaluation_ground_truth`. Sex values are from SRC-04
 `RESIDENTS`. Device D07 is inactive after R07 moved to D07B on 2026-10-13. Users and the ingest API key are not
-seeded by SQL: the CLI upserts `admin@echowell.test`, `clinician@echowell.test` and `researcher@echowell.test` and one
+seeded by SQL: the CLI upserts `admin@example.com`, `clinician@example.com` and `researcher@example.com` and one
 API key named `test-ingest` (scopes `ingest:write`, `pipeline:run`) with the secrets of SEED_ADMIN_PASSWORD,
 SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY (TRD 21), never printing them and storing only
 argon2id / SHA-256 hashes (TRD 06 DB-057, TRD 12). Unless `--master-only` is given, the CLI then ingests SRC-05 as an `ingest_batches` row with

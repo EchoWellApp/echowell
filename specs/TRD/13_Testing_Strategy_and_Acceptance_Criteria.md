@@ -355,7 +355,7 @@ clock fixed at 2026-10-30 15:00 America/Chicago, TRD 14 §4.9) and log in as a s
 | TST-100 | Every E2E scenario in Table 4.10-A shall be implemented in `frontend/tests/e2e/` and pass in Chromium on every PR, and in Firefox and WebKit nightly. | Must | SRC-09/10/11, SRC-17 | Test |
 | TST-101 | Playwright shall run with `retries: 1` in CI and `retries: 0` locally; a scenario that passes only on retry shall be reported as flaky (§4.16). | Must | Quality | Inspection |
 
-Table 4.10-A E2E scenarios. "Log in as clinician / researcher / admin" means the seeded users `clinician@echowell.test`, `researcher@echowell.test` and `admin@echowell.test` with the per-job SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_ADMIN_PASSWORD (TRD 06 DB-057, TRD 16 CIC-034, TRD 24 D-71).
+Table 4.10-A E2E scenarios. "Log in as clinician / researcher / admin" means the seeded users `clinician@example.com`, `researcher@example.com` and `admin@example.com` with the per-job SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_ADMIN_PASSWORD (TRD 06 DB-057, TRD 16 CIC-034, TRD 24 D-71).
 
 | Scenario | Steps | Expected |
 |---|---|---|
