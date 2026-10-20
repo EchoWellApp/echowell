@@ -1,11 +1,15 @@
-# TRD Implementation Audit Checklist
+# TRD Audit Checklist (PR #1)
 
-## Phase 1: TRD Validation
+This checklist audits the TRDs only. It runs in PR #1, after the TRDs are generated and reviewed, and before any code is written.
+
+The checklist used to also contain the design, skeleton, build-sprint and full-repository audit prompts. Those build the application and belong to PR #3, so they now live in `Implementation_Audit_Checklist.md`.
+
+## Step 1: TRD Validation
 
 ### Prompt
 
 ```text
-Review every document in specs/TRDS.
+Review every document in specs/TRD.
 
 Generate:
 
@@ -29,271 +33,45 @@ Generate findings only.
 
 This catches holes before code generation.
 
+Write the findings to `docs/reports/TRD_VALIDATION_REPORT.md` (see TRD 25, Phase 1). Give every finding a severity:
+
+- **Critical**: would cause a wrong or unsafe build.
+- **Major**: an implementer following the TRDs would very likely build something that fails its own required tests or contradicts the source documents.
+- **Minor**: a genuine inconsistency that a careful implementer would resolve without harm.
+
+The report ends with a verdict:
+
+- **FAIL**: any Critical or Major finding.
+- **PASS WITH FINDINGS**: only Minor findings.
+- **PASS**: no findings.
+
 ---
 
-## Phase 2: Generate Technical Design Artifacts
-
-Before writing code, have the agent generate:
-
-```text
-API Specification
-Database Schema
-OpenAPI Documentation
-Data Models
-Repository Structure
-Implementation Roadmap
-```
+## Step 2: Fix and Re-validate
 
 ### Prompt
 
 ```text
-Using all completed TRDs:
+Read docs/reports/TRD_VALIDATION_REPORT.md.
 
-Generate:
+Fix every finding in specs/TRD/. Make minimal edits, keep requirement IDs stable,
+and apply each fix in every TRD that mentions the topic.
 
-- OpenAPI specification
-- PostgreSQL schema
-- Entity relationship diagram
-- Backend package architecture
-- Frontend component architecture
-- Analytics module architecture
-- Testing architecture
-- Repository dependency diagram
-
-Create these under:
-
-docs/design/
+Record each fix in docs/reports/TRD_VALIDATION_FIXES.md, one row per finding.
 ```
 
-At this point you'll have a true engineering design package.
+Then run Step 1 again with a fresh reviewer that did not make the fixes.
+
+Repeat Steps 1 and 2 until the verdict is PASS or PASS WITH FINDINGS.
 
 ---
 
-## Phase 3: Generate the Project Skeleton
+## Step 3: Confirm the Audit Passes
 
-### Prompt
+The TRD audit passes when the latest `docs/reports/TRD_VALIDATION_REPORT.md`:
 
-```text
-Using all TRDs and design documents:
+- has the verdict PASS or PASS WITH FINDINGS;
+- shows all five checks passing;
+- meets the TRD 25 Phase 1 definition of done.
 
-Generate the complete project structure.
-
-Requirements:
-
-- Create files only.
-- Do not implement business logic yet.
-
-Generate:
-
-- React/Next.js scaffold
-- FastAPI scaffold
-- SQLAlchemy models
-- Alembic migrations
-- CI/CD pipeline
-- Pytest framework
-- Configuration files
-- Docker files
-
-Generate a production-quality skeleton.
-```
-
-### Expected Result
-
-```text
-frontend/
-backend/
-analytics/
-tests/
-database/
-docs/
-```
-
-With all imports configured.
-
----
-
-## Phase 4: Build Feature-by-Feature
-
-This is the most important part.
-
-**Do not tell Claude to build everything at once.**
-
-Instead:
-
----
-
-## Sprint 1: Database Layer
-
-### Prompt
-
-```text
-Implement Database Layer.
-
-Use:
-
-06_Database_Design_TRD
-20_PostgreSQL_Schema_Definition
-23_Data_Model_and_Entity_Definitions
-
-Tasks:
-
-- SQLAlchemy Models
-- Alembic migrations
-- Repositories
-- Database connection layer
-
-Generate tests.
-
-Do not implement APIs yet.
-```
-
-**Action:** Do not commit changes.
-
----
-
-## Sprint 2: Backend API
-
-### Prompt
-
-```text
-Implement Backend API.
-
-Use:
-
-05_Backend_API_TRD
-19_API_Contracts_OpenAPI_Spec
-
-Tasks:
-
-- FastAPI routes
-- DTOs
-- Validation
-- Error handling
-
-Generate tests.
-```
-
-**Action:** Do not commit changes.
-
----
-
-## Sprint 3: Analytics Engine
-
-### Prompt
-
-```text
-Implement Analytics Engine.
-
-Use:
-
-07_Analytics_Engine_TRD
-08_Baseline_and_Scoring_Algorithm_Spec
-09_CUSUM_and_Alerting_Spec
-10_Data_Ingestion_and_Validation_Spec
-
-Tasks:
-
-- Duplicate detection
-- Quality screening
-- Baseline engine
-- Z-score engine
-- Composite score engine
-- CUSUM engine
-
-Generate unit tests.
-```
-
-**Action:** Do not commit changes.
-
----
-
-## Sprint 4: Algorithm Validation
-
-### Prompt
-
-```text
-Implement automated algorithm validation.
-
-Use:
-
-13_Testing_Strategy_and_Acceptance_Criteria
-14_Test_Data_and_Validation_Spec
-
-Validate:
-
-R01-R10
-
-Tests must compare generated outputs against workbook expected results.
-```
-
-**Action:** Do not commit changes.
-
----
-
-## Sprint 5: Frontend
-
-### Prompt
-
-```text
-Implement frontend.
-
-Use:
-
-04_Frontend_TRD
-11_User_Interface_UX_Spec
-
-Build:
-
-- Dashboard
-- Resident Detail View
-- Alert Review View
-- Analytics Pages
-
-Connect to backend APIs.
-```
-
-**Action:** Do not commit changes.
-
----
-
-## Sprint 6: Full Repository Audit
-
-### Prompt
-
-```text
-Perform a full repository audit.
-
-Verify:
-
-- Every TRD requirement is implemented.
-- Every API endpoint is tested.
-- Every database entity is used.
-- Every acceptance criterion is satisfied.
-- Deployment pipeline works.
-- Frontend and backend are connected.
-
-Generate:
-
-TRD_Implementation_Audit.md
-
-with pass/fail status for every requirement.
-
----
-
-## Sprint 7: Deployment
-
-### Prompt
-
-Generate:
-
-Project_Backlog.md
-
-containing:
-
-- Epic
-- Feature
-- User Story
-- Priority
-- Dependencies
-
-**Action:** Do not commit changes.
+Remaining Minor findings may be fixed in the same PR or carried to the PR #3 implementation audit.

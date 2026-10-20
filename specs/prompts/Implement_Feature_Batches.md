@@ -4,7 +4,7 @@
 
 Read all finalized documentation:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/BACKLOG.md
 - specs/backlog/features/
 
@@ -79,7 +79,7 @@ Map every UI component to supporting APIs and database entities.
 ```text
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/
 - docs/design/
 
@@ -138,7 +138,7 @@ Generate all required imports, wiring, dependency injection, and startup configu
 ```text
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/features/
 - docs/design/
 
@@ -188,7 +188,7 @@ Do not implement APIs yet.
 ```text
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/features/
 - docs/design/
 
@@ -235,7 +235,7 @@ Requirements:
 ```text
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/features/
 - docs/design/
 - EchoWell_pipeline_test_v0_1.xlsx
@@ -344,7 +344,7 @@ Do not proceed until all validation tests pass.
 
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/features/
 - docs/design/
 - specs/UI-wireframe/
@@ -495,7 +495,7 @@ Update feature completion status.
 
 Read:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/
 - docs/design/
 - specs/architecture/Deployment_Architecture.md
@@ -666,7 +666,7 @@ Perform a complete implementation audit.
 
 Review:
 
-- specs/TRDS/
+- specs/TRD/
 - specs/backlog/
 - docs/design/
 - source code

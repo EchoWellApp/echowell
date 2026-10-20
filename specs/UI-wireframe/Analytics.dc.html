@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EchoWell – Analytics</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F1F1E}a:hover{color:#000}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #1F1F1E; background: #F6F6F4; min-height: 1450px; box-sizing: border-box; padding: 32px 24px">
+<div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 2px solid #1F1F1E; padding-bottom: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 28px; font-weight: 600">Analytics</div>
+<div style="font-size: 15px; color: #4A4A47">For the study team · test data v0.1, Oct 1–30, 2026 · numbers match the pipeline answer key</div>
+</div>
+<nav style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="Main.dc.html" style="padding: 12px 16px; border: 1px solid #8A8A85; background: #FFFFFF; text-decoration: none">Residents</a>
+<a href="Alerts.dc.html" style="padding: 12px 16px; border: 1px solid #8A8A85; background: #FFFFFF; text-decoration: none">Alerts (2)</a>
+<a href="Analytics.dc.html" style="padding: 12px 16px; border: 2px solid #1F1F1E; background: #FFFFFF; text-decoration: none; font-weight: 600">Analytics</a>
+</nav>
+</header>
+
+<section style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px"><div style="background:#FFFFFF;border:1px solid #8A8A85;padding:16px;display:flex;flex-direction:column;gap:6px"><div style="font-size:14px;color:#4A4A47">Check-ins received</div><div style="font-size:30px;font-weight:600">94%</div><div style="font-size:13px;color:#4A4A47">281 of 300 expected</div></div><div style="background:#FFFFFF;border:1px solid #8A8A85;padding:16px;display:flex;flex-direction:column;gap:6px"><div style="font-size:14px;color:#4A4A47">Used for scoring</div><div style="font-size:30px;font-weight:600">89%</div><div style="font-size:13px;color:#4A4A47">267 of 300 expected</div></div><div style="background:#FFFFFF;border:1px solid #8A8A85;padding:16px;display:flex;flex-direction:column;gap:6px"><div style="font-size:14px;color:#4A4A47">Baselines formed</div><div style="font-size:30px;font-weight:600">9 of 10</div><div style="font-size:13px;color:#4A4A47">R08 still forming; R07 restarted once</div></div><div style="background:#FFFFFF;border:1px solid #8A8A85;padding:16px;display:flex;flex-direction:column;gap:6px"><div style="font-size:14px;color:#4A4A47">Alarms raised</div><div style="font-size:30px;font-weight:600">2</div><div style="font-size:13px;color:#4A4A47">R09, R10 · both not yet reviewed</div></div></section>
+
+<section style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline">
+<h2 style="margin: 0; font-size: 20px">Check-ins per day</h2>
+<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:#4A4A47">
+<span style="display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:14px;height:14px;background:#4A4A47;"></span> Used</span>
+<span style="display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:14px;height:14px;background:#BDBDB8;"></span> Set aside</span>
+<span style="display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:14px;height:14px;background:#9A4508;"></span> Quarantined</span>
+<span style="display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:14px;height:14px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></span> Missed</span></div>
+</div>
+<div style="overflow-x: auto"><div style="min-width: 760px">
+<div style="height: 160px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid #8A8A85"><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 1"><div style="height:160px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 2"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 3"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 4"><div style="height:32px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 5"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 6"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 7"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 8"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:16px;background:#9A4508;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 9"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:16px;background:#BDBDB8;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 10"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:16px;background:#BDBDB8;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 11"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 12"><div style="height:32px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 13"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 14"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 15"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 16"><div style="height:160px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 17"><div style="height:32px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 18"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 19"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 20"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 21"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 22"><div style="height:16px;background:#9A4508;"></div><div style="height:16px;background:#BDBDB8;"></div><div style="height:128px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 23"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 24"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 25"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 26"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 27"><div style="height:16px;background:#FFFFFF;border:1px dashed #8A8A85;box-sizing:border-box;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 28"><div style="height:160px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 29"><div style="height:16px;background:#BDBDB8;"></div><div style="height:144px;background:#4A4A47;"></div></div><div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:0" title="Oct 30"><div style="height:160px;background:#4A4A47;"></div></div></div>
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: #4A4A47; padding-top: 6px"><span>Oct 1</span><span>Oct 12 · D02 silent</span><span>Oct 30</span></div>
+</div></div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start">
+<section style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 20px">Where check-ins are lost</h2>
+<div style="display:grid;grid-template-columns:200px minmax(0,1fr) 60px;gap:12px;align-items:center">
+<span>Expected check-ins</span><div style="height:26px;background:#8A8A85;width:100.0%"></div><span style="text-align:right;font-weight:600">300</span></div>
+<div style="margin:-6px 0 0 212px;font-size:13px;color:#4A4A47">10 residents × 30 days</div><div style="display:grid;grid-template-columns:200px minmax(0,1fr) 60px;gap:12px;align-items:center">
+<span>Received</span><div style="height:26px;background:#6E6E6A;width:93.7%"></div><span style="text-align:right;font-weight:600">281</span></div>
+<div style="margin:-6px 0 0 212px;font-size:13px;color:#4A4A47">19 missed · 2 duplicate copies removed</div><div style="display:grid;grid-template-columns:200px minmax(0,1fr) 60px;gap:12px;align-items:center">
+<span>Passed quality checks</span><div style="height:26px;background:#5A5A57;width:89.7%"></div><span style="text-align:right;font-weight:600">269</span></div>
+<div style="margin:-6px 0 0 212px;font-size:13px;color:#4A4A47">12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)</div><div style="display:grid;grid-template-columns:200px minmax(0,1fr) 60px;gap:12px;align-items:center">
+<span>Same speaker, used</span><div style="height:26px;background:#4A4A47;width:89.0%"></div><span style="text-align:right;font-weight:600">267</span></div>
+<div style="margin:-6px 0 0 212px;font-size:13px;color:#4A4A47">2 quarantined as possible other speaker</div>
+</section>
+<section style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 20px">Usable check-ins by resident</h2>
+<div style="font-size: 13px; color: #4A4A47">Share of 30 days, lowest first</div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R08</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:43.3%;background:#4A4A47"></div><div style="width:16.7%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">43%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R03</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:73.3%;background:#4A4A47"></div><div style="width:23.3%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">73%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R02</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:80.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">80%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R05</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:93.3%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:6.7%;background:#9A4508"></div></div>
+<span style="text-align:right">93%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R01</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R04</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R06</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R07</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R09</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:12px;align-items:center">
+<span style="font-weight:600">R10</span>
+<div style="display:flex;height:20px;border:1px solid #C9C9C4"><div style="width:100.0%;background:#4A4A47"></div><div style="width:0.0%;background:#BDBDB8"></div><div style="width:0.0%;background:#9A4508"></div></div>
+<span style="text-align:right">100%</span></div>
+
+</section>
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #8A8A85; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 20px">Alarm timing check <span style="font-weight: 400; font-size: 14px; color: #4A4A47">· test data only, where the true change date is known</span></h2>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 15px">
+<thead><tr style="text-align: left; background: #EDEDEA"><th style="padding: 10px 14px">Resident</th><th style="padding: 10px 14px">Planted change</th><th style="padding: 10px 14px">Change began</th><th style="padding: 10px 14px">Alarm rang</th><th style="padding: 10px 14px">Delay</th></tr></thead>
+<tbody>
+<tr style="border-top: 1px solid #C9C9C4"><td style="padding: 10px 14px">R09</td><td style="padding: 10px 14px">Sudden step</td><td style="padding: 10px 14px">Oct 21</td><td style="padding: 10px 14px">Oct 21</td><td style="padding: 10px 14px">0 days</td></tr>
+<tr style="border-top: 1px solid #C9C9C4"><td style="padding: 10px 14px">R10</td><td style="padding: 10px 14px">Slow drift</td><td style="padding: 10px 14px">Oct 17</td><td style="padding: 10px 14px">Oct 24</td><td style="padding: 10px 14px">7 days</td></tr>
+<tr style="border-top: 1px solid #C9C9C4"><td style="padding: 10px 14px">Other 8</td><td style="padding: 10px 14px">None</td><td style="padding: 10px 14px">—</td><td style="padding: 10px 14px">No alarm</td><td style="padding: 10px 14px">Correct</td></tr>
+</tbody></table></div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4A4A47">With real residents the true change date is unknown, so this panel becomes: alarms raised, reviewed, and the review outcomes.</div>
+</section>
+
+<footer style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; color: #4A4A47">Counts only — no audio, no resident names.</footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1450}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
