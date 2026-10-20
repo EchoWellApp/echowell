@@ -126,7 +126,7 @@ None.
 | Unknown `--device` code or invalid `--scope` | Non-zero exit, nothing written (SEC-022, SEC-023) |
 | `revoke-api-key` with an unknown name | Non-zero exit, nothing written |
 
-The TRDs fix exit code 1 for settings failures and exit code 2 for command-specific refusals of other operator commands (ENV-002); for these three commands they do not state the code for a refused input, so a non-zero code is required and the specific value follows the TRD 15 §4.8 convention of exit code 2 for refusals.
+The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit code 2 for the command-specific refusals listed in TRD 15 §4.8; they do not state an exit code for a refused input to these three commands, and no TRD 24 OQ covers it. The requirement here is only that the command exits non-zero and writes nothing; if a specific code is needed, raise an OQ under AGT-009.
 
 ## Logging Requirements
 
