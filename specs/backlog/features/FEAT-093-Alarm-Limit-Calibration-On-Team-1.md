@@ -102,6 +102,8 @@ Required before implementation (BACKLOG.md): FEAT-059
 
 Gate: OQ-13 and delivery of DS-04 by Team 1.
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - Isolated intake database: `raw_sessions`, `ingest_batches`, `ingest_rejections` and derived tables for DS-04.
@@ -150,15 +152,16 @@ None. The Analytics page already shows the active settings; no detection-perform
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-093-AC-01 | The intake report lists 0 rejections, or every rejection with a Team 1 explanation, before any evaluation run. | TDV-090 |
-| FEAT-093-AC-02 | `calibration_results.json` contains 140 combinations (5 × 4 × 7), each with metrics (a)–(e) of CUS-032. | CUS-031, CUS-032 |
-| FEAT-093-AC-03 | `grep -rn "team1_v1" analytics backend` returns no matches. | CUS-033 |
+| FEAT-093-AC-01 | The intake report lists 0 rejections, or every rejection with a Team 1 explanation, before any evaluation run. Verified by: Test (the test method of TDV-090, applied to the condition stated in the criterion). | TDV-090 |
+| FEAT-093-AC-02 | `calibration_results.json` contains 140 combinations (5 × 4 × 7), each with metrics (a)–(e) of CUS-032. Verified by: Analysis (the analysis method of CUS-031, applied to the condition stated in the criterion). | CUS-031, CUS-032 |
+| FEAT-093-AC-03 | `grep -rn "team1_v1" analytics backend` returns no matches. Verified by: Inspection (run the command in the criterion and check its output). | CUS-033 |
 | FEAT-093-AC-04 | After calibration, `pytest tests/validation -q` passes and the `test_v0_1` rows of `config_parameters` are unchanged. | CUS-035 |
-| FEAT-093-AC-05 | Each production parameter change has one `config.changed` audit row with the calibration report as reason, followed by one `pipeline.rebuild` row. | CUS-034, D-69 |
-| FEAT-093-AC-06 | No CI required check depends on DS-04 results. | TDV-092 |
+| FEAT-093-AC-05 | Each production parameter change has one `config.changed` audit row with the calibration report as reason, followed by one `pipeline.rebuild` row. Verified by: Inspection (the inspection method of CUS-034, applied to the condition stated in the criterion). | CUS-034, D-69 |
+| FEAT-093-AC-06 | No CI required check depends on DS-04 results. Verified by: Test (No CI gating on DS-04 metrics (TDV-092)). | TDV-092 |
 
 ## Definition of Done
 
+- All FEAT-093 acceptance criteria pass.
 - Gate satisfied (OQ-13 answered in TRD 24; DS-04 delivered); all FEAT-093 acceptance criteria pass; calibration report reviewed by the algorithm lead and the PI.
 - TRD 24 updated with the decision (new D entry) and OQ-13 closed by its owner.
 

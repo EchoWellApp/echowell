@@ -78,7 +78,8 @@ Required before implementation (BACKLOG.md): FEAT-041
 
 - FEAT-041 (Duplicate detection and quality gate): `ScreenedRecord` statuses (duplicates excluded; set-aside included).
 - Transitively FEAT-040 (contracts).
-- Downstream: FEAT-044 (screen per epoch), FEAT-045, FEAT-048 (epoch-ended facts), FEAT-052.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-044, FEAT-052.
 
 ## Database Impact
 
@@ -122,11 +123,12 @@ None in `analytics/` (LOG-006).
 | FEAT-042-AC-02 | Device change D07 → D07B at record 13 gives records 1–12 epoch 1 and 13+ epoch 2; a firmware-only change (fw-1.0.0 → fw-1.0.1) and a software-only change each start a new epoch. | EP-02..EP-04, BSC-007 |
 | FEAT-042-AC-03 | A set-aside record carrying a new key starts the new epoch at that record. | EP-05, BSC-006 |
 | FEAT-042-AC-04 | Records given out of timestamp order are numbered by `(timestamp_utc, arrival_seq)`; a duplicate with a different key gets `epoch_number` None and does not start an epoch. | EP-06, EP-07 |
-| FEAT-042-AC-05 | Keys A, B, A in time order give epochs 1, 2, 3. | BSC-007 |
+| FEAT-042-AC-05 | Keys A, B, A in time order give epochs 1, 2, 3. Verified by: Unit (`tests/unit/analytics/test_epoch_detection.py`; EP-01, EP-07). | BSC-007 |
 | FEAT-042-AC-06 | On SRC-05, R07 has epoch 1 with 12 records (2026-10-01..2026-10-12, D07) and epoch 2 starting at R07-20261013-01 (D07B) with epoch 1 `ended_at` = epoch 2 `started_at`; every other resident has exactly one epoch. | VC-R07, BSC-008, AC-BSC-05 |
 
 ## Definition of Done
 
+- All FEAT-042 acceptance criteria pass.
 - Module implemented with the binding signature; EP-01..EP-07 pass (TST-020); `tests/unit/analytics/test_epoch_detection.py` exists (TST-011).
 - VC-R07 epoch values pass in the validation suite (FEAT-059).
 

@@ -92,7 +92,7 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-011
 - FEAT-021 provides `require_roles` and the admin-or-`pipeline:run` composite permission for E-20 and admin/researcher for E-21/E-31.
 - FEAT-011 provides the `pipeline_runs` table and JSON shape models for `scope`, `config_snapshot`, `counts`, `warnings`.
 
-Features that build directly on this one: FEAT-025 (synchronous resident-scoped run after ingest), FEAT-053 (executor), FEAT-054, FEAT-055.
+Features that build directly on this one (BACKLOG.md §4): FEAT-025, FEAT-038, FEAT-053, FEAT-074.
 
 ## Database Impact
 
@@ -148,13 +148,13 @@ None computed here. The config snapshot handed to the executor is the input of `
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-024-AC-01 | With `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, a run triggered with explicit `as_of` 2026-10-31T00:00:00Z stores that explicit value; a run without explicit `as_of` stores 2026-10-30T20:00:00Z; with `PIPELINE_AS_OF` unset and the clock frozen, the frozen time is stored. | TST-038, API-135, D-50 |
-| FEAT-024-AC-02 | `POST /api/v1/pipeline/run {"scope":"all"}` as admin returns 202 with a `pipeline_run_id`; the run row has `trigger = manual`; audit rows `pipeline.run.started` and `pipeline.run.finished` exist for it. | API-063, API-065, FR-223 |
-| FEAT-024-AC-03 | While a full-scope run is `running`, a second `POST` returns 409 `PIPELINE_RUN_IN_PROGRESS`. | API-065 |
-| FEAT-024-AC-04 | With `APP_ENV=production` and `PIPELINE_PROFILE=production`, `{"scope":"all","profile":"test_v0_1"}` returns 422 `PROFILE_NOT_ALLOWED`. | API-066, FR-230 |
-| FEAT-024-AC-05 | A `pipeline:run` key request with `{"scope":["R01"]}` creates a run with `trigger = nightly` and scope `all`; a second such request on the same facility-local date returns 202 with the same run id and creates no new row. | API-065, D-70 |
+| FEAT-024-AC-02 | `POST /api/v1/pipeline/run {"scope":"all"}` as admin returns 202 with a `pipeline_run_id`; the run row has `trigger = manual`; audit rows `pipeline.run.started` and `pipeline.run.finished` exist for it. Verified by: Integration (`tests/integration/api/test_pipeline.py`). | API-063, API-065, FR-223 |
+| FEAT-024-AC-03 | While a full-scope run is `running`, a second `POST` returns 409 `PIPELINE_RUN_IN_PROGRESS`. Verified by: Integration (`tests/integration/api/test_pipeline.py`). | API-065 |
+| FEAT-024-AC-04 | With `APP_ENV=production` and `PIPELINE_PROFILE=production`, `{"scope":"all","profile":"test_v0_1"}` returns 422 `PROFILE_NOT_ALLOWED`. Verified by: Integration (`tests/integration/api/test_pipeline.py`). | API-066, FR-230 |
+| FEAT-024-AC-05 | A `pipeline:run` key request with `{"scope":["R01"]}` creates a run with `trigger = nightly` and scope `all`; a second such request on the same facility-local date returns 202 with the same run id and creates no new row. Verified by: Integration (`tests/integration/api/test_pipeline.py`). | API-065, D-70 |
 | FEAT-024-AC-06 | `GET /api/v1/pipeline/runs` returns runs ordered by `started_at` descending with `meta` and paging fields; `?status=failed` returns only failed runs; a researcher gets 200 and a clinician 403. | API-134, TST-069, FR-225 |
-| FEAT-024-AC-07 | `GET /api/v1/pipeline/runs/{unknown-uuid}` returns 404 `PIPELINE_RUN_NOT_FOUND`; a known id returns all `PipelineRun` required fields. | API-067, FR-224 |
-| FEAT-024-AC-08 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is `failed` with a `run_abandoned` warning and non-empty `error_message` after the next run starts. | AC-LOG-06, API-068 |
+| FEAT-024-AC-07 | `GET /api/v1/pipeline/runs/{unknown-uuid}` returns 404 `PIPELINE_RUN_NOT_FOUND`; a known id returns all `PipelineRun` required fields. Verified by: Integration (`tests/integration/api/test_pipeline.py`; TST-038). | API-067, FR-224 |
+| FEAT-024-AC-08 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is `failed` with a `run_abandoned` warning and non-empty `error_message` after the next run starts. Verified by: Integration (AC-LOG-06 (a run left `running` 31 minutes ago is marked `failed` with `run_abandoned` on the next run)). | AC-LOG-06, API-068 |
 
 ## Definition of Done
 

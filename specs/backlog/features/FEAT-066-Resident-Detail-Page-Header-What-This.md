@@ -82,6 +82,8 @@ Required before implementation (BACKLOG.md): FEAT-064, FEAT-028
 - FEAT-064 provides the route shell, `BackLink`, code validation.
 - FEAT-028 provides `GET /residents/{code}`, `/checkins` and `/features`.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-067, FEAT-068, FEAT-071.
+
 ## Database Impact
 
 None (frontend only).
@@ -129,14 +131,14 @@ None in the frontend.
 | FEAT-066-AC-03 | R09 shows 7 measurement cards with the §4.5.4 labels in order and the card "12 other measurements (pitch, jitter, MFCCs …)" / "stored, not scored". | E2E-08; UX-101; UX-106 |
 | FEAT-066-AC-04 | `/residents/R08` shows "Baseline forming · 13 of 16 sessions", the forming baseline line, a `<progress>` 13/16 and "Not scored yet" on all 7 cards, with no error banner. | E2E-11; AC-FE-04; AC-UX-05 |
 | FEAT-066-AC-05 | `/residents/R07` shows "No alarm · baseline restarted Oct 13" and the restart suffix "restarted Oct 13 (new device D07B, was D07)". | E2E-10; AC-UX-05 |
-| FEAT-066-AC-06 | `/residents/R11` (unknown) shows "Resident R11 was not found." with the back link and no other section. | FE-142; UX-205; FR-173 |
-| FEAT-066-AC-07 | Switching the backend to the production profile shows "of 30" in forming texts without a frontend change. | AC-FE-04; AC-UX-10 |
+| FEAT-066-AC-06 | `/residents/R11` (unknown) shows "Resident R11 was not found." with the back link and no other section. Verified by: Page test (`frontend/tests/pages/resident-detail.test.tsx`; TST-094). | FE-142; UX-205; FR-173 |
+| FEAT-066-AC-07 | Switching the backend to the production profile shows "of 30" in forming texts without a frontend change. Verified by: E2E (`resident-detail.spec.ts`; E2E-08, E2E-10, E2E-11). | AC-FE-04; AC-UX-10 |
 
 ## Definition of Done
 
 - All FEAT-066 acceptance criteria pass; component, page and E2E tests green.
 - OQ-12 marker present (TRD 25 Phase 8 DoD).
-- Batch report lists IDs and the TRD conflict below (AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

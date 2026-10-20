@@ -79,7 +79,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 
 - FEAT-021 (Role-based authorization matrix): role check for GET /devices.
 - FEAT-014 (Read-model derivations): silent days (DB-044), device-gap days and `in_use_until` (DB-066) queries.
-- Downstream: FEAT-038, FEAT-060 (DS-07 device values), FEAT-065 (Devices panel).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-065.
 
 ## Database Impact
 
@@ -124,14 +125,15 @@ None: silent and device-gap days are read-model derivations over the persisted d
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-029-AC-01 | With DS-07 loaded, `GET /api/v1/devices` returns `total` 10 with codes in the order D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10. | API-086, TRD 19 E-17 |
-| FEAT-029-AC-02 | With DS-07 loaded, D02 has `resident_codes` [R02, R03], `shared` true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12] and `last_upload_at` 2026-10-30T19:55:23Z. | API-086, TDV-066 |
-| FEAT-029-AC-03 | With DS-07 loaded, D07 has `active` false, `in_use_since` 2026-10-01, `in_use_until` 2026-10-12, `replaced_by_device_code` D07B; D07B has `replaces_device_code` D07, `in_use_since` 2026-10-13, `in_use_until` null. | API-086, DB-066, FR-155 |
-| FEAT-029-AC-04 | With DS-07 loaded, D08 has 12 dates in `silent_days_last_30` and an empty `device_gap_days_last_30`. | DB-044, TRD 19 E-17 notes |
+| FEAT-029-AC-01 | With DS-07 loaded, `GET /api/v1/devices` returns `total` 10 with codes in the order D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10. Verified by: Test (E2E-07). | API-086, TRD 19 E-17 |
+| FEAT-029-AC-02 | With DS-07 loaded, D02 has `resident_codes` [R02, R03], `shared` true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12] and `last_upload_at` 2026-10-30T19:55:23Z. Verified by: Test (E2E-07). | API-086, TDV-066 |
+| FEAT-029-AC-03 | With DS-07 loaded, D07 has `active` false, `in_use_since` 2026-10-01, `in_use_until` 2026-10-12, `replaced_by_device_code` D07B; D07B has `replaces_device_code` D07, `in_use_since` 2026-10-13, `in_use_until` null. Verified by: Integration (`tests/integration/api/test_devices.py`). | API-086, DB-066, FR-155 |
+| FEAT-029-AC-04 | With DS-07 loaded, D08 has 12 dates in `silent_days_last_30` and an empty `device_gap_days_last_30`. Verified by: DS-07 values (D02 residents [R02, R03], shared true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12]). | DB-044, TRD 19 E-17 notes |
 | FEAT-029-AC-05 | The response validates against `DeviceList`, contains `meta`, and an API key receives 401 while every user role receives 200. | TST-061, TST-064, TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-029 acceptance criteria pass.
 - Endpoint implemented with the TRD 19 schema; integration tests pass; DS-07 criteria pass in the FEAT-060 suite.
 - Requirement markers present (TST-013); coverage ≥ 85 % (TST-141); OpenAPI drift check passes (FEAT-038).
 

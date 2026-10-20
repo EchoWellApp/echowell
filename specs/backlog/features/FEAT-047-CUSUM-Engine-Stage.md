@@ -74,7 +74,8 @@ Turn the daily composite scores into the "running change tally" that decides whe
 Required before implementation (BACKLOG.md): FEAT-046
 
 - FEAT-046 (Z-score and composite scoring): `ScoreRow`s with `composite_z` and `scored_ordinal`.
-- Downstream: FEAT-048 (alerts), FEAT-052, FEAT-053.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-048, FEAT-052.
 
 ## Database Impact
 
@@ -113,15 +114,16 @@ None in `analytics/` (LOG-006).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-047-AC-01 | composite_z [3.0, 3.0] gives tallies [2.5, 5.0] and states [off, rings]. | CUS-01, CUS-006 |
-| FEAT-047-AC-02 | composite_z [−10.0] gives tally 0.0; [0.5] × 10 gives tally 0.0 throughout. | CUS-02, CUS-07 |
-| FEAT-047-AC-03 | composite_z [6.0, −20.0, 6.0] gives tallies [5.5, 0.0, 5.5], states [rings, on, on] and exactly one "rings". | CUS-03, AGT-048 |
-| FEAT-047-AC-04 | Two epochs of one resident each start at tally 0. | CUS-06, CUS-005 |
+| FEAT-047-AC-01 | composite_z [3.0, 3.0] gives tallies [2.5, 5.0] and states [off, rings]. Verified by: Validation (VC-G06, VC-R09, VC-R10). | CUS-01, CUS-006 |
+| FEAT-047-AC-02 | composite_z [−10.0] gives tally 0.0; [0.5] × 10 gives tally 0.0 throughout. Verified by: Unit (`tests/unit/analytics/test_cusum_engine.py`). | CUS-02, CUS-07 |
+| FEAT-047-AC-03 | composite_z [6.0, −20.0, 6.0] gives tallies [5.5, 0.0, 5.5], states [rings, on, on] and exactly one "rings". Verified by: Unit (`tests/unit/analytics/test_cusum_engine.py`). | CUS-03, AGT-048 |
+| FEAT-047-AC-04 | Two epochs of one resident each start at tally 0. Verified by: Unit (`tests/unit/analytics/test_cusum_engine.py`; TST-022). | CUS-06, CUS-005 |
 | FEAT-047-AC-05 | The R09 composite_z series reproduces the Exp_scores tallies within 1e-6 and rings at the 5th scored session with 5.431965; the epoch's facts are `current_tally` 26.830256, `alarm_on` true, `first_alarm_session_id` R09-20261021-01. | CUS-04, VC-R09, AC-CUS-02 |
 | FEAT-047-AC-06 | On SRC-05 all 98 tallies match Exp_scores within 1e-6 and alarm states map exactly (off 81, on 15, rings 2). | AC-CUS-01, VC-G06 |
 
 ## Definition of Done
 
+- All FEAT-047 acceptance criteria pass.
 - `run_cusum` implemented with the binding signature; CUS-01..CUS-07 pass (TST-020); test file exists (TST-011).
 - VC-R09, VC-R10 and AC-CUS-01 pass in the validation suite.
 

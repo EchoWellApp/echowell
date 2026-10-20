@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -383,13 +383,13 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | UX-183 | The table shall have the columns "Resident", "Admitted", "Check-ins so far", "Compared with facility range", "Own baseline", header background `--color-table-header`, `min-width: 760px` inside a horizontally scrolling container. | Must | SRC-11, contract §11 | T |
 | UX-184 | "Resident" shall show the study ID; "Admitted" the admission date "<Mon D>"; "Check-ins so far" the number of usable check-ins since admission. | Must | SRC-11 | T |
 | UX-185 | "Compared with facility range" shall show a badge: "▲ Outside facility range" (2px solid accent, accent text, weight 600) when at least one feature value is outside the facility range; "Within facility range" (1px solid `--color-border`) when all are within; "Not enough check-ins yet" (1px dashed `--color-border`) when the API reports too few check-ins to compare (`not_enough_checkins`); "Facility range not available yet" (1px dashed `--color-border`) when the API reports `range_not_available` (TRD 02 FR-202, TRD 19 `ComparisonStatus`). | Must | SRC-11, UX-004 | T |
-| UX-186 | "Own baseline" shall read "<n> of <N> days" where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-11, OQ-08 | T |
+| UX-186 | "Own baseline" shall read "<n> of <N> usable check-ins" (the SRC-11 wireframe says "days"; the count is usable check-ins, which differ from days when days are missed or set aside) where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-11, OQ-08 | T |
 | UX-187 | Each row shall contain a button "Show comparison" (min-height 44px) that selects the resident for the comparison section; the selected row shall have `aria-selected="true"` and a 2px ink left border. | Must | SRC-11 | T |
 | UX-188 | The page shall list only residents of the new-admission cohort whose own baseline has not formed; when their baseline forms they shall leave this page and appear on the Residents overview, where they are compared with their own baseline only. | Must | SRC-12, BR-14 | T |
 | UX-189 | The comparison section shall have the heading "<R> compared with facility range" and a chart with one row per feature: a grey band (`--color-range-band` #E2E2DE) from the facility range low to high and the resident's value as a dot; a dot outside the band shall be accent with "▲", a dot inside ink. | Must | SRC-11, BR-14 | T |
 | UX-190 | The chart shall have the caption "grey band = usual range across current residents" (IBM Plex Mono 12px, secondary). | Must | SRC-11 | T |
 | UX-191 | Feature rows shall use the plain-language labels of section 4.5.4 when the feature is one of the 7 scored measurements and the API label otherwise. | Must | SRC-10, SRC-11 | T |
-| UX-192 | Under the chart the sentence "Once <N> days of check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." (14px, secondary) shall appear, with N from the API. | Must | SRC-11, SRC-12 | T |
+| UX-192 | Under the chart the sentence "Once <N> usable check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." (14px, secondary) shall appear, with N from the API. | Must | SRC-11, SRC-12 | T |
 | UX-193 | The comparison chart shall have a text alternative table (disclosure "Show comparison as a table") with columns "Measurement", "Resident value", "Facility range", "Outside range" ("▲ Yes" / "No"). | Must | WCAG 1.1.1 | T |
 | UX-194 | When no new admissions exist, the table area shall read "No new admissions. The pipeline test data v0.1 has no admission arm." when the data source is the test data, otherwise "No new admissions."; the comparison section shall then read "Select a resident to see the comparison." | Must | SRC-11, BR-14 | T |
 | UX-195 | The facility range method, number of residents and computation date returned by the API shall be shown under the chart as "Range from <n_residents> current residents, computed <Mon D> (method: <method>)." | Should | OQ-08, RSK-13 | T |
@@ -796,7 +796,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 ## 5. Assumptions
 
 - ASM-01: facility time zone America/Chicago (rendered from the API).
-- ASM-02: at most one session per resident per local day, so "n of N days" on the admissions page equals usable check-ins.
+- ASM-02: at most one session per resident per local day, so the admissions-page count "<n> of <N> usable check-ins" (UX-186) never exceeds the number of days with a usable record.
 - ASM-03: one facility (Edgewood); facility name from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: production N = 30; the test profile N = 16 is used only for build-out and testing. Screens render N from the API.
 - ASM-06: a new epoch closes the previous epoch's open alert and restarts the tally, so the badge reflects the current epoch only.
@@ -871,3 +871,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-09, F-10, F-11, F-12, F-24, F-25, F-28, F-37) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (UX-018 count fallback (D-97); UX-212 profile select and UX-219 nightly banner (D-96); UX-373 false alarm (D-81); device_silent titles; (was) rule; AC-UX-09 widths (D-78)) | — |
+| 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-10: UX-186, UX-192 and §8 note count usable check-ins, not days) | — |

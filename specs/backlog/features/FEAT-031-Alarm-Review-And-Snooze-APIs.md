@@ -93,6 +93,8 @@ Required before implementation (BACKLOG.md): FEAT-030, FEAT-015
 - Transitively FEAT-021 (roles) and FEAT-012 (tables and append-only grants).
 - TST-067 performs a real full rebuild and therefore runs once FEAT-053 (pipeline runner) is merged; until then this feature's guarantee is FEAT-031-FR-12 (stable ids, no review data held outside the alert's natural key).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-070.
+
 ## Database Impact
 
 - Tables written: `alert_reviews` (INSERT only; app role has SELECT, INSERT), `alerts` (`status`, `acknowledged_by`, `acknowledged_at`, `snoozed_until`, `snoozed_by`, `updated_at`), `data_alerts` (INSERT or UPDATE of `alert_review_id`, `detail`, `last_detected_at`), `audit_logs` (INSERT).
@@ -160,12 +162,13 @@ None: reviews and snoozes are human state outside the engine; the pipeline never
 | FEAT-031-AC-04 | A `data_problem` review creates one `data_alerts` row with kind `review_flagged_data_problem`, the alert's resident, `alert_review_id` = the review id, title "<R> · review flagged a data problem" and status `open`; a second `data_problem` review for the same resident leaves exactly one open row of that kind, now linked to the newer review. | TST-059, FR-273 |
 | FEAT-031-AC-05 | With the clock frozen at T, `POST /alerts/{id}/snooze` without body stores and returns `snoozed_until` = T + 24 h and `snoozed_by` = caller; with `{"hours": 4}` it is T + 4 h; `status` is unchanged. | TST-065, AC-CUS-10 |
 | FEAT-031-AC-06 | `POST /api/v1/alerts/{id}/acknowledge` returns 404 or 405. | TST-066 |
-| FEAT-031-AC-07 | Reviewing or snoozing a `closed` alert returns 409 `ALERT_CLOSED`; an unknown id returns 404 `ALERT_NOT_FOUND`; a researcher POST returns 403. | API-082, FR-275 |
+| FEAT-031-AC-07 | Reviewing or snoozing a `closed` alert returns 409 `ALERT_CLOSED`; an unknown id returns 404 `ALERT_NOT_FOUND`; a researcher POST returns 403. Verified by: Integration (`tests/integration/api/test_alerts.py`; TST-066). | API-082, FR-275 |
 | FEAT-031-AC-08 | One `audit_logs` row `alert.reviewed` per saved review and one `alert.snoozed` per snooze exist, and no audit `details` value contains the note text. | FR-279, TST-053, SEC-104 |
 | FEAT-031-AC-09 | After a review and a snooze, a full rebuild (`POST /pipeline/run {scope: "all"}`) keeps the alert id, its `alert_reviews` rows, status `acknowledged` and `snoozed_until`. | TST-067, AC-API-15 (rebuild part) |
 
 ## Definition of Done
 
+- All FEAT-031 acceptance criteria pass.
 - Three endpoints implemented; no acknowledge route; all writes transactional with audit rows.
 - TST-056..TST-059, TST-065, TST-066 pass in Phase 5; TST-067 passes in the Phase 6 PR that merges FEAT-053 (AC-TST-12).
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.

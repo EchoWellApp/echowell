@@ -76,7 +76,7 @@ Required before implementation (BACKLOG.md): FEAT-005, FEAT-004
 - FEAT-005 provides the pytest layout, markers and database fixture that `backend-test` runs.
 - FEAT-004 provides the frontend scripts and lockfile that the `frontend` job runs.
 
-Features that build directly on this one: FEAT-078 (full CI gates and branch protection), FEAT-080.
+Features that build directly on this one (BACKLOG.md §4): FEAT-078.
 
 ## Database Impact
 
@@ -121,10 +121,10 @@ None; `lint-imports` enforces `analytics/` purity in CI.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-007-AC-01 | A pull request triggers `ci.yml` with jobs `backend-lint`, `backend-test` and `frontend`, all green on the Phase 3 tree. | CIC-010, TST-150 |
-| FEAT-007-AC-02 | A PR introducing a `ruff` finding, a `mypy` error or a forbidden import in `analytics/` fails `backend-lint`. | CIC-011, AC-ARC-01 |
+| FEAT-007-AC-02 | A PR introducing a `ruff` finding, a `mypy` error or a forbidden import in `analytics/` fails `backend-lint`. Verified by: Workflow validation (open a test PR with a deliberate `ruff` violation → `backend-lint` fails). | CIC-011, AC-ARC-01 |
 | FEAT-007-AC-03 | The `backend-test` log shows the `postgres:16-alpine` service and pytest connecting through `DATABASE_URL`; a failing test fails the job. | CIC-012, CIC-013 |
-| FEAT-007-AC-04 | The `frontend` job runs the six npm commands in the CIC-017 order and fails on an ESLint warning. | CIC-017, FE-202 |
-| FEAT-007-AC-05 | `grep -n "secrets\." .github/workflows/ci.yml` returns nothing and `grep -n "permissions" .github/workflows/ci.yml` shows `contents: read` only. | CIC-024, CIC-026 |
+| FEAT-007-AC-04 | The `frontend` job runs the six npm commands in the CIC-017 order and fails on an ESLint warning. Verified by: Test (A deliberate ESLint warning in `frontend/` → `frontend` fails (FE-203)). | CIC-017, FE-202 |
+| FEAT-007-AC-05 | `grep -n "secrets\." .github/workflows/ci.yml` returns nothing and `grep -n "permissions" .github/workflows/ci.yml` shows `contents: read` only. Verified by: Inspection (run the command in the criterion and check its output). | CIC-024, CIC-026 |
 | FEAT-007-AC-06 | Every job declares `runs-on: ubuntu-24.04`; every `uses:` references `actions/*`, `docker/*` or `microsoft/playwright` by major tag or another action by full SHA. | CIC-025, CIC-027 |
 
 ## Definition of Done

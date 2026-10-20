@@ -91,7 +91,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 
 - FEAT-021 (Role-based authorization matrix): `require_roles` and the role matrix for GET /residents (admin, clinician, researcher).
 - FEAT-014 (Read-model derivations): the 30-day window, counts, last check-in, baseline progress, alarm-since and restart facts.
-- Downstream: FEAT-028 (reuses the display-status service), FEAT-060 (asserts DS-07 values), FEAT-065 (overview page).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-028, FEAT-060, FEAT-065.
 
 ## Database Impact
 
@@ -139,19 +140,20 @@ None: no algorithm runs here. The endpoint reads persisted pipeline output; disp
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-027-AC-01 | `GET /api/v1/residents?sort=foo` and `?limit=0` each return 422 with `type` `urn:echowell:error:INVALID_QUERY_PARAMETER`. | API-070, API-016 |
+| FEAT-027-AC-01 | `GET /api/v1/residents?sort=foo` and `?limit=0` each return 422 with `type` `urn:echowell:error:INVALID_QUERY_PARAMETER`. Verified by: Integration (`tests/integration/api/test_residents.py`; TST-055, TST-064, TST-061). | API-070, API-016 |
 | FEAT-027-AC-02 | With a fixture of three residents (one with a non-closed alert in the current epoch, one with 13 of 16 usable sessions, one frozen with epoch 2), the statuses are `alarm_on`, `baseline_forming` and `no_alarm` with `baseline_restarted_on` set, and `sort=alarm` lists them in that order. | TST-033, FR-131, FR-132 |
-| FEAT-027-AC-03 | For residents R2 and R10, `sort=resident_id` returns R2 before R10. | API-072, AGT-052 |
+| FEAT-027-AC-03 | For residents R2 and R10, `sort=resident_id` returns R2 before R10. Verified by: Unit (`tests/unit/backend/services/test_resident_service.py`). | API-072, AGT-052 |
 | FEAT-027-AC-04 | A withdrawn resident is absent by default and present with `include_withdrawn=true`. | TST-055, FR-130 |
-| FEAT-027-AC-05 | With `limit=1`, `summary` still counts every matching resident and `total` equals the number of matching residents. | API-073 |
-| FEAT-027-AC-06 | A duplicate processed session dated inside the window changes neither `last_30_days` nor `last_checkin_at` of its resident. | API-074, AGT-053 |
-| FEAT-027-AC-07 | With DS-07 loaded (as-of 2026-10-30 15:00 America/Chicago), the default sort returns R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; summary is 2 / 7 / 1 / 19; R08 shows `baseline_progress` 13 of 16 and `last_30_days` 13 · 5 · 0 · 12; R07 shows `device_code` D07B, `previous_device_code` D07, `baseline_restarted_on` 2026-10-13; `window` is 2026-10-01..2026-10-30. | AC-API-02, OAS-021, TDV-062, TDV-063 |
+| FEAT-027-AC-05 | With `limit=1`, `summary` still counts every matching resident and `total` equals the number of matching residents. Verified by: Integration (`tests/integration/api/test_residents.py`; TST-055, TST-064, TST-061). | API-073 |
+| FEAT-027-AC-06 | A duplicate processed session dated inside the window changes neither `last_30_days` nor `last_checkin_at` of its resident. Verified by: Unit (`tests/unit/backend/services/test_resident_service.py`; TST-033). | API-074, AGT-053 |
+| FEAT-027-AC-07 | With DS-07 loaded (as-of 2026-10-30 15:00 America/Chicago), the default sort returns R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; summary is 2 / 7 / 1 / 19; R08 shows `baseline_progress` 13 of 16 and `last_30_days` 13 · 5 · 0 · 12; R07 shows `device_code` D07B, `previous_device_code` D07, `baseline_restarted_on` 2026-10-13; `window` is 2026-10-01..2026-10-30. Verified by: DS-07 value checks (DS-07 value checks (run once the pipeline exists, owned by FEAT-060): OAS-021 / AC-API-02 / TDV-062 tiles 2/7/1/19 and default order). | AC-API-02, OAS-021, TDV-062, TDV-063 |
 | FEAT-027-AC-08 | With DS-07 loaded, `sort=last_checkin` returns R02, R07, R05, R10, R06, R08, R09, R03, R04, R01 and `sort=resident_id` returns R01 … R10. | E2E-05, E2E-06, API-072 |
 | FEAT-027-AC-09 | Every 200 response validates against `ResidentsOverviewResponse` and contains `meta` with all seven fields. | TST-061, TST-064 |
-| FEAT-027-AC-10 | An API key calling the endpoint receives 401 and each user role receives 200. | TRD 13 Table 4.13-A |
+| FEAT-027-AC-10 | An API key calling the endpoint receives 401 and each user role receives 200. Verified by: Unit (`tests/unit/backend/services/test_resident_service.py`; TST-033). | TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-027 acceptance criteria pass.
 - Endpoint implemented with the TRD 19 schema; display-status function unit-tested (TST-033) and reusable by FEAT-028.
 - Integration tests pass on PostgreSQL 16; DS-07 assertions (FEAT-027-AC-07, FEAT-027-AC-08) are part of the FEAT-060 suite and pass there.
 - Requirement IDs referenced by `@pytest.mark.req` (TST-013); backend coverage ≥ 85 % (TST-141).

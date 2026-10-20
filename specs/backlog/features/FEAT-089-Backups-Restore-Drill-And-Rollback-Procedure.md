@@ -80,6 +80,8 @@ Required before implementation (BACKLOG.md): FEAT-088
 
 - [FEAT-088](FEAT-088-Interim-Staging-And-Production-Deployment.md) Interim staging and production deployment (the environments being backed up and rolled back).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-091.
+
 ## Database Impact
 
 - Tables read by the dump: all tables of the production database.
@@ -124,11 +126,11 @@ None in code; rollback rehearsal republishes a previous Netlify deploy.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-089-AC-01 | A deliberately failing healthcheck deployment on staging leaves the previous deployment serving requests (health `version` unchanged). | AC-DEP-06, DEP-041 |
-| FEAT-089-AC-02 | Rollback rehearsal restores the previous frontend and backend within 10 minutes, with the measured time recorded. | AC-DEP-07, DEP-085 |
-| FEAT-089-AC-03 | The restore drill is completed and documented before 15 Nov 2026 with matching `raw_sessions` and `alerts` row counts and a healthy `GET /api/v1/health` on the restored branch. | AC-DEP-08, DEP-097 |
-| FEAT-089-AC-04 | `docs/deployment.md` records the Neon restore window in force, the weekly dump schedule and storage location class, and the rollback table. | DEP-095, DEP-096 |
-| FEAT-089-AC-05 | `git ls-files \| grep -Ei '\.(dump\|sql\.gz\|backup)$'` returns nothing and no workflow uploads a dump artifact. | DEP-098 |
+| FEAT-089-AC-01 | A deliberately failing healthcheck deployment on staging leaves the previous deployment serving requests (health `version` unchanged). Verified by: Demo/inspection tests (AC-DEP-06 (failing healthcheck keeps previous deployment), AC-DEP-07 (rollback ≤ 10 min), AC-DEP-08 (restore drill with matching counts)). | AC-DEP-06, DEP-041 |
+| FEAT-089-AC-02 | Rollback rehearsal restores the previous frontend and backend within 10 minutes, with the measured time recorded. Verified by: Demo/inspection tests (AC-DEP-06 (failing healthcheck keeps previous deployment), AC-DEP-07 (rollback ≤ 10 min), AC-DEP-08 (restore drill with matching counts)). | AC-DEP-07, DEP-085 |
+| FEAT-089-AC-03 | The restore drill is completed and documented before 15 Nov 2026 with matching `raw_sessions` and `alerts` row counts and a healthy `GET /api/v1/health` on the restored branch. Verified by: Demo/inspection tests (AC-DEP-06 (failing healthcheck keeps previous deployment), AC-DEP-07 (rollback ≤ 10 min), AC-DEP-08 (restore drill with matching counts)). | AC-DEP-08, DEP-097 |
+| FEAT-089-AC-04 | `docs/deployment.md` records the Neon restore window in force, the weekly dump schedule and storage location class, and the rollback table. Verified by: Inspection (the inspection method of DEP-095, applied to the condition stated in the criterion). | DEP-095, DEP-096 |
+| FEAT-089-AC-05 | `git ls-files \| grep -Ei '\.(dump\|sql\.gz\|backup)$'` returns nothing and no workflow uploads a dump artifact. Verified by: Inspection (run the command in the criterion and check its output). | DEP-098 |
 
 ## Definition of Done
 

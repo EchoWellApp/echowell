@@ -73,6 +73,8 @@ Required before implementation (BACKLOG.md): FEAT-059
 - FEAT-059 provides the report writer and the passing validation suite whose Tier A runner and comparator (FEAT-058) this check reuses.
 - FEAT-080 later wires the script into `e2e.yml`.
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 None. The check runs Tier A only (in-process, no database).
@@ -114,9 +116,9 @@ None in production code; runs `analytics.pipeline.run_pipeline` 100 times with u
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-061-AC-01 | Running `python -m tests.validation.robustness` produces a report section 7 with seeds 1..100, the false-alarm count over R01–R06, rate = count / 600 and per-resident counts for R01–R08. | TDV-080; TDV-081 |
-| FEAT-061-AC-02 | `validation_results.json` contains a non-null `robustness` object after the run. | TDV-081 |
-| FEAT-061-AC-03 | A forced failure inside the robustness step leaves the CI job status successful (informational step). | AC-TDV-09; CIC-037 |
+| FEAT-061-AC-01 | Running `python -m tests.validation.robustness` produces a report section 7 with seeds 1..100, the false-alarm count over R01–R06, rate = count / 600 and per-resident counts for R01–R08. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TDV-080; TDV-081 |
+| FEAT-061-AC-02 | `validation_results.json` contains a non-null `robustness` object after the run. Verified by: Inspection (the inspection method of TDV-081, applied to the condition stated in the criterion). | TDV-081 |
+| FEAT-061-AC-03 | A forced failure inside the robustness step leaves the CI job status successful (informational step). Verified by: Inspection (the inspection method of CIC-037, applied to the condition stated in the criterion). | AC-TDV-09; CIC-037 |
 | FEAT-061-AC-04 | The pull-request validation run (`pytest tests/validation -q`) does not execute the 100-seed loop. | TDV-083; TST-084 |
 | FEAT-061-AC-05 | After the run, no generated file exists under `tests/fixtures/` or `specs/`. | TDV-010 |
 

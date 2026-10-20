@@ -88,6 +88,8 @@ Required before implementation (BACKLOG.md): FEAT-053, FEAT-017, FEAT-026
 - FEAT-017 provides `backend/cli.py`, the roster/users/key seed steps, `--master-only` and `--reset`.
 - FEAT-026 provides the batch ingestion service the seed reuses.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-058, FEAT-076.
+
 ## Database Impact
 
 - Tables written: `config_parameters` (`value`, `updated_at`), `audit_logs`, `ingest_batches`, `raw_sessions` (through the ingest service), `pipeline_runs` and all derived tables (through FEAT-053), `baselines` (DELETE then INSERT, rebuild only, as `echowell_migrator`).
@@ -141,13 +143,13 @@ None. Failed runs caused by `config_changed_requires_rebuild` appear in the `/ad
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-055-AC-01 | `python -m backend.cli seed test_v0_1` on an empty migrated test database yields 283 `raw_sessions` rows from one `seed` batch and a succeeded `manual` run with as-of 2026-10-30T20:00:00Z and counts 283/267/12/2/2/17/2/0/98/2/0/10. | DB-058; DB-020 |
+| FEAT-055-AC-01 | `python -m backend.cli seed test_v0_1` on an empty migrated test database yields 283 `raw_sessions` rows from one `seed` batch and a succeeded `manual` run with as-of 2026-10-30T20:00:00Z and counts 283/267/12/2/2/17/2/0/98/2/0/10. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DB-058; DB-020 |
 | FEAT-055-AC-02 | `python -m backend.cli set-config --profile test_v0_1 --key cusum_h --value '6.0' --reason "test"` writes exactly one `config.changed` audit row with old 5.0, new 6.0, reason and operator, and prints the rebuild command. | FR-229; TST-053; SEC-103 |
-| FEAT-055-AC-03 | After that change, `python -m backend.cli run-pipeline --scope all` produces a `failed` run with warning `config_changed_requires_rebuild` and `error_message` "configuration changed; run the rebuild command". | ANL-032 |
-| FEAT-055-AC-04 | `python -m backend.cli rebuild --profile test_v0_1 --confirm REBUILD` then succeeds, writes one `pipeline.rebuild` audit row with old and new config hashes, and the next `run-pipeline` succeeds. | ANL-032; D-56 |
-| FEAT-055-AC-05 | `set-config` with an unknown key, or with `cusum_h` = `-1`, exits 2 and leaves `config_parameters` unchanged. | TRD 15 §4.8; ANL-029 |
-| FEAT-055-AC-06 | With `APP_ENV=production`, `python -m backend.cli seed test_v0_1` exits 2 with "seeding is not allowed in production" and writes nothing. | DEP-070; DB-059 |
-| FEAT-055-AC-07 | `grep -rn "evaluation_ground_truth\|load_evaluation_ground_truth" backend/cli.py` returns nothing. | TDV-011; TRD 15 §4.8 |
+| FEAT-055-AC-03 | After that change, `python -m backend.cli run-pipeline --scope all` produces a `failed` run with warning `config_changed_requires_rebuild` and `error_message` "configuration changed; run the rebuild command". Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | ANL-032 |
+| FEAT-055-AC-04 | `python -m backend.cli rebuild --profile test_v0_1 --confirm REBUILD` then succeeds, writes one `pipeline.rebuild` audit row with old and new config hashes, and the next `run-pipeline` succeeds. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | ANL-032; D-56 |
+| FEAT-055-AC-05 | `set-config` with an unknown key, or with `cusum_h` = `-1`, exits 2 and leaves `config_parameters` unchanged. Verified by: Integration (`tests/integration/test_cli_pipeline.py`). | TRD 15 §4.8; ANL-029 |
+| FEAT-055-AC-06 | With `APP_ENV=production`, `python -m backend.cli seed test_v0_1` exits 2 with "seeding is not allowed in production" and writes nothing. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-070; DB-059 |
+| FEAT-055-AC-07 | `grep -rn "evaluation_ground_truth\|load_evaluation_ground_truth" backend/cli.py` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | TDV-011; TRD 15 §4.8 |
 
 ## Definition of Done
 

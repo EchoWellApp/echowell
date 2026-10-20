@@ -84,7 +84,8 @@ Prove, with automated tests that run on every PR, that the finished API enforces
 Required before implementation (BACKLOG.md): FEAT-038
 
 - FEAT-038 (OpenAPI contract export and drift check): every endpoint exists and the document is final, so the matrix and the audio scan cover the whole API (and transitively all Phase 5 endpoint features, FEAT-020, FEAT-021).
-- Downstream: FEAT-078 (CI runs the suite as a required check), FEAT-091 (audit evidence).
+
+Features that build directly on this one (BACKLOG.md §4): none.
 
 ## Database Impact
 
@@ -127,16 +128,17 @@ None.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-039-AC-01 | The matrix test passes for every row of TRD 13 Table 4.13-A and every caller type, with API keys tested in both scopes. | TST-130, SEC-041, AC-SEC-01, AC-TST-05 |
-| FEAT-039-AC-02 | The route-coverage test passes on the delivered app and fails when a test-only route without an auth dependency is registered. | SEC-042, AC-SEC-02 |
+| FEAT-039-AC-02 | The route-coverage test passes on the delivered app and fails when a test-only route without an auth dependency is registered. Verified by: Integration (`tests/integration/test_auth_coverage.py`). | SEC-042, AC-SEC-02 |
 | FEAT-039-AC-03 | A 61-minute-old JWT returns 401 `TOKEN_EXPIRED`; altered-signature and `alg: none` JWTs return 401 `TOKEN_INVALID`; a revoked key returns 401 `API_KEY_INVALID`; an API key without `ingest:write` on `POST /ingest` returns 403. | TST-132, AC-SEC-04 |
 | FEAT-039-AC-04 | No OpenAPI property except `audio_quality_flag` contains "audio"; `Content-Type: audio/wav` to every endpoint returns 415 or 422 and `raw_sessions` count is unchanged. | TST-133, FR-015 |
 | FEAT-039-AC-05 | A preflight from `https://evil.example` receives no `Access-Control-Allow-Origin`; from a configured origin the header echoes that origin. | TST-134 |
 | FEAT-039-AC-06 | During and after an SRC-05 upload, no captured response or log record contains a field named like name, birth date or room number, and no log record contains a feature value. | TST-137, NFR-048 |
-| FEAT-039-AC-07 | The static scans find no `password_hash`, `key_hash`, `payload`, `raw_body` or ground-truth column in response schemas (except `alarm_timing`) and no LLM, tracker, voice, notification or third-party-auth dependency. | DME-005, SEC-128, TPS-080..TPS-086 |
-| FEAT-039-AC-08 | Every researcher write call (POST reviews, snooze, notes, ingest, pipeline run, users) returns 403, and a researcher CSV export of scores contains no note text. | SEC-045, FR-245 |
+| FEAT-039-AC-07 | The static scans find no `password_hash`, `key_hash`, `payload`, `raw_body` or ground-truth column in response schemas (except `alarm_timing`) and no LLM, tracker, voice, notification or third-party-auth dependency. Verified by: Security (static schema and dependency scans (DME-005, DME-020, DB-035, SEC-128, TPS-080..TPS-086)). | DME-005, SEC-128, TPS-080..TPS-086 |
+| FEAT-039-AC-08 | Every researcher write call (POST reviews, snooze, notes, ingest, pipeline run, users) returns 403, and a researcher CSV export of scores contains no note text. Verified by: Security (TST-130). | SEC-045, FR-245 |
 
 ## Definition of Done
 
+- All FEAT-039 acceptance criteria pass.
 - All security tests pass on PostgreSQL 16 and are registered with marker `security` (TST-006); no skips.
 - MVP-07 evidence (TST-130, TST-132..TST-134, TST-137 results) attached to the batch report; TST-131, TST-135, TST-136 referenced to their owning features.
 - Coverage of `backend/` stays ≥ 85 %.

@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -335,7 +335,7 @@ ASM-01 (America/Chicago), ASM-04 (baseline profiles; production 30, test 16 for 
 
 | ID | Criterion |
 |---|---|
-| AC-AGT-01 | Each of Phases 1–12 has exactly one merged PR approved by the algorithm lead, in order. |
+| AC-AGT-01 | Each of Phases 1–11 has exactly one merged PR approved by the algorithm lead, in the TRD 25 §4.5 order; Phase 12 runs before Phase 2 (AGT-031, PR #2) and is re-run after Phase 11 (D-95) as one further approved PR on branch `docs/backlog-reconcile`. |
 | AC-AGT-02 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns no matches, and `grep -rn "evaluation_ground_truth" analytics` returns no matches. |
 | AC-AGT-03 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches. |
 | AC-AGT-04 | `pytest tests/validation -q` passes with zero failures on `staging` (where phase PRs merge, GIT-012) before Phase 8 starts and after Phase 10. |
@@ -375,3 +375,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (observation: pytest configuration in pyproject.toml) | — |
 | 0.10 | 19 Oct 2026 | Audit checklist split into TRD audit (PR #1) and Implementation_Audit_Checklist.md (PR #3); prompts corrected to specs/TRD (OQ-22) | — |
 | 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (Phase 3 outputs (D-90, D-94); Phase 4 seed scope (D-93) and non-local (D-88); Phase 5 export-openapi (D-89), aggregates and leaning_most (D-92), interim executor (D-91); Phase 6 outputs; Phase 9 ci.yml; Phase 12 tracking (D-95); AGT-059, AGT-061, AC-AGT-11) | — |
+| 0.12 | 20 Oct 2026 | Documentation audit fixes (DA-09: AC-AGT-01 allows Phase 12 before Phase 2 and its re-run after Phase 11; DA-11: Phase 5 router list adds `config.py`) | — |

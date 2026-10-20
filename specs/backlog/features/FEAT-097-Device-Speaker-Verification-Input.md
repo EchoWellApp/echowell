@@ -94,6 +94,8 @@ Required before implementation (BACKLOG.md): FEAT-023, FEAT-044
 
 Gate: OQ-14 (speaker verification schedule and output type).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - Tables used: `raw_sessions` (`schema_version`, `payload`), `processed_sessions` (`status`, `reasons`, `screen_detail`), `config_parameters` (`supported_schema_versions`, `feature_name_map`), `ingest_rejections`.
@@ -136,12 +138,13 @@ Gate: OQ-14 (speaker verification schedule and output type).
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-097-AC-01 | A v0.1 record containing an extra verification field is rejected with 422 and creates no `raw_sessions` row. | FR-013, TST-045 |
-| FEAT-097-AC-02 | With the new version added to `supported_schema_versions`, a valid new-version record returns 201 and is stored with the received `schema_version` and unmapped payload; without it, the same record is rejected with `unsupported_schema_version`. | ING-013, ING-015, ING-018 |
-| FEAT-097-AC-03 | `git diff` of the feature shows no change to `validate_v0_1` or the v0.1 mapping entries. | ING-014 |
+| FEAT-097-AC-02 | With the new version added to `supported_schema_versions`, a valid new-version record returns 201 and is stored with the received `schema_version` and unmapped payload; without it, the same record is rejected with `unsupported_schema_version`. Verified by: Unit (TST-030, TST-031). | ING-013, ING-015, ING-018 |
+| FEAT-097-AC-03 | `git diff` of the feature shows no change to `validate_v0_1` or the v0.1 mapping entries. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | ING-014 |
 | FEAT-097-AC-04 | `pytest tests/validation -q` passes unchanged; R05 days 8 and 22 are quarantined with the exact SRC-03 reason strings. | AGT-008, BSC-016 |
 
 ## Definition of Done
 
+- All FEAT-097 acceptance criteria pass.
 - Gate satisfied (OQ-14 answered with output type and record specification) and TRDs 10, 08, 19, 20 updated; all FEAT-097 acceptance criteria pass.
 
 ## Implementation Notes

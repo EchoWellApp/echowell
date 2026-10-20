@@ -91,7 +91,7 @@ Required before implementation (BACKLOG.md): FEAT-013
 
 - FEAT-013 provides the session factory and the indexes (`processed_sessions_resident_date_idx`, `processed_sessions_resident_ts_idx`, `day_ledger_missing_idx`, `day_ledger_device_date_idx`, `scores_epoch_date_idx`, `epochs_current_uq`, `raw_sessions_device_ts_idx`) these queries rely on.
 
-Features that build directly on this one: FEAT-017, FEAT-019, FEAT-027.
+Features that build directly on this one (BACKLOG.md §4): FEAT-017, FEAT-019, FEAT-027, FEAT-029, FEAT-030, FEAT-034, FEAT-036.
 
 ## Database Impact
 
@@ -144,14 +144,14 @@ None. Read paths are covered by the `request_completed` access log (FEAT-018). N
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-014-AC-01 | With the `test_v0_1` seed as of 2026-10-30 15:00 CT, activity counts are R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12, and the sum of missed over R01–R10 is 19. | DB-041, AC-DB-05, FR-135 |
-| FEAT-014-AC-02 | R09 last check-in equals 2026-10-30 14:28 in America/Chicago. | DB-045 |
-| FEAT-014-AC-03 | D02 silent days in the window = {2026-10-12}; D08 silent days equal R08's 12 missing days; D02 device-gap days = {2026-10-12}. | DB-044, FR-154 |
-| FEAT-014-AC-04 | R07 epoch 2 restart cause is `device` with `previous_device_code` D07, `from_value` D07, `to_value` D07B; R07 epoch 1 has no restart cause. | DB-065, D-64 |
-| FEAT-014-AC-05 | D07 `in_use_until` is 2026-10-12; D07B `in_use_until` is NULL. | DB-066 |
-| FEAT-014-AC-06 | R08 baseline progress is 13 of 16; R09 watching-since is 2026-10-17 and alarm-since 2026-10-21; R10 alarm-since 2026-10-24. | DME-012, D-41 |
-| FEAT-014-AC-07 | The R09 scores series returns 14 rows in ascending `local_date` with the baseline period Oct 1–Oct 16, in ≤ 50 ms database time on the seeded database. | DB-043 |
-| FEAT-014-AC-08 | No table or column stores any of these values (schema review: no column named `last_checkin`, `silent_days`, `in_use_until`, `restart_cause`, `watching_since`). | DME-012 |
+| FEAT-014-AC-01 | With the `test_v0_1` seed as of 2026-10-30 15:00 CT, activity counts are R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12, and the sum of missed over R01–R10 is 19. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-041, AC-DB-05, FR-135 |
+| FEAT-014-AC-02 | R09 last check-in equals 2026-10-30 14:28 in America/Chicago. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-045 |
+| FEAT-014-AC-03 | D02 silent days in the window = {2026-10-12}; D08 silent days equal R08's 12 missing days; D02 device-gap days = {2026-10-12}. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-044, FR-154 |
+| FEAT-014-AC-04 | R07 epoch 2 restart cause is `device` with `previous_device_code` D07, `from_value` D07, `to_value` D07B; R07 epoch 1 has no restart cause. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-065, D-64 |
+| FEAT-014-AC-05 | D07 `in_use_until` is 2026-10-12; D07B `in_use_until` is NULL. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-066 |
+| FEAT-014-AC-06 | R08 baseline progress is 13 of 16; R09 watching-since is 2026-10-17 and alarm-since 2026-10-21; R10 alarm-since 2026-10-24. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DME-012, D-41 |
+| FEAT-014-AC-07 | The R09 scores series returns 14 rows in ascending `local_date` with the baseline period Oct 1–Oct 16, in ≤ 50 ms database time on the seeded database. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-043 |
+| FEAT-014-AC-08 | No table or column stores any of these values (schema review: no column named `last_checkin`, `silent_days`, `in_use_until`, `restart_cause`, `watching_since`). Verified by: Integration (`tests/integration/db/test_read_models.py`). | DME-012 |
 
 ## Definition of Done
 

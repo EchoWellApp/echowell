@@ -77,7 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 
 - FEAT-021 (Role-based authorization matrix): all-role access.
 - FEAT-014 (Read-model derivations): baseline progress and usable-session counts.
-- Downstream: FEAT-038 (OpenAPI), FEAT-073 (page), FEAT-095 (future range computation).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-073, FEAT-095.
 
 ## Database Impact
 
@@ -123,18 +124,19 @@ No pipeline stage. The only calculation is the median of a new-admission residen
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-036-AC-01 | With DS-07 loaded, `GET /api/v1/admissions` returns 200 `{"items": [], "total": 0, ...}` with `meta` and header `X-EchoWell-Experimental: true`; `GET /facility/reference-ranges` returns 200 with empty `items` and the same header. | API-089, TRD 19 E-22, E-24 |
-| FEAT-036-AC-02 | `GET /admissions/R09/comparison` (R09 is longitudinal) returns 404 `RESIDENT_NOT_FOUND`. | API-090 |
-| FEAT-036-AC-03 | A fixture new-admission resident N01 with 3 usable sessions and no reference ranges is listed with `comparison_status` `range_not_available` and `own_baseline_progress` 3 of 16 (test_v0_1). | FR-201, FR-202 |
+| FEAT-036-AC-01 | With DS-07 loaded, `GET /api/v1/admissions` returns 200 `{"items": [], "total": 0, ...}` with `meta` and header `X-EchoWell-Experimental: true`; `GET /facility/reference-ranges` returns 200 with empty `items` and the same header. Verified by: Integration (`tests/integration/api/test_admissions.py`). | API-089, TRD 19 E-22, E-24 |
+| FEAT-036-AC-02 | `GET /admissions/R09/comparison` (R09 is longitudinal) returns 404 `RESIDENT_NOT_FOUND`. Verified by: Integration (`tests/integration/api/test_admissions.py`). | API-090 |
+| FEAT-036-AC-03 | A fixture new-admission resident N01 with 3 usable sessions and no reference ranges is listed with `comparison_status` `range_not_available` and `own_baseline_progress` 3 of 16 (test_v0_1). Verified by: Integration (`tests/integration/api/test_admissions.py`). | FR-201, FR-202 |
 | FEAT-036-AC-04 | With fixture ranges for the 7 scored features and N01's median of `loudness_dbfs` below its `low`, the list shows `outside_range` and the comparison item for `loudness_dbfs` has `outside_range` true; with all medians inside, `within_range`. | TST-186, FR-202 |
-| FEAT-036-AC-05 | After calling all three endpoints, the row counts of `alerts`, `scores` and `cusum_state` are unchanged. | FR-206 |
-| FEAT-036-AC-06 | Every user role receives 200 on all three endpoints; an API key receives 401. | API-089, TRD 13 Table 4.13-A |
+| FEAT-036-AC-05 | After calling all three endpoints, the row counts of `alerts`, `scores` and `cusum_state` are unchanged. Verified by: Integration (`tests/integration/api/test_admissions.py`). | FR-206 |
+| FEAT-036-AC-06 | Every user role receives 200 on all three endpoints; an API key receives 401. Verified by: Integration (`tests/integration/api/test_admissions.py`). | API-089, TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-036 acceptance criteria pass.
 - Three endpoints with the experimental header and TRD 19 schemas; integration tests pass; TST-186 passes.
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.
-- The OQ-08 gaps below are listed in the batch report.
+- The batch report lists the implemented requirement IDs and states that the comparison details follow the OQ-29 interim decision (AGT-022).
 
 ## Implementation Notes
 

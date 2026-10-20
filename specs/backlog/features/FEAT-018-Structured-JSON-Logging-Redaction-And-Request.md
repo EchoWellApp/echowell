@@ -95,7 +95,7 @@ Required before implementation (BACKLOG.md): FEAT-003
 
 - FEAT-003 provides `create_app()`, `Settings` (`LOG_FORMAT`, `LOG_LEVEL`, `GIT_SHA`) and the guard that refuses `console` in production.
 
-Features that build directly on this one: FEAT-019, FEAT-056, FEAT-084.
+Features that build directly on this one (BACKLOG.md §4): FEAT-019, FEAT-056, FEAT-084.
 
 ## Database Impact
 
@@ -145,13 +145,13 @@ None; `analytics/` stays free of logging handlers (LOG-006).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-018-AC-01 | With `LOG_FORMAT=json`, every line emitted during the integration test suite parses as JSON and contains `ts`, `level`, `logger`, `msg`, `event`, `env`, `version`. | AC-LOG-01, LOG-001 |
-| FEAT-018-AC-02 | A request with `X-Request-ID: abcd1234-test` returns that header value; a request with `X-Request-ID: bad id!` returns a generated UUID4. | AC-LOG-04, LOG-030 |
-| FEAT-018-AC-03 | Responses with status 200, 401, 404, 422, 429 and 500 all carry `X-Request-ID`. | LOG-031, FR-254, API-105 |
-| FEAT-018-AC-04 | Each request in a test produces exactly one `request_completed` record; a 404 is INFO, a 422 is WARNING, a 500 is ERROR; `GET /api/v1/health` with 200 is DEBUG. | LOG-010, LOG-011 |
-| FEAT-018-AC-05 | Logging `{"password": "x", "Authorization": "Bearer abc", "note": "text"}` yields `[REDACTED]` for all three values, and a message containing `postgresql://u:secretpw@h/db` is logged without `secretpw`. | LOG-023, LOG-024, SEC-107 |
-| FEAT-018-AC-06 | After FEAT-020 lands, a login with password `Secret-123!` followed by an authorised request produces logs with zero matches for `Secret-123!`, the JWT and the e-mail address. | AC-LOG-02, LOG-020, LOG-022 |
-| FEAT-018-AC-07 | A forced exception produces exactly one ERROR `unhandled_exception` record with `exc_type`, `stack` and the request's `request_id`. | LOG-070 |
+| FEAT-018-AC-01 | With `LOG_FORMAT=json`, every line emitted during the integration test suite parses as JSON and contains `ts`, `level`, `logger`, `msg`, `event`, `env`, `version`. Verified by: Integration (AC-LOG-01 (every captured line in the integration suite parses as JSON with the required keys) — enforced by a session-scoped `caplog`/stdout capture fixture). | AC-LOG-01, LOG-001 |
+| FEAT-018-AC-02 | A request with `X-Request-ID: abcd1234-test` returns that header value; a request with `X-Request-ID: bad id!` returns a generated UUID4. Verified by: Integration (`tests/integration/api/test_request_id.py`). | AC-LOG-04, LOG-030 |
+| FEAT-018-AC-03 | Responses with status 200, 401, 404, 422, 429 and 500 all carry `X-Request-ID`. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-031, FR-254, API-105 |
+| FEAT-018-AC-04 | Each request in a test produces exactly one `request_completed` record; a 404 is INFO, a 422 is WARNING, a 500 is ERROR; `GET /api/v1/health` with 200 is DEBUG. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-010, LOG-011 |
+| FEAT-018-AC-05 | Logging `{"password": "x", "Authorization": "Bearer abc", "note": "text"}` yields `[REDACTED]` for all three values, and a message containing `postgresql://u:secretpw@h/db` is logged without `secretpw`. Verified by: Unit (`tests/unit/backend/core/test_logging.py`). | LOG-023, LOG-024, SEC-107 |
+| FEAT-018-AC-06 | After FEAT-020 lands, a login with password `Secret-123!` followed by an authorised request produces logs with zero matches for `Secret-123!`, the JWT and the e-mail address. Verified by: Integration (AC-LOG-02 once FEAT-020 exists (login with password `Secret-123!` and an authorised request: logs contain neither the password, the JWT nor the e-mail)). | AC-LOG-02, LOG-020, LOG-022 |
+| FEAT-018-AC-07 | A forced exception produces exactly one ERROR `unhandled_exception` record with `exc_type`, `stack` and the request's `request_id`. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-070 |
 
 ## Definition of Done
 

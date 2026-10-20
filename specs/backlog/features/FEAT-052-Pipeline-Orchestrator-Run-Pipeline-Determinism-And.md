@@ -90,7 +90,8 @@ Caller → `run_pipeline` → (1) validate → (2) sort by `arrival_seq` → (3)
 Required before implementation (BACKLOG.md): FEAT-041, FEAT-042, FEAT-044, FEAT-045, FEAT-046, FEAT-047, FEAT-048, FEAT-049, FEAT-050, FEAT-051
 
 - Each dependency delivers one stage function the orchestrator calls (duplicates and gate, epochs, speaker screen, baseline and late arrivals, scoring, CUSUM, alerts, ledger, data alerts, aggregates); FEAT-043 (morning adjustment) and FEAT-040 (contracts, config) are reached through them.
-- FEAT-053 (runner) and FEAT-058 (validation harness) depend on this feature.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-053, FEAT-058, FEAT-095.
 
 ## Database Impact
 
@@ -145,11 +146,11 @@ None. The engine has no UI; its results reach the pages through the API features
 |---|---|---|
 | FEAT-052-AC-01 | `run_pipeline` on SRC-05 with `test_v0_1` and as-of 2026-10-30 15:00 America/Chicago passes all SRC-03 comparisons (302, 10, 11, 180, 98 rows) at 1e-6 and exact strings. | AC-ANL-01; PIP-01 |
 | FEAT-052-AC-02 | Two calls on the same inputs, and a call on a shuffled input list with unchanged `arrival_seq`, return equal results. | AC-ANL-02; PIP-02 |
-| FEAT-052-AC-03 | Removing arrivals 89 and 283 changes nothing in R04's baselines, scores or ledger. | AC-ANL-03; FR-031 |
-| FEAT-052-AC-04 | A static import check fails the build when any `analytics/` module imports a database, HTTP or `backend` module. | AC-ANL-04 |
+| FEAT-052-AC-03 | Removing arrivals 89 and 283 changes nothing in R04's baselines, scores or ledger. Verified by: Test (VC-R04). | AC-ANL-03; FR-031 |
+| FEAT-052-AC-04 | A static import check fails the build when any `analytics/` module imports a database, HTTP or `backend` module. Verified by: Test (TST-021). | AC-ANL-04 |
 | FEAT-052-AC-05 | `PipelineResult.counts` on SRC-05 equals 283/267/12/2/2/17/2/0/98/2/0/10 for the 12 keys in TRD 23 order. | DB-020; TST-051 |
-| FEAT-052-AC-06 | A record with `timestamp_utc` after `as_of` is absent from sessions, scores and ledger and yields exactly one `after_as_of` warning. | ANL-015 |
-| FEAT-052-AC-07 | A naive `as_of`, a duplicate `arrival_seq` or a missing feature key each raises `ContractError` and returns no result. | ANL-018 |
+| FEAT-052-AC-06 | A record with `timestamp_utc` after `as_of` is absent from sessions, scores and ledger and yields exactly one `after_as_of` warning. Verified by: Unit (`tests/unit/analytics/test_pipeline.py`). | ANL-015 |
+| FEAT-052-AC-07 | A naive `as_of`, a duplicate `arrival_seq` or a missing feature key each raises `ContractError` and returns no result. Verified by: Unit (`tests/unit/analytics/test_pipeline.py`). | ANL-018 |
 | FEAT-052-AC-08 | The engine on SRC-05 completes in ≤ 5 s in CI. | AC-ANL-07; TST-120 |
 | FEAT-052-AC-09 | `python scripts/run_engine.py --input tests/fixtures/pipeline_input/EchoWell_pipeline_test_input_v0_1.csv --profile test_v0_1 --as-of "2026-10-30 15:00" --assignments <json> --residents <json> --out <dir>` exits 0 and writes the result JSON files. | ANL-007 |
 

@@ -84,7 +84,8 @@ Make the API contract of TRD 19 executable: serve the generated OpenAPI 3.1 docu
 Required before implementation (BACKLOG.md): FEAT-024, FEAT-026, FEAT-028, FEAT-029, FEAT-031, FEAT-032, FEAT-033, FEAT-035, FEAT-036, FEAT-037
 
 - FEAT-024 (pipeline run endpoints), FEAT-026 (ingest endpoints), FEAT-028 (resident detail, check-ins, features), FEAT-029 (devices), FEAT-031 (reviews and snooze), FEAT-032 (data alerts), FEAT-033 (notes), FEAT-035 (analytics), FEAT-036 (admissions), FEAT-037 (users): every TRD 19 endpoint must exist before the path-equality test can pass (their own dependencies bring in health, auth, residents, scores, alerts and config).
-- Downstream: FEAT-039 (security suite uses the document), FEAT-062 (frontend type generation), FEAT-078 (CI job).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-039, FEAT-062, FEAT-078.
 
 ## Database Impact
 
@@ -135,20 +136,21 @@ None beyond the standard startup logs; `export-openapi` writes only the document
 | FEAT-038-AC-03 | The path set of the generated document under `/api/v1` equals the TRD 19 endpoint list E-01..E-32 (plus `/openapi.json`), and `/alerts/{id}/acknowledge` is absent. | TST-062, OAS-003 |
 | FEAT-038-AC-04 | Every response captured by `pytest tests/integration -q` validates against its declared schema, including all Problem responses. | TST-061, AC-OAS-03 |
 | FEAT-038-AC-05 | Every captured list, detail and analytics response contains `meta` with `facility_name`, `facility_tz`, `data_source_label`, `as_of`, `baseline_n`, `cusum_h`, `pipeline_profile`; `Token`, `User`, `IngestBatchAccepted`, `Alert` and `Health` responses do not. | TST-064, OAS-017 |
-| FEAT-038-AC-06 | The enum test finds identical value sets between DTO enums and `pg_enum`. | OAS-007, AC-OAS-06 |
-| FEAT-038-AC-07 | A scan of the generated document finds no property containing `audio` other than `audio_quality_flag` and no resident `name` or `dob` property. | OAS-016, AC-OAS-07, FR-015 |
-| FEAT-038-AC-08 | `GET /api/v1/openapi.json` returns 200 without credentials; `GET /api/v1/docs` returns 404 when `APP_ENV=production` and 200 when `APP_ENV=test`. | API-113 |
+| FEAT-038-AC-06 | The enum test finds identical value sets between DTO enums and `pg_enum`. Verified by: Integration (`tests/integration/db/test_enums.py`). | OAS-007, AC-OAS-06 |
+| FEAT-038-AC-07 | A scan of the generated document finds no property containing `audio` other than `audio_quality_flag` and no resident `name` or `dob` property. Verified by: Contract (`tests/contract/test_openapi_contract.py`). | OAS-016, AC-OAS-07, FR-015 |
+| FEAT-038-AC-08 | `GET /api/v1/openapi.json` returns 200 without credentials; `GET /api/v1/docs` returns 404 when `APP_ENV=production` and 200 when `APP_ENV=test`. Verified by: Contract (`tests/contract/test_openapi_contract.py`; TST-060). | API-113 |
 
 ## Definition of Done
 
+- All FEAT-038 acceptance criteria pass.
 - Contract tests pass in `pytest -m contract`; the committed document is regenerated in the same PR as any API change (D-51).
 - `docs/api_reference.md` summarises every endpoint with its auth and status codes.
-- Batch report records the export-command conflict below (AGT-001, AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 
 - Name Pydantic models exactly as TRD 19 components; request models use `ConfigDict(extra="forbid")`; response nullables are `X | None` without defaults and serialised with `response_model_exclude_none=False` (TRD 19 §8).
 - Build the app for export without the lifespan handler; the database engine connects lazily in the lifespan (TRD 16 §8 note), which `export-openapi` does not run.
 - Sort keys when printing (`json.dumps(doc, indent=2, sort_keys=True)`) so regeneration is byte-stable across runs.
-- Former TRD conflict: TRD 05 §8 described `export-openapi` as "writing `docs/api_reference/openapi.json`" and TRD 25 Phase 5 lists `python -m backend.cli export-openapi` followed by `git diff --exit-code docs/api_reference/openapi.json`, while TRD 15 §4.8 says the command prints the JSON and TRD 16 CIC-018 / `ci.yml` redirect stdout to `/tmp/openapi.json` and diff it with the committed file. Writing the committed file from the same command would make the CI diff always pass. Resolved (TRD 24 D-89): the command prints to stdout and writes no file; TRD 05 §8 and TRD 25 Phase 5 now regenerate with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` and check with the CI diff.
+- Resolved (PR #2): TRD 05 §8 described `export-openapi` as "writing `docs/api_reference/openapi.json`" and TRD 25 Phase 5 lists `python -m backend.cli export-openapi` followed by `git diff --exit-code docs/api_reference/openapi.json`, while TRD 15 §4.8 says the command prints the JSON and TRD 16 CIC-018 / `ci.yml` redirect stdout to `/tmp/openapi.json` and diff it with the committed file. Writing the committed file from the same command would make the CI diff always pass. Resolved (TRD 24 D-89): the command prints to stdout and writes no file; TRD 05 §8 and TRD 25 Phase 5 now regenerate with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` and check with the CI diff.
 - Use `openapi-core` 0.19.x for response validation and `openapi-spec-validator` 0.7.x for document validation (TRD 19 §6, TRD 16 §6).

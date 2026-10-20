@@ -81,6 +81,8 @@ Required before implementation (BACKLOG.md): FEAT-066, FEAT-033, FEAT-070
 - FEAT-033 provides the notes endpoints.
 - FEAT-070 provides `AlertReviewForm` reused in the dialog.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
+
 ## Database Impact
 
 None directly; the backend inserts `staff_notes` rows (append-only) and audit `note.created` (FEAT-033), and `alert_reviews` via FEAT-031.
@@ -124,11 +126,11 @@ None in the frontend; the backend writes `note.created` and `alert.reviewed` aud
 |---|---|---|
 | FEAT-071-AC-01 | As clinician on R09, saving an "Observation" note "Resident has a cold; nurse notified." announces "Note saved.", lists the note with author and time, and leaves the alert status unchanged. | E2E-09; FE-187; UX-130 |
 | FEAT-071-AC-02 | "Mark as reviewed" opens the dialog "Review alarm · R09 · alarm since Oct 21"; saving with "Cold, cough or sore throat" and "Explained by a known cause" closes it, the review appears in the alert's history, `/alerts` shows R09 "Reviewed" and "Alerts (1)", and the badge still reads "▲ Alarm since Oct 21". | FE-187; AC-FE-10; AC-UX-06 |
-| FEAT-071-AC-03 | A clinician can save a note of each type and each appears with its type label. | AC-UX-06; UX-133 |
+| FEAT-071-AC-03 | A clinician can save a note of each type and each appears with its type label. Verified by: Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`; TST-090). | AC-UX-06; UX-133 |
 | FEAT-071-AC-04 | As researcher the section shows "Only clinicians and admins can add notes.", previous notes, and no "Mark as reviewed" button. | AC-UX-06; FE-188; FR-194 |
-| FEAT-071-AC-05 | On R01 (no change alarm) "Mark as reviewed" is not rendered. | UX-121; FR-191 |
-| FEAT-071-AC-06 | A mocked failed save shows "Could not save the note. Your text is kept — try again." and the textarea keeps the typed text. | UX-131; FE-089 |
-| FEAT-071-AC-07 | "Save note" is disabled for a whitespace-only body and for 2001 characters. | FE-132 |
+| FEAT-071-AC-05 | On R01 (no change alarm) "Mark as reviewed" is not rendered. Verified by: Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`; TST-090). | UX-121; FR-191 |
+| FEAT-071-AC-06 | A mocked failed save shows "Could not save the note. Your text is kept — try again." and the textarea keeps the typed text. Verified by: Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`; TST-090). | UX-131; FE-089 |
+| FEAT-071-AC-07 | "Save note" is disabled for a whitespace-only body and for 2001 characters. Verified by: Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`; TST-090). | FE-132 |
 
 ## Definition of Done
 

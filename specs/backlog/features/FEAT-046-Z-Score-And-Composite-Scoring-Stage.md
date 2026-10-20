@@ -73,7 +73,8 @@ Score every usable check-in that arrives after a resident's baseline has frozen:
 Required before implementation (BACKLOG.md): FEAT-045
 
 - FEAT-045 (Baseline builder): formed baselines, membership ordinals, `feature_z`, `composite_raw`.
-- Downstream: FEAT-047 (CUSUM), FEAT-048 (leaning most uses signed z), FEAT-052.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-047, FEAT-052, FEAT-096.
 
 ## Database Impact
 
@@ -116,12 +117,13 @@ None in `analytics/` (LOG-006).
 |---|---|---|
 | FEAT-046-AC-01 | `feature_z` for adjusted −27.0 against median −29.925 and spread 3.209829 returns 0.9112635 (±1e-6), unsigned. | Z-01, BSC-037 |
 | FEAT-046-AC-02 | With all seven unsigned z equal to +1.0, `composite_raw` returns −1/7; with composite_raw 0.5 and a composite baseline of median 0.0, MAD 0.0 (spread floored 0.1), `composite_z` returns 5.0. | CMP-01, CMP-02 |
-| FEAT-046-AC-03 | R09-20261021-01 yields z loudness −2.737502, phrase 2.420232, speech rate −1.180359, articulation −1.584269, pauses 1.348982, pause fraction 2.285774, voiced −4.721435, composite_raw 2.325508 and composite_z 4.288307 (±1e-6). | AC-BSC-06, TRD 08 §4.11 |
+| FEAT-046-AC-03 | R09-20261021-01 yields z loudness −2.737502, phrase 2.420232, speech rate −1.180359, articulation −1.584269, pauses 1.348982, pause fraction 2.285774, voiced −4.721435, composite_raw 2.325508 and composite_z 4.288307 (±1e-6). Verified by: Unit (`tests/unit/analytics/test_zscore_calculator.py`, `test_composite_score.py`; Z-01, Z-02, CMP-01). | AC-BSC-06, TRD 08 §4.11 |
 | FEAT-046-AC-04 | On SRC-05 exactly 98 sessions are scored with the per-resident counts of VC-G06, and every `z_*`, `composite_raw`, `composite_z` and `morning` value equals Exp_scores (±1e-6, booleans exact). | VC-G06, AC-BSC-03 |
-| FEAT-046-AC-05 | Changing a stored-not-scored feature value (e.g. `mfcc1`) of a scored session changes none of its ScoreRow values. | BSC-039, FR-095 |
+| FEAT-046-AC-05 | Changing a stored-not-scored feature value (e.g. `mfcc1`) of a scored session changes none of its ScoreRow values. Verified by: Inspection (the inspection method of BSC-039, applied to the condition stated in the criterion). | BSC-039, FR-095 |
 
 ## Definition of Done
 
+- All FEAT-046 acceptance criteria pass.
 - `composite_z` and the scoring loop implemented; Z-01, Z-02, CMP-01..CMP-03 pass (TST-020); test files exist (TST-011).
 - VC-G06 and AC-BSC-03 pass in the validation suite (FEAT-059).
 

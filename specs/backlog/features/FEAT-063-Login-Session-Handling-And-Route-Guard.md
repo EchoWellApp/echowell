@@ -83,6 +83,8 @@ Required before implementation (BACKLOG.md): FEAT-062, FEAT-020
 - FEAT-062 provides `api.ts`, the query client and the 401 hook point.
 - FEAT-020 provides the JWT authentication endpoints.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-064.
+
 ## Database Impact
 
 None directly. The backend records `auth.login.succeeded`, `auth.login.failed` and `auth.logout` audit rows (FEAT-020).
@@ -133,10 +135,10 @@ None.
 | FEAT-063-AC-01 | Opening any protected route without a token redirects to `/login`; after sign-in the user returns to that route; `next=https://example.com` and `next=//evil` lead to `/residents`. | AC-FE-05; FE-188 |
 | FEAT-063-AC-02 | E2E-01: logging in as the seeded clinician from `/` lands on `/residents`. | E2E-01 |
 | FEAT-063-AC-03 | E2E-02: a wrong password shows "Email or password is incorrect.", stores no token in `sessionStorage`, and the backend records a failed-login audit row. | E2E-02; UX-171 |
-| FEAT-063-AC-04 | A mocked 401 on `GET /residents` clears `sessionStorage["echowell.auth"]` and navigates to `/login?reason=expired&next=%2Fresidents`, where "Your session has ended. Please sign in again." is shown. | FE-056; UX-173 |
-| FEAT-063-AC-05 | Searching the built `.next/static` output shows the token key used only with `sessionStorage`; no `localStorage` write of the token exists. | AC-FE-06 |
-| FEAT-063-AC-06 | "Sign out" sends `POST /api/v1/auth/logout`, clears the token and navigates to `/login`, also when the logout request fails. | FE-058; FR-217 |
-| FEAT-063-AC-07 | A mocked 429 on login shows "Too many sign-in attempts. Wait one minute and try again." | UX-172 |
+| FEAT-063-AC-04 | A mocked 401 on `GET /residents` clears `sessionStorage["echowell.auth"]` and navigates to `/login?reason=expired&next=%2Fresidents`, where "Your session has ended. Please sign in again." is shown. Verified by: Guard page test (TST-094). | FE-056; UX-173 |
+| FEAT-063-AC-05 | Searching the built `.next/static` output shows the token key used only with `sessionStorage`; no `localStorage` write of the token exists. Verified by: Inspection (built `.next/static` shows only `sessionStorage` usage for the token key (AC-FE-06)). | AC-FE-06 |
+| FEAT-063-AC-06 | "Sign out" sends `POST /api/v1/auth/logout`, clears the token and navigates to `/login`, also when the logout request fails. Verified by: E2E (`auth.spec.ts`; FE-188, E2E-01, E2E-02). | FE-058; FR-217 |
+| FEAT-063-AC-07 | A mocked 429 on login shows "Too many sign-in attempts. Wait one minute and try again." Verified by: E2E (`auth.spec.ts`; FE-188, E2E-01, E2E-02). | UX-172 |
 
 ## Definition of Done
 

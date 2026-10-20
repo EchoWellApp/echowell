@@ -77,7 +77,8 @@ Implement the first two pipeline stages. Duplicate detection processes arrivals 
 Required before implementation (BACKLOG.md): FEAT-040
 
 - FEAT-040 (Analytics contracts and PipelineConfig): `RawRecord`, `ScreenedRecord`, `PipelineConfig`, `ContractError`.
-- Downstream: FEAT-042 (epochs), FEAT-049 (day ledger), FEAT-052 (orchestrator).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-042, FEAT-049, FEAT-052.
 
 ## Database Impact
 
@@ -129,6 +130,7 @@ None in `analytics/` (LOG-006). Duplicate and set-aside counts appear in `Pipeli
 
 ## Definition of Done
 
+- All FEAT-041 acceptance criteria pass.
 - Both modules implemented with the binding signatures; unit cases DUP-01..DUP-04 and QG-01..QG-07 pass (TST-020).
 - Test files exist for both modules (TST-011); `analytics/` coverage ≥ 95 % (TST-140).
 - FEAT-041-AC-06 passes in the validation suite once FEAT-052 assembles the pipeline.

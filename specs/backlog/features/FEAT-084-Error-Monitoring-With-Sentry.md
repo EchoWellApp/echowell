@@ -77,6 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-081, FEAT-082, FEAT-018
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify configuration (no frontend SDK; CSP has no Sentry origin).
 - [FEAT-018](FEAT-018-Structured-JSON-Logging-Redaction-And-Request.md) Structured logging and redaction filters reused by `before_send`.
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 None.
@@ -118,10 +120,10 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-084-AC-01 | With `SENTRY_DSN` empty, a request raising an unhandled exception produces the ERROR log and zero calls to the Sentry transport. | LOG-101 |
-| FEAT-084-AC-02 | With a test DSN and a captured transport, the captured event contains `environment`, `release` = GIT_SHA and the exception, and contains no request body, headers, cookies, query string, password or connection-URL credentials. | LOG-100, SEC-127 |
-| FEAT-084-AC-03 | `grep -rn "@sentry" frontend/package.json` returns nothing. | TPS-060 |
-| FEAT-084-AC-04 | `docs/deployment.md` states that SENTRY_DSN is empty in production before AWS go-live unless approved, and the TRD 21 §4.7 values for local and test are empty. | TPS-061, LOG-102 |
+| FEAT-084-AC-01 | With `SENTRY_DSN` empty, a request raising an unhandled exception produces the ERROR log and zero calls to the Sentry transport. Verified by: Unit (with an empty DSN, patch the SDK transport and assert zero calls (LOG-101)). | LOG-101 |
+| FEAT-084-AC-02 | With a test DSN and a captured transport, the captured event contains `environment`, `release` = GIT_SHA and the exception, and contains no request body, headers, cookies, query string, password or connection-URL credentials. Verified by: Unit (with a dummy DSN and a captured transport, assert the event has no `request.data`, no headers, cookies or query string, and that a field `password` and a URL `postgresql://u:p@h/db` are `[REDACTED]` (LOG-100)). | LOG-100, SEC-127 |
+| FEAT-084-AC-03 | `grep -rn "@sentry" frontend/package.json` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | TPS-060 |
+| FEAT-084-AC-04 | `docs/deployment.md` states that SENTRY_DSN is empty in production before AWS go-live unless approved, and the TRD 21 §4.7 values for local and test are empty. Verified by: Inspection (the inspection method of LOG-102, applied to the condition stated in the criterion). | TPS-061, LOG-102 |
 
 ## Definition of Done
 

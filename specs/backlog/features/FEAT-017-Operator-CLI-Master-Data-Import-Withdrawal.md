@@ -91,7 +91,7 @@ Required before implementation (BACKLOG.md): FEAT-016, FEAT-014
 - FEAT-016 provides password hashing, API-key hashing and the CLI scaffolding with audited commands.
 - FEAT-014 completes the Phase 4 repository layer (read models over the seeded roster are verified with this command's output).
 
-Features that build directly on this one: FEAT-055 (full seed with SRC-05 ingest and pipeline run).
+Features that build directly on this one (BACKLOG.md §4): FEAT-055.
 
 ## Database Impact
 
@@ -152,15 +152,15 @@ None. `bootstrap` only checks that the migration-0002 parameter rows exist (D-85
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-017-AC-01 | After `seed test_v0_1 --master-only` with all `SEED_*` set, row counts facilities/residents/devices/device_assignments/users/api_keys are 1/10/10/11/3/1, and the D07 row has `active = false`. | DB-056 |
-| FEAT-017-AC-02 | Running the same command a second time leaves the same counts; stdout, stderr and logs contain none of the four `SEED_*` values. | DB-057, D-71 |
-| FEAT-017-AC-03 | With `APP_ENV=production`, `seed test_v0_1` exits 2 printing "seeding is not allowed in production" and `reset-test-db` exits 2; no table row count changes. | DEP-070, DB-059, AC-DB-08 |
-| FEAT-017-AC-04 | With `PIPELINE_PROFILE=production` and `APP_ENV=local`, `reset-test-db` exits 2. | DB-024, AC-DB-08 |
-| FEAT-017-AC-05 | On a populated local test database, `reset-test-db` leaves `config_parameters` with 46 rows, `audit_logs` with exactly one `seed.reset` row and every other table empty; `seed test_v0_1 --reset` then succeeds twice in a row. | DB-024, DEP-071, AC-DB-08 |
-| FEAT-017-AC-06 | `withdraw-resident R08 --on 2026-10-20` sets R08 `status = withdrawn`, `withdrawn_on = 2026-10-20` and writes one `resident.withdrawn` audit row; R08's other rows are unchanged. | DB-062, DME-009 |
-| FEAT-017-AC-07 | After withdrawing R08 locally, `purge-resident R08 --confirm R08` removes every R08 row from the 13 tables of DB-064 and writes one `resident.purged` audit row; no `audit_logs` row is deleted. | DB-064 |
-| FEAT-017-AC-08 | `bootstrap` run twice produces a database identical (all rows) to running it once. | DEP-072 |
-| FEAT-017-AC-09 | `grep -rn "evaluation_ground_truth" backend/cli.py` returns nothing; no router under `backend/api/` writes `residents`, `devices` or `device_assignments`. | TRD 20 §4.12, FR-227 |
+| FEAT-017-AC-01 | After `seed test_v0_1 --master-only` with all `SEED_*` set, row counts facilities/residents/devices/device_assignments/users/api_keys are 1/10/10/11/3/1, and the D07 row has `active = false`. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-056 |
+| FEAT-017-AC-02 | Running the same command a second time leaves the same counts; stdout, stderr and logs contain none of the four `SEED_*` values. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-057, D-71 |
+| FEAT-017-AC-03 | With `APP_ENV=production`, `seed test_v0_1` exits 2 printing "seeding is not allowed in production" and `reset-test-db` exits 2; no table row count changes. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DEP-070, DB-059, AC-DB-08 |
+| FEAT-017-AC-04 | With `PIPELINE_PROFILE=production` and `APP_ENV=local`, `reset-test-db` exits 2. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-024, AC-DB-08 |
+| FEAT-017-AC-05 | On a populated local test database, `reset-test-db` leaves `config_parameters` with 46 rows, `audit_logs` with exactly one `seed.reset` row and every other table empty; `seed test_v0_1 --reset` then succeeds twice in a row. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-024, DEP-071, AC-DB-08 |
+| FEAT-017-AC-06 | `withdraw-resident R08 --on 2026-10-20` sets R08 `status = withdrawn`, `withdrawn_on = 2026-10-20` and writes one `resident.withdrawn` audit row; R08's other rows are unchanged. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-062, DME-009 |
+| FEAT-017-AC-07 | After withdrawing R08 locally, `purge-resident R08 --confirm R08` removes every R08 row from the 13 tables of DB-064 and writes one `resident.purged` audit row; no `audit_logs` row is deleted. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DB-064 |
+| FEAT-017-AC-08 | `bootstrap` run twice produces a database identical (all rows) to running it once. Verified by: Integration (`tests/integration/test_cli_seed.py`). | DEP-072 |
+| FEAT-017-AC-09 | `grep -rn "evaluation_ground_truth" backend/cli.py` returns nothing; no router under `backend/api/` writes `residents`, `devices` or `device_assignments`. Verified by: Inspection (run the command in the criterion and check its output). | TRD 20 §4.12, FR-227 |
 
 ## Definition of Done
 

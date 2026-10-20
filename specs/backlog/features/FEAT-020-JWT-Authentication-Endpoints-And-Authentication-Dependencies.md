@@ -97,7 +97,7 @@ Required before implementation (BACKLOG.md): FEAT-016, FEAT-019
 - FEAT-016 provides argon2id hashing, rehash detection, e-mail normalisation, the dummy hash and API-key hashing.
 - FEAT-019 provides the Problem error rendering for `NOT_AUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `INVALID_CREDENTIALS`, `API_KEY_INVALID`, `FORBIDDEN`, `ACCOUNT_TEMPORARILY_LOCKED`.
 
-Features that build directly on this one: FEAT-021, FEAT-022.
+Features that build directly on this one (BACKLOG.md §4): FEAT-021, FEAT-022, FEAT-063.
 
 ## Database Impact
 
@@ -154,14 +154,14 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-020-AC-01 | A valid login returns 200 with `token_type` "bearer", `expires_in` 3600 and a JWT whose header `alg` is HS256 and whose claims include `sub`, `role`, `iat`, `exp`, `jti`, `iss` "echowell-api", `aud` "echowell-dashboard"; one `auth.login.succeeded` row is written. | API-020, SEC-030, SEC-031, FR-210 |
-| FEAT-020-AC-02 | Unknown e-mail, wrong password and an inactive user each return 401 `INVALID_CREDENTIALS` with byte-identical bodies apart from `request_id`, and each writes one `auth.login.failed` row. | SEC-014, API-021, FR-214 |
-| FEAT-020-AC-03 | The 11th login attempt for one e-mail within 15 minutes after 10 failures returns 429 `ACCOUNT_TEMPORARILY_LOCKED`. | SEC-015 |
+| FEAT-020-AC-01 | A valid login returns 200 with `token_type` "bearer", `expires_in` 3600 and a JWT whose header `alg` is HS256 and whose claims include `sub`, `role`, `iat`, `exp`, `jti`, `iss` "echowell-api", `aud` "echowell-dashboard"; one `auth.login.succeeded` row is written. Verified by: Unit (`tests/unit/backend/core/test_security.py`). | API-020, SEC-030, SEC-031, FR-210 |
+| FEAT-020-AC-02 | Unknown e-mail, wrong password and an inactive user each return 401 `INVALID_CREDENTIALS` with byte-identical bodies apart from `request_id`, and each writes one `auth.login.failed` row. Verified by: Integration (`tests/integration/api/test_auth.py`). | SEC-014, API-021, FR-214 |
+| FEAT-020-AC-03 | The 11th login attempt for one e-mail within 15 minutes after 10 failures returns 429 `ACCOUNT_TEMPORARILY_LOCKED`. Verified by: Integration (`tests/integration/api/test_auth.py`). | SEC-015 |
 | FEAT-020-AC-04 | A JWT expired by 61 minutes returns 401 `TOKEN_EXPIRED`; an altered signature or `alg: none` token returns 401 `TOKEN_INVALID`; no token returns 401 `NOT_AUTHENTICATED`; all three carry `WWW-Authenticate: Bearer`. | TST-132, API-024 |
-| FEAT-020-AC-05 | Deactivating a user makes their still-valid token return 401 `TOKEN_INVALID` on the next request. | SEC-034, API-012 |
+| FEAT-020-AC-05 | Deactivating a user makes their still-valid token return 401 `TOKEN_INVALID` on the next request. Verified by: Integration (`tests/integration/api/test_auth.py`). | SEC-034, API-012 |
 | FEAT-020-AC-06 | `POST /auth/logout` with a valid token returns 204 and writes one `auth.logout` row; `GET /auth/me` returns the user's e-mail, display name and role. | TST-069, FR-216, FR-217 |
 | FEAT-020-AC-07 | A revoked API key returns 401 `API_KEY_INVALID`; a key without `ingest:write` on an `ingest:write` dependency returns 403 `FORBIDDEN`; a valid key sent as a query parameter is treated as absent (401). | TST-132, SEC-024, SEC-026 |
-| FEAT-020-AC-08 | Captured logs of a login with password `Secret-123!` and an authorised request contain neither `Secret-123!`, the JWT nor the e-mail address. | AC-LOG-02 |
+| FEAT-020-AC-08 | Captured logs of a login with password `Secret-123!` and an authorised request contain neither `Secret-123!`, the JWT nor the e-mail address. Verified by: Integration (AC-LOG-02 log capture (no password, JWT or e-mail)). | AC-LOG-02 |
 
 ## Definition of Done
 

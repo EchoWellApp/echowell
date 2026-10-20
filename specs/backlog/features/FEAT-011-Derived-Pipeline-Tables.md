@@ -87,7 +87,7 @@ Required before implementation (BACKLOG.md): FEAT-010
 
 - FEAT-010 provides `raw_sessions`, referenced by `processed_sessions.raw_session_id`.
 
-Features that build directly on this one: FEAT-012, FEAT-024.
+Features that build directly on this one (BACKLOG.md §4): FEAT-012, FEAT-024.
 
 ## Database Impact
 
@@ -142,15 +142,15 @@ None from the tables. Run lifecycle logs (`pipeline_run_started`, `pipeline_run_
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-011-AC-01 | A `set_aside` row with reasons `{quality flag poor, noise above limit}` and reason_text `quality flag poor; noise above limit` inserts; with reason_text `noise above limit` it fails with 23514. | AC-PGS-04 |
-| FEAT-011-AC-02 | A `quarantined` row with reason `possible other speaker (F0 z=5.12; composite features with \|z\|>=3: 3)` and non-null `screen_detail` inserts; with `screen_detail` NULL it fails. | AC-PGS-05 |
-| FEAT-011-AC-03 | A `duplicate` row with non-null `epoch_id` fails; a `duplicate` row with `late_arrival = true` fails. | AC-PGS-06, D-57 |
-| FEAT-011-AC-04 | A `missing_resident` ledger row with reason `no record` fails; a `missing_device_gap` row for R02 on 2026-10-12 with device D02 and reason `all residents on shared device D02 have no record` inserts. | AC-PGS-07 |
-| FEAT-011-AC-05 | A late `usable` row with `epoch_id` NULL, no `baseline_ordinal`, `in_baseline = false` and reason `late arrival (not used for baseline or scores)` inserts. | D-57, PGS-012 |
-| FEAT-011-AC-06 | Inserting a 21st baselines row for an epoch with an existing `feature_key`, or with `feature_key = 'f0'`, fails. | PGS-031 |
-| FEAT-011-AC-07 | A `scores` row whose `z` lacks `z_voiced_fraction` or whose `cusum_tally = -0.1` fails with 23514. | PGS-032 |
-| FEAT-011-AC-08 | `has_table_privilege('echowell_app','baselines','UPDATE')` and `…'DELETE')` are false; `…'scores','DELETE')` is true. | DB-016, PGS-021 |
-| FEAT-011-AC-09 | A second epoch row with `ended_at IS NULL` for the same resident fails with 23505. | PGS-030 |
+| FEAT-011-AC-01 | A `set_aside` row with reasons `{quality flag poor, noise above limit}` and reason_text `quality flag poor; noise above limit` inserts; with reason_text `noise above limit` it fails with 23514. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-04 |
+| FEAT-011-AC-02 | A `quarantined` row with reason `possible other speaker (F0 z=5.12; composite features with \|z\|>=3: 3)` and non-null `screen_detail` inserts; with `screen_detail` NULL it fails. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-05 |
+| FEAT-011-AC-03 | A `duplicate` row with non-null `epoch_id` fails; a `duplicate` row with `late_arrival = true` fails. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-06, D-57 |
+| FEAT-011-AC-04 | A `missing_resident` ledger row with reason `no record` fails; a `missing_device_gap` row for R02 on 2026-10-12 with device D02 and reason `all residents on shared device D02 have no record` inserts. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-07 |
+| FEAT-011-AC-05 | A late `usable` row with `epoch_id` NULL, no `baseline_ordinal`, `in_baseline = false` and reason `late arrival (not used for baseline or scores)` inserts. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | D-57, PGS-012 |
+| FEAT-011-AC-06 | Inserting a 21st baselines row for an epoch with an existing `feature_key`, or with `feature_key = 'f0'`, fails. Verified by: Integration (TST-042). | PGS-031 |
+| FEAT-011-AC-07 | A `scores` row whose `z` lacks `z_voiced_fraction` or whose `cusum_tally = -0.1` fails with 23514. Verified by: Integration (`tests/integration/db/test_grants.py`; TST-041). | PGS-032 |
+| FEAT-011-AC-08 | `has_table_privilege('echowell_app','baselines','UPDATE')` and `…'DELETE')` are false; `…'scores','DELETE')` is true. Verified by: Integration (`tests/integration/db/test_grants.py`; TST-041). | DB-016, PGS-021 |
+| FEAT-011-AC-09 | A second epoch row with `ended_at IS NULL` for the same resident fails with 23505. Verified by: Integration (`epochs_current_uq` rejects a second open epoch (PGS-030)). | PGS-030 |
 
 ## Definition of Done
 

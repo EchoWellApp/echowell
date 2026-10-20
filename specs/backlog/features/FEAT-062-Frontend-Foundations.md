@@ -104,6 +104,8 @@ Required before implementation (BACKLOG.md): FEAT-004, FEAT-038, FEAT-060
 - FEAT-038 provides the committed OpenAPI contract for `gen:api`.
 - FEAT-060 proves the DS-07 API values the fixtures capture (and the validation gate of AGT-023 has passed).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-063, FEAT-077.
+
 ## Database Impact
 
 None. The frontend never accesses the database.
@@ -151,14 +153,14 @@ None. The frontend computes no analytics; it renders API values and rounds only 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-062-AC-01 | `formatDateTimeShort("2026-10-30T19:28:04Z", "America/Chicago", "2026-10-30T20:00:00Z")` returns "Oct 30, 2:28 PM" and `formatAsOf("2026-10-30T20:00:00Z", "America/Chicago")` returns "Oct 30, 2026, 3:00 PM CT". | FE-151; FE-152 |
-| FEAT-062-AC-02 | `formatLocalDate("2026-10-01", …)` returns "Oct 1" with `TZ=Pacific/Kiritimati` and with `TZ=America/Los_Angeles`. | FE-153 |
-| FEAT-062-AC-03 | A mocked 422 problem+json response makes the client throw `ApiError` with `code` "VALIDATION_ERROR", the body's `request_id` and its `errors[]`; a timeout after 15 s throws `ApiError` with status 0 and title "Network error". | FE-072; FE-073; FE-074 |
+| FEAT-062-AC-01 | `formatDateTimeShort("2026-10-30T19:28:04Z", "America/Chicago", "2026-10-30T20:00:00Z")` returns "Oct 30, 2:28 PM" and `formatAsOf("2026-10-30T20:00:00Z", "America/Chicago")` returns "Oct 30, 2026, 3:00 PM CT". Verified by: Unit (`frontend/tests/unit/`; TST-096). | FE-151; FE-152 |
+| FEAT-062-AC-02 | `formatLocalDate("2026-10-01", …)` returns "Oct 1" with `TZ=Pacific/Kiritimati` and with `TZ=America/Los_Angeles`. Verified by: Unit (`frontend/tests/unit/`; TST-096). | FE-153 |
+| FEAT-062-AC-03 | A mocked 422 problem+json response makes the client throw `ApiError` with `code` "VALIDATION_ERROR", the body's `request_id` and its `errors[]`; a timeout after 15 s throws `ApiError` with status 0 and title "Network error". Verified by: Unit (`frontend/tests/unit/`; TST-096). | FE-072; FE-073; FE-074 |
 | FEAT-062-AC-04 | Running `npm run gen:api` on the committed contract produces no diff and `npm run typecheck` passes. | TST-063; FE-012 |
 | FEAT-062-AC-05 | The Vitest scan finds no hex colour literal in `components/**/*.module.css`, and the forbidden-words test passes on rendered pages. | FE-160; TST-097 |
-| FEAT-062-AC-06 | `SectionState` with `state="error"` and a request id renders "Could not load <name>. Check your connection and try again.", a "Try again" button calling `onRetry`, and "Reference: <id>". | FE-141; UX-203 |
+| FEAT-062-AC-06 | `SectionState` with `state="error"` and a request id renders "Could not load <name>. Check your connection and try again.", a "Try again" button calling `onRetry`, and "Reference: <id>". Verified by: Component (TST-090). | FE-141; UX-203 |
 | FEAT-062-AC-07 | No file outside `frontend/tests/` imports MSW handlers or fixture JSON, and the production build contains no fixture data. | TST-095 |
-| FEAT-062-AC-08 | `grep -rn "fetch(" frontend/app frontend/components` returns no match. | FE-011 |
+| FEAT-062-AC-08 | `grep -rn "fetch(" frontend/app frontend/components` returns no match. Verified by: Inspection (run the command in the criterion and check its output). | FE-011 |
 
 ## Definition of Done
 

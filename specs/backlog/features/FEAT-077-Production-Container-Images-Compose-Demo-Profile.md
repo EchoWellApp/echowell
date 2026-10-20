@@ -90,6 +90,8 @@ Required before implementation (BACKLOG.md): FEAT-006, FEAT-062
 - [FEAT-006](FEAT-006-Local-Docker-Compose-Development-Stack.md) Local Docker Compose development stack (db, backend, frontend services and first templates).
 - [FEAT-062](FEAT-062-Frontend-Foundations.md) Frontend foundations (a frontend that builds with `npm run build`, API base URL handling).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-078, FEAT-079, FEAT-081, FEAT-082.
+
 ## Database Impact
 
 None. The provisioning script and migrations are owned by the database features; this feature only mounts `database/roles/provision_login_roles.sql` and runs `alembic upgrade head` in the Compose backend command.
@@ -136,14 +138,14 @@ None. `analytics/` is copied into the backend image unchanged (D-61).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-077-AC-01 | `docker run --rm --entrypoint id <backend image> -u` prints `10001`, and `ls -a /app` in the image lists none of `.env`, `tests`, `specs`, `frontend`. | DEP-021, CIC-023 |
-| FEAT-077-AC-02 | `docker inspect` of the backend image shows the default command `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` and no `alembic` in it. | DEP-022 |
-| FEAT-077-AC-03 | From a clean clone, `cp .env.development.example .env && docker compose up --build -d` makes `curl -s http://localhost:8000/api/v1/health` return 200 with `"database":"ok"` within 180 s. | DEP-014 |
-| FEAT-077-AC-04 | `docker compose --profile demo up -d --wait db backend frontend-prod` succeeds and `curl -fsS http://localhost:3001/login` returns 200. | DEP-017 |
-| FEAT-077-AC-05 | `grep -n '^version' docker-compose.yml` returns nothing and `docker compose config` exits 0. | D-55 |
+| FEAT-077-AC-01 | `docker run --rm --entrypoint id <backend image> -u` prints `10001`, and `ls -a /app` in the image lists none of `.env`, `tests`, `specs`, `frontend`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-021, CIC-023 |
+| FEAT-077-AC-02 | `docker inspect` of the backend image shows the default command `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` and no `alembic` in it. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-022 |
+| FEAT-077-AC-03 | From a clean clone, `cp .env.development.example .env && docker compose up --build -d` makes `curl -s http://localhost:8000/api/v1/health` return 200 with `"database":"ok"` within 180 s. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-014 |
+| FEAT-077-AC-04 | `docker compose --profile demo up -d --wait db backend frontend-prod` succeeds and `curl -fsS http://localhost:3001/login` returns 200. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-017 |
+| FEAT-077-AC-05 | `grep -n '^version' docker-compose.yml` returns nothing and `docker compose config` exits 0. Verified by: Inspection (run the command in the criterion and check its output). | D-55 |
 | FEAT-077-AC-06 | `tests/unit/backend/core/test_env_example.py` passes. | ENV-040, AC-ENV-08 |
-| FEAT-077-AC-07 | `.env.production.example` contains `PIPELINE_PROFILE=production`, an empty `PIPELINE_AS_OF=` and no non-empty secret value; `grep -r` over `docker-compose.yml` and both Dockerfiles finds no hostname containing `neon.tech` and no production secret. | AC-DEP-10, ENV-050 |
-| FEAT-077-AC-08 | Running the backend image with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` exits non-zero with a logged error. | AGT-015, AC-AGT-05 |
+| FEAT-077-AC-07 | `.env.production.example` contains `PIPELINE_PROFILE=production`, an empty `PIPELINE_AS_OF=` and no non-empty secret value; `grep -r` over `docker-compose.yml` and both Dockerfiles finds no hostname containing `neon.tech` and no production secret. Verified by: Inspection (run the command in the criterion and check its output). | AC-DEP-10, ENV-050 |
+| FEAT-077-AC-08 | Running the backend image with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` exits non-zero with a logged error. Verified by: Test (CFG-06). | AGT-015, AC-AGT-05 |
 
 ## Definition of Done
 

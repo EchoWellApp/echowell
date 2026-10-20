@@ -84,6 +84,8 @@ Required before implementation (BACKLOG.md): None
 
 This is the first feature of the build sequence (TRD 25 §4.5, Phase 2 follows the Phase 1 TRD validation, which is complete per `docs/reports/TRD_VALIDATION_REPORT.md`). FEAT-002 depends on it.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-002.
+
 ## Database Impact
 
 None. The feature documents the tables of TRD 20 §4.6 in `Database_ERD.md` but creates, alters or reads no table.
@@ -124,13 +126,13 @@ None at runtime. The batch report records commands run and their results (AGT-02
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-001-AC-01 | `ls docs/design` lists exactly the nine file names of FEAT-001-FR-01. | TRD 25 §4.6 Phase 2 Outputs |
-| FEAT-001-AC-02 | The endpoint mapping table contains 32 rows, one per E-01..E-32, each naming an existing-or-planned file under `backend/api/` and a module under `backend/services/`. | TRD 25 §4.6 Phase 2 DoD |
-| FEAT-001-AC-03 | Every table name listed under TRD 20 §4.6 appears in the Mermaid `erDiagram` of `Database_ERD.md` and in its writer/reader table. | TRD 25 §4.6 Phase 2 DoD |
-| FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. | FE-020; D-23; OQ-18 |
-| FEAT-001-AC-05 | Mermaid diagrams exist for the ERD, the request flow, the pipeline stages and the page hierarchy, and `Repository_Structure.md` contains the repository dependency diagram. | TRD 25 §4.6 Phase 2 Outputs and DoD |
-| FEAT-001-AC-06 | `grep -rnE "T[B]D\|T[O]DO" docs/design` exits with status 1 (no match). | TRD 25 §4.6 Phase 2 Commands |
-| FEAT-001-AC-07 | No file outside `docs/design/` (and the batch report) is changed by the PR, and no TRD file is modified. | AGT-001; TRD 25 §4.6 Phase 2 |
+| FEAT-001-AC-01 | `ls docs/design` lists exactly the nine file names of FEAT-001-FR-01. Verified by: Inspection (review of `ls docs/design` against the cited requirements). | TRD 25 §4.6 Phase 2 Outputs |
+| FEAT-001-AC-02 | The endpoint mapping table contains 32 rows, one per E-01..E-32, each naming an existing-or-planned file under `backend/api/` and a module under `backend/services/`. Verified by: Review checks (each E-01..E-32 row appears in the endpoint mapping table). | TRD 25 §4.6 Phase 2 DoD |
+| FEAT-001-AC-03 | Every table name listed under TRD 20 §4.6 appears in the Mermaid `erDiagram` of `Database_ERD.md` and in its writer/reader table. Verified by: Review checks (each TRD 20 §4.6 table appears in the ERD and the writer/reader table). | TRD 25 §4.6 Phase 2 DoD |
+| FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. Verified by: Test (the test method of FE-020, applied to the condition stated in the criterion). | FE-020; D-23; OQ-18 |
+| FEAT-001-AC-05 | Mermaid diagrams exist for the ERD, the request flow, the pipeline stages and the page hierarchy, and `Repository_Structure.md` contains the repository dependency diagram. Verified by: Inspection (review of `Repository_Structure.md` against the cited requirements). | TRD 25 §4.6 Phase 2 Outputs and DoD |
+| FEAT-001-AC-06 | `grep -rnE "T[B]D\|T[O]DO" docs/design` exits with status 1 (no match). Verified by: Inspection (run the command in the criterion and check its output). | TRD 25 §4.6 Phase 2 Commands |
+| FEAT-001-AC-07 | No file outside `docs/design/` (and the batch report) is changed by the PR, and no TRD file is modified. Verified by: Inspection (the inspection method of AGT-001, applied to the condition stated in the criterion). | AGT-001; TRD 25 §4.6 Phase 2 |
 
 ## Definition of Done
 

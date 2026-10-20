@@ -92,6 +92,8 @@ Required before implementation (BACKLOG.md): FEAT-077, FEAT-054
 - [FEAT-077](FEAT-077-Production-Container-Images-Compose-Demo-Profile.md) Production container images (the image Railway builds).
 - [FEAT-054](FEAT-054-Ingest-Triggered-And-Nightly-Pipeline-Runs.md) Ingest-triggered and nightly pipeline runs (`backend/jobs/nightly_run.py`).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-083, FEAT-084, FEAT-085, FEAT-086.
+
 ## Database Impact
 
 - No table is created or altered by this feature. The runbook provisions the Neon project, branches, extensions, timezone and roles (`echowell_migrator`, `echowell_app`, `echowell_readonly` and their login roles); the tables come from Alembic migrations (TRD 20).
@@ -139,12 +141,12 @@ None in code. The nightly service runs the unchanged pipeline with trigger `nigh
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-081-AC-01 | `/railway.toml` contains `preDeployCommand = ["alembic upgrade head"]`, a start command without `alembic`, `healthcheckPath = "/api/v1/health"`, `healthcheckTimeout = 120` and `numReplicas = 1`. | DEP-040, DEP-041, DEP-042 |
-| FEAT-081-AC-02 | `/railway.nightly.toml` contains `startCommand = "python -m backend.jobs.nightly_run"`, `cronSchedule = "0 7,8 * * *"` and `restartPolicyType = "NEVER"`, and no `alembic`. | DEP-046, DEP-048 |
-| FEAT-081-AC-03 | The import-boundary test passes and fails when a module under `backend/api/`, `backend/services/` or `backend/jobs/` references `DATABASE_MIGRATION_URL`. | DEP-040, SEC-111 |
-| FEAT-081-AC-04 | `docs/deployment.md` lists every dashboard-only setting of DEP-044 and the `nightly` variable allow-list, with no secret value. | DEP-044, ENV-005 |
-| FEAT-081-AC-05 | The Neon runbook names region `aws-us-east-1`, PostgreSQL 16, branches `main` and `staging`, the owner-role extension and timezone SQL, and `sslmode=require` on every URL. | DEP-030, DEP-031, DEP-034, D-72 |
-| FEAT-081-AC-06 | `grep -r "neon.tech" railway.toml railway.nightly.toml` returns nothing. | AC-DEP-10 |
+| FEAT-081-AC-01 | `/railway.toml` contains `preDeployCommand = ["alembic upgrade head"]`, a start command without `alembic`, `healthcheckPath = "/api/v1/health"`, `healthcheckTimeout = 120` and `numReplicas = 1`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-040, DEP-041, DEP-042 |
+| FEAT-081-AC-02 | `/railway.nightly.toml` contains `startCommand = "python -m backend.jobs.nightly_run"`, `cronSchedule = "0 7,8 * * *"` and `restartPolicyType = "NEVER"`, and no `alembic`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-046, DEP-048 |
+| FEAT-081-AC-03 | The import-boundary test passes and fails when a module under `backend/api/`, `backend/services/` or `backend/jobs/` references `DATABASE_MIGRATION_URL`. Verified by: Unit (import-boundary test for DATABASE_MIGRATION_URL (DEP-040 verification)). | DEP-040, SEC-111 |
+| FEAT-081-AC-04 | `docs/deployment.md` lists every dashboard-only setting of DEP-044 and the `nightly` variable allow-list, with no secret value. Verified by: Integration (TST-052). | DEP-044, ENV-005 |
+| FEAT-081-AC-05 | The Neon runbook names region `aws-us-east-1`, PostgreSQL 16, branches `main` and `staging`, the owner-role extension and timezone SQL, and `sslmode=require` on every URL. Verified by: Inspection (the inspection method of DEP-030, applied to the condition stated in the criterion). | DEP-030, DEP-031, DEP-034, D-72 |
+| FEAT-081-AC-06 | `grep -r "neon.tech" railway.toml railway.nightly.toml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | AC-DEP-10 |
 
 ## Definition of Done
 

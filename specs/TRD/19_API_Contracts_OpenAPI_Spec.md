@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -2080,3 +2080,4 @@ components:
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-08, F-09, F-10, F-12, F-39, F-41, F-43) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-11) | — |
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (BaselineRow.robust_spread minimum 0; still_above_line and restart detail (D-82); AlarmTimingRow.result (D-81); E-18 latest succeeded run) | — |
+| 0.5 | 20 Oct 2026 | Documentation audit fixes (DA-05: E-10 same-date event order of TRD 11 UX-141) | — |

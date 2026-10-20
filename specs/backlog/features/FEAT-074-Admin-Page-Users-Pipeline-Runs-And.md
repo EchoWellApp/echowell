@@ -80,6 +80,8 @@ Required before implementation (BACKLOG.md): FEAT-064, FEAT-037, FEAT-024, FEAT-
 
 - FEAT-064 (header, access denied), FEAT-037 (users API), FEAT-024 (pipeline run endpoints), FEAT-026 (batch and CSV ingest endpoints).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
+
 ## Database Impact
 
 None directly; the backend writes `users`, `ingest_batches`, `raw_sessions`, `ingest_rejections`, `pipeline_runs` and audit rows (`user.created`, `user.updated`, `ingest.batch.received`, `pipeline.run.started`).
@@ -123,13 +125,13 @@ None in the frontend; backend audit rows as listed under Database Impact.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-074-AC-01 | As admin, `/admin?tab=runs` lists at most 50 runs newest first with trigger, profile, status, local start/finish times, as-of, counts and warning count. | LOG-112; FR-225; UX-212 |
-| FEAT-074-AC-02 | With the latest run `failed` a failure banner shows; with no succeeded nightly run in the last 26 hours the banner "Nightly run missing for <date>" shows. | LOG-112; LOG-111; AC-LOG-07 |
+| FEAT-074-AC-01 | As admin, `/admin?tab=runs` lists at most 50 runs newest first with trigger, profile, status, local start/finish times, as-of, counts and warning count. Verified by: Page test (`frontend/tests/pages/admin.test.tsx`; TST-094). | LOG-112; FR-225; UX-212 |
+| FEAT-074-AC-02 | With the latest run `failed` a failure banner shows; with no succeeded nightly run in the last 26 hours the banner "Nightly run missing for <date>" shows. Verified by: Test (Component tests for `AdminPanel` tabs (arrow keys, `?tab=`), users form error mapping, deactivate confirmation, runs table and banners (failed latest run). | LOG-112; LOG-111; AC-LOG-07 |
 | FEAT-074-AC-03 | Uploading SRC-05 shows "Accepted 283 · Rejected 0 · Duplicates 2". | UX-213; FR-222; TST-046 |
 | FEAT-074-AC-04 | Uploading the legacy SRC-06 file shows "The file was not accepted: <detail>. Nothing was stored." with the error messages. | UX-217; TST-047 |
-| FEAT-074-AC-05 | Adding a user with an existing e-mail shows the 409 error under the Email field; deactivating a user asks "Deactivate <email>? They will not be able to sign in." before sending `PATCH`. | UX-211; FE-079; FR-221 |
-| FEAT-074-AC-06 | The Upload tab shows "Only synthetic or test data may be uploaded to this environment." and no control to create residents, devices, assignments or API keys exists on the page. | UX-214; UX-218 |
-| FEAT-074-AC-07 | With `GET /health` returning 503 degraded, the footer reads "API status: degraded (database unavailable) · version <version>". | UX-216 |
+| FEAT-074-AC-05 | Adding a user with an existing e-mail shows the 409 error under the Email field; deactivating a user asks "Deactivate <email>? They will not be able to sign in." before sending `PATCH`. Verified by: Page test (`frontend/tests/pages/admin.test.tsx`; TST-094). | UX-211; FE-079; FR-221 |
+| FEAT-074-AC-06 | The Upload tab shows "Only synthetic or test data may be uploaded to this environment." and no control to create residents, devices, assignments or API keys exists on the page. Verified by: Page test (`frontend/tests/pages/admin.test.tsx`; TST-094). | UX-214; UX-218 |
+| FEAT-074-AC-07 | With `GET /health` returning 503 degraded, the footer reads "API status: degraded (database unavailable) · version <version>". Verified by: Page test (`frontend/tests/pages/admin.test.tsx`; TST-094). | UX-216 |
 
 ## Definition of Done
 

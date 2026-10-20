@@ -79,7 +79,7 @@ Required before implementation (BACKLOG.md): FEAT-012
 
 - FEAT-012 completes the 24 tables, so every §4.7 index can be created in migration 0001.
 
-Features that build directly on this one: FEAT-014, FEAT-015.
+Features that build directly on this one (BACKLOG.md §4): FEAT-014, FEAT-015, FEAT-053.
 
 ## Database Impact
 
@@ -128,12 +128,12 @@ None beyond standard error propagation; connection failures surface through the 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-013-AC-01 | `pg_indexes` contains every index named in TRD 20 §4.7 and each `indexdef` matches the §4.7 definition (columns, order, INCLUDE, predicate). | PGS-038 |
-| FEAT-013-AC-02 | For each column `pipeline_run_id`, `ingest_batch_id`, `api_key_id`, `acknowledged_by`, `author_user_id`, `alert_id`, `device_id` in any table, a catalogue query finds an index whose first column is that column. | DB-047 |
-| FEAT-013-AC-03 | With `APP_ENV=staging`, `create_engine_for("postgresql+psycopg://u:p@db.example.org/x")` raises and the same URL with `?sslmode=require` succeeds; with `APP_ENV=local` or `test` the Compose/CI URL without `sslmode` is accepted (ENV-011 scope). | DB-053, PGS-027, ENV-011 |
-| FEAT-013-AC-04 | The engine reports `pool.size() == 5`, `max_overflow == 5`, `pre_ping` enabled, `recycle == 300`, and connections are opened with `prepare_threshold=None`. | API-125 |
-| FEAT-013-AC-05 | Transaction A holding `pg_advisory_xact_lock(advisory_key('resident','R02'))` blocks transaction B on the same key until A commits; B proceeds immediately after. | DB-021, D-62 |
-| FEAT-013-AC-06 | `grep -rn "pg_advisory_lock\b\|pg_try_advisory_lock\b" backend` returns nothing (no session-level locks); `grep -rn "hashtextextended" backend` returns only `backend/core/db.py`. | DB-021 |
+| FEAT-013-AC-01 | `pg_indexes` contains every index named in TRD 20 §4.7 and each `indexdef` matches the §4.7 definition (columns, order, INCLUDE, predicate). Verified by: Integration (`tests/integration/db/test_indexes.py`). | PGS-038 |
+| FEAT-013-AC-02 | For each column `pipeline_run_id`, `ingest_batch_id`, `api_key_id`, `acknowledged_by`, `author_user_id`, `alert_id`, `device_id` in any table, a catalogue query finds an index whose first column is that column. Verified by: Integration (`tests/integration/db/test_indexes.py`). | DB-047 |
+| FEAT-013-AC-03 | With `APP_ENV=staging`, `create_engine_for("postgresql+psycopg://u:p@db.example.org/x")` raises and the same URL with `?sslmode=require` succeeds; with `APP_ENV=local` or `test` the Compose/CI URL without `sslmode` is accepted (ENV-011 scope). Verified by: Unit (`tests/unit/backend/core/test_db.py`). | DB-053, PGS-027, ENV-011 |
+| FEAT-013-AC-04 | The engine reports `pool.size() == 5`, `max_overflow == 5`, `pre_ping` enabled, `recycle == 300`, and connections are opened with `prepare_threshold=None`. Verified by: Unit (`tests/unit/backend/core/test_db.py`). | API-125 |
+| FEAT-013-AC-05 | Transaction A holding `pg_advisory_xact_lock(advisory_key('resident','R02'))` blocks transaction B on the same key until A commits; B proceeds immediately after. Verified by: Integration (`tests/integration/db/test_advisory_locks.py`). | DB-021, D-62 |
+| FEAT-013-AC-06 | `grep -rn "pg_advisory_lock\b\|pg_try_advisory_lock\b" backend` returns nothing (no session-level locks); `grep -rn "hashtextextended" backend` returns only `backend/core/db.py`. Verified by: Inspection (run the command in the criterion and check its output). | DB-021 |
 
 ## Definition of Done
 

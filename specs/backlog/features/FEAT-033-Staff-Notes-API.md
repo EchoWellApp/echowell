@@ -78,6 +78,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-015
 - FEAT-015 (Audit log writer): `note.created`.
 - Transitively FEAT-012 (`staff_notes` table with append-only grants).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-071.
+
 ## Database Impact
 
 - Tables written: `staff_notes` (INSERT only; app role SELECT, INSERT), `audit_logs` (INSERT).
@@ -129,17 +131,18 @@ None: notes are human state; the pipeline never reads them and rebuilds never de
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-033-AC-01 | A clinician POST `{note_type: "observation", body: "Resident has a cold; nurse notified."}` for R09 returns 201 with `author.display_name` of the clinician and creates one `staff_notes` row and one `audit_logs` row `note.created` whose details contain no `body`. | API-084, TST-053, AC-SEC-09 |
-| FEAT-033-AC-02 | A body of only spaces and a body of 2001 characters each return 422 and create no row. | API-084, PGS-036 |
-| FEAT-033-AC-03 | A note with `alert_id` of R10's alert posted to R09 returns 422 `ALERT_RESIDENT_MISMATCH`. | API-085 |
-| FEAT-033-AC-04 | After note B supersedes note A, `GET /residents/R09/notes` returns B and not A; with `include_superseded=true` it returns B then A (newest first). | API-083, DB-010, FR-192, FR-193 |
-| FEAT-033-AC-05 | Creating a note with `alert_id` of an `open` alert leaves the alert `open` with `acknowledged_at` null. | API-084 |
-| FEAT-033-AC-06 | A researcher POST returns 403; an API key on GET returns 401; every user role GET returns 200. | TRD 13 Table 4.13-A |
+| FEAT-033-AC-02 | A body of only spaces and a body of 2001 characters each return 422 and create no row. Verified by: Integration (`tests/integration/api/test_notes.py`; TST-053). | API-084, PGS-036 |
+| FEAT-033-AC-03 | A note with `alert_id` of R10's alert posted to R09 returns 422 `ALERT_RESIDENT_MISMATCH`. Verified by: Integration (`tests/integration/api/test_notes.py`). | API-085 |
+| FEAT-033-AC-04 | After note B supersedes note A, `GET /residents/R09/notes` returns B and not A; with `include_superseded=true` it returns B then A (newest first). Verified by: Integration (`tests/integration/api/test_notes.py`). | API-083, DB-010, FR-192, FR-193 |
+| FEAT-033-AC-05 | Creating a note with `alert_id` of an `open` alert leaves the alert `open` with `acknowledged_at` null. Verified by: Integration (`tests/integration/api/test_notes.py`). | API-084 |
+| FEAT-033-AC-06 | A researcher POST returns 403; an API key on GET returns 401; every user role GET returns 200. Verified by: Integration (`tests/integration/api/test_notes.py`). | TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-033 acceptance criteria pass.
 - Both endpoints implemented with TRD 19 schemas; append-only behaviour verified.
 - Integration tests pass; requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.
-- The supersede-twice gap below is reported in the batch report (AGT-009, AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report. The supersede-twice case follows D-83.
 
 ## Implementation Notes
 

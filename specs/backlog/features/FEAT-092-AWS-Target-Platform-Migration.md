@@ -109,6 +109,8 @@ Required before implementation (BACKLOG.md): FEAT-091
 
 Gate: OQ-07 (AWS budget approval and account ownership).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - Tables created: the full TRD 20 schema on RDS via `alembic upgrade head` in the one-off migration task; extensions, timezone and roles by the RDS master user (D-72).
@@ -155,16 +157,17 @@ None. The pipeline runs unchanged with profile `production` (D-01).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-092-AC-01 | The cut-over commit changes no file under `frontend/`, `backend/` or `analytics/` (`git diff --stat` of the migration PR). | ARC-094, NFR-093 |
-| FEAT-092-AC-02 | RDS settings show PostgreSQL 16, KMS CMK encryption, `rds.force_ssl = 1`, not publicly accessible, backup retention ≥ 14 days and deletion protection on. | DEP-112 |
-| FEAT-092-AC-03 | DEP-081 smoke tests pass against the AWS URLs before any device is re-pointed. | DEP-117 step 5 |
-| FEAT-092-AC-04 | A nightly run with trigger `nightly` is recorded in `pipeline_runs` on the first night after cut-over, and no second nightly run starts for that local date. | DEP-116, D-70 |
-| FEAT-092-AC-05 | CloudWatch log groups have 90-day retention and KMS encryption; the health and 5xx alarms exist with the SNS e-mail target. | DEP-115, LOG-121 |
-| FEAT-092-AC-06 | The first real resident record is ingested on AWS only, after DEP-112..DEP-114 and DEP-117 are verified and the SEC-005 item is signed. | AC-DEP-11, DEP-118, SEC-005 |
-| FEAT-092-AC-07 | An AWS restore drill is recorded before go-live with healthy `GET /api/v1/health` and passing R01–R10 validation. | NFR-025, SEC-162 |
+| FEAT-092-AC-01 | The cut-over commit changes no file under `frontend/`, `backend/` or `analytics/` (`git diff --stat` of the migration PR). Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | ARC-094, NFR-093 |
+| FEAT-092-AC-02 | RDS settings show PostgreSQL 16, KMS CMK encryption, `rds.force_ssl = 1`, not publicly accessible, backup retention ≥ 14 days and deletion protection on. Verified by: Inspection (the inspection method of DEP-112, applied to the condition stated in the criterion). | DEP-112 |
+| FEAT-092-AC-03 | DEP-081 smoke tests pass against the AWS URLs before any device is re-pointed. Verified by: Test (DEP-081 production smoke tests against the AWS URLs (DEP-117 step 5)). | DEP-117 step 5 |
+| FEAT-092-AC-04 | A nightly run with trigger `nightly` is recorded in `pipeline_runs` on the first night after cut-over, and no second nightly run starts for that local date. Verified by: Test (the test method of DEP-116, applied to the condition stated in the criterion). | DEP-116, D-70 |
+| FEAT-092-AC-05 | CloudWatch log groups have 90-day retention and KMS encryption; the health and 5xx alarms exist with the SNS e-mail target. Verified by: Demo (the demo method of DEP-115, applied to the condition stated in the criterion). | DEP-115, LOG-121 |
+| FEAT-092-AC-06 | The first real resident record is ingested on AWS only, after DEP-112..DEP-114 and DEP-117 are verified and the SEC-005 item is signed. Verified by: Test (AC-DEP-11 verification of first real record on AWS only). | AC-DEP-11, DEP-118, SEC-005 |
+| FEAT-092-AC-07 | An AWS restore drill is recorded before go-live with healthy `GET /api/v1/health` and passing R01–R10 validation. Verified by: AWS restore drill (AWS restore drill (NFR-025, SEC-162): restore to a new RDS instance, `GET /api/v1/health`, R01–R10 validation on the deployed SHA). | NFR-025, SEC-162 |
 
 ## Definition of Done
 
+- All FEAT-092 acceptance criteria pass.
 - OQ-07 answered and recorded; all FEAT-092 acceptance criteria pass; go-live record in `DEPLOYMENT_REPORT.md`.
 - Interim Neon project and Railway services deleted after the 14-day read-only period.
 

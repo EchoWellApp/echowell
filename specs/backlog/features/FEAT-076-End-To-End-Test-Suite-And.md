@@ -105,6 +105,8 @@ Required before implementation (BACKLOG.md): FEAT-075, FEAT-055, FEAT-057
 
 The Compose `demo` profile is completed by FEAT-077 and the workflow by FEAT-080; locally the suite runs against `docker compose --profile demo up -d db backend frontend-prod`.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-080, FEAT-090.
+
 ## Database Impact
 
 - Tables used (through the API only): `residents`, `devices`, `device_assignments`, `raw_sessions`, `processed_sessions`, `day_ledger`, `baselines`, `scores`, `cusum_state`, `alerts`, `alert_reviews`, `staff_notes`, `data_alerts`, `pipeline_runs`, `evaluation_ground_truth`, `users`, `api_keys`, `audit_logs` (TRD 20 §4.6).
@@ -159,7 +161,7 @@ None directly. The suite asserts outputs of the pipeline (tiles, CUSUM bars, tal
 | FEAT-076-AC-02 | `npm run test:e2e:mutating -- --project=chromium` passes E2E-18, E2E-09/FE-187 and the FE-193 snooze step, in that order, with `--workers=1`. | D-73, FE-187, FE-193 |
 | FEAT-076-AC-03 | Running `test:e2e:mutating` and then `test:e2e:readonly` again on the same stack still yields tiles 2 / 7 / 1 / 19 and "Alerts (2)" (the re-seed restores the pristine seed). | D-73, E2E-03, E2E-17 |
 | FEAT-076-AC-04 | `npm run test:e2e:isolated` passes E2E-15, TST-187 (≤ 5 s) and E2E-19 against `echowell_demo`, and the main database still holds exactly 10 residents afterwards. | TST-187, NFR-011, CIC-030 |
-| FEAT-076-AC-05 | `grep -c '"test:e2e"' frontend/package.json` returns 0 and the three scripts of D-73 are present with the documented commands. | D-73 |
+| FEAT-076-AC-05 | `grep -c '"test:e2e"' frontend/package.json` returns 0 and the three scripts of D-73 are present with the documented commands. Verified by: Inspection (run the command in the criterion and check its output). | D-73 |
 | FEAT-076-AC-06 | Only `auth.spec.ts` (E2E-01, E2E-02, FE-188) contains form logins; `git grep -n "fill(.*password" frontend/tests/e2e` lists only that file. | D-74 (a) |
 | FEAT-076-AC-07 | `git ls-files frontend/tests/e2e/.auth` returns nothing. | CIC-034, SEC-050 |
 | FEAT-076-AC-08 | With the main run in Firefox and WebKit (`--project=firefox`, `--project=webkit`) every main-run scenario passes. | TST-100, TST-151 |

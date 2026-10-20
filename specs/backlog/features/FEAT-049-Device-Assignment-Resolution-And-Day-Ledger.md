@@ -79,7 +79,8 @@ Required before implementation (BACKLOG.md): FEAT-041, FEAT-043
 
 - FEAT-041 (Duplicate detection and quality gate): duplicate vs non-duplicate statuses (duplicates never count).
 - FEAT-043 (Local time derivation): local dates of records and of the as-of.
-- Downstream: FEAT-050, FEAT-051, FEAT-052, FEAT-053.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052.
 
 ## Database Impact
 
@@ -125,10 +126,11 @@ None in `analytics/` (LOG-006).
 | FEAT-049-AC-03 | A record at 2026-10-02 04:30:00 UTC counts for local date 2026-10-01; a day with only a duplicate arrival is not checked in. | DL-05, DL-06 |
 | FEAT-049-AC-04 | No rows exist before `enrolled_on` or after the as-of local date; a missing day never gains values when a record arrives for another day. | DL-08, DL-09 |
 | FEAT-049-AC-05 | On SRC-05 at as-of 2026-10-30 15:00 America/Chicago the ledger has 300 rows: 281 `checked_in`, 17 `missing_resident`, 2 `missing_device_gap` (R02 and R03 on 2026-10-12); R02 2026-10-10 is `missing_resident` (R03's set-aside record counts). | VC-G09, TRD 10 §4.10 worked check |
-| FEAT-049-AC-06 | R07's assignments D07 (2026-10-01..2026-10-12) and D07B (from 2026-10-13) resolve to D07 on 2026-10-12 and D07B on 2026-10-13, and R07 has no missing day. | ING-044, ING-045 |
+| FEAT-049-AC-06 | R07's assignments D07 (2026-10-01..2026-10-12) and D07B (from 2026-10-13) resolve to D07 on 2026-10-12 and D07B on 2026-10-13, and R07 has no missing day. Verified by: Validation (VC-R03, VC-R08). | ING-044, ING-045 |
 
 ## Definition of Done
 
+- All FEAT-049 acceptance criteria pass.
 - `build_ledger` and the resolution helpers implemented; DL-01..DL-09 pass (TST-020); test file exists (TST-011).
 - VC-G09 and VC-R02/VC-R03/VC-R08 ledger values pass in the validation suite.
 

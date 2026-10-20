@@ -87,7 +87,8 @@ Build each resident's personal baseline per epoch from the first N usable check-
 Required before implementation (BACKLOG.md): FEAT-044
 
 - FEAT-044 (Speaker screen): final `usable` / `quarantined` statuses that define baseline membership (and transitively FEAT-042 epochs, FEAT-043 adjusted values, FEAT-040 `robust` and config).
-- Downstream: FEAT-046 (scoring), FEAT-049/FEAT-050 (forming state for data alerts via `EpochSummary`), FEAT-052, FEAT-053.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-046, FEAT-052.
 
 ## Database Impact
 
@@ -134,16 +135,17 @@ None in `analytics/` (LOG-006); warnings are returned as `RunWarning` data.
 | FEAT-045-AC-02 | With 20 usable sessions, sessions 17–20 do not change any baseline statistic; set-aside and quarantined sessions interleaved are excluded from membership and ordinal. | BL-03, BL-04, AC-BSC-08 |
 | FEAT-045-AC-03 | A formed epoch yields 20 rows; the composite row uses floor 0.1, number_of_pauses floor 0.5, other floors 0; morning sessions enter with adjusted values. | BL-05, BL-06, BSC-034 |
 | FEAT-045-AC-04 | The `production` profile uses baseline_n 30. | BL-07 |
-| FEAT-045-AC-05 | The R09 epoch 1 baseline reproduces loudness median −22.405, MAD 1.45, spread 2.149770 and composite median 0.038219, MAD 0.359758, spread 0.533378 (±1e-6). | AC-BSC-06, TRD 08 §4.11 |
-| FEAT-045-AC-06 | A baseline with 16 identical voiced_fraction values yields z_voiced_fraction 0.0 for later sessions and exactly one `zero_spread` warning. | AC-BSC-07, BSC-035 |
+| FEAT-045-AC-05 | The R09 epoch 1 baseline reproduces loudness median −22.405, MAD 1.45, spread 2.149770 and composite median 0.038219, MAD 0.359758, spread 0.533378 (±1e-6). Verified by: Unit (`tests/unit/analytics/test_baseline_builder.py`). | AC-BSC-06, TRD 08 §4.11 |
+| FEAT-045-AC-06 | A baseline with 16 identical voiced_fraction values yields z_voiced_fraction 0.0 for later sessions and exactly one `zero_spread` warning. Verified by: Unit (`tests/unit/analytics/test_baseline_builder.py`). | AC-BSC-07, BSC-035 |
 | FEAT-045-AC-07 | The AC-ANL-05 late-arrival fixture yields a `late_arrival` warning, unchanged R01 baselines and scores, and the late record `usable` with `in_baseline` false and reason "late arrival (not used for baseline or scores)". | AC-ANL-05, PIP-04, BSC-040 |
 | FEAT-045-AC-08 | On SRC-05, the engine produces exactly 180 baseline rows equal to Exp_baselines within 1e-6 with exact `floor_applied`, `n_sessions`, first and frozen-after session ids; R08 and R07 epoch 1 produce none. | AC-BSC-02, AC-BSC-05, VC-G05 |
 
 ## Definition of Done
 
+- All FEAT-045 acceptance criteria pass.
 - `build_baselines`, `feature_z`, `composite_raw` and `detect_late_arrivals` implemented; BL-01..BL-07 and PIP-04 pass (TST-020); `tests/unit/analytics/test_baseline_builder.py` exists (TST-011).
 - VC-G05, VC-R07, VC-R08, VC-R10 pass in the validation suite (FEAT-059).
-- Sequencing note below recorded in the batch report.
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

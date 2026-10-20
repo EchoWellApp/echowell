@@ -86,6 +86,8 @@ Required before implementation (BACKLOG.md): FEAT-057, FEAT-052, FEAT-055
 - FEAT-052 provides `run_pipeline` for Tier A.
 - FEAT-055 provides the full runner/CLI path (seed roster, explicit-as-of run) used by Tier B.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-059.
+
 ## Database Impact
 
 - Tier B creates a disposable test database, applies all migrations and writes through the normal API paths only.
@@ -130,11 +132,11 @@ None in production code; the harness exercises the full stage chain and attribut
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-058-AC-01 | Tier A on DS-01 completes and the comparator reports 0 mismatches against Annotated_sessions (302 rows), Exp_status_counts (10), Exp_resident_outcomes (11), Exp_baselines (180) and Exp_scores (98). | AC-ANL-01; TDV-030 |
+| FEAT-058-AC-01 | Tier A on DS-01 completes and the comparator reports 0 mismatches against Annotated_sessions (302 rows), Exp_status_counts (10), Exp_resident_outcomes (11), Exp_baselines (180) and Exp_scores (98). Verified by: Self-tests of the comparator (`tests/validation/test_comparator.py`). | AC-ANL-01; TDV-030 |
 | FEAT-058-AC-02 | Tier B from an empty database reaches a `succeeded` explicit-as-of run within 60 s and the comparator reports 0 mismatches for the same sheets. | TDV-031; TST-081 |
 | FEAT-058-AC-03 | Tier A and Tier B compared values are identical. | TST-081 |
-| FEAT-058-AC-04 | A synthetic mismatch of 1.1e-6 in one `cusum_tally` is reported with sheet `Exp_scores`, key session_id, column, expected, actual, abs diff and stage 8, and the comparison continues to report a second injected mismatch. | TDV-032; TDV-037 |
-| FEAT-058-AC-05 | Outputs (all compared values, alerts, data alerts) are identical with `evaluation_ground_truth` empty and with DS-10 loaded, and the TDV-101 scan passes. | AC-TDV-12; TDV-102 |
+| FEAT-058-AC-04 | A synthetic mismatch of 1.1e-6 in one `cusum_tally` is reported with sheet `Exp_scores`, key session_id, column, expected, actual, abs diff and stage 8, and the comparison continues to report a second injected mismatch. Verified by: Self-tests of the comparator (`tests/validation/test_comparator.py`). | TDV-032; TDV-037 |
+| FEAT-058-AC-05 | Outputs (all compared values, alerts, data alerts) are identical with `evaluation_ground_truth` empty and with DS-10 loaded, and the TDV-101 scan passes. Verified by: Test (TDV-102 ground-truth isolation test). | AC-TDV-12; TDV-102 |
 | FEAT-058-AC-06 | Adding `pytest.skip()` to any test under `tests/validation/` makes `pytest tests/validation -q` exit non-zero. | TST-083 |
 
 ## Definition of Done

@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -560,3 +560,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02, R6-05) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (API-006 and API-087 read-side analytics (D-79); API-085 supersede refusal (D-83); API-092 defensive check; §8 export-openapi prints (D-89)) | — |
+| 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-05: API-077 same-date event order of TRD 11 UX-141) | — |

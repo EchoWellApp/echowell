@@ -83,6 +83,8 @@ Required before implementation (BACKLOG.md): FEAT-066, FEAT-034
 - FEAT-066 provides the Resident detail page and resident query.
 - FEAT-034 provides `GET /api/v1/scores` with `baseline_periods`.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-069, FEAT-075, FEAT-096.
+
 ## Database Impact
 
 None (frontend only).
@@ -126,10 +128,10 @@ None in the frontend.
 |---|---|---|
 | FEAT-067-AC-01 | The R09 `CusumChart` renders 14 bars: Oct 17–20 with fill #BDBDB8 and 1px #8A8A85 stroke, Oct 21–30 with fill #9A4508, a reference line at y = 5.0 labelled "alarm line 5.0", a "Baseline Oct 1–16" slot and the tick "Oct 21 · alarm". | FE-183; TST-093; AC-FE-03 |
 | FEAT-067-AC-02 | The R09 `CusumTable` lists 14 rows with tallies 3.2, 2.6, 1.8, 1.6, 5.4, 8.0, 8.3, 10.7, 12.4, 15.3, 16.7, 18.8, 23.1, 26.8 and Oct 21 marked "▲ Alarm rings (first crossing)". | FE-184; UX-090 |
-| FEAT-067-AC-03 | The R09 chart's accessible name equals "Running change tally for R09 from Oct 17 to Oct 30. Baseline Oct 1–16. Alarm line 5.0. Crossed the alarm line on Oct 21; now 26.8." | UX-091; FE-097 |
+| FEAT-067-AC-03 | The R09 chart's accessible name equals "Running change tally for R09 from Oct 17 to Oct 30. Baseline Oct 1–16. Alarm line 5.0. Crossed the alarm line on Oct 21; now 26.8." Verified by: Component (`components/CusumChart/CusumChart.test.tsx`; TST-093, FE-183). | UX-091; FE-097 |
 | FEAT-067-AC-04 | `/residents/R07` shows "Showing the current device period since Oct 13. Earlier periods are not scored against this baseline.", "Baseline Oct 13–28" and 2 bars drawn as stubs. | E2E-10; UX-092; FE-095 |
 | FEAT-067-AC-05 | `/residents/R08` shows "No tally yet. The tally starts after the baseline is complete (13 of 16 usable check-ins so far)." and no bars. | E2E-11; UX-089 |
-| FEAT-067-AC-06 | For R07, selecting epoch 1 requests `GET /api/v1/scores?resident_code=R07&epoch=1` and renders no bars (epoch 1 never formed). | FR-172 |
+| FEAT-067-AC-06 | For R07, selecting epoch 1 requests `GET /api/v1/scores?resident_code=R07&epoch=1` and renders no bars (epoch 1 never formed). Verified by: E2E (E2E-08, E2E-10, E2E-11). | FR-172 |
 | FEAT-067-AC-07 | axe reports no serious or critical violation on `/residents/R09` related to the chart, and the table has role `table` with a caption naming R09. | TST-112; TST-110 |
 
 ## Definition of Done

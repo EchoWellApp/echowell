@@ -97,6 +97,8 @@ Required before implementation (BACKLOG.md): FEAT-007, FEAT-038, FEAT-059, FEAT-
 - [FEAT-059](FEAT-059-R01-R10-Validation-Cases-Global-Checks.md) R01–R10 validation cases and validation report.
 - [FEAT-077](FEAT-077-Production-Container-Images-Compose-Demo-Profile.md) Production container images (built and inspected by `docker-build`).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-080.
+
 ## Database Impact
 
 - CI creates an ephemeral `echowell_test` database in the service container, runs the provisioning script and the full Alembic round trip; no hosted database is touched (CIC-003).
@@ -143,19 +145,20 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-078-AC-01 | A PR that changes one composite sign in `analytics/config.py` fails `backend-test` and cannot be merged. | AC-CIC-01 |
+| FEAT-078-AC-01 | A PR that changes one composite sign in `analytics/config.py` fails `backend-test` and cannot be merged. Verified by: Test (composite sign change, `tests/fixtures/sample.wav`, endpoint without contract update, PR title "Updated stuff"). | AC-CIC-01 |
 | FEAT-078-AC-02 | A PR that adds `tests/fixtures/sample.wav` fails `repo-hygiene`. | AC-CIC-02, CIC-020 |
-| FEAT-078-AC-03 | A PR that adds an endpoint without updating `docs/api_reference/openapi.json` fails `openapi-contract`. | AC-CIC-03, CIC-018 |
-| FEAT-078-AC-04 | A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes. | AC-CIC-04, CIC-022 |
-| FEAT-078-AC-05 | `ci.yml` on `main` completes all required checks in under 15 minutes and uploads `backend-reports` containing `ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `validation_results.json`. | AC-CIC-05, CIC-110 |
-| FEAT-078-AC-06 | `grep -r "secrets\." .github/workflows/ci.yml` returns nothing. | CIC-026, AC-CIC-06 |
-| FEAT-078-AC-07 | Branch protection for `main` and `staging` lists exactly the eight required checks of CIC-070. | AC-CIC-08, AC-GIT-01 |
-| FEAT-078-AC-08 | A PR adding `openai` to `backend/requirements.txt`, or the string "Edge4Care" to a file under `backend/`, fails `repo-hygiene`. | CIC-114, AC-AGT-03 |
-| FEAT-078-AC-09 | Coverage below 95 % for `analytics/`, 85 % for `backend/` or 80 % for `frontend/` fails the respective job. | CIC-016, CIC-017, AC-TST-06 |
-| FEAT-078-AC-10 | A committed fake key matching a gitleaks rule (outside the allow-list) fails `security-audit`; a Bandit medium finding in `backend/` fails it too. | CIC-115, SEC-052 |
+| FEAT-078-AC-03 | A PR that adds an endpoint without updating `docs/api_reference/openapi.json` fails `openapi-contract`. Verified by: Test (the test method of CIC-018, applied to the condition stated in the criterion). | AC-CIC-03, CIC-018 |
+| FEAT-078-AC-04 | A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes. Verified by: Test (composite sign change, `tests/fixtures/sample.wav`, endpoint without contract update, PR title "Updated stuff"). | AC-CIC-04, CIC-022 |
+| FEAT-078-AC-05 | `ci.yml` on `main` completes all required checks in under 15 minutes and uploads `backend-reports` containing `ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `validation_results.json`. Verified by: Analysis (the analysis method of CIC-110, applied to the condition stated in the criterion). | AC-CIC-05, CIC-110 |
+| FEAT-078-AC-06 | `grep -r "secrets\." .github/workflows/ci.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-026, AC-CIC-06 |
+| FEAT-078-AC-07 | Branch protection for `main` and `staging` lists exactly the eight required checks of CIC-070. Verified by: Inspection (review of `main` against the cited requirements). | AC-CIC-08, AC-GIT-01 |
+| FEAT-078-AC-08 | A PR adding `openai` to `backend/requirements.txt`, or the string "Edge4Care" to a file under `backend/`, fails `repo-hygiene`. Verified by: Test (Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite). | CIC-114, AC-AGT-03 |
+| FEAT-078-AC-09 | Coverage below 95 % for `analytics/`, 85 % for `backend/` or 80 % for `frontend/` fails the respective job. Verified by: Test (the test method of CIC-016, applied to the condition stated in the criterion). | CIC-016, CIC-017, AC-TST-06 |
+| FEAT-078-AC-10 | A committed fake key matching a gitleaks rule (outside the allow-list) fails `security-audit`; a Bandit medium finding in `backend/` fails it too. Verified by: Test (the test method of CIC-115, applied to the condition stated in the criterion). | CIC-115, SEC-052 |
 
 ## Definition of Done
 
+- All FEAT-078 acceptance criteria pass.
 - All FEAT-078 acceptance criteria demonstrated (negative cases on throwaway branches, then closed).
 - Every job has `timeout-minutes` ≤ 20 and runs on `ubuntu-24.04`.
 - Branch protection screenshot attached to the Phase 9 PR (AC-GIT-01); `CONFIGURATION_VALIDATION_REPORT.md` (FEAT-087) records the check list.

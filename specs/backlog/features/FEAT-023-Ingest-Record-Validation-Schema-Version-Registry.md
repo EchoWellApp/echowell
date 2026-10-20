@@ -101,7 +101,7 @@ Required before implementation (BACKLOG.md): FEAT-010, FEAT-009, FEAT-019
 - FEAT-009 provides `config_parameters` (`supported_schema_versions`, `feature_name_map`), `residents`, `devices`, `device_assignments`, `api_keys`.
 - FEAT-019 provides the error codes and the Problem rendering used by the callers.
 
-Features that build directly on this one: FEAT-025, FEAT-026; FEAT-097 (Future) extends it.
+Features that build directly on this one (BACKLOG.md §4): FEAT-025, FEAT-097.
 
 ## Database Impact
 
@@ -155,15 +155,15 @@ None directly; callers log `ingest_record_rejected` with identifiers and error l
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-023-AC-01 | Validating a record with `pause_fraction = 1.2`, `number_of_pauses = 1.5` and an extra field `audio_base64` returns three errors with codes `out_of_range`, `not_integer`, `extra_forbidden` (all collected in one result). | AC-ING-04, ING-019 |
-| FEAT-023-AC-02 | A record with `loudness_dbfs = -35` is accepted with one warning `implausible_value` on `loudness_dbfs`. | AC-ING-04, ING-020 |
-| FEAT-023-AC-03 | `timestamp_utc = "2026-10-01T19:45:11Z"` yields `invalid_format`; `schema_version = "0.2"` yields request code `UNSUPPORTED_SCHEMA_VERSION`. | AC-ING-05, ING-025, ING-013 |
-| FEAT-023-AC-04 | A record with `resident_id` R11 (not enrolled) yields `UNKNOWN_RESIDENT`; a record for a withdrawn resident yields `RESIDENT_WITHDRAWN` with detail "resident withdrawn". | AC-API-06, AC-ING-10, FR-026 |
-| FEAT-023-AC-05 | With `feature_name_map = {"Loudness_sma3_amean": "loudness_dbfs", …identity for the rest}`, a record keyed `Loudness_sma3_amean` is accepted with canonical typed `loudness_dbfs` and the payload keeps `Loudness_sma3_amean`. | AC-ING-08, ING-016, ING-018 |
-| FEAT-023-AC-06 | A mapping with two external names mapping to `loudness_dbfs` is rejected at load, and the application refuses to start with a configuration error. | ING-017 |
+| FEAT-023-AC-01 | Validating a record with `pause_fraction = 1.2`, `number_of_pauses = 1.5` and an extra field `audio_base64` returns three errors with codes `out_of_range`, `not_integer`, `extra_forbidden` (all collected in one result). Verified by: Integration (`tests/integration/api/test_sessions.py`). | AC-ING-04, ING-019 |
+| FEAT-023-AC-02 | A record with `loudness_dbfs = -35` is accepted with one warning `implausible_value` on `loudness_dbfs`. Verified by: Unit (`tests/unit/backend/services/test_validation.py`). | AC-ING-04, ING-020 |
+| FEAT-023-AC-03 | `timestamp_utc = "2026-10-01T19:45:11Z"` yields `invalid_format`; `schema_version = "0.2"` yields request code `UNSUPPORTED_SCHEMA_VERSION`. Verified by: Integration (`tests/integration/api/test_sessions.py`). | AC-ING-05, ING-025, ING-013 |
+| FEAT-023-AC-04 | A record with `resident_id` R11 (not enrolled) yields `UNKNOWN_RESIDENT`; a record for a withdrawn resident yields `RESIDENT_WITHDRAWN` with detail "resident withdrawn". Verified by: Integration (`tests/integration/api/test_sessions.py`). | AC-API-06, AC-ING-10, FR-026 |
+| FEAT-023-AC-05 | With `feature_name_map = {"Loudness_sma3_amean": "loudness_dbfs", …identity for the rest}`, a record keyed `Loudness_sma3_amean` is accepted with canonical typed `loudness_dbfs` and the payload keeps `Loudness_sma3_amean`. Verified by: Integration (`tests/integration/api/test_ingest.py`; TST-031). | AC-ING-08, ING-016, ING-018 |
+| FEAT-023-AC-06 | A mapping with two external names mapping to `loudness_dbfs` is rejected at load, and the application refuses to start with a configuration error. Verified by: Unit (`tests/unit/backend/services/test_validation.py`). | ING-017 |
 | FEAT-023-AC-07 | With the TRD 20 §4.12 roster, every one of the 283 rows of `tests/fixtures/pipeline_input/EchoWell_pipeline_test_input_v0_1.csv` validates with zero errors. | ING-024 |
-| FEAT-023-AC-08 | A record for device D02 authenticated by a key bound to D01 yields the `DEVICE_KEY_MISMATCH` outcome. | API-040 |
-| FEAT-023-AC-09 | In JSON, `"loudness_dbfs": "-30.1"` yields `invalid_type`; in CSV the cell `-30.1` is accepted and `NaN` yields `non_finite`. | ING-021 |
+| FEAT-023-AC-08 | A record for device D02 authenticated by a key bound to D01 yields the `DEVICE_KEY_MISMATCH` outcome. Verified by: Integration (`tests/integration/api/test_ingest.py`; TST-031). | API-040 |
+| FEAT-023-AC-09 | In JSON, `"loudness_dbfs": "-30.1"` yields `invalid_type`; in CSV the cell `-30.1` is accepted and `NaN` yields `non_finite`. Verified by: Unit (`tests/unit/backend/services/test_validation.py`). | ING-021 |
 
 ## Definition of Done
 

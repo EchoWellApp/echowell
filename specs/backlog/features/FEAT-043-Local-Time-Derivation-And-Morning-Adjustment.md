@@ -75,7 +75,8 @@ Convert every record's UTC timestamp to the facility's local time with the IANA 
 Required before implementation (BACKLOG.md): FEAT-040
 
 - FEAT-040 (Analytics contracts and PipelineConfig): `EpochedRecord`, `AdjustedRecord`, `PipelineConfig` with `facility_tz`, `morning_cutoff_hour`, `morning_offsets`.
-- Downstream: FEAT-044 (local dates for ordering context), FEAT-045, FEAT-049 (local date per record).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-044, FEAT-049, FEAT-094.
 
 ## Database Impact
 
@@ -119,13 +120,14 @@ None in `analytics/` (LOG-006).
 |---|---|---|
 | FEAT-043-AC-01 | `2026-10-01 16:59:59` UTC is local 11:59:59 CDT and morning; `2026-10-01 17:00:00` UTC is 12:00:00 and not morning. | MO-01, MO-02 |
 | FEAT-043-AC-02 | `2026-11-01 17:59:59` UTC is 11:59:59 CST and morning; `2026-11-01 18:00:00` UTC is not morning. | MO-03, MO-04, AGT-040 |
-| FEAT-043-AC-03 | The NFR-131 and NFR-132 vectors give exactly the stated local times, dates and morning flags. | NFR-131, NFR-132 |
+| FEAT-043-AC-03 | The NFR-131 and NFR-132 vectors give exactly the stated local times, dates and morning flags. Verified by: Unit (`tests/unit/analytics/test_morning_offset.py`). | NFR-131, NFR-132 |
 | FEAT-043-AC-04 | R06 day 1 raw loudness −25.42, phrase 4.01, rate 4.14, artic 4.52, pauses 2, pause_frac 0.126, voiced 0.595 adjusts to −23.92, 3.91, 4.26, 4.62, 2, 0.116, 0.615 (±1e-9). | MO-05, BSC-022 |
 | FEAT-043-AC-05 | An afternoon session has adjusted == raw for all 19 features, and the 12 stored-not-scored features of a morning session are unchanged. | MO-06, MO-07 |
 | FEAT-043-AC-06 | On SRC-05, exactly 10 R06 sessions (days 1, 4, …, 28) are morning and the scored ones are R06-20261019-01, -22, -25, -28 with `is_morning` true. | VC-R06, TRD 08 §4.5 |
 
 ## Definition of Done
 
+- All FEAT-043 acceptance criteria pass.
 - Module implemented with the binding signature; MO-01..MO-07 pass (TST-020); test file exists (TST-011).
 - VC-R06 and VC-G07 pass in the validation suite (FEAT-059).
 

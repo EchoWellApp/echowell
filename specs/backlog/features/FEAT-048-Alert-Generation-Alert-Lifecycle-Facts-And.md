@@ -78,7 +78,8 @@ Required before implementation (BACKLOG.md): FEAT-047, FEAT-030
 
 - FEAT-047 (CUSUM engine): tallies and "rings" states.
 - FEAT-030 (Alerts list API): the `leaning_most` provider seam and the `Alert` DTO.
-- Downstream: FEAT-050 (data alerts use epochs and alerts), FEAT-052, FEAT-053, FEAT-069.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052, FEAT-069.
 
 ## Database Impact
 
@@ -129,16 +130,17 @@ None in `analytics/` (LOG-006); the runner logs alert counts (`alerts_opened`) a
 | FEAT-048-AC-02 | When the resident has a later epoch, the epoch-1 event has `epoch_ended` true and `epoch_ended_at` equal to epoch 2's `started_at`. | AL-03, CUS-012 |
 | FEAT-048-AC-03 | On SRC-05 exactly two events exist: R09 epoch 1 at R09-20261021-01 (triggered 2026-10-21 19:07:50 UTC, local 2026-10-21, cusum_value 5.431965 ±1e-6) and R10 epoch 1 at R10-20261024-01 (cusum_value 5.972050 ±1e-6), both not epoch-ended. | AC-CUS-02, AC-CUS-03, VC-G10 |
 | FEAT-048-AC-04 | `leaning_most` for R09 (sessions Oct 21–30) returns (number_of_pauses, loudness_dbfs, voiced_fraction) and for R10 (Oct 24–30) (number_of_pauses, articulation_rate_syl_per_s, speech_rate_syl_per_s). | AN-08, TRD 09 §4.8, OAS-027 |
-| FEAT-048-AC-05 | With DS-07 loaded, `GET /api/v1/alerts?status=open` returns those `leaning_most` arrays for R09 and R10. | OAS-027, TDV-069, AC-CUS-09 |
+| FEAT-048-AC-05 | With DS-07 loaded, `GET /api/v1/alerts?status=open` returns those `leaning_most` arrays for R09 and R10. Verified by: Test (`tests/integration/api/test_alerts.py`). | OAS-027, TDV-069, AC-CUS-09 |
 | FEAT-048-AC-06 | After a review and a snooze on the R09 alert, a full rebuild keeps the alert id, its reviews, status `acknowledged` and `snoozed_until`. | AL-04, AC-ANL-11 |
-| FEAT-048-AC-07 | A resident with an open epoch-1 alert who starts epoch 2 has the epoch-1 alert `closed` with `closed_reason` "epoch ended" and shows `baseline_forming` until epoch 2 forms. | AC-CUS-07, CUS-018, CUS-021 |
+| FEAT-048-AC-07 | A resident with an open epoch-1 alert who starts epoch 2 has the epoch-1 alert `closed` with `closed_reason` "epoch ended" and shows `baseline_forming` until epoch 2 forms. Verified by: Integration (`tests/integration/pipeline/`). | AC-CUS-07, CUS-018, CUS-021 |
 
 ## Definition of Done
 
+- All FEAT-048 acceptance criteria pass.
 - `generate_alerts` and `leaning_most` implemented with the binding signatures; AL-01..AL-03 and AN-08 pass (TST-020); test file exists (TST-011).
 - `GET /alerts` returns computed `leaning_most`; OAS-027 passes on DS-07.
 - AL-04 and AC-CUS-07 pass with FEAT-053 in the same Phase 6 PR.
-- The API-006 note below recorded in the batch report.
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

@@ -77,7 +77,7 @@ Required before implementation (BACKLOG.md): FEAT-020
 
 - FEAT-020 provides the authenticated principal (user id or API key) used as the limit key, and the login endpoint that is limited.
 
-Features that build directly on this one: FEAT-025 (single-record ingest is limited per key).
+Features that build directly on this one (BACKLOG.md §4): FEAT-025.
 
 ## Database Impact
 
@@ -126,9 +126,9 @@ None.
 |---|---|---|
 | FEAT-022-AC-01 | With `RATE_LIMIT_LOGIN=5/minute`, the sixth `POST /api/v1/auth/login` within 60 s from one IP returns 429 `RATE_LIMITED` with a numeric `Retry-After`. | TST-131, FR-215, AC-API-09 |
 | FEAT-022-AC-02 | With `RATE_LIMIT_INGEST=600/minute`, the 601st `POST /api/v1/sessions` within 60 s with one API key returns 429 `RATE_LIMITED` with `Retry-After`. | TST-131, FR-014, ING-011 |
-| FEAT-022-AC-03 | The rate-limited login writes exactly one `auth.login.failed` audit row with `details.reason = "rate_limited"`; the rate-limited ingest request writes no audit row. | SEC-093 |
-| FEAT-022-AC-04 | 1,000 consecutive `GET /api/v1/health` requests within a minute all return 200 or 503, never 429. | API-112 |
-| FEAT-022-AC-05 | Two requests with different left-most `X-Forwarded-For` addresses are counted separately for the login limit. | API-103 |
+| FEAT-022-AC-03 | The rate-limited login writes exactly one `auth.login.failed` audit row with `details.reason = "rate_limited"`; the rate-limited ingest request writes no audit row. Verified by: Integration (a 429 on ingest writes no audit row (SEC-093)). | SEC-093 |
+| FEAT-022-AC-04 | 1,000 consecutive `GET /api/v1/health` requests within a minute all return 200 or 503, never 429. Verified by: Integration (health is never limited (API-112)). | API-112 |
+| FEAT-022-AC-05 | Two requests with different left-most `X-Forwarded-For` addresses are counted separately for the login limit. Verified by: Integration (`X-Forwarded-For: 203.0.113.5, 10.0.0.1` keys on `203.0.113.5` (API-103)). | API-103 |
 
 ## Definition of Done
 

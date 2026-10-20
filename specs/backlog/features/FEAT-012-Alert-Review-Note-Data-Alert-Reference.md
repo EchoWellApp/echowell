@@ -87,7 +87,7 @@ Required before implementation (BACKLOG.md): FEAT-011
 
 - FEAT-011 provides `epochs` and `pipeline_runs`, referenced by `alerts`, `data_alerts` and `facility_reference_ranges`.
 
-Features that build directly on this one: FEAT-013, FEAT-015.
+Features that build directly on this one (BACKLOG.md §4): FEAT-013, FEAT-015, FEAT-057.
 
 ## Database Impact
 
@@ -143,15 +143,15 @@ None from the tables; `audit_logs` is itself the audit store written by FEAT-015
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-012-AC-01 | As `echowell_app_login`, `UPDATE audit_logs …` and `DELETE FROM audit_logs` fail. | AC-PGS-03, FR-252 |
-| FEAT-012-AC-02 | As `echowell_migrator` with `SET echowell.allow_purge = 'on'`, `DELETE FROM audit_logs` succeeds and `UPDATE raw_sessions` still fails. | AC-PGS-09 |
-| FEAT-012-AC-03 | As `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` and `SET ROLE echowell_readonly` fail with 42501; as `echowell_readonly_login` the SELECT succeeds. | AC-PGS-14, SEC-114 |
-| FEAT-012-AC-04 | A second `open` `device_silent` data alert for D02 fails with 23505; a `device_silent` row without `pipeline_run_id` fails with 23514; `DELETE FROM alerts` as app fails with 42501. | AC-PGS-15 |
-| FEAT-012-AC-05 | A second non-closed alert for the same epoch fails with 23505; a closed alert plus a new open alert for the same epoch succeed. | PGS-029 |
-| FEAT-012-AC-06 | An alert with `snoozed_until` set and `snoozed_by` NULL fails with 23514. | PGS-043 |
-| FEAT-012-AC-07 | UPDATE and DELETE on `alert_reviews` and `staff_notes` as `echowell_app_login` fail; two notes with the same `supersedes_id` fail with 23505. | SEC-113, PGS-036, PGS-042 |
-| FEAT-012-AC-08 | `audit_logs` accepts actions `auth.logout` and `auth.login.succeeded` and rejects `Auth.Login` and `login` with 23514. | PGS-044 |
-| FEAT-012-AC-09 | `grep -rn "evaluation_ground_truth" analytics` returns nothing. | AC-AGT-02, DB-007 |
+| FEAT-012-AC-01 | As `echowell_app_login`, `UPDATE audit_logs …` and `DELETE FROM audit_logs` fail. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-03, FR-252 |
+| FEAT-012-AC-02 | As `echowell_migrator` with `SET echowell.allow_purge = 'on'`, `DELETE FROM audit_logs` succeeds and `UPDATE raw_sessions` still fails. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-09 |
+| FEAT-012-AC-03 | As `echowell_app_login`, `SELECT count(*) FROM evaluation_ground_truth` and `SET ROLE echowell_readonly` fail with 42501; as `echowell_readonly_login` the SELECT succeeds. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-14, SEC-114 |
+| FEAT-012-AC-04 | A second `open` `device_silent` data alert for D02 fails with 23505; a `device_silent` row without `pipeline_run_id` fails with 23514; `DELETE FROM alerts` as app fails with 42501. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | AC-PGS-15 |
+| FEAT-012-AC-05 | A second non-closed alert for the same epoch fails with 23505; a closed alert plus a new open alert for the same epoch succeed. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | PGS-029 |
+| FEAT-012-AC-06 | An alert with `snoozed_until` set and `snoozed_by` NULL fails with 23514. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | PGS-043 |
+| FEAT-012-AC-07 | UPDATE and DELETE on `alert_reviews` and `staff_notes` as `echowell_app_login` fail; two notes with the same `supersedes_id` fail with 23505. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | SEC-113, PGS-036, PGS-042 |
+| FEAT-012-AC-08 | `audit_logs` accepts actions `auth.logout` and `auth.login.succeeded` and rejects `Auth.Login` and `login` with 23514. Verified by: Integration (`tests/integration/test_schema_behaviour.py`). | PGS-044 |
+| FEAT-012-AC-09 | `grep -rn "evaluation_ground_truth" analytics` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-02, DB-007 |
 
 ## Definition of Done
 

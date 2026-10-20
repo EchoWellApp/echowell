@@ -7,7 +7,7 @@
 | Priority | P0 |
 | Complexity | Medium |
 | MVP status | Required |
-| Dependencies | FEAT-078, FEAT-076, FEAT-079, FEAT-061 |
+| Dependencies | FEAT-078, FEAT-076, FEAT-079 |
 | Status | Not Started |
 
 ## Purpose
@@ -40,7 +40,7 @@ Create `.github/workflows/e2e.yml`, the workflow that runs the end-to-end suite 
 
 ## Out of Scope
 
-- The Playwright specs, configs and setup scripts (FEAT-076); the performance tests and Lighthouse config (FEAT-079); `robustness.py` (FEAT-061).
+- The Playwright specs, configs and setup scripts (FEAT-076); the performance tests and Lighthouse config (FEAT-079); `robustness.py` (Optional FEAT-061, run only when present).
 - `ci.yml`, branch protection settings (FEAT-078) beyond the fact that `playwright` is one of the required checks.
 - Deploy and uptime workflows (FEAT-085, FEAT-086).
 
@@ -55,7 +55,7 @@ Create `.github/workflows/e2e.yml`, the workflow that runs the end-to-end suite 
 | FEAT-080-FR-05 | The E2E credentials shall be generated per job, masked with `::add-mask::` before use, written to `.env` and `$GITHUB_ENV`, never printed, and never valid on staging or production. | CIC-034, D-71 |
 | FEAT-080-FR-06 | The E2E stack `.env` shall set `RATE_LIMIT_LOGIN=60/minute` (APP_ENV `local`). | D-74 (b), ENV-054 |
 | FEAT-080-FR-07 | The `performance` job shall run only on schedule and dispatch, generate DS-08 and run `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any contract R8 budget or the sustained-ingest check of TST-190 (NFR-151) fails, and upload `performance-report`. | CIC-035, TST-151, TST-190 |
-| FEAT-080-FR-08 | The `nightly-validation` job shall run only on schedule and dispatch with the `backend-test` setup, run the pytest suites in random order with the seed printed, then run `tests/validation/robustness.py` as an informational step (`continue-on-error: true`), and upload `nightly-validation-report`; it is not a required check. | CIC-037, TST-005, TST-084, TDV-083 |
+| FEAT-080-FR-08 | The `nightly-validation` job shall run only on schedule and dispatch with the `backend-test` setup, run the pytest suites in random order with the seed printed, then, when `tests/validation/robustness.py` exists (Optional FEAT-061), run it as an informational step (`continue-on-error: true`), and upload `nightly-validation-report`; it is not a required check. | CIC-037, TST-005, TST-084, TDV-083 |
 | FEAT-080-FR-09 | The `lighthouse` job shall run on pull requests to `main` and `staging`, use `@lhci/cli` 0.14.x with the desktop preset on `/residents` of the seeded `demo` stack after `frontend/tests/lighthouse/login.js`, and fail below Performance 80 or above LCP 2.5 s; it is not a required check. | CIC-116, TST-125 |
 | FEAT-080-FR-10 | A failing scheduled or `main` run shall open or comment on a GitHub issue labelled `ci-failure` via `gh` with `issues: write` scoped to that job. | CIC-033, TST-151 |
 | FEAT-080-FR-11 | Each job (`playwright`, `performance`, `lighthouse`, `nightly-validation`) shall define `timeout-minutes` ≤ 20 and complete within 20 minutes. | CIC-111, CIC-112 |
@@ -64,7 +64,7 @@ Create `.github/workflows/e2e.yml`, the workflow that runs the end-to-end suite 
 
 ## Inputs
 
-- Specs and scripts from FEAT-076; performance suite and Lighthouse config from FEAT-079; `robustness.py` from FEAT-061; Compose file and templates from FEAT-077; `ci.yml` setup steps from FEAT-078.
+- Specs and scripts from FEAT-076; performance suite and Lighthouse config from FEAT-079; `robustness.py` from FEAT-061 when present (Optional, soft dependency); Compose file and templates from FEAT-077; `ci.yml` setup steps from FEAT-078.
 - Repository checkout with `database/`, `tests/fixtures/` (mounted read-only into the backend, DEP-119).
 
 ## Outputs
@@ -79,12 +79,14 @@ Trigger → `playwright` job builds the stack → seed and DS-10 → per-project
 
 ## Dependencies
 
-Required before implementation (BACKLOG.md): FEAT-078, FEAT-076, FEAT-079, FEAT-061
+Required before implementation (BACKLOG.md): FEAT-078, FEAT-076, FEAT-079
 
 - [FEAT-078](FEAT-078-Full-CI-Quality-Security-And-Hygiene.md) Full CI gates and branch protection (`backend-test` setup reused; `playwright` registered as required).
 - [FEAT-076](FEAT-076-End-To-End-Test-Suite-And.md) End-to-end suite and isolation harness.
 - [FEAT-079](FEAT-079-Performance-And-Load-Tests.md) Performance and load tests, Lighthouse config.
-- [FEAT-061](FEAT-061-False-Alarm-Robustness-Check.md) False-alarm robustness check.
+- Soft dependency (not required, BACKLOG.md §8.2): [FEAT-061](FEAT-061-False-Alarm-Robustness-Check.md) False-alarm robustness check; the nightly job runs it only when `tests/validation/robustness.py` exists.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-086.
 
 ## Database Impact
 
@@ -131,15 +133,16 @@ None in code. `nightly-validation` runs the validation suite in random order and
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-080-AC-01 | On a pull request to `staging`, the `playwright` job passes in Chromium, including `a11y.spec.ts` and the isolated run, and reports the status check `playwright`. | CIC-030, CIC-031, AC-TST-07 |
-| FEAT-080-AC-02 | A `workflow_dispatch` run executes `performance` and `nightly-validation`; `performance` uploads `performance-report` and passes all budgets. | CIC-035, AC-CIC-10 |
-| FEAT-080-AC-03 | The `nightly-validation` log contains the pytest-randomly seed, and a deliberately failing robustness step does not fail the job. | CIC-037, AC-TDV-09 |
-| FEAT-080-AC-04 | A forced failure on a scheduled run creates or comments on an issue labelled `ci-failure`. | CIC-033 |
-| FEAT-080-AC-05 | `grep -n "secrets\." .github/workflows/e2e.yml` returns nothing, and every job has `timeout-minutes` ≤ 20. | CIC-034, CIC-111 |
-| FEAT-080-AC-06 | The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before 15 Nov 2026. | AC-CIC-09 |
+| FEAT-080-AC-02 | A `workflow_dispatch` run executes `performance` and `nightly-validation`; `performance` uploads `performance-report` and passes all budgets. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 PR (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | CIC-035, AC-CIC-10 |
+| FEAT-080-AC-03 | The `nightly-validation` log contains the pytest-randomly seed, and a deliberately failing robustness step does not fail the job; without `tests/validation/robustness.py` the step is skipped and the job still passes. | CIC-037, AC-TDV-09 |
+| FEAT-080-AC-04 | A forced failure on a scheduled run creates or comments on an issue labelled `ci-failure`. Verified by: Demo (the demo method of CIC-033, applied to the condition stated in the criterion). | CIC-033 |
+| FEAT-080-AC-05 | `grep -n "secrets\." .github/workflows/e2e.yml` returns nothing, and every job has `timeout-minutes` ≤ 20. Verified by: Inspection (run the command in the criterion and check its output). | CIC-034, CIC-111 |
+| FEAT-080-AC-06 | The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before 15 Nov 2026. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 PR (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | AC-CIC-09 |
 | FEAT-080-AC-07 | The `lighthouse` job runs on a pull request and reports Performance ≥ 80 and LCP ≤ 2.5 s for `/residents`. | CIC-116, TST-125 |
 
 ## Definition of Done
 
+- All FEAT-080 acceptance criteria pass.
 - All FEAT-080 acceptance criteria demonstrated (FEAT-080-AC-06 recorded later in the readiness checklist of FEAT-087).
 - Workflow passes `actionlint` (or equivalent YAML validation) and uses actions pinned per CIC-025.
 - Batch report entry (AGT-022).

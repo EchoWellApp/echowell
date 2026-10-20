@@ -90,7 +90,8 @@ Required before implementation (BACKLOG.md): FEAT-034, FEAT-008
 
 - FEAT-034 (Scores and baselines read-outs): `analytics.py` router module, the baseline/epoch read queries and the researcher/admin role pattern reused here (and transitively FEAT-021, FEAT-014).
 - FEAT-008 (Database roles, extensions and Alembic): the `echowell_readonly` role and its login role with SELECT on `evaluation_ground_truth`, and no privilege for `echowell_app` (PGS-040).
-- Downstream: FEAT-051 (adds the aggregate blocks), FEAT-060 (DS-07 analytics values), FEAT-072.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-051.
 
 ## Database Impact
 
@@ -139,15 +140,16 @@ No engine computation. Calculations performed in the backend read path: per-resi
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-035-AC-01 | A clinician `GET /api/v1/analytics` returns 403 `FORBIDDEN`; researcher and admin return 200. | FR-243, API-087 |
-| FEAT-035-AC-02 | With DS-07 loaded (profile test_v0_1), `status_totals` is usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2; `status_counts` has 10 rows (R02: usable 24, missing_resident 5, missing_device_gap 1); `resident_outcomes` has 11 rows (R07 epochs 1 and 2). | OAS-024, FR-240, TRD 23 §4.7.3, §4.7.4 |
-| FEAT-035-AC-03 | With DS-07 and DS-10 loaded, `alarm_timing` contains R09 (Sudden step, change_began 2026-10-21, alarm_rang 2026-10-21, delay_days 0, result `detected`), R10 (Slow drift, 2026-10-17, 2026-10-24, 7, `detected`) and 8 rows with planted_change "None", alarm_rang null, result `correct_no_alarm`; `review_outcomes` is null. | CUS-047, OAS-028, AC-API-16 |
-| FEAT-035-AC-04 | With `PIPELINE_PROFILE=production`, `alarm_timing` is null and `review_outcomes` is non-null with `by_outcome` keys no_concern, known_cause, referred, data_problem; no connection to `DATABASE_READONLY_URL` is opened. | TDV-104, CUS-049, API-136 |
+| FEAT-035-AC-01 | A clinician `GET /api/v1/analytics` returns 403 `FORBIDDEN`; researcher and admin return 200. Verified by: Integration (`tests/integration/api/test_analytics.py`). | FR-243, API-087 |
+| FEAT-035-AC-02 | With DS-07 loaded (profile test_v0_1), `status_totals` is usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2; `status_counts` has 10 rows (R02: usable 24, missing_resident 5, missing_device_gap 1); `resident_outcomes` has 11 rows (R07 epochs 1 and 2). Verified by: DS-07 values (DS-07 values (FEAT-060, OAS-024, OAS-028 for `alarm_timing`, AC-API-16): status totals 267/12/2/2/17/2). | OAS-024, FR-240, TRD 23 §4.7.3, §4.7.4 |
+| FEAT-035-AC-03 | With DS-07 and DS-10 loaded, `alarm_timing` contains R09 (Sudden step, change_began 2026-10-21, alarm_rang 2026-10-21, delay_days 0, result `detected`), R10 (Slow drift, 2026-10-17, 2026-10-24, 7, `detected`) and 8 rows with planted_change "None", alarm_rang null, result `correct_no_alarm`; `review_outcomes` is null. Verified by: DS-07 values (DS-07 values (FEAT-060, OAS-024, OAS-028 for `alarm_timing`, AC-API-16): status totals 267/12/2/2/17/2). | CUS-047, OAS-028, AC-API-16 |
+| FEAT-035-AC-04 | With `PIPELINE_PROFILE=production`, `alarm_timing` is null and `review_outcomes` is non-null with `by_outcome` keys no_concern, known_cause, referred, data_problem; no connection to `DATABASE_READONLY_URL` is opened. Verified by: Integration (`tests/integration/api/test_analytics.py`). | TDV-104, CUS-049, API-136 |
 | FEAT-035-AC-05 | A static test fails if any file other than `backend/services/analytics_summary.py` under `backend/` or any file under `analytics/` contains `DATABASE_READONLY_URL` or `evaluation_ground_truth`, and it passes on the delivered code. | API-136, TST-068, TDV-101 |
 | FEAT-035-AC-06 | `pipeline_run` equals the latest succeeded run (id, trigger, scope, config_profile, as_of, status `succeeded`, counts) and the response validates against `AnalyticsResponse`. | FR-240, TST-061 |
 
 ## Definition of Done
 
+- All FEAT-035 acceptance criteria pass.
 - Endpoint implemented with the full `AnalyticsResponse` schema; FEAT-051 integration point documented.
 - Integration and boundary tests pass; DS-07 criteria pass in FEAT-060 once FEAT-051 has filled the aggregate blocks.
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.

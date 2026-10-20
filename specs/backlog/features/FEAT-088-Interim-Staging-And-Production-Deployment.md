@@ -90,6 +90,8 @@ Required before implementation (BACKLOG.md): FEAT-087
 
 - [FEAT-087](FEAT-087-Deployment-Documentation-And-Readiness-Checklists.md) Deployment documentation and readiness checklists (the runbooks and checklist this feature executes).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
+
 ## Database Impact
 
 - Neon `staging`: full schema via Alembic; `test_v0_1` data (roster, users, API key `test-ingest`, SRC-05 ingest, pipeline outputs, `evaluation_ground_truth`).
@@ -140,14 +142,14 @@ Required before implementation (BACKLOG.md): FEAT-087
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-088-AC-01 | `curl -fsS "$BACKEND_URL/api/v1/health"` returns `status` ok, `database` ok and `version` = deployed SHA for staging and production. | TRD 25 §4.6 Phase 10 DoD, ARC-083 |
-| FEAT-088-AC-02 | `curl -fsSI "$FRONTEND_URL/residents"` succeeds over HTTPS for both environments. | TRD 25 §4.6 Phase 10 Commands |
-| FEAT-088-AC-03 | `deploy-staging.yml` and `deploy-production.yml` are green on the deployed commits. | AC-DEP-03, AC-DEP-04 |
-| FEAT-088-AC-04 | Production `raw_sessions` has zero rows linked to `ingest_batches.source = 'seed'`. | AC-DEP-05, DEP-073 |
-| FEAT-088-AC-05 | Starting production with PIPELINE_PROFILE=`test_v0_1` (tested on a throwaway deployment or locally with the same variables) is refused. | AGT-015, AC-AGT-05 |
-| FEAT-088-AC-06 | The interim Neon project contains no resident_code outside `R01`–`R10` (staging seed) and `T`-prefixed demo IDs. | AC-DEP-11, DEP-008 |
-| FEAT-088-AC-07 | `docs/reports/DEPLOYMENT_REPORT.md` exists, ends with "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED", and contains the sentences that it is a synthetic-data interim deployment, not a go-live, and that no real resident data was loaded. | AC-AGT-10, AC-AGT-07 |
-| FEAT-088-AC-08 | A JWT issued by staging is rejected (401) by production. | DEP-006 |
+| FEAT-088-AC-01 | `curl -fsS "$BACKEND_URL/api/v1/health"` returns `status` ok, `database` ok and `version` = deployed SHA for staging and production. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 10 DoD, ARC-083 |
+| FEAT-088-AC-02 | `curl -fsSI "$FRONTEND_URL/residents"` succeeds over HTTPS for both environments. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 10 Commands |
+| FEAT-088-AC-03 | `deploy-staging.yml` and `deploy-production.yml` are green on the deployed commits. Verified by: Inspection (review of `deploy-staging.yml` against the cited requirements). | AC-DEP-03, AC-DEP-04 |
+| FEAT-088-AC-04 | Production `raw_sessions` has zero rows linked to `ingest_batches.source = 'seed'`. Verified by: SQL check in production (`SELECT count(*) FROM raw_sessions r JOIN ingest_batches b ON r.ingest_batch_id = b.id WHERE b.source = 'seed'` returns 0 (DEP-073, AC-DEP-05)). | AC-DEP-05, DEP-073 |
+| FEAT-088-AC-05 | Starting production with PIPELINE_PROFILE=`test_v0_1` (tested on a throwaway deployment or locally with the same variables) is refused. Verified by: Test (the test method of AGT-015, applied to the condition stated in the criterion). | AGT-015, AC-AGT-05 |
+| FEAT-088-AC-06 | The interim Neon project contains no resident_code outside `R01`–`R10` (staging seed) and `T`-prefixed demo IDs. Verified by: Inspection (the inspection method of DEP-008, applied to the condition stated in the criterion). | AC-DEP-11, DEP-008 |
+| FEAT-088-AC-07 | `docs/reports/DEPLOYMENT_REPORT.md` exists, ends with "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED", and contains the sentences that it is a synthetic-data interim deployment, not a go-live, and that no real resident data was loaded. Verified by: Inspection (review of `docs/reports/DEPLOYMENT_REPORT.md` against the cited requirements). | AC-AGT-10, AC-AGT-07 |
+| FEAT-088-AC-08 | A JWT issued by staging is rejected (401) by production. Verified by: Test (staging JWT against production `/api/v1/auth/me` returns 401 (DEP-006)). | DEP-006 |
 
 ## Definition of Done
 

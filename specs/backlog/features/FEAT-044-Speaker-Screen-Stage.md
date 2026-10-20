@@ -77,7 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-042, FEAT-043
 - FEAT-042 (Epoch detection): records grouped by epoch, late records marked.
 - FEAT-043 (Local time derivation): the shared ordering/local-time helper and the separation of raw and adjusted values in the contracts.
 - Transitively FEAT-040 (`robust`, config).
-- Downstream: FEAT-045, FEAT-050 (quarantine count per resident), FEAT-052.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-045, FEAT-052, FEAT-097.
 
 ## Database Impact
 
@@ -129,6 +130,7 @@ None in `analytics/` (LOG-006).
 
 ## Definition of Done
 
+- All FEAT-044 acceptance criteria pass.
 - Module implemented with the binding signature; SCR-01..SCR-10 pass (TST-020); test file exists (TST-011).
 - VC-R05 passes in the validation suite (FEAT-059); `analytics/` coverage ≥ 95 %.
 
@@ -137,4 +139,4 @@ None in `analytics/` (LOG-006).
 - The reference list is `prior[:config.baseline_n]` — the first N, never a sliding window (AGT-044); after freeze it equals the baseline sessions.
 - Use raw values from `record.features`; never the adjusted mapping (a common bug, TRD 08 §8).
 - Format with `f"{z_f0:.2f}"` on the float64 value; do not round z anywhere else (AGT-054).
-- Former TRD conflict: the TRD 08 §4.4 pseudocode set `reasons = ("possible other speaker",)` with the long form only in `reason_text`, while TRD 07 §4.3 defines `reason_text` as the reasons joined by "; " and TRD 20 `processed_sessions_status_reason_ck` (PGS-012) requires `reasons[1]` to match `possible other speaker (F0 z=…; composite features with |z|>=3: …)` and `reason_text = array_to_string(reasons, '; ')`. Store the full reason text as the single element of `reasons` (it then equals `reason_text` and the workbook string); the TRD 08 §4.4 pseudocode now does the same (aligned in the PR #2 consistency fixes).
+- Resolved (PR #2): the TRD 08 §4.4 pseudocode set `reasons = ("possible other speaker",)` with the long form only in `reason_text`, while TRD 07 §4.3 defines `reason_text` as the reasons joined by "; " and TRD 20 `processed_sessions_status_reason_ck` (PGS-012) requires `reasons[1]` to match `possible other speaker (F0 z=…; composite features with |z|>=3: …)` and `reason_text = array_to_string(reasons, '; ')`. Store the full reason text as the single element of `reasons` (it then equals `reason_text` and the workbook string); the TRD 08 §4.4 pseudocode now does the same (aligned in the PR #2 consistency fixes).

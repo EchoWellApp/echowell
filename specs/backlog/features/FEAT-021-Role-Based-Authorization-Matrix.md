@@ -81,7 +81,7 @@ Required before implementation (BACKLOG.md): FEAT-020
 
 - FEAT-020 provides `get_current_user`, `get_api_key(scope)` and `get_ingest_principal`.
 
-Features that build directly on this one: FEAT-024, FEAT-027, and every protected endpoint feature; FEAT-039 completes the exhaustive test.
+Features that build directly on this one (BACKLOG.md §4): FEAT-024, FEAT-027, FEAT-029, FEAT-030, FEAT-032, FEAT-033, FEAT-034, FEAT-036, FEAT-037.
 
 ## Database Impact
 
@@ -134,11 +134,11 @@ None.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-021-AC-01 | `tests/integration/test_auth_coverage.py` passes, and adding a test route without an auth dependency makes it fail. | SEC-042 |
-| FEAT-021-AC-02 | A user whose database role is `researcher` but whose token claims `admin` receives 403 `FORBIDDEN` on an admin-only route. | API-013, SEC-034 |
-| FEAT-021-AC-03 | Every 403 produced in the role-check suite creates exactly one `access.denied` audit row with `details.status = 403`; no 401 creates an audit row. | SEC-108 |
-| FEAT-021-AC-04 | The permission table contains one entry per row of TRD 12 §4.6 (33 endpoint rows) and its allowed callers equal the matrix cells (compared by a unit test against a transcription of the matrix). | SEC-040, FR-213 |
-| FEAT-021-AC-05 | With the analytics and review routers present, a clinician gets 403 on `GET /analytics` and a researcher gets 403 on `POST /alerts/{id}/reviews` and `POST /alerts/{id}/snooze`. | FR-310, FR-275, SEC-045 |
-| FEAT-021-AC-06 | `POST /ingest` succeeds for an admin user and an `ingest:write` key and returns 403 for a clinician; `POST /sessions` returns 401 for any user token. | FR-004, TRD 12 §4.6 |
+| FEAT-021-AC-02 | A user whose database role is `researcher` but whose token claims `admin` receives 403 `FORBIDDEN` on an admin-only route. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | API-013, SEC-034 |
+| FEAT-021-AC-03 | Every 403 produced in the role-check suite creates exactly one `access.denied` audit row with `details.status = 403`; no 401 creates an audit row. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | SEC-108 |
+| FEAT-021-AC-04 | The permission table contains one entry per row of TRD 12 §4.6 (33 endpoint rows) and its allowed callers equal the matrix cells (compared by a unit test against a transcription of the matrix). Verified by: Integration (`tests/integration/api/test_role_checks.py`). | SEC-040, FR-213 |
+| FEAT-021-AC-05 | With the analytics and review routers present, a clinician gets 403 on `GET /analytics` and a researcher gets 403 on `POST /alerts/{id}/reviews` and `POST /alerts/{id}/snooze`. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | FR-310, FR-275, SEC-045 |
+| FEAT-021-AC-06 | `POST /ingest` succeeds for an admin user and an `ingest:write` key and returns 403 for a clinician; `POST /sessions` returns 401 for any user token. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | FR-004, TRD 12 §4.6 |
 
 ## Definition of Done
 

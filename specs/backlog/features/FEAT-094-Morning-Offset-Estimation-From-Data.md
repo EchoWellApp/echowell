@@ -95,6 +95,8 @@ Required before implementation (BACKLOG.md): FEAT-043, FEAT-059
 
 Gate: OQ-09 (estimation method on DS-04).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - No schema change. Production `config_parameters` row (`profile` = `production`, `key` = `morning_offsets`) updated only through `set-config`; derived tables recomputed by `rebuild`; audit rows written.
@@ -136,13 +138,14 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-094-AC-01 | `grep -n "estimate_offsets" analytics/pipeline.py` returns nothing. | ANL-055, FR-073 |
-| FEAT-094-AC-02 | `estimate_offsets` returns a mapping with exactly the 19 feature keys that `PipelineConfig.from_mapping` accepts, and two calls with the same input return equal mappings. | ANL-029, AGT-021 |
+| FEAT-094-AC-01 | `grep -n "estimate_offsets" analytics/pipeline.py` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | ANL-055, FR-073 |
+| FEAT-094-AC-02 | `estimate_offsets` returns a mapping with exactly the 19 feature keys that `PipelineConfig.from_mapping` accepts, and two calls with the same input return equal mappings. Verified by: Unit tests (`tests/unit/analytics/test_morning_offset.py`; MO-01, MO-07). | ANL-029, AGT-021 |
 | FEAT-094-AC-03 | Unit cases MO-01..MO-07 and `pytest tests/validation -q` pass unchanged after the feature. | AGT-008, TDV-003 |
-| FEAT-094-AC-04 | A production change of `morning_offsets` has one `config.changed` audit row and is followed by `pipeline.rebuild`; before the rebuild an ingest-triggered run fails with `config_changed_requires_rebuild`. | ANL-032, D-69 |
+| FEAT-094-AC-04 | A production change of `morning_offsets` has one `config.changed` audit row and is followed by `pipeline.rebuild`; before the rebuild an ingest-triggered run fails with `config_changed_requires_rebuild`. Verified by: Unit tests (`tests/unit/analytics/test_morning_offset.py`; MO-01, MO-07). | ANL-032, D-69 |
 
 ## Definition of Done
 
+- All FEAT-094 acceptance criteria pass.
 - Gate satisfied (OQ-09 answered); all FEAT-094 acceptance criteria pass; estimation report reviewed by the algorithm lead.
 - TRD 08/TRD 07 updated through a TRD change with the chosen method before code merges (AGT-001).
 

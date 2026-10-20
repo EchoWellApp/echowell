@@ -89,6 +89,8 @@ Required before implementation (BACKLOG.md): FEAT-080, FEAT-081, FEAT-082, FEAT-
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify configuration and build meta tag.
 - [FEAT-083](FEAT-083-Secrets-Management-And-Transport-Security.md) Secrets management and the TLS smoke test.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-087.
+
 ## Database Impact
 
 - Staging re-seed recreates the staging schema (`reset-test-db`: `alembic downgrade base`, `alembic upgrade head`) and reloads the `test_v0_1` data, the single exception to the forward-only rule (DEP-060, D-71); it writes an `audit_logs` row `seed.reset`.
@@ -136,15 +138,16 @@ None in code. The staging re-seed runs the pipeline with profile `test_v0_1` at 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-086-AC-01 | A merge to `staging` yields a Railway staging deployment whose health `version` equals the merge SHA, a Netlify branch deploy, and a green `deploy-staging.yml` run. | AC-DEP-03 |
-| FEAT-086-AC-02 | A merge `release: vX.Y.Z` to `main` yields production health `version` = merge SHA and a green `deploy-production.yml` run that created tag `vX.Y.Z`. | AC-DEP-04, AC-CIC-07 |
-| FEAT-086-AC-03 | `grep -n "secrets\." .github/workflows/deploy-production.yml` returns nothing. | CIC-050 |
-| FEAT-086-AC-04 | A push to `staging` changing a file under `analytics/` triggers the re-seed step; a push changing only `docs/` does not. | CIC-041 |
+| FEAT-086-AC-01 | A merge to `staging` yields a Railway staging deployment whose health `version` equals the merge SHA, a Netlify branch deploy, and a green `deploy-staging.yml` run. Verified by: Smoke tests (TST-134, TST-135, TST-152). | AC-DEP-03 |
+| FEAT-086-AC-02 | A merge `release: vX.Y.Z` to `main` yields production health `version` = merge SHA and a green `deploy-production.yml` run that created tag `vX.Y.Z`. Verified by: Smoke tests (TST-134, TST-135, TST-152). | AC-DEP-04, AC-CIC-07 |
+| FEAT-086-AC-03 | `grep -n "secrets\." .github/workflows/deploy-production.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-050 |
+| FEAT-086-AC-04 | A push to `staging` changing a file under `analytics/` triggers the re-seed step; a push changing only `docs/` does not. Verified by: Demo (the demo method of CIC-041, applied to the condition stated in the criterion). | CIC-041 |
 | FEAT-086-AC-05 | The staging smoke suite contains tests for each of DEP-080 (a)–(h) and the production suite for each of DEP-081 (a)–(f); production tests carry no `authenticated` marker. | DEP-080, DEP-081, TST-006 |
-| FEAT-086-AC-06 | A commit to `main` whose message does not start with `release: v` produces no tag or release. | CIC-052 |
+| FEAT-086-AC-06 | A commit to `main` whose message does not start with `release: v` produces no tag or release. Verified by: Demo (the demo method of CIC-052, applied to the condition stated in the criterion). | CIC-052 |
 
 ## Definition of Done
 
+- All FEAT-086 acceptance criteria pass.
 - All FEAT-086 acceptance criteria demonstrated (FEAT-086-AC-01 and FEAT-086-AC-02 in Phase 10 with FEAT-088).
 - Workflow files listed in CIC-002 exist and no other workflow file was added.
 - Batch report entry (AGT-022).

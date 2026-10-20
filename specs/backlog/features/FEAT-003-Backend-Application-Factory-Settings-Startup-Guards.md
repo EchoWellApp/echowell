@@ -100,7 +100,7 @@ Required before implementation (BACKLOG.md): FEAT-002
 
 - FEAT-002 provides the `backend/` package tree, `backend/api/health.py` skeleton, pinned FastAPI/SQLAlchemy/psycopg 3 versions and lint configuration.
 
-Features that build directly on this one: FEAT-005, FEAT-006, FEAT-008, FEAT-018.
+Features that build directly on this one (BACKLOG.md §4): FEAT-005, FEAT-006, FEAT-008, FEAT-018.
 
 ## Database Impact
 
@@ -157,13 +157,13 @@ None. `PIPELINE_PROFILE` is validated here but only consumed by the pipeline run
 |---|---|---|
 | FEAT-003-AC-01 | Starting the backend with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` exits with code 1 and a CRITICAL log naming `PIPELINE_PROFILE`. | AC-ENV-01, AC-AGT-05, CFG-06 |
 | FEAT-003-AC-02 | Starting with `APP_ENV=production` and `PIPELINE_AS_OF` set exits non-zero with a logged error. | AC-AGT-05, AC-ENV-06, TST-038 |
-| FEAT-003-AC-03 | `APP_ENV=staging` with a `DATABASE_URL` lacking `sslmode=require` exits with code 1; the same URL with `APP_ENV=local` starts. | AC-ENV-02, AC-ARC-09 |
-| FEAT-003-AC-04 | A 31-byte `JWT_SECRET` is rejected in every `APP_ENV`; `FACILITY_NAME=Edge4Care` is rejected. | AC-ENV-04, AC-ENV-07 |
-| FEAT-003-AC-05 | `DATABASE_URL=postgres://u:p@h/db?sslmode=require` yields engine URL `postgresql+psycopg://u:p@h/db?sslmode=require`. | AC-ENV-05 |
-| FEAT-003-AC-06 | `repr(get_settings())` shows `**********` for `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `DATABASE_READONLY_URL`, `JWT_SECRET` and `SENTRY_DSN`, and the startup failure log never contains a secret value. | AC-ENV-09, AC-ENV-03 |
+| FEAT-003-AC-03 | `APP_ENV=staging` with a `DATABASE_URL` lacking `sslmode=require` exits with code 1; the same URL with `APP_ENV=local` starts. Verified by: Unit (`tests/unit/backend/core/test_config.py`). | AC-ENV-02, AC-ARC-09 |
+| FEAT-003-AC-04 | A 31-byte `JWT_SECRET` is rejected in every `APP_ENV`; `FACILITY_NAME=Edge4Care` is rejected. Verified by: Unit (`tests/unit/backend/core/test_config.py`). | AC-ENV-04, AC-ENV-07 |
+| FEAT-003-AC-05 | `DATABASE_URL=postgres://u:p@h/db?sslmode=require` yields engine URL `postgresql+psycopg://u:p@h/db?sslmode=require`. Verified by: Unit (`tests/unit/backend/core/test_config.py`). | AC-ENV-05 |
+| FEAT-003-AC-06 | `repr(get_settings())` shows `**********` for `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `DATABASE_READONLY_URL`, `JWT_SECRET` and `SENTRY_DSN`, and the startup failure log never contains a secret value. Verified by: Unit (`tests/unit/backend/core/test_config.py`). | AC-ENV-09, AC-ENV-03 |
 | FEAT-003-AC-07 | `GET /api/v1/health` with the database up returns 200 with `status` "ok", `database` "ok", `version` equal to `GIT_SHA`; with the database stopped returns 503 with `status` "degraded" and `database` "unavailable". | TST-054, FR-253 |
-| FEAT-003-AC-08 | `GET /api/v1/health` succeeds without an `Authorization` header and creates no `audit_logs` row (verified once FEAT-012 exists). | API-110, API-112 |
-| FEAT-003-AC-09 | `limit=0`, `limit=501` and `offset=-1` are rejected with 422 `INVALID_QUERY_PARAMETER`; omitted values default to 50 and 0. | API-016 |
+| FEAT-003-AC-08 | `GET /api/v1/health` succeeds without an `Authorization` header and creates no `audit_logs` row (verified once FEAT-012 exists). Verified by: Unit (`tests/unit/backend/core/test_config.py`; CFG-06). | API-110, API-112 |
+| FEAT-003-AC-09 | `limit=0`, `limit=501` and `offset=-1` are rejected with 422 `INVALID_QUERY_PARAMETER`; omitted values default to 50 and 0. Verified by: Dependency tests (`tests/unit/backend/test_deps.py`). | API-016 |
 
 ## Definition of Done
 

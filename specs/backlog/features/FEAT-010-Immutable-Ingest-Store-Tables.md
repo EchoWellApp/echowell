@@ -84,7 +84,7 @@ Required before implementation (BACKLOG.md): FEAT-009
 
 - FEAT-009 provides `residents`, `devices`, `users` and `api_keys`, which the FKs of these tables reference.
 
-Features that build directly on this one: FEAT-011, FEAT-023.
+Features that build directly on this one (BACKLOG.md §4): FEAT-011, FEAT-023.
 
 ## Database Impact
 
@@ -137,13 +137,13 @@ None from the tables. Ingest log events and audit rows for batches are produced 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-010-AC-01 | As `echowell_app_login`, `UPDATE raw_sessions SET phrase_id = 'x'` fails with SQLSTATE 42501; as the table owner it fails with SQLSTATE `EW001`; the row is unchanged. | AC-PGS-01, DB-004 |
-| FEAT-010-AC-02 | `DELETE FROM raw_sessions` and `TRUNCATE raw_sessions` fail for `echowell_app_login` and for the owner without `echowell.allow_purge = 'on'`. | AC-PGS-02, PGS-018 |
-| FEAT-010-AC-03 | `has_table_privilege('echowell_app','raw_sessions','UPDATE')`, `…'DELETE')` and `has_table_privilege('echowell_app','ingest_rejections','UPDATE')` are all false; `…'raw_sessions','INSERT')` is true. | DB-009, ING-030 |
-| FEAT-010-AC-04 | Inserting a row with `audio_quality_flag = 'bad'`, `number_of_pauses = -1`, `pause_fraction = 1.5`, `mean_f0_hz = 0` or a 17-character `phrase_id` each fails with SQLSTATE 23514. | PGS-011 |
-| FEAT-010-AC-05 | The `raw_sessions` feature column names equal the 19 feature names in the SRC-05 header and `number_of_pauses` is `integer`. | PGS-009 |
-| FEAT-010-AC-06 | Two inserts with the same `session_id` both succeed and receive increasing `arrival_seq` values. | DB-001, D-09 |
-| FEAT-010-AC-07 | An `ingest_rejections` insert with `errors = '[]'` fails with 23514; an `ingest_batches` row with `source = 'csv_upload'` and NULL `filename` fails with 23514. | FR-028, FR-010 |
+| FEAT-010-AC-01 | As `echowell_app_login`, `UPDATE raw_sessions SET phrase_id = 'x'` fails with SQLSTATE 42501; as the table owner it fails with SQLSTATE `EW001`; the row is unchanged. Verified by: Integration (`tests/integration/db/test_raw_store.py`). | AC-PGS-01, DB-004 |
+| FEAT-010-AC-02 | `DELETE FROM raw_sessions` and `TRUNCATE raw_sessions` fail for `echowell_app_login` and for the owner without `echowell.allow_purge = 'on'`. Verified by: Integration (`tests/integration/db/test_raw_store.py`). | AC-PGS-02, PGS-018 |
+| FEAT-010-AC-03 | `has_table_privilege('echowell_app','raw_sessions','UPDATE')`, `…'DELETE')` and `has_table_privilege('echowell_app','ingest_rejections','UPDATE')` are all false; `…'raw_sessions','INSERT')` is true. Verified by: Integration (`tests/integration/db/test_grants.py`). | DB-009, ING-030 |
+| FEAT-010-AC-04 | Inserting a row with `audio_quality_flag = 'bad'`, `number_of_pauses = -1`, `pause_fraction = 1.5`, `mean_f0_hz = 0` or a 17-character `phrase_id` each fails with SQLSTATE 23514. Verified by: Integration (`tests/integration/db/test_raw_store.py`). | PGS-011 |
+| FEAT-010-AC-05 | The `raw_sessions` feature column names equal the 19 feature names in the SRC-05 header and `number_of_pauses` is `integer`. Verified by: Integration (column list of `raw_sessions` equals the SRC-05 header feature names (PGS-009)). | PGS-009 |
+| FEAT-010-AC-06 | Two inserts with the same `session_id` both succeed and receive increasing `arrival_seq` values. Verified by: Unit (`tests/unit/backend/repositories/test_raw_session_repository.py`). | DB-001, D-09 |
+| FEAT-010-AC-07 | An `ingest_rejections` insert with `errors = '[]'` fails with 23514; an `ingest_batches` row with `source = 'csv_upload'` and NULL `filename` fails with 23514. Verified by: Integration (`tests/integration/db/test_raw_store.py`). | FR-028, FR-010 |
 | FEAT-010-AC-08 | `alembic upgrade head`, `downgrade base`, `upgrade head` succeed with the three tables present. | TST-040 |
 
 ## Definition of Done

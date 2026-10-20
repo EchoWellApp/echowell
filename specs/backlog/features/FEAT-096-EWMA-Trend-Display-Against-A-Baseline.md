@@ -91,6 +91,8 @@ Required before implementation (BACKLOG.md): FEAT-046, FEAT-067
 
 Gate: OQ-18 (whether to display EWMA).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - None until OQ-18 closes. A decided EWMA would need a new nullable column on `scores` (TRD 20 change, Alembic migration, expand-only per DEP-061); no such column exists today.
@@ -130,13 +132,14 @@ Gate: OQ-18 (whether to display EWMA).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-096-AC-01 | Before OQ-18 is answered, `grep -rni "ewma" analytics backend frontend/app frontend/components` returns no match. | CUS-036, X-15 |
-| FEAT-096-AC-02 | After implementation, pipeline output with and without the EWMA field has identical `cusum_tally`, `alarm_state` and alerts for SRC-05 and for random property-test inputs. | ANL-056, CUS-036 |
+| FEAT-096-AC-01 | Before OQ-18 is answered, `grep -rni "ewma" analytics backend frontend/app frontend/components` returns no match. Verified by: Inspection (run the command in the criterion and check its output). | CUS-036, X-15 |
+| FEAT-096-AC-02 | After implementation, pipeline output with and without the EWMA field has identical `cusum_tally`, `alarm_state` and alerts for SRC-05 and for random property-test inputs. Verified by: Unit (TST-022). | ANL-056, CUS-036 |
 | FEAT-096-AC-03 | After implementation, `pytest tests/validation -q` passes unchanged. | AGT-008 |
-| FEAT-096-AC-04 | After implementation, every EWMA parameter is a `config_parameters` key validated by `PipelineConfig.from_mapping`. | AGT-020, ANL-029 |
+| FEAT-096-AC-04 | After implementation, every EWMA parameter is a `config_parameters` key validated by `PipelineConfig.from_mapping`. Verified by: Inspection (the inspection method of AGT-020, applied to the condition stated in the criterion). | AGT-020, ANL-029 |
 
 ## Definition of Done
 
+- All FEAT-096 acceptance criteria pass.
 - Gate satisfied (OQ-18 answered yes with parameters and wireframe) and TRDs updated; all FEAT-096 acceptance criteria pass. If OQ-18 is answered "no", nothing is implemented and FEAT-096-AC-01 remains the standing check.
 
 ## Implementation Notes

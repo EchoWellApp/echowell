@@ -89,7 +89,7 @@ Required before implementation (BACKLOG.md): FEAT-002, FEAT-003
 - FEAT-002 provides the tree, `pyproject.toml` and the dev-tool pins.
 - FEAT-003 provides `create_app()`, `Settings`, the startup guards and the health endpoint exercised by the smoke tests.
 
-Features that build directly on this one: FEAT-007 and every feature that adds tests.
+Features that build directly on this one (BACKLOG.md §4): FEAT-007, FEAT-057.
 
 ## Database Impact
 

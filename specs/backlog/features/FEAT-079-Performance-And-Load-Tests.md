@@ -91,6 +91,8 @@ Required before implementation (BACKLOG.md): FEAT-054, FEAT-077
 - [FEAT-054](FEAT-054-Ingest-Triggered-And-Nightly-Pipeline-Runs.md) Ingest-triggered and nightly pipeline runs (synchronous per-resident run measured by TST-121).
 - [FEAT-077](FEAT-077-Production-Container-Images-Compose-Demo-Profile.md) Production images and Compose `demo` profile (Lighthouse target).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-080.
+
 ## Database Impact
 
 - Tables used: `residents`, `devices`, `device_assignments`, `raw_sessions`, `ingest_batches`, `processed_sessions`, `epochs`, `baselines`, `scores`, `cusum_state`, `alerts`, `data_alerts`, `day_ledger`, `pipeline_runs` on an ephemeral test database.
@@ -138,7 +140,7 @@ Required before implementation (BACKLOG.md): FEAT-054, FEAT-077
 |---|---|---|
 | FEAT-079-AC-01 | `pytest -m budget` passes with the SRC-05 pipeline run ≤ 5 s on a GitHub-hosted runner. | TST-120, ANL-047 |
 | FEAT-079-AC-02 | `pytest tests/performance -m performance` passes all budgets (sessions p95 ≤ 1,000 ms, reads p95 ≤ 500 ms, ingest 202 ≤ 2 s and processed ≤ 30 s, DS-08 rebuild ≤ 120 s) and writes `build/performance.json`. | AC-CIC-10, TST-121..TST-124 |
-| FEAT-079-AC-03 | `make_load_dataset.py --seed 20261004` run twice yields identical files containing 10,800 records for `L001`..`L100`. | TDV-008 |
+| FEAT-079-AC-03 | `make_load_dataset.py --seed 20261004` run twice yields identical files containing 10,800 records for `L001`..`L100`. Verified by: Performance tests (TST-120, TST-126). | TDV-008 |
 | FEAT-079-AC-04 | Lighthouse CI on `/residents` of the seeded `demo` stack reports Performance ≥ 80 and LCP ≤ 2.5 s. | TST-125 |
 | FEAT-079-AC-05 | PR-scope budgets TST-120, TST-121 (50 requests) and TST-124 pass. | AC-TST-08, TST-126 |
 | FEAT-079-AC-06 | `git ls-files tests/performance` lists no generated dataset file. | TDV-008 |

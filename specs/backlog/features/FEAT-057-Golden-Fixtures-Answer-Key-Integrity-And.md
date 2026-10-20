@@ -88,6 +88,8 @@ Required before implementation (BACKLOG.md): FEAT-005, FEAT-012
 - FEAT-005 provides pytest, markers (`validation`) and fixture conventions.
 - FEAT-012 provides the `evaluation_ground_truth` table and its grants.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-058, FEAT-076.
+
 ## Database Impact
 
 - Table written: `evaluation_ground_truth` (loader replaces contents; columns `resident_code`, `planted_change`, `true_onset_date`, `source_file`; TRD 20 §4.6.24, constraint `evaluation_ground_truth_onset_ck`).
@@ -135,11 +137,11 @@ None; the feature proves the opposite — that no `analytics/` module reads the 
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-057-AC-01 | `sha256sum` of the fixture workbook and CSV equals the TDV-013 baseline values and `SHA256SUMS`, and both are byte-identical to the `specs/` files. | AC-TDV-04; TST-071 |
-| FEAT-057-AC-02 | Regenerating with seed 20261004 into a temporary directory reproduces the CSV byte-for-byte and every workbook sheet cell-for-cell. | AC-TDV-04; TDV-020 |
-| FEAT-057-AC-03 | The separation scans of TDV-010, TDV-011 and TDV-012 pass, and `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns no match. | AC-TDV-05; AC-AGT-02 |
+| FEAT-057-AC-02 | Regenerating with seed 20261004 into a temporary directory reproduces the CSV byte-for-byte and every workbook sheet cell-for-cell. Verified by: Validation (`tests/validation/test_answer_key_integrity.py`; TST-071). | AC-TDV-04; TDV-020 |
+| FEAT-057-AC-03 | The separation scans of TDV-010, TDV-011 and TDV-012 pass, and `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns no match. Verified by: Inspection (run the command in the criterion and check its output). | AC-TDV-05; AC-AGT-02 |
 | FEAT-057-AC-04 | `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` loads exactly 10 rows in a `test_v0_1` database, with R09 2026-10-21 and R10 2026-10-17. | TDV-100; TDV-103 |
 | FEAT-057-AC-05 | The loader exits non-zero and writes nothing with `APP_ENV=production`, and also with `PIPELINE_PROFILE=production`. | TDV-103; TST-068 |
-| FEAT-057-AC-06 | `python -m tests.validation.diff_answer_key a.xlsx b.xlsx` on two workbooks differing in one Exp_scores cell prints exactly that cell as `Exp_scores!<key>.<column>: <old> -> <new>`. | TDV-023 |
+| FEAT-057-AC-06 | `python -m tests.validation.diff_answer_key a.xlsx b.xlsx` on two workbooks differing in one Exp_scores cell prints exactly that cell as `Exp_scores!<key>.<column>: <old> -> <new>`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TDV-023 |
 | FEAT-057-AC-07 | `tests/fixtures/legacy/echowell_mock_data_500.csv` exists and is referenced only by negative ingest tests. | TDV-005; D-25 |
 
 ## Definition of Done

@@ -82,7 +82,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 - FEAT-021 (Role-based authorization matrix): per-representation role rules.
 - FEAT-014 (Read-model derivations): as-of local date for the filename and date filters.
 - Transitively FEAT-015 (audit writer) via FEAT-021's dependency chain for `export.csv`, and FEAT-011 (tables).
-- Downstream: FEAT-035, FEAT-067, FEAT-072.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-035, FEAT-067.
 
 ## Database Impact
 
@@ -131,20 +132,21 @@ None computed here. Values are the stored outputs of stages 6–8 (baselines, z,
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-034-AC-01 | `GET /api/v1/scores?epoch=1` (no `resident_code`) returns 422 `INVALID_QUERY_PARAMETER`; `GET /scores?resident_code=R11` returns 404 `RESIDENT_NOT_FOUND`. | API-079 |
-| FEAT-034-AC-02 | With DS-07 loaded, `GET /scores?resident_code=R09` returns `total` 14, `cusum_k` 0.5, one `baseline_periods` entry (epoch 1, 2026-10-01..2026-10-16, frozen after R09-20261016-01, n 16), row R09-20261021-01 with `cusum_tally` 5.431965 and `alarm_state` `rings`, and row R09-20261030-01 with 26.830256 and `on` (±1e-6). | AC-API-04, OAS-022 |
+| FEAT-034-AC-01 | `GET /api/v1/scores?epoch=1` (no `resident_code`) returns 422 `INVALID_QUERY_PARAMETER`; `GET /scores?resident_code=R11` returns 404 `RESIDENT_NOT_FOUND`. Verified by: Integration (`tests/integration/api/test_scores.py`). | API-079 |
+| FEAT-034-AC-02 | With DS-07 loaded, `GET /scores?resident_code=R09` returns `total` 14, `cusum_k` 0.5, one `baseline_periods` entry (epoch 1, 2026-10-01..2026-10-16, frozen after R09-20261016-01, n 16), row R09-20261021-01 with `cusum_tally` 5.431965 and `alarm_state` `rings`, and row R09-20261030-01 with 26.830256 and `on` (±1e-6). Verified by: DS-07 values (DS-07 values (validation suite FEAT-058/FEAT-059 and OAS-022/OAS-023): `GET /scores?resident_code=R09` 14 rows, R09-20261021-01 `cusum_tally` 5.431965 `rings`, R09-20261030-01 26.830256 `on`). | AC-API-04, OAS-022 |
 | FEAT-034-AC-03 | With DS-07 loaded, a researcher `GET /scores` with `Accept: text/csv` receives `text/csv; charset=utf-8`, filename `echowell_scores_2026-10-30.csv`, a header row equal to the `ScoreRow` field names with `z` flattened to the 7 `z_*` columns, and 98 data rows; a clinician receives 403. | AC-API-16, API-129, TST-079 |
-| FEAT-034-AC-04 | With DS-07 loaded, `GET /analytics/baselines?limit=500` as researcher returns `total` 180 and values equal to SRC-03 Exp_baselines within 1e-6; R09 loudness_dbfs has median -22.405, mad 1.45, robust_spread 2.14977, `floor_applied` false. | OAS-023, API-088 |
+| FEAT-034-AC-04 | With DS-07 loaded, `GET /analytics/baselines?limit=500` as researcher returns `total` 180 and values equal to SRC-03 Exp_baselines within 1e-6; R09 loudness_dbfs has median -22.405, mad 1.45, robust_spread 2.14977, `floor_applied` false. Verified by: DS-07 values (DS-07 values (validation suite FEAT-058/FEAT-059 and OAS-022/OAS-023): `GET /scores?resident_code=R09` 14 rows, R09-20261021-01 `cusum_tally` 5.431965 `rings`, R09-20261030-01 26.830256 `on`). | OAS-023, API-088 |
 | FEAT-034-AC-05 | The baselines CSV header equals the `BaselineRow` field names and its rows equal the JSON items; a clinician receives 403 for both JSON and CSV. | TST-079, TRD 12 §4.6 |
-| FEAT-034-AC-06 | Each CSV export writes exactly one `audit_logs` row `export.csv` with `row_count` equal to the number of data rows. | API-129, AC-SEC-09 |
-| FEAT-034-AC-07 | Within one resident-epoch, baseline rows are ordered loudness_dbfs … mfcc4 and then `composite`. | API-088 |
+| FEAT-034-AC-06 | Each CSV export writes exactly one `audit_logs` row `export.csv` with `row_count` equal to the number of data rows. Verified by: Integration (`tests/integration/api/test_scores.py`; TST-079). | API-129, AC-SEC-09 |
+| FEAT-034-AC-07 | Within one resident-epoch, baseline rows are ordered loudness_dbfs … mfcc4 and then `composite`. Verified by: DS-07 values (baselines 180 rows equal Exp_baselines within 1e-6 (composite ↔ "COMPOSITE (raw signed mean of 7 z)", ANL-042)). | API-088 |
 
 ## Definition of Done
 
+- All FEAT-034 acceptance criteria pass.
 - Both endpoints implemented with JSON and CSV representations declared in OpenAPI.
 - Integration tests pass; DS-07 criteria pass in the validation and FEAT-060 suites.
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.
-- The TRD conflicts listed below are reported in the batch report (AGT-001, AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

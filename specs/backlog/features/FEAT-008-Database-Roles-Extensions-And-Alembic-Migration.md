@@ -95,7 +95,7 @@ Required before implementation (BACKLOG.md): FEAT-006, FEAT-003
 - FEAT-006 provides the Compose `db` service that mounts the provisioning script and the backend command that runs `alembic upgrade head`.
 - FEAT-003 provides `Settings` with `DATABASE_MIGRATION_URL` and the `postgresql+psycopg://` normalisation used by `env.py`.
 
-Features that build directly on this one: FEAT-009 (first tables), and transitively every Database feature.
+Features that build directly on this one (BACKLOG.md §4): FEAT-009, FEAT-035.
 
 ## Database Impact
 
@@ -148,13 +148,13 @@ None.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-008-AC-01 | On an empty PostgreSQL 16 database provisioned by the script, `alembic upgrade head && alembic downgrade base && alembic upgrade head` run from the repository root succeed. | TST-040, DEP-024, TRD 25 §4.6 Phase 4 Commands |
-| FEAT-008-AC-02 | `SELECT extname FROM pg_extension ORDER BY 1` returns exactly `btree_gist`, `pgcrypto`, `plpgsql`; `SHOW timezone` returns `UTC`; `SHOW server_version_num` is ≥ 160000 and < 170000. | PGS-001, PGS-002 |
-| FEAT-008-AC-03 | Running 0001 on a database without `btree_gist` fails with an exception whose message contains "EchoWell needs extensions pgcrypto and btree_gist". | PGS-002 |
-| FEAT-008-AC-04 | `pg_roles` contains the three NOLOGIN group roles and three login roles; `pg_auth_members` shows each login role in only its own group; `SET ROLE echowell_readonly` as `echowell_app_login` fails with SQLSTATE 42501. | PGS-004, PGS-040 |
-| FEAT-008-AC-05 | Querying `pg_enum` ordered by `enumsortorder` returns exactly the 15 types and labels of TRD 20 §4.4. | PGS-005 |
-| FEAT-008-AC-06 | `alembic heads` prints one revision and `alembic check` exits 0. | DB-027, PGS-023, AC-PGS-11 |
-| FEAT-008-AC-07 | `scripts/dump_schema.sh` regenerates `database/schema.sql` and the schema reference test passes against a freshly migrated database. | PGS-016, PGS-017 |
-| FEAT-008-AC-08 | `grep -rn "CREATE EXTENSION\|DROP EXTENSION\|ALTER DATABASE" backend/alembic` returns nothing, and `grep -rn "SET ROLE" backend analytics` returns only `echowell_migrator` usages. | D-72, SEC-116 |
+| FEAT-008-AC-02 | `SELECT extname FROM pg_extension ORDER BY 1` returns exactly `btree_gist`, `pgcrypto`, `plpgsql`; `SHOW timezone` returns `UTC`; `SHOW server_version_num` is ≥ 160000 and < 170000. Verified by: Integration (`tests/integration/db/test_roles.py`). | PGS-001, PGS-002 |
+| FEAT-008-AC-03 | Running 0001 on a database without `btree_gist` fails with an exception whose message contains "EchoWell needs extensions pgcrypto and btree_gist". Verified by: Integration (`tests/integration/db/test_roles.py`). | PGS-002 |
+| FEAT-008-AC-04 | `pg_roles` contains the three NOLOGIN group roles and three login roles; `pg_auth_members` shows each login role in only its own group; `SET ROLE echowell_readonly` as `echowell_app_login` fails with SQLSTATE 42501. Verified by: Integration (`tests/integration/db/test_roles.py`). | PGS-004, PGS-040 |
+| FEAT-008-AC-05 | Querying `pg_enum` ordered by `enumsortorder` returns exactly the 15 types and labels of TRD 20 §4.4. Verified by: Integration (enum labels and order from `pg_enum` (PGS-005)). | PGS-005 |
+| FEAT-008-AC-06 | `alembic heads` prints one revision and `alembic check` exits 0. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DB-027, PGS-023, AC-PGS-11 |
+| FEAT-008-AC-07 | `scripts/dump_schema.sh` regenerates `database/schema.sql` and the schema reference test passes against a freshly migrated database. Verified by: Test (`tests/integration/test_schema_reference.py`). | PGS-016, PGS-017 |
+| FEAT-008-AC-08 | `grep -rn "CREATE EXTENSION\|DROP EXTENSION\|ALTER DATABASE" backend/alembic` returns nothing, and `grep -rn "SET ROLE" backend analytics` returns only `echowell_migrator` usages. Verified by: Inspection (run the command in the criterion and check its output). | D-72, SEC-116 |
 
 ## Definition of Done
 

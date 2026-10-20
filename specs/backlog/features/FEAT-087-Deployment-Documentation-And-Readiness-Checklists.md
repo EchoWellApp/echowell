@@ -80,6 +80,8 @@ Required before implementation (BACKLOG.md): FEAT-086
 
 - [FEAT-086](FEAT-086-Deploy-Workflows-And-Post-Deploy-Smoke.md) Deploy workflows and post-deploy smoke tests (the last Phase 9 artefact the guide and validation report describe).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-088.
+
 ## Database Impact
 
 None.
@@ -119,12 +121,12 @@ None at runtime. The batch report lists documents created and validation results
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-087-AC-01 | The four files `specs/backlog/DEPLOYMENT_CHECKLIST.md`, `specs/backlog/MVP_READINESS_CHECKLIST.md`, `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`, `docs/reports/CONFIGURATION_VALIDATION_REPORT.md` exist. | AC-AGT-07, AGT-032 |
+| FEAT-087-AC-01 | The four files `specs/backlog/DEPLOYMENT_CHECKLIST.md`, `specs/backlog/MVP_READINESS_CHECKLIST.md`, `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`, `docs/reports/CONFIGURATION_VALIDATION_REPORT.md` exist. Verified by: Inspection (the inspection method of AGT-032, applied to the condition stated in the criterion). | AC-AGT-07, AGT-032 |
 | FEAT-087-AC-02 | The MVP readiness checklist contains 15 rows MVP-01..MVP-15 with the evidence of Table 4.17-A. | TST-170 |
-| FEAT-087-AC-03 | Every variable name of TRD 21 §4.2, §4.3 and §4.5 appears in the configuration guide. | TRD 25 §4.6 Phase 9 DoD |
-| FEAT-087-AC-04 | `CONFIGURATION_VALIDATION_REPORT.md` contains a pass/fail line for regions, `sslmode=require` on both URLs, production profile templates and the OpenAPI drift check, and the sentence that no deployment was performed. | TRD 25 §4.6 Phase 9 DoD |
-| FEAT-087-AC-05 | `docs/deployment.md` contains the five containment actions of SEC-170, the 24-hour reporting rule, and the governance rules of SEC-180..SEC-184. | SEC-170, SEC-171, SEC-180..SEC-184 |
-| FEAT-087-AC-06 | The placeholder grep of the Testing Requirements returns nothing. | TRD 25 §4.6 Phase 12 Commands |
+| FEAT-087-AC-03 | Every variable name of TRD 21 §4.2, §4.3 and §4.5 appears in the configuration guide. Verified by: Inspection (review of the delivered artefact against the cited requirements). | TRD 25 §4.6 Phase 9 DoD |
+| FEAT-087-AC-04 | `CONFIGURATION_VALIDATION_REPORT.md` contains a pass/fail line for regions, `sslmode=require` on both URLs, production profile templates and the OpenAPI drift check, and the sentence that no deployment was performed. Verified by: Inspection (review of `CONFIGURATION_VALIDATION_REPORT.md` against the cited requirements). | TRD 25 §4.6 Phase 9 DoD |
+| FEAT-087-AC-05 | `docs/deployment.md` contains the five containment actions of SEC-170, the 24-hour reporting rule, and the governance rules of SEC-180..SEC-184. Verified by: Demo (the demo method of SEC-170, applied to the condition stated in the criterion). | SEC-170, SEC-171, SEC-180..SEC-184 |
+| FEAT-087-AC-06 | The placeholder grep of the Testing Requirements returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | TRD 25 §4.6 Phase 12 Commands |
 
 ## Definition of Done
 

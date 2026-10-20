@@ -77,7 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-016
 
 - FEAT-021 (Role-based authorization matrix): admin-only access and `access.denied` audit for 403.
 - FEAT-016 (Credential primitives): `hash_password`, the password policy, e-mail normalisation.
-- Downstream: FEAT-038 (OpenAPI), FEAT-074 (Admin Users tab).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-074.
 
 ## Database Impact
 
@@ -131,17 +132,18 @@ None: user management has no algorithmic content.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-037-AC-01 | An admin `POST /users` with a valid 14-character password returns 201, stores the e-mail lower-cased and a hash starting with `$argon2id$v=19$m=65536,t=3,p=4$`, and writes one `user.created` audit row with details `{"role": ...}`. | API-091, AC-SEC-05, FR-220 |
-| FEAT-037-AC-02 | Passwords "short" and "password1234" each return 422 `PASSWORD_POLICY_VIOLATION` and create no user. | SEC-012, AC-SEC-05 |
-| FEAT-037-AC-03 | Creating `Clinician@Example.com` when `clinician@example.com` exists returns 409 `EMAIL_ALREADY_EXISTS`. | API-091, PGS-034 |
-| FEAT-037-AC-04 | `PATCH /users/{id}` with `{"role": "researcher", "active": false}` on another user returns 200 and writes `user.updated` with `changed` containing `role` and `active` and no password value. | API-091, API-092, FR-221 |
-| FEAT-037-AC-05 | An admin PATCH of their own `role` or their own `active: false` returns 403 `FORBIDDEN`. | SEC-044 |
-| FEAT-037-AC-06 | A unit test of `user_service.update` with a repository state in which the target user is the only active admin and the change sets `active` false or `role` to a non-admin value raises the `LAST_ADMIN` error (HTTP 409) and performs no write. | API-092 |
-| FEAT-037-AC-07 | `DELETE /api/v1/users/{id}` returns 405 or 404, and no response of the three endpoints contains `password_hash`. | FR-221, DME-005 |
-| FEAT-037-AC-08 | Clinician and researcher JWTs receive 403 on all three endpoints; an API key receives 401. | TRD 13 Table 4.13-A |
+| FEAT-037-AC-01 | An admin `POST /users` with a valid 14-character password returns 201, stores the e-mail lower-cased and a hash starting with `$argon2id$v=19$m=65536,t=3,p=4$`, and writes one `user.created` audit row with details `{"role": ...}`. Verified by: Integration (`tests/integration/api/test_users.py`). | API-091, AC-SEC-05, FR-220 |
+| FEAT-037-AC-02 | Passwords "short" and "password1234" each return 422 `PASSWORD_POLICY_VIOLATION` and create no user. Verified by: Integration (`tests/integration/api/test_users.py`). | SEC-012, AC-SEC-05 |
+| FEAT-037-AC-03 | Creating `Clinician@Example.com` when `clinician@example.com` exists returns 409 `EMAIL_ALREADY_EXISTS`. Verified by: Integration (`tests/integration/api/test_users.py`). | API-091, PGS-034 |
+| FEAT-037-AC-04 | `PATCH /users/{id}` with `{"role": "researcher", "active": false}` on another user returns 200 and writes `user.updated` with `changed` containing `role` and `active` and no password value. Verified by: Integration (`tests/integration/api/test_users.py`). | API-091, API-092, FR-221 |
+| FEAT-037-AC-05 | An admin PATCH of their own `role` or their own `active: false` returns 403 `FORBIDDEN`. Verified by: Integration (`tests/integration/api/test_users.py`). | SEC-044 |
+| FEAT-037-AC-06 | A unit test of `user_service.update` with a repository state in which the target user is the only active admin and the change sets `active` false or `role` to a non-admin value raises the `LAST_ADMIN` error (HTTP 409) and performs no write. Verified by: Unit (`tests/unit/backend/services/test_user_service.py`). | API-092 |
+| FEAT-037-AC-07 | `DELETE /api/v1/users/{id}` returns 405 or 404, and no response of the three endpoints contains `password_hash`. Verified by: Integration (`tests/integration/api/test_users.py`). | FR-221, DME-005 |
+| FEAT-037-AC-08 | Clinician and researcher JWTs receive 403 on all three endpoints; an API key receives 401. Verified by: Integration (`tests/integration/api/test_users.py`). | TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-037 acceptance criteria pass.
 - Three endpoints implemented with TRD 19 schemas; no delete route.
 - Integration tests pass; requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.
 

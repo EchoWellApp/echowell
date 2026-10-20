@@ -80,7 +80,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 
 - FEAT-021 (Role-based authorization matrix): roles for GET /alerts and GET /config/ui.
 - FEAT-014 (Read-model derivations): as-of local date, alert open days and alert tally queries.
-- Downstream: FEAT-031 (reviews and snooze return the `Alert` DTO built here), FEAT-048 (fills `leaning_most`), FEAT-060, FEAT-069.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-031, FEAT-048, FEAT-060, FEAT-069.
 
 ## Database Impact
 
@@ -128,16 +129,17 @@ None in this feature. `leaning_most` is computed by `analytics.alert_generator.l
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-030-AC-01 | `GET /api/v1/alerts?status=bogus` returns 422 `INVALID_QUERY_PARAMETER`. | API-080 |
-| FEAT-030-AC-02 | For two fixture alerts with `triggered_at` 2026-10-24 and 2026-10-21, the list returns the 2026-10-21 alert first, and `?status=open` `total` equals the number of `open` alerts only. | API-080, CUS-025, CUS-022 |
-| FEAT-030-AC-03 | After one `alert_reviews` row is inserted and the alert set to `acknowledged`, the item has `reviewed` true, `review_count` 1 and `last_reviewed_at` equal to the review's `created_at`. | API-080, TRD 23 §4.4.1 |
-| FEAT-030-AC-04 | With DS-07 loaded, `GET /alerts?status=open` returns exactly R09 (`device_code` D09, `local_date` 2026-10-21, `open_days` 9, `current_tally` 26.830256 ±1e-6) and R10 (D10, 2026-10-24, `open_days` 6, `current_tally` 13.418183 ±1e-6), in that order, both `reviewed` false. | AC-API-14, TDV-067, OAS-027 |
-| FEAT-030-AC-05 | Under profile test_v0_1, `GET /api/v1/config/ui` returns `alert_snooze_hours` 24 and `review_explanations` codes cold_cough_sore_throat, dental_dentures, medication_change, poor_sleep_unusual_day, room_device_moved in that order with their TRD 19 E-32 labels. | API-137 |
+| FEAT-030-AC-01 | `GET /api/v1/alerts?status=bogus` returns 422 `INVALID_QUERY_PARAMETER`. Verified by: Integration (`tests/integration/api/test_alerts.py`). | API-080 |
+| FEAT-030-AC-02 | For two fixture alerts with `triggered_at` 2026-10-24 and 2026-10-21, the list returns the 2026-10-21 alert first, and `?status=open` `total` equals the number of `open` alerts only. Verified by: Integration (`tests/integration/api/test_alerts.py`). | API-080, CUS-025, CUS-022 |
+| FEAT-030-AC-03 | After one `alert_reviews` row is inserted and the alert set to `acknowledged`, the item has `reviewed` true, `review_count` 1 and `last_reviewed_at` equal to the review's `created_at`. Verified by: Integration (`tests/integration/api/test_alerts.py`). | API-080, TRD 23 §4.4.1 |
+| FEAT-030-AC-04 | With DS-07 loaded, `GET /alerts?status=open` returns exactly R09 (`device_code` D09, `local_date` 2026-10-21, `open_days` 9, `current_tally` 26.830256 ±1e-6) and R10 (D10, 2026-10-24, `open_days` 6, `current_tally` 13.418183 ±1e-6), in that order, both `reviewed` false. Verified by: DS-07 values (DS-07 values (FEAT-060, TDV-067, AC-API-14, OAS-027 except `leaning_most`, which FEAT-048 asserts)). | AC-API-14, TDV-067, OAS-027 |
+| FEAT-030-AC-05 | Under profile test_v0_1, `GET /api/v1/config/ui` returns `alert_snooze_hours` 24 and `review_explanations` codes cold_cough_sore_throat, dental_dentures, medication_change, poor_sleep_unusual_day, room_device_moved in that order with their TRD 19 E-32 labels. Verified by: Integration (`tests/integration/api/test_config_ui.py`). | API-137 |
 | FEAT-030-AC-06 | Every alert item contains the key `leaning_most` with an array value of length ≤ 3, and both responses validate against `AlertList` / `UiConfig` with `meta`. | API-080, CUS-041, TST-061, TST-064 |
-| FEAT-030-AC-07 | A dependency scan of `backend/` finds no e-mail, SMS or push client library and no code that sends alerts outside the API. | FR-109, AC-CUS-08 |
+| FEAT-030-AC-07 | A dependency scan of `backend/` finds no e-mail, SMS or push client library and no code that sends alerts outside the API. Verified by: Inspection (the inspection method of FR-109, applied to the condition stated in the criterion). | FR-109, AC-CUS-08 |
 
 ## Definition of Done
 
+- All FEAT-030 acceptance criteria pass.
 - Both endpoints implemented with TRD 19 schemas; the `leaning_most` provider seam documented for FEAT-048.
 - Integration tests pass; DS-07 criterion FEAT-030-AC-04 passes in the FEAT-060 suite.
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes (FEAT-038).

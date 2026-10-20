@@ -92,7 +92,7 @@ Required before implementation (BACKLOG.md): FEAT-001
 
 - FEAT-001 supplies `docs/design/Repository_Structure.md`, the agreed layout and dependency diagram this feature materialises.
 
-Features that build directly on this one: FEAT-003, FEAT-004, FEAT-005.
+Features that build directly on this one (BACKLOG.md §4): FEAT-003, FEAT-004, FEAT-005, FEAT-040.
 
 ## Database Impact
 
@@ -136,15 +136,15 @@ None at runtime. The Phase 3 batch report lists requirement IDs, commands and re
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-002-AC-01 | Every file listed in ARC-050 exists at its original path. | AC-AGT-06, ARC-050 |
-| FEAT-002-AC-02 | `ls analytics/` lists exactly the 16 modules of TRD 07 §4.2 plus `__init__.py`, and `python -c "import analytics"` exits 0. | ANL-001, ANL-004 |
-| FEAT-002-AC-03 | `lint-imports` exits 0 on the tree and exits non-zero when `import sqlalchemy` is added to any `analytics/` module. | AC-ARC-01, ANL-002 |
-| FEAT-002-AC-04 | `grep -n "psycopg2" backend/requirements.txt` returns no match and `grep -n "psycopg\[binary\]" backend/requirements.txt` returns exactly one pinned line; every line of `backend/requirements.txt` has an `==` pin. | AC-AGT-11, D-53, AGT-024 |
-| FEAT-002-AC-05 | `ruff check .`, `ruff format --check .` and `mypy analytics backend` exit 0. | AC-GIT-05, NFR-080, NFR-081 |
-| FEAT-002-AC-06 | `.gitignore` contains every entry of TRD 18 §4.11, and `git check-ignore database/schema.sql docs/api_reference/openapi.json` reports neither path as ignored. | GIT-100 |
-| FEAT-002-AC-07 | `.github/CODEOWNERS`, `.github/pull_request_template.md`, `.github/dependabot.yml` and both issue templates exist. | AC-GIT-06 |
-| FEAT-002-AC-08 | `git ls-files` shows no audio file, no `.env` file other than the examples, and no `LICENSE` file. | AC-GIT-02, GIT-090 |
-| FEAT-002-AC-09 | `README.md` contains the exact GIT-056 sentence about research system and detection. | GIT-056 |
+| FEAT-002-AC-01 | Every file listed in ARC-050 exists at its original path. Verified by: Skeleton presence (a check that every ARC-050 file still exists (AC-AGT-06)). | AC-AGT-06, ARC-050 |
+| FEAT-002-AC-02 | `ls analytics/` lists exactly the 16 modules of TRD 07 §4.2 plus `__init__.py`, and `python -c "import analytics"` exits 0. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | ANL-001, ANL-004 |
+| FEAT-002-AC-03 | `lint-imports` exits 0 on the tree and exits non-zero when `import sqlalchemy` is added to any `analytics/` module. Verified by: Import-boundary test (TST-021). | AC-ARC-01, ANL-002 |
+| FEAT-002-AC-04 | `grep -n "psycopg2" backend/requirements.txt` returns no match and `grep -n "psycopg\[binary\]" backend/requirements.txt` returns exactly one pinned line; every line of `backend/requirements.txt` has an `==` pin. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-11, D-53, AGT-024 |
+| FEAT-002-AC-05 | `ruff check .`, `ruff format --check .` and `mypy analytics backend` exit 0. Verified by: Static checks (`ruff check .`, `ruff format --check .`, `mypy analytics backend`, `lint-imports` (TRD 16 `backend-lint` job). | AC-GIT-05, NFR-080, NFR-081 |
+| FEAT-002-AC-06 | `.gitignore` contains every entry of TRD 18 §4.11, and `git check-ignore database/schema.sql docs/api_reference/openapi.json` reports neither path as ignored. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | GIT-100 |
+| FEAT-002-AC-07 | `.github/CODEOWNERS`, `.github/pull_request_template.md`, `.github/dependabot.yml` and both issue templates exist. Verified by: Import-boundary test (TST-021). | AC-GIT-06 |
+| FEAT-002-AC-08 | `git ls-files` shows no audio file, no `.env` file other than the examples, and no `LICENSE` file. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | AC-GIT-02, GIT-090 |
+| FEAT-002-AC-09 | `README.md` contains the exact GIT-056 sentence about research system and detection. Verified by: Inspection (the inspection method of GIT-056, applied to the condition stated in the criterion). | GIT-056 |
 
 ## Definition of Done
 

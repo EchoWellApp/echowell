@@ -86,6 +86,8 @@ Required before implementation (BACKLOG.md): FEAT-050, FEAT-035
 - FEAT-035 supplies `GET /api/v1/analytics`, its router, auth, `meta`, `period` and the other response blocks into which this feature adds four blocks.
 - FEAT-052 (orchestrator) calls this stage as step 15; FEAT-060 and FEAT-072 consume the result.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-052, FEAT-060, FEAT-072.
+
 ## Database Impact
 
 - Tables created or modified: none.
@@ -136,12 +138,12 @@ None in this feature. The blocks are rendered by FEAT-072 (`KpiTiles`, `DailyChe
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-051-AC-01 | `pytest tests/unit/analytics/test_aggregates.py -q` passes cases AN-01..AN-05; AN-02 returns 13 for 1 of 8. | TRD 13 AN-01..AN-05 |
-| FEAT-051-AC-02 | On SRC-05 the `AnalyticsSummary` equals every expected value of the TRD 07 §4.13 table (281/300/94, 267/300/89, 9 of 10 with R08 forming and R07 restarted once, 2 alarms R09 R10, funnel 300/281/269/267 with 5/5/3 and 1 multi-reason, by-resident order and percentages). | AC-ANL-10 |
-| FEAT-051-AC-03 | The 30 `daily_series` rows equal the TRD 14 §4.9.2 per-day list exactly, and Oct 12 has `silent_device_codes` ["D02"]. | TDV-074 |
-| FEAT-051-AC-04 | With DS-07 loaded, `GET /api/v1/analytics` as researcher returns `kpis`, `funnel`, `by_resident` equal to the E-18 example values and passes OpenAPI response validation. | OAS-028; API-087 |
-| FEAT-051-AC-05 | Sum over `daily_series` of used, set_aside, quarantined, missed equals 267, 12, 2, 19 respectively, matching `status_totals` usable, set_aside, quarantined and missing_resident + missing_device_gap. | ANL-062; OAS-024 |
-| FEAT-051-AC-06 | After a review is saved on R09, `kpis.alarms_raised.not_reviewed_count` is 1 while `count` stays 2. | ANL-065; TDV-076 |
-| FEAT-051-AC-07 | A summary computed with zero residents returns null percentages and no exception. | ANL-063; ANL-019 |
+| FEAT-051-AC-02 | On SRC-05 the `AnalyticsSummary` equals every expected value of the TRD 07 §4.13 table (281/300/94, 267/300/89, 9 of 10 with R08 forming and R07 restarted once, 2 alarms R09 R10, funnel 300/281/269/267 with 5/5/3 and 1 multi-reason, by-resident order and percentages). Verified by: Unit (`tests/unit/analytics/test_aggregates.py`; TST-011, AN-01, AN-02). | AC-ANL-10 |
+| FEAT-051-AC-03 | The 30 `daily_series` rows equal the TRD 14 §4.9.2 per-day list exactly, and Oct 12 has `silent_device_codes` ["D02"]. Verified by: Integration (`tests/integration/api/test_analytics.py`). | TDV-074 |
+| FEAT-051-AC-04 | With DS-07 loaded, `GET /api/v1/analytics` as researcher returns `kpis`, `funnel`, `by_resident` equal to the E-18 example values and passes OpenAPI response validation. Verified by: Integration (`tests/integration/api/test_analytics.py`). | OAS-028; API-087 |
+| FEAT-051-AC-05 | Sum over `daily_series` of used, set_aside, quarantined, missed equals 267, 12, 2, 19 respectively, matching `status_totals` usable, set_aside, quarantined and missing_resident + missing_device_gap. Verified by: Unit (`tests/unit/analytics/test_aggregates.py`; TST-011, AN-01, AN-02). | ANL-062; OAS-024 |
+| FEAT-051-AC-06 | After a review is saved on R09, `kpis.alarms_raised.not_reviewed_count` is 1 while `count` stays 2. Verified by: Unit (`tests/unit/analytics/test_aggregates.py`; TST-011, AN-01, AN-02). | ANL-065; TDV-076 |
+| FEAT-051-AC-07 | A summary computed with zero residents returns null percentages and no exception. Verified by: Unit (`tests/unit/analytics/test_aggregates.py`; TST-011, AN-01, AN-02). | ANL-063; ANL-019 |
 
 ## Definition of Done
 

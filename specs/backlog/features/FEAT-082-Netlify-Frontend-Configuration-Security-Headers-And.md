@@ -81,6 +81,8 @@ Required before implementation (BACKLOG.md): FEAT-077
 
 - [FEAT-077](FEAT-077-Production-Container-Images-Compose-Demo-Profile.md) Production container images and environment templates (frontend production build and `NEXT_PUBLIC_*` template values).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-083, FEAT-084, FEAT-085, FEAT-086.
+
 ## Database Impact
 
 None. The frontend has no database access.
@@ -124,11 +126,11 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-082-AC-01 | The `[[headers]]` block of `netlify.toml` is byte-identical to the TRD 12 §4.9 excerpt. | DEP-053, SEC-070 |
-| FEAT-082-AC-02 | `NEXT_PUBLIC_API_BASE_URL=https://example.org node frontend/scripts/check-csp.mjs` exits non-zero; with `https://echowell-backend-staging.up.railway.app` it exits 0. | SEC-070 |
-| FEAT-082-AC-03 | `grep -n "NEXT_PUBLIC_API_BASE_URL" netlify.toml` returns nothing, and `grep -n "production.up.railway.app" netlify.toml` matches only the CSP line. | DEP-054, TRD 15 §8 |
-| FEAT-082-AC-04 | `netlify.toml` contains base `frontend`, the build command `node scripts/check-csp.mjs && npm run build`, `NODE_VERSION = "20"`, the plugin `@netlify/plugin-nextjs` and the ignore command of the outline. | DEP-050, DEP-052 |
-| FEAT-082-AC-05 | `Permissions-Policy` in `netlify.toml` contains `camera=()` and `microphone=()`. | SEC-071 |
+| FEAT-082-AC-01 | The `[[headers]]` block of `netlify.toml` is byte-identical to the TRD 12 §4.9 excerpt. Verified by: E2E (`privacy.spec.ts`; FE-192). | DEP-053, SEC-070 |
+| FEAT-082-AC-02 | `NEXT_PUBLIC_API_BASE_URL=https://example.org node frontend/scripts/check-csp.mjs` exits non-zero; with `https://echowell-backend-staging.up.railway.app` it exits 0. Verified by: E2E (`privacy.spec.ts`; FE-192). | SEC-070 |
+| FEAT-082-AC-03 | `grep -n "NEXT_PUBLIC_API_BASE_URL" netlify.toml` returns nothing, and `grep -n "production.up.railway.app" netlify.toml` matches only the CSP line. Verified by: Inspection (run the command in the criterion and check its output). | DEP-054, TRD 15 §8 |
+| FEAT-082-AC-04 | `netlify.toml` contains base `frontend`, the build command `node scripts/check-csp.mjs && npm run build`, `NODE_VERSION = "20"`, the plugin `@netlify/plugin-nextjs` and the ignore command of the outline. Verified by: Inspection (the inspection method of DEP-050, applied to the condition stated in the criterion). | DEP-050, DEP-052 |
+| FEAT-082-AC-05 | `Permissions-Policy` in `netlify.toml` contains `camera=()` and `microphone=()`. Verified by: E2E (`privacy.spec.ts`; FE-192). | SEC-071 |
 
 ## Definition of Done
 

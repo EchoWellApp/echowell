@@ -84,6 +84,8 @@ Required before implementation (BACKLOG.md): FEAT-089, FEAT-090
 - [FEAT-089](FEAT-089-Backups-Restore-Drill-And-Rollback-Procedure.md) Backups, restore drill and rollback procedure (evidence for AC-DEP-07, AC-DEP-08).
 - [FEAT-090](FEAT-090-Demo-Acceptance-And-Local-Fallback-Rehearsal.md) Demo acceptance and local fallback rehearsal (evidence for TST-180..TST-188 and MVP readiness).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-092.
+
 ## Database Impact
 
 None. The audit may read databases only through tests and inspection queries on test databases; it writes nothing.
@@ -124,14 +126,14 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-091-AC-01 | The four report files exist at their `docs/reports/` paths. | AC-AGT-07 |
-| FEAT-091-AC-02 | `TRD_Implementation_Audit.md` has a PASS, FAIL or NOT APPLICABLE status with evidence for every requirement ID defined in TRDs 00–25 (count of rows equals the count of IDs extracted from the TRD tables). | TRD 25 §4.6 Phase 11 DoD |
-| FEAT-091-AC-03 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` and `grep -rn "evaluation_ground_truth" analytics` return no matches, recorded in the final audit. | AC-AGT-02 |
-| FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. | AC-AGT-03 |
-| FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. | TRD 25 §4.6 Phase 11 Outputs |
-| FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. | TRD 25 §4.6 Phase 11 DoD |
-| FEAT-091-AC-07 | `git diff --stat` of the Phase 11 PR shows changes only under `docs/reports/` and `specs/backlog/`. | TRD 25 §4.6 Phase 11 Pitfalls |
-| FEAT-091-AC-08 | `UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` has a row for every wireframe element listed in TRD 11 §4.16 (and the SRC-18 and SRC-19 elements of §4.17 and §4.18) with feature, component, endpoint and test columns filled. | Generate_Documentation_Audit_Prompt.md; NFR-111 |
+| FEAT-091-AC-01 | The four report files exist at their `docs/reports/` paths. Verified by: Test (TST-013). | AC-AGT-07 |
+| FEAT-091-AC-02 | `TRD_Implementation_Audit.md` has a PASS, FAIL or NOT APPLICABLE status with evidence for every requirement ID defined in TRDs 00–25 (count of rows equals the count of IDs extracted from the TRD tables). Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
+| FEAT-091-AC-03 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` and `grep -rn "evaluation_ground_truth" analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-02 |
+| FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-03 |
+| FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 Outputs |
+| FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
+| FEAT-091-AC-07 | `git diff --stat` of the Phase 11 PR shows changes only under `docs/reports/` and `specs/backlog/`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 11 Pitfalls |
+| FEAT-091-AC-08 | `UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` has a row for every wireframe element listed in TRD 11 §4.16 (and the SRC-18 and SRC-19 elements of §4.17 and §4.18) with feature, component, endpoint and test columns filled. Verified by: Inspection (the inspection method of NFR-111, applied to the condition stated in the criterion). | Generate_Documentation_Audit_Prompt.md; NFR-111 |
 
 ## Definition of Done
 

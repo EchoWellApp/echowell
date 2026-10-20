@@ -86,7 +86,7 @@ Required before implementation (BACKLOG.md): FEAT-008
 
 - FEAT-008 provides the Alembic environment, the 0001 migration file, the enum types `resident_cohort`, `resident_status`, `user_role`, and the `set_updated_at()` function.
 
-Features that build directly on this one: FEAT-010, FEAT-023.
+Features that build directly on this one (BACKLOG.md §4): FEAT-010, FEAT-023, FEAT-040.
 
 ## Database Impact
 
@@ -141,14 +141,14 @@ None directly; writes to these tables are audited by the CLI and endpoint featur
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-009-AC-01 | After `alembic upgrade head`, `SELECT profile, count(*) FROM config_parameters GROUP BY profile` returns 23 for `production` and 23 for `test_v0_1`; `baseline_n` is 30 and 16 respectively; `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`. | AC-PGS-10, PGS-024, PGS-025, DB-055 |
-| FEAT-009-AC-02 | With R02 and R03 both holding open assignments to D02, the inserts succeed; inserting a second R07 assignment overlapping an existing one fails with SQLSTATE 23P01. | AC-PGS-08, PGS-015 |
-| FEAT-009-AC-03 | Inserting a user with email `Admin@Example.com` or a password hash not starting with `$argon2id$` fails with SQLSTATE 23514; a second user with the same email fails with 23505. | PGS-034 |
-| FEAT-009-AC-04 | Inserting an API key with a 63-character hash, an upper-case hash, empty scopes or scope `admin` fails with 23514. | PGS-035 |
-| FEAT-009-AC-05 | Setting `status = 'withdrawn'` without `withdrawn_on` fails with 23514. | PGS-037 |
-| FEAT-009-AC-06 | As `echowell_readonly_login`, `SELECT password_hash FROM users` fails with 42501 and `SELECT email FROM users` succeeds; as `echowell_app_login`, `DELETE FROM residents` fails with 42501. | AC-PGS-12, PGS-021 |
-| FEAT-009-AC-07 | `alembic check` exits 0 and the Python enum labels equal the `pg_enum` labels. | DME-001, DME-003 |
-| FEAT-009-AC-08 | The column whitelist test finds no column named like name, birth, phone, address, email (outside `users.email`) or audio in the seven tables. | DB-035, SEC-120, DME-020 |
+| FEAT-009-AC-01 | After `alembic upgrade head`, `SELECT profile, count(*) FROM config_parameters GROUP BY profile` returns 23 for `production` and 23 for `test_v0_1`; `baseline_n` is 30 and 16 respectively; `morning_offsets` has 19 keys with `loudness_dbfs = -1.5`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | AC-PGS-10, PGS-024, PGS-025, DB-055 |
+| FEAT-009-AC-02 | With R02 and R03 both holding open assignments to D02, the inserts succeed; inserting a second R07 assignment overlapping an existing one fails with SQLSTATE 23P01. Verified by: Integration (`tests/integration/db/test_master_tables.py`). | AC-PGS-08, PGS-015 |
+| FEAT-009-AC-03 | Inserting a user with email `Admin@Example.com` or a password hash not starting with `$argon2id$` fails with SQLSTATE 23514; a second user with the same email fails with 23505. Verified by: Integration (`tests/integration/db/test_master_tables.py`). | PGS-034 |
+| FEAT-009-AC-04 | Inserting an API key with a 63-character hash, an upper-case hash, empty scopes or scope `admin` fails with 23514. Verified by: Integration (`tests/integration/db/test_master_tables.py`). | PGS-035 |
+| FEAT-009-AC-05 | Setting `status = 'withdrawn'` without `withdrawn_on` fails with 23514. Verified by: Integration (`tests/integration/db/test_master_tables.py`). | PGS-037 |
+| FEAT-009-AC-06 | As `echowell_readonly_login`, `SELECT password_hash FROM users` fails with 42501 and `SELECT email FROM users` succeeds; as `echowell_app_login`, `DELETE FROM residents` fails with 42501. Verified by: Integration (`tests/integration/db/test_grants.py`). | AC-PGS-12, PGS-021 |
+| FEAT-009-AC-07 | `alembic check` exits 0 and the Python enum labels equal the `pg_enum` labels. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DME-001, DME-003 |
+| FEAT-009-AC-08 | The column whitelist test finds no column named like name, birth, phone, address, email (outside `users.email`) or audio in the seven tables. Verified by: Inspection (the inspection method of DB-035, applied to the condition stated in the criterion). | DB-035, SEC-120, DME-020 |
 
 ## Definition of Done
 

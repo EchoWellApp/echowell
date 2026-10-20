@@ -82,7 +82,8 @@ Integrity checks (FEAT-057) → load DS-01 + registry → Tier A run and Tier B 
 Required before implementation (BACKLOG.md): FEAT-058
 
 - FEAT-058 provides the tiers, the comparator and mismatch records that every case uses.
-- FEAT-060, FEAT-061 and the frontend features (via AGT-023) depend on this suite passing.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-060, FEAT-061, FEAT-078, FEAT-093, FEAT-094. The frontend phase starts only after this suite passes (AGT-023).
 
 ## Database Impact
 
@@ -131,11 +132,12 @@ None in production code. Each case targets one pitfall of TRD 25 §4.8 (AGT-040 
 | FEAT-059-AC-03 | VC-R04-INV and VC-R10-FRZ pass. | AC-TDV-03 |
 | FEAT-059-AC-04 | `docs/reports/ALGORITHM_VALIDATION_REPORT.md` shows "Overall: PASS" with a 22-row summary table and `docs/reports/validation_results.json` has `overall` "PASS" and `supplementary` VC-R04-INV/VC-R10-FRZ "PASS". | AC-TDV-06; TDV-070 |
 | FEAT-059-AC-05 | The persisted `alerts` table after Tier B contains exactly R09 (R09-20261021-01, 2026-10-21, 5.431965) and R10 (R10-20261024-01, 2026-10-24, 5.972050), both `open`. | CUS-028; VC-G10 |
-| FEAT-059-AC-06 | A CI run with a forced failure still uploads both report files as artifacts. | CIC-100 |
-| FEAT-059-AC-07 | Every case module and global check has at least one comparison (`checks` > 0) in the JSON. | TDV-071 |
+| FEAT-059-AC-06 | A CI run with a forced failure still uploads both report files as artifacts. Verified by: Inspection (the inspection method of CIC-100, applied to the condition stated in the criterion). | CIC-100 |
+| FEAT-059-AC-07 | Every case module and global check has at least one comparison (`checks` > 0) in the JSON. Verified by: Report tests (a case with 0 checks is FAIL (TDV-071)). | TDV-071 |
 
 ## Definition of Done
 
+- All FEAT-059 acceptance criteria pass.
 - All R01–R10 tests and the totals test pass; numeric comparisons within 1e-6 and strings exact; R04 output identical without the two copies (TRD 25 Phase 7 DoD).
 - Report and JSON committed in the Phase 7 PR (TDV-073); Phase 8 may start (AGT-023).
 - Batch report lists IDs, commands and results (AGT-022).

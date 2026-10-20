@@ -86,7 +86,8 @@ Required before implementation (BACKLOG.md): FEAT-002, FEAT-009
 
 - FEAT-002 (Monorepo skeleton): `analytics/` package location, pinned numpy 2.x, pytest configuration.
 - FEAT-009 (Master data, identity and configuration tables): `config_parameters` with the 46 seeded rows the loader reads.
-- Downstream: every analytics stage feature (FEAT-041..FEAT-052) and FEAT-055 (`set-config` validation).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-041, FEAT-043.
 
 ## Database Impact
 
@@ -131,16 +132,17 @@ None in `analytics/` (LOG-006, ANL-053). The backend logs `config_mismatch` at W
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-040-AC-01 | `robust([1,2,3,4], 0, 1.4826)` returns median 2.5, MAD 1.0, spread 1.4826, floor_applied false; `robust([1,1,1,1,2,2], 0.5, 1.4826)` returns 1.0, 0.0, 0.5, true; `robust([0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2], 0.5, 1.4826)` returns 1.0, 0.5, 0.7413, false. | AC-BSC-01, BSC-001..BSC-004 |
+| FEAT-040-AC-01 | `robust([1,2,3,4], 0, 1.4826)` returns median 2.5, MAD 1.0, spread 1.4826, floor_applied false; `robust([1,1,1,1,2,2], 0.5, 1.4826)` returns 1.0, 0.0, 0.5, true; `robust([0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2], 0.5, 1.4826)` returns 1.0, 0.5, 0.7413, false. Verified by: Unit (`tests/unit/analytics/test_robust_stats.py`). | AC-BSC-01, BSC-001..BSC-004 |
 | FEAT-040-AC-02 | ROB-03 (R01 loudness days 1–16) returns median −29.925, MAD 2.165, spread 3.209829 (±1e-6). | ROB-03, AGT-041 |
 | FEAT-040-AC-03 | Loading `test_v0_1` from the seeded `config_parameters` yields a config equal to `TEST_V0_1` (baseline_n 16) and `production` yields baseline_n 30 with every other value equal. | CFG-01, CFG-02, ANL-028 |
 | FEAT-040-AC-04 | `from_mapping` with `cusum_h = 0`, with an unknown key `foo`, or with `morning_offsets` missing `mfcc4` raises `ConfigError` whose message names the key. | CFG-03, ANL-029 |
 | FEAT-040-AC-05 | `config_hash()` is unchanged when only `alert_snooze_hours` changes and changes when `cusum_h` changes; `snapshot()` survives `json.loads(json.dumps(...))` unchanged. | ANL-030, CFG-04 |
-| FEAT-040-AC-06 | An import-linter check fails if any `analytics/` module imports `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` or `backend`, and passes on the delivered code. | ANL-002, AC-ANL-04 |
-| FEAT-040-AC-07 | Assigning to any field of a contract instance raises `dataclasses.FrozenInstanceError`, and a `RawRecord` with 18 feature keys raises `ContractError`. | ANL-010, ANL-013 |
+| FEAT-040-AC-06 | An import-linter check fails if any `analytics/` module imports `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` or `backend`, and passes on the delivered code. Verified by: Test (TST-021). | ANL-002, AC-ANL-04 |
+| FEAT-040-AC-07 | Assigning to any field of a contract instance raises `dataclasses.FrozenInstanceError`, and a `RawRecord` with 18 feature keys raises `ContractError`. Verified by: Unit (`tests/unit/analytics/test_robust_stats.py`). | ANL-010, ANL-013 |
 
 ## Definition of Done
 
+- All FEAT-040 acceptance criteria pass.
 - `analytics/config.py`, `analytics/robust_stats.py` and the backend loader implemented; unit tests ROB-01..ROB-06 and CFG-01..CFG-05 pass (TST-020).
 - `tests/unit/analytics/test_config.py` and `test_robust_stats.py` exist (TST-011); `analytics/` coverage contribution keeps the 95 % gate reachable (TST-140).
 - No threshold, floor or offset literal appears in any other analytics module (AGT-020, inspection).

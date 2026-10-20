@@ -86,6 +86,8 @@ Required before implementation (BACKLOG.md): FEAT-053, FEAT-018
 - FEAT-053 provides the runner whose lifecycle is logged.
 - FEAT-018 provides structured JSON logging, redaction and context propagation.
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - `pipeline_runs`: UPDATE of stale rows (`status = failed`, `finished_at`, `warnings` + `run_abandoned`, `error_message`); `counts.db_size_bytes` on nightly runs. No new table or column.
@@ -134,12 +136,12 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-056-AC-01 | An exception injected into the `cusum` stage leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run `failed` with an `exception` warning whose `detail` names stage `cusum`, and the triggering ingest returns 201. | AC-LOG-05; LOG-062 |
-| FEAT-056-AC-02 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is marked `failed` with warning `run_abandoned` and non-empty `error_message` when the next run starts. | AC-LOG-06; API-068 |
-| FEAT-056-AC-03 | With no succeeded nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs ERROR `nightly_run_missing`. | AC-LOG-07; LOG-111 |
-| FEAT-056-AC-04 | A successful run emits exactly one `pipeline_run_started` and one completion event, each a single JSON line containing `pipeline_run_id`, `trigger`, `profile`, `config_hash`, and the completion event `counts`, `duration_ms`, `warning_count`. | ANL-053; LOG-065 |
-| FEAT-056-AC-05 | A nightly run stores `counts.db_size_bytes` as a positive integer. | DB-049 |
-| FEAT-056-AC-06 | `grep` over captured logs of a SRC-05 batch run finds no feature value from the CSV and no e-mail address. | ANL-054; LOG-021 |
+| FEAT-056-AC-01 | An exception injected into the `cusum` stage leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run `failed` with an `exception` warning whose `detail` names stage `cusum`, and the triggering ingest returns 201. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-05; LOG-062 |
+| FEAT-056-AC-02 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is marked `failed` with warning `run_abandoned` and non-empty `error_message` when the next run starts. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-06; API-068 |
+| FEAT-056-AC-03 | With no succeeded nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs ERROR `nightly_run_missing`. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-07; LOG-111 |
+| FEAT-056-AC-04 | A successful run emits exactly one `pipeline_run_started` and one completion event, each a single JSON line containing `pipeline_run_id`, `trigger`, `profile`, `config_hash`, and the completion event `counts`, `duration_ms`, `warning_count`. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | ANL-053; LOG-065 |
+| FEAT-056-AC-05 | A nightly run stores `counts.db_size_bytes` as a positive integer. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | DB-049 |
+| FEAT-056-AC-06 | `grep` over captured logs of a SRC-05 batch run finds no feature value from the CSV and no e-mail address. Verified by: Inspection (run the command in the criterion and check its output). | ANL-054; LOG-021 |
 
 ## Definition of Done
 

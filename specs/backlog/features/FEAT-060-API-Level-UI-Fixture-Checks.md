@@ -80,6 +80,8 @@ Required before implementation (BACKLOG.md): FEAT-059, FEAT-027, FEAT-029, FEAT-
 - FEAT-027 (`GET /residents`), FEAT-029 (`GET /devices`), FEAT-030 (`GET /alerts`), FEAT-032 (`GET /data-alerts`), FEAT-051 (analytics blocks): endpoints under test.
 - FEAT-054: ingest-triggered runs used while building DS-07.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-062.
+
 ## Database Impact
 
 None beyond the disposable test database populated through the seed and loader (no direct SQL writes).
@@ -120,12 +122,12 @@ None beyond the standard request logs and the audit rows of login and the after-
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-060-AC-01 | `GET /api/v1/residents` on DS-07 returns `summary` 2/7/1/19 and the default order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 with the Table 4.9-B values. | AC-FR-04; AC-TDV-07; OAS-021 |
-| FEAT-060-AC-02 | `GET /api/v1/alerts?status=open` returns exactly R09 (open_days 9, current_tally 26.830256 ±1e-6) and R10 (open_days 6, 13.418183 ±1e-6) with the TDV-069 `leaning_most` lists. | TDV-067; TDV-069; OAS-027 |
-| FEAT-060-AC-03 | `GET /api/v1/data-alerts?status=open` returns exactly the four Table 4.9-D rows (kind, code, title, detail exact) and nothing else. | TDV-068; AC-FR-12; AC-TDV-10 |
-| FEAT-060-AC-04 | `GET /api/v1/analytics` as researcher returns 281/300/94, 267/300/89, 9 of 10, 2 alarms, funnel 300/281/269/267 with 5/5/3, by-resident R08 43, R03 73, R02 80, R05 93, others 100, and alarm timing R09 0 days, R10 7 days. | AC-FR-13; AC-TDV-11; TDV-074 |
-| FEAT-060-AC-05 | Every Table 4.9-E figure recomputed from DS-02 equals the API value. | TDV-075 |
-| FEAT-060-AC-06 | `GET /api/v1/devices` returns D02 with `device_gap_days_last_30` ["2026-10-12"] and D07 with `in_use_until` "2026-10-12" and `replaced_by_device_code` "D07B". | TDV-066 |
+| FEAT-060-AC-01 | `GET /api/v1/residents` on DS-07 returns `summary` 2/7/1/19 and the default order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 with the Table 4.9-B values. Verified by: Integration (`tests/integration/api/test_ui_fixture_ds07.py`; TST-061). | AC-FR-04; AC-TDV-07; OAS-021 |
+| FEAT-060-AC-02 | `GET /api/v1/alerts?status=open` returns exactly R09 (open_days 9, current_tally 26.830256 ±1e-6) and R10 (open_days 6, 13.418183 ±1e-6) with the TDV-069 `leaning_most` lists. Verified by: Integration (`tests/integration/api/test_ui_fixture_ds07.py`). | TDV-067; TDV-069; OAS-027 |
+| FEAT-060-AC-03 | `GET /api/v1/data-alerts?status=open` returns exactly the four Table 4.9-D rows (kind, code, title, detail exact) and nothing else. Verified by: Integration (`tests/integration/api/test_ui_fixture_ds07.py`; TST-061). | TDV-068; AC-FR-12; AC-TDV-10 |
+| FEAT-060-AC-04 | `GET /api/v1/analytics` as researcher returns 281/300/94, 267/300/89, 9 of 10, 2 alarms, funnel 300/281/269/267 with 5/5/3, by-resident R08 43, R03 73, R02 80, R05 93, others 100, and alarm timing R09 0 days, R10 7 days. Verified by: Integration (`tests/integration/api/test_ui_fixture_ds07.py`). | AC-FR-13; AC-TDV-11; TDV-074 |
+| FEAT-060-AC-05 | Every Table 4.9-E figure recomputed from DS-02 equals the API value. Verified by: Validation (`tests/validation/test_ui_fixture_recompute.py`). | TDV-075 |
+| FEAT-060-AC-06 | `GET /api/v1/devices` returns D02 with `device_gap_days_last_30` ["2026-10-12"] and D07 with `in_use_until` "2026-10-12" and `replaced_by_device_code` "D07B". Verified by: Integration (`tests/integration/api/test_ui_fixture_ds07.py`; TST-061). | TDV-066 |
 | FEAT-060-AC-07 | After a clinician review of R09, `GET /alerts?status=open` has `total` 1 and R09's `current_tally` is still 26.830256. | TDV-076; TST-056 |
 
 ## Definition of Done

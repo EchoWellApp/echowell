@@ -85,6 +85,8 @@ Required before implementation (BACKLOG.md): FEAT-088, FEAT-076
 - [FEAT-088](FEAT-088-Interim-Staging-And-Production-Deployment.md) Interim staging and production deployment (demo environments, `T`-prefixed roster, test API key).
 - [FEAT-076](FEAT-076-End-To-End-Test-Suite-And.md) End-to-end suite (E2E-15 and TST-187 provide the automated version of step 5).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-091.
+
 ## Database Impact
 
 - Interim production: `residents`, `devices`, `device_assignments` rows for the `T`-prefixed demo resident (via `import-master-data`), `raw_sessions`, `processed_sessions`, `day_ledger`, `pipeline_runs`, `audit_logs` rows from the demo POST and runs.
@@ -137,7 +139,7 @@ Required before implementation (BACKLOG.md): FEAT-088, FEAT-076
 | FEAT-090-AC-02 | The demo POST to interim production returns 201; the stored `raw_sessions.payload` equals the request body; the session has status usable, set_aside or quarantined with its reasons. | TST-180 (b), MVP-02 |
 | FEAT-090-AC-03 | Within 60 s of the POST, `/residents` shows the demo resident's last check-in at the record's local time and its 30-day used count +1, and its status "Baseline forming · 1 of 30 sessions" with no alarm after the first usable record. | TST-181, TST-184, AC-VIS-03 |
 | FEAT-090-AC-04 | TST-187 passes (≤ 5 s) and TST-188 passes on the release candidate commit. | TST-187, TST-188 |
-| FEAT-090-AC-05 | The local fallback rehearsal is documented in `docs/deployment.md` before 15 Nov 2026, and a `curl` POST to the laptop appears on the dashboard after pipeline processing. | AC-DEP-09, DEP-092 |
+| FEAT-090-AC-05 | The local fallback rehearsal is documented in `docs/deployment.md` before 15 Nov 2026, and a `curl` POST to the laptop appears on the dashboard after pipeline processing. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | AC-DEP-09, DEP-092 |
 | FEAT-090-AC-06 | `specs/backlog/MVP_READINESS_CHECKLIST.md` shows a status and evidence link for each of MVP-01..MVP-15. | TST-170, AC-TST-10 |
 
 ## Definition of Done

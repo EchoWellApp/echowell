@@ -82,7 +82,7 @@ Required before implementation (BACKLOG.md): FEAT-012, FEAT-013
 - FEAT-012 provides the `audit_logs` table, its CHECK, triggers and grants, and the audit insert repository.
 - FEAT-013 provides the session factory used in the transaction tests.
 
-Features that build directly on this one: FEAT-016, FEAT-025, and every feature that records an audited action.
+Features that build directly on this one (BACKLOG.md §4): FEAT-016, FEAT-025, FEAT-031, FEAT-032, FEAT-033.
 
 ## Database Impact
 
@@ -131,13 +131,13 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-015-AC-01 | Inserting each of the 24 TRD 12 §4.12 actions through `audit_service.record` as `echowell_app_login` succeeds and creates exactly one row each. | SEC-109, SEC-100 |
-| FEAT-015-AC-02 | Calling `record` with action `login` raises before any SQL is sent (no row, no database error). | SEC-109 |
-| FEAT-015-AC-03 | In one transaction, inserting a `staff_notes` row and its `note.created` audit row then rolling back leaves zero rows in both tables; committing leaves exactly one of each. | DB-011, SEC-101, LOG-090 |
-| FEAT-015-AC-04 | `record` with details `{"password": "x"}` or `{"loudness_dbfs": -30.1}` raises and writes nothing. | SEC-104 |
-| FEAT-015-AC-05 | A CLI-originated call stores `actor_type = 'system'` and `details.operator` equal to the OS user name. | SEC-103 |
-| FEAT-015-AC-06 | Each successful call emits exactly one INFO record with message/event `audit_event` and fields `action`, `entity_type`, `entity_id`, and no `details` field. | LOG-092 |
-| FEAT-015-AC-07 | `grep -rn "audit_logs" backend --include=*.py` shows writes only in the audit repository and `backend/services/audit.py`, and no UPDATE/DELETE statement on `audit_logs`. | SEC-102, FR-252 |
+| FEAT-015-AC-01 | Inserting each of the 24 TRD 12 §4.12 actions through `audit_service.record` as `echowell_app_login` succeeds and creates exactly one row each. Verified by: Integration (`tests/integration/db/test_audit_writer.py`). | SEC-109, SEC-100 |
+| FEAT-015-AC-02 | Calling `record` with action `login` raises before any SQL is sent (no row, no database error). Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | SEC-109 |
+| FEAT-015-AC-03 | In one transaction, inserting a `staff_notes` row and its `note.created` audit row then rolling back leaves zero rows in both tables; committing leaves exactly one of each. Verified by: Integration (`tests/integration/db/test_audit_writer.py`). | DB-011, SEC-101, LOG-090 |
+| FEAT-015-AC-04 | `record` with details `{"password": "x"}` or `{"loudness_dbfs": -30.1}` raises and writes nothing. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | SEC-104 |
+| FEAT-015-AC-05 | A CLI-originated call stores `actor_type = 'system'` and `details.operator` equal to the OS user name. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | SEC-103 |
+| FEAT-015-AC-06 | Each successful call emits exactly one INFO record with message/event `audit_event` and fields `action`, `entity_type`, `entity_id`, and no `details` field. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | LOG-092 |
+| FEAT-015-AC-07 | `grep -rn "audit_logs" backend --include=*.py` shows writes only in the audit repository and `backend/services/audit.py`, and no UPDATE/DELETE statement on `audit_logs`. Verified by: Inspection (run the command in the criterion and check its output). | SEC-102, FR-252 |
 
 ## Definition of Done
 

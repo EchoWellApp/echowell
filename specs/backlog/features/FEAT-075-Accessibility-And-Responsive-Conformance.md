@@ -81,6 +81,8 @@ Required before implementation (BACKLOG.md): FEAT-065, FEAT-067, FEAT-068, FEAT-
 
 - These features deliver the pages and interactive components whose conformance is verified here; FEAT-076 (E2E harness) depends on this feature.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-076.
+
 ## Database Impact
 
 None.
@@ -128,7 +130,7 @@ None at runtime. CI publishes the axe report with the E2E artefacts.
 | FEAT-075-AC-04 | A keyboard-only run reaches and operates every control listed in TST-111 with a visible 3px focus outline. | TST-111; AC-UX-09 |
 | FEAT-075-AC-05 | axe colour-contrast checks pass on all routes. | TST-113 |
 | FEAT-075-AC-06 | The R09 tally chart table has role `table` with a caption naming R09, and every analytics chart has a disclosure table. | TST-112; FR-168; FR-320 |
-| FEAT-075-AC-07 | With JavaScript disabled, the page shows "This dashboard needs JavaScript enabled." | NFR-142 |
+| FEAT-075-AC-07 | With JavaScript disabled, the page shows "This dashboard needs JavaScript enabled." Verified by: E2E (`a11y.spec.ts`; TST-110, FE-190). | NFR-142 |
 
 ## Definition of Done
 

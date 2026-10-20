@@ -92,6 +92,8 @@ Required before implementation (BACKLOG.md): FEAT-053, FEAT-025, FEAT-026
 - FEAT-025 provides `POST /api/v1/sessions` and its storage path.
 - FEAT-026 provides `POST /api/v1/ingest` and `GET /api/v1/ingest/batches/{id}`.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-060, FEAT-079, FEAT-081.
+
 ## Database Impact
 
 - Tables written (through FEAT-053): `pipeline_runs` and all derived tables; no new table or column.
@@ -148,10 +150,10 @@ None beyond calling the runner; the scope rule (resident plus device co-resident
 | FEAT-054-AC-01 | With the synchronous pipeline forced to raise, `POST /api/v1/sessions` returns 201 with `status_after_processing: "pending"`, the `raw_sessions` row exists, and the next run sets its processed status. | TST-037; API-047 |
 | FEAT-054-AC-02 | 283 single POSTs of SRC-05 in arrival order produce derived tables identical to one batch ingest plus a full run at the same as-of. | TST-049; AC-ANL-06 |
 | FEAT-054-AC-03 | `python -m backend.jobs.nightly_run` at 07:30 UTC in CDT starts exactly one nightly run; a second invocation the same night exits 0 without a run; at 08:30 UTC in CDT it exits 0 without a run. | AC-ANL-13; TST-052 |
-| FEAT-054-AC-04 | With a frozen clock on both sides of the 1 Nov 2026 DST change, the job produces exactly one nightly run per local night. | AGT-059; ARC-061 |
+| FEAT-054-AC-04 | With a frozen clock on both sides of the 1 Nov 2026 DST change, the job produces exactly one nightly run per local night. Verified by: Unit (`tests/unit/backend/jobs/test_nightly_run.py`). | AGT-059; ARC-061 |
 | FEAT-054-AC-05 | `POST /api/v1/ingest` with SRC-05 returns 202 with a non-null `pipeline_run_id` whose run reaches `succeeded` within 30 s. | API-053; TST-124 |
-| FEAT-054-AC-06 | A nightly run on a database whose latest record is from the previous day adds that day to `day_ledger` as `missing_resident` for residents without a record. | FR-125; ARC-062 |
-| FEAT-054-AC-07 | No module imports APScheduler and no setting `NIGHTLY_SCHEDULER_ENABLED` exists (`grep -rn "apscheduler\|NIGHTLY_SCHEDULER_ENABLED" backend` returns nothing). | AGT-059; DEP-046 |
+| FEAT-054-AC-06 | A nightly run on a database whose latest record is from the previous day adds that day to `day_ledger` as `missing_resident` for residents without a record. Verified by: Integration (`tests/integration/pipeline/`; TST-037, TST-049, TST-124). | FR-125; ARC-062 |
+| FEAT-054-AC-07 | No module imports APScheduler and no setting `NIGHTLY_SCHEDULER_ENABLED` exists (`grep -rn "apscheduler\|NIGHTLY_SCHEDULER_ENABLED" backend` returns nothing). Verified by: Inspection (run the command in the criterion and check its output). | AGT-059; DEP-046 |
 
 ## Definition of Done
 

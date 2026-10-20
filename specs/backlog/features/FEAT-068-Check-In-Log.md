@@ -77,6 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-066
 
 - FEAT-066 provides the Resident detail page and its parallel `getCheckins` query; the endpoint itself is FEAT-028 (via FEAT-066).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
+
 ## Database Impact
 
 None (frontend only).
@@ -120,8 +122,8 @@ None in the frontend.
 | FEAT-068-AC-02 | `/residents/R07` log contains "Oct 13 · Baseline restarted · new device D07B (was D07)" and "Oct 28 · Baseline complete (16 of 16)". | E2E-10; AC-UX-05 |
 | FEAT-068-AC-03 | `/residents/R08` log contains 12 "Missed · no check-in received" lines and 5 "Set aside" lines, newest first starting "Oct 29 · Set aside · speech too short". | E2E-11; TRD 11 §4.13.3 |
 | FEAT-068-AC-04 | `/residents/R03` log contains "Oct 18 · Set aside · quality flag poor; noise above limit" and "Oct 12 · Device silent · no record from any resident on shared device D02". | E2E-12 |
-| FEAT-068-AC-05 | No log line exists for a usable check-in or a duplicate (R04 log shows no entry for its duplicate arrivals). | UX-144; FR-182 |
-| FEAT-068-AC-06 | A resident fixture with no events shows "Nothing to report yet." followed by the legend line. | UX-149 |
+| FEAT-068-AC-05 | No log line exists for a usable check-in or a duplicate (R04 log shows no entry for its duplicate arrivals). Verified by: Component (`components/CheckinLog/CheckinLog.test.tsx`). | UX-144; FR-182 |
+| FEAT-068-AC-06 | A resident fixture with no events shows "Nothing to report yet." followed by the legend line. Verified by: Component (`components/CheckinLog/CheckinLog.test.tsx`). | UX-149 |
 
 ## Definition of Done
 

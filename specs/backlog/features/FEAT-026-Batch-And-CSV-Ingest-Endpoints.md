@@ -108,7 +108,8 @@ Give Team 1 devices (API key) and study admins (dashboard upload) a way to submi
 Required before implementation (BACKLOG.md): FEAT-025
 
 - FEAT-025 (Single-record ingest endpoint): provides the validated-record insert path (`raw_sessions` insert, session advisory lock, rejection storage, payload-as-received rules) that this feature reuses per record, and transitively FEAT-023 (validator), FEAT-022 (ingest rate limit), FEAT-024 (`pipeline_runner.run` interface) and FEAT-015 (audit writer).
-- Downstream: FEAT-038 (OpenAPI export), FEAT-054 (ingest-triggered runs), FEAT-055 (seed through this path), FEAT-074 (admin upload UI) depend on this feature.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-054, FEAT-055, FEAT-074.
 
 ## Database Impact
 
@@ -188,23 +189,24 @@ Recovery: the caller may re-send the whole file; re-sent records become duplicat
 |---|---|---|
 | FEAT-026-AC-01 | Uploading `tests/fixtures/pipeline_input/EchoWell_pipeline_test_input_v0_1.csv` as admin returns 202 with `accepted` 283, `rejected` 0, `duplicates` 2, `source` `csv_upload`, a non-null `pipeline_run_id`, and `raw_sessions` gains exactly 283 rows whose `arrival_seq` order equals the CSV row order. | TST-046, AC-ING-01, API-052 |
 | FEAT-026-AC-02 | Uploading the legacy SRC-06 file returns 422 with `type` `urn:echowell:error:CSV_HEADER_MISMATCH` and the counts of `raw_sessions`, `ingest_rejections` and `ingest_batches` are unchanged. | TST-047, AC-API-17, FR-032 |
-| FEAT-026-AC-03 | A CSV whose header contains `expected_status` returns 422 `CSV_HEADER_MISMATCH` with an `errors[]` item of code `extra_forbidden` naming `expected_status`; nothing is stored. | ING-053, AC-ING-06 |
-| FEAT-026-AC-04 | `{"records": []}` returns 422 `EMPTY_BATCH`, a 5,001-record body returns 413 `PAYLOAD_TOO_LARGE`, and a `Content-Type: audio/wav` request returns 415; none creates any row. | ING-007, API-050, ING-012 |
-| FEAT-026-AC-05 | A JSON batch of 3 records where the second has `audio_quality_flag = "bad"` returns 202 with accepted 2, rejected 1, and creates one `ingest_rejections` row whose `errors` contain code `invalid_enum`. | ING-006, ING-007, API-051 |
-| FEAT-026-AC-06 | Re-uploading SRC-05 returns `duplicates` 283 and `accepted` 283. | AC-ING-03, ING-008 |
+| FEAT-026-AC-03 | A CSV whose header contains `expected_status` returns 422 `CSV_HEADER_MISMATCH` with an `errors[]` item of code `extra_forbidden` naming `expected_status`; nothing is stored. Verified by: Integration (`tests/integration/api/test_ingest.py`; TST-047). | ING-053, AC-ING-06 |
+| FEAT-026-AC-04 | `{"records": []}` returns 422 `EMPTY_BATCH`, a 5,001-record body returns 413 `PAYLOAD_TOO_LARGE`, and a `Content-Type: audio/wav` request returns 415; none creates any row. Verified by: Integration (`tests/integration/api/test_ingest.py`; TST-047). | ING-007, API-050, ING-012 |
+| FEAT-026-AC-05 | A JSON batch of 3 records where the second has `audio_quality_flag = "bad"` returns 202 with accepted 2, rejected 1, and creates one `ingest_rejections` row whose `errors` contain code `invalid_enum`. Verified by: Integration (`tests/integration/api/test_ingest.py`). | ING-006, ING-007, API-051 |
+| FEAT-026-AC-06 | Re-uploading SRC-05 returns `duplicates` 283 and `accepted` 283. Verified by: Integration (`tests/integration/api/test_ingest.py`; TST-047). | AC-ING-03, ING-008 |
 | FEAT-026-AC-07 | After a successful upload exactly one `audit_logs` row with action `ingest.batch.received`, entity id = the batch id and details containing `record_count`, `accepted`, `rejected`, `duplicates` exists, and its `request_id` equals the response `X-Request-ID`. | ING-058, TST-053, AC-SEC-09 |
-| FEAT-026-AC-08 | A clinician JWT calling `POST /ingest` receives 403; a researcher JWT calling `GET /ingest/batches/{id}` receives 200 and a clinician 403; an unknown batch id returns 404 `BATCH_NOT_FOUND`. | TRD 13 Table 4.13-A, API-054 |
+| FEAT-026-AC-08 | A clinician JWT calling `POST /ingest` receives 403; a researcher JWT calling `GET /ingest/batches/{id}` receives 200 and a clinician 403; an unknown batch id returns 404 `BATCH_NOT_FOUND`. Verified by: Integration (`tests/integration/api/test_ingest.py`). | TRD 13 Table 4.13-A, API-054 |
 | FEAT-026-AC-09 | The `GET /ingest/batches/{id}` body validates against `IngestBatch` and contains no `raw_body` or payload field. | DME-005, TST-061 |
-| FEAT-026-AC-10 | Exactly one background call of `pipeline_runner.run` is registered per accepted batch with `trigger = "ingest"`, and none when every record was rejected or a duplicate (`pipeline_run_id` null). | API-053, TRD 19 `IngestBatchAccepted` |
+| FEAT-026-AC-10 | Exactly one background call of `pipeline_runner.run` is registered per accepted batch with `trigger = "ingest"`, and none when every record was rejected or a duplicate (`pipeline_run_id` null). Verified by: Integration (`tests/integration/api/test_ingest.py`). | API-053, TRD 19 `IngestBatchAccepted` |
 
 ## Definition of Done
 
+- All FEAT-026 acceptance criteria pass.
 - Both endpoints exist under `/api/v1` with the TRD 19 schemas, status codes and auth; `python -m backend.cli export-openapi` output includes them (checked by FEAT-038).
 - All tests listed above pass with `pytest tests/integration -q` against PostgreSQL 16 (testcontainers); no test skipped.
 - Every requirement ID of this file is referenced by a test via `@pytest.mark.req("<ID>")` or listed in `docs/reports/traceability_inspections.md` (TST-013).
 - Backend line coverage stays ≥ 85 % (TST-141).
 - No log line or response in the test run contains a feature value (asserted for SRC-05 upload by TST-137 in FEAT-039).
-- The open question on JSON rejection row numbers (Implementation Notes) is recorded in the batch report per AGT-009/AGT-022.
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report. JSON rejection row numbers follow D-84.
 - Batch report lists requirement IDs, tests and commands (AGT-022); no commit made by the agent (AGT-012).
 
 ## Implementation Notes

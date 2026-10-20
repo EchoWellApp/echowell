@@ -83,6 +83,8 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-015
 - Transitively FEAT-012 (`data_alerts` table, app-role UPDATE grant) and FEAT-016/FEAT-017 (CLI framework in `backend/cli.py`).
 - TST-189 runs a full pipeline and a `data_problem` review, so it executes once FEAT-031 and FEAT-053 are merged.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-069.
+
 ## Database Impact
 
 - Tables read: `data_alerts` (all columns of TRD 20 §4.6.19), `residents` (`resident_code`), `devices` (`device_code`).
@@ -129,16 +131,17 @@ None: the rules that produce data alerts belong to FEAT-050; this feature reads 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-032-AC-01 | `GET /api/v1/data-alerts?kind=unknown` returns 422 `INVALID_QUERY_PARAMETER`; `GET /data-alerts` without parameters returns only `open` rows. | API-133 |
-| FEAT-032-AC-02 | With fixture rows of kinds device_silent (D02), baseline_stalled (R08) and high_set_aside (R03), the list order is R08 baseline_stalled, R03 high_set_aside, D02 device_silent. | API-133, CUS-045 |
-| FEAT-032-AC-03 | With DS-07 loaded, the open list is exactly: R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"; R05 possible_other_speaker "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22"; R03 high_set_aside "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short"; D02 device_silent "D02 · device silent all day" / "Oct 12 · affects R02 and R03". | AC-API-14, TDV-068, FR-301 |
+| FEAT-032-AC-01 | `GET /api/v1/data-alerts?kind=unknown` returns 422 `INVALID_QUERY_PARAMETER`; `GET /data-alerts` without parameters returns only `open` rows. Verified by: Integration (`tests/integration/test_resolve_data_alert.py`; TST-189). | API-133 |
+| FEAT-032-AC-02 | With fixture rows of kinds device_silent (D02), baseline_stalled (R08) and high_set_aside (R03), the list order is R08 baseline_stalled, R03 high_set_aside, D02 device_silent. Verified by: Integration (`tests/integration/api/test_alerts.py`). | API-133, CUS-045 |
+| FEAT-032-AC-03 | With DS-07 loaded, the open list is exactly: R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"; R05 possible_other_speaker "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22"; R03 high_set_aside "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short"; D02 device_silent "D02 · device silent all day" / "Oct 12 · affects R02 and R03". Verified by: DS-07 values (DS-07 values (FEAT-060, TDV-068, AC-API-14): exactly four open data alerts with the TRD 19 E-30 titles and details). | AC-API-14, TDV-068, FR-301 |
 | FEAT-032-AC-04 | `resolve-data-alert --id <open review_flagged_data_problem id> --reason "checked"` exits 0, sets `status` `resolved` and `resolved_at`, and writes exactly one `audit_logs` row `data_alert.resolved` whose details contain `alert_id`, `kind`, `reason` "checked" and `operator`. | TST-189, FR-297 |
 | FEAT-032-AC-05 | The same command with the id of a `device_silent` row, a random uuid, or an already resolved row exits 2 and changes no row in `data_alerts` or `audit_logs`. | TST-189, TRD 15 §4.8 |
 | FEAT-032-AC-06 | A full pipeline run after a `data_problem` review leaves the `review_flagged_data_problem` row `open` and unchanged. | TST-189, CUS-040 |
-| FEAT-032-AC-07 | Every user role receives 200 and an API key 401 on `GET /data-alerts`. | TRD 13 Table 4.13-A |
+| FEAT-032-AC-07 | Every user role receives 200 and an API key 401 on `GET /data-alerts`. Verified by: Integration (`tests/integration/api/test_alerts.py`; TST-061, TST-064). | TRD 13 Table 4.13-A |
 
 ## Definition of Done
 
+- All FEAT-032 acceptance criteria pass.
 - Endpoint and CLI command implemented; CLI listed in the command help.
 - Integration tests pass; TST-189 passes once FEAT-031 and FEAT-053 are merged; DS-07 criterion passes in FEAT-060.
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.

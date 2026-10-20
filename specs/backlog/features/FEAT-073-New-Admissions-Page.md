@@ -46,13 +46,13 @@ Implement `/admissions` (SRC-11), the experimental page for the new-admission st
 |---|---|---|
 | FEAT-073-FR-01 | The page shall start with "← Back to all residents" and directly below a banner (2px dashed accent border, accent text, 600) with line 1 "▲ Future / experimental study arm" and line 2 "Not in pipeline test v0.1 — the test data has no admission arm or facility norm yet. Open question for Shaba and the PI." (kept until OQ-08 closes). | UX-180, UX-181, FR-200, VIS-009, OQ-08 |
 | FEAT-073-FR-02 | The header shall show `<h1>` "New admissions" and "New residents don’t have their own baseline yet, so their first check-ins are compared with the facility’s usual range." with a 2px ink bottom border. | UX-182 |
-| FEAT-073-FR-03 | The table shall have columns "Resident", "Admitted" ("<Mon D>"), "Check-ins so far" (usable since admission), "Compared with facility range", "Own baseline" ("<n> of <N> days", N = `meta.baseline_n`), header background `--color-table-header`, `min-width: 760px` in a horizontally scrolling, keyboard-focusable container. | UX-183, UX-184, UX-186, FR-201, UX-243 |
+| FEAT-073-FR-03 | The table shall have columns "Resident", "Admitted" ("<Mon D>"), "Check-ins so far" (usable since admission), "Compared with facility range", "Own baseline" ("<n> of <N> usable check-ins", N = `meta.baseline_n`), header background `--color-table-header`, `min-width: 760px` in a horizontally scrolling, keyboard-focusable container. | UX-183, UX-184, UX-186, FR-201, UX-243 |
 | FEAT-073-FR-04 | The comparison badge shall read "▲ Outside facility range" (2px accent, accent text, 600) for `outside_range`, "Within facility range" (1px border) for `within_range`, "Not enough check-ins yet" (1px dashed) for `not_enough_checkins`, "Facility range not available yet" (1px dashed) for `range_not_available`. | UX-185, FR-202 |
 | FEAT-073-FR-05 | Each row shall have a "Show comparison" button (min-height 44px) selecting the resident; the selected row has `aria-selected="true"` and a 2px ink left border. | UX-187 |
 | FEAT-073-FR-06 | The page shall list only new-admission residents without an own formed baseline, as returned by the API; residents whose baseline formed appear on the overview instead. | UX-188, FR-205, UX-046 |
 | FEAT-073-FR-07 | The comparison section shall be headed "<R> compared with facility range" and show one row per feature with a band from `low` to `high` (TRD 19 `AdmissionComparison`) in `--color-range-band` (#E2E2DE) and the resident value as an 8px circle — outside the band accent with "▲", inside ink — with the caption "grey band = usual range across current residents". | FE-100, UX-189, UX-190, FR-203, D-44 |
 | FEAT-073-FR-08 | Feature rows shall use the TRD 11 §4.5.4 plain-language labels for the 7 scored measurements and the API label otherwise. | UX-191 |
-| FEAT-073-FR-09 | Under the chart: "Once <N> days of check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." and, when the API returns them, "Range from <n_residents> current residents, computed <Mon D> (method: <method>)." | UX-192, UX-195 |
+| FEAT-073-FR-09 | Under the chart: "Once <N> usable check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." and, when the API returns them, "Range from <n_residents> current residents, computed <Mon D> (method: <method>)." | UX-192, UX-195 |
 | FEAT-073-FR-10 | A disclosure "Show comparison as a table" shall show "Measurement", "Resident value", "Facility range", "Outside range" ("▲ Yes" / "No"). | UX-193, UX-225 |
 | FEAT-073-FR-11 | With no new admissions the table area shall read "No new admissions. The pipeline test data v0.1 has no admission arm." when the data source is the test data, otherwise "No new admissions."; the comparison section then reads "Select a resident to see the comparison." | UX-194, UX-264 |
 | FEAT-073-FR-12 | The page footer shall read "No audio is stored or played here — only extracted voice measurements." | FR-207, UX-005 |
@@ -77,6 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-064, FEAT-036
 
 - FEAT-064 provides the route shell and `BackLink`.
 - FEAT-036 provides the three experimental endpoints.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-075, FEAT-095.
 
 ## Database Impact
 
@@ -121,9 +123,9 @@ None in the frontend.
 |---|---|---|
 | FEAT-073-AC-01 | On DS-07, `/admissions` shows "← Back to all residents", the banner lines of UX-181, the table text "No new admissions. The pipeline test data v0.1 has no admission arm." and "Select a resident to see the comparison." | E2E-13; FE-189; AC-UX-07; UX-264 |
 | FEAT-073-AC-02 | With a fixture admission whose status is `outside_range`, the badge reads "▲ Outside facility range" and the out-of-range feature dot is accent with "▲". | UX-185; FE-100; TST-186 |
-| FEAT-073-AC-03 | With `range_not_available`, the badge reads "Facility range not available yet". | UX-185; FR-202 |
-| FEAT-073-AC-04 | Selecting "Show comparison" sets `aria-selected="true"` on the row and shows "<R> compared with facility range", the caption "grey band = usual range across current residents" and the transition sentence with N from `meta.baseline_n`. | UX-187; UX-189; UX-190; UX-192 |
-| FEAT-073-AC-05 | The page footer reads "No audio is stored or played here — only extracted voice measurements." and the page has no global navigation. | FR-207; FR-331 |
+| FEAT-073-AC-03 | With `range_not_available`, the badge reads "Facility range not available yet". Verified by: Page test (`frontend/tests/pages/admissions.test.tsx`; TST-186, TST-094). | UX-185; FR-202 |
+| FEAT-073-AC-04 | Selecting "Show comparison" sets `aria-selected="true"` on the row and shows "<R> compared with facility range", the caption "grey band = usual range across current residents" and the transition sentence with N from `meta.baseline_n`. Verified by: Page test (`frontend/tests/pages/admissions.test.tsx`; TST-186, TST-094). | UX-187; UX-189; UX-190; UX-192 |
+| FEAT-073-AC-05 | The page footer reads "No audio is stored or played here — only extracted voice measurements." and the page has no global navigation. Verified by: Inspection (the inspection method of FR-207, applied to the condition stated in the criterion). | FR-207; FR-331 |
 
 ## Definition of Done
 

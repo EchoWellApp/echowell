@@ -98,7 +98,7 @@ Required before implementation (BACKLOG.md): FEAT-023, FEAT-022, FEAT-024, FEAT-
 - FEAT-024 provides `pipeline_runner.run` for the synchronous resident-scoped run.
 - FEAT-015 provides the audit writer used by the runner's `pipeline.run.*` events triggered here.
 
-Features that build directly on this one: FEAT-026 (batch and CSV ingest reuse the service).
+Features that build directly on this one (BACKLOG.md §4): FEAT-026, FEAT-054.
 
 ## Database Impact
 
@@ -164,12 +164,12 @@ None computed here; the synchronous run executes the analytics pipeline through 
 | FEAT-025-AC-01 | Posting SRC-05 row R09-20261021-01 with a valid `ingest:write` key returns 201 with `raw_session_id`, `arrival_seq`, `session_id`, `status_after_processing`, `reasons`, `pipeline_run_id`, and creates exactly one `raw_sessions` row whose `payload` equals the posted JSON. | TST-043, API-042, API-046 |
 | FEAT-025-AC-02 | Posting the same record again returns 200 with `status_after_processing = "duplicate"`, `reasons = ["session_id already received"]`, `pipeline_run_id = null`, adds one `raw_sessions` row and creates no `pipeline_runs` row. | TST-044, AC-API-05, API-044 |
 | FEAT-025-AC-03 | Posting a record with `resident_id` R11 returns 422 `UNKNOWN_RESIDENT`, creates one `ingest_rejections` row (with `errors` equal to the response `errors` and `ingest_batch_id` NULL) and no `raw_sessions` row. | TST-045, AC-API-06, API-041 |
-| FEAT-025-AC-04 | Posting a record with an extra field `audio_base64` returns 422 `VALIDATION_ERROR` whose `errors[0].code` is `extra_forbidden`; posting with `Content-Type: audio/wav` returns 415 and stores nothing. | AC-API-07, ING-012, FR-015 |
+| FEAT-025-AC-04 | Posting a record with an extra field `audio_base64` returns 422 `VALIDATION_ERROR` whose `errors[0].code` is `extra_forbidden`; posting with `Content-Type: audio/wav` returns 415 and stores nothing. Verified by: Integration (`tests/integration/api/test_sessions.py`; TST-043, TST-044, TST-045). | AC-API-07, ING-012, FR-015 |
 | FEAT-025-AC-05 | With the executor forced to raise, the POST returns 201 with `status_after_processing = "pending"`, the raw row exists, the run row is `failed`; a subsequent successful run processes the record. | TST-037, AC-ING-11, D-52 |
-| FEAT-025-AC-06 | Two concurrent POSTs of one `session_id` yield exactly one non-duplicate response and one 200 `duplicate`, with `arrival_seq` order matching the verdicts. | AC-ING-09, DB-021 |
-| FEAT-025-AC-07 | A record for a withdrawn resident returns 422 `RESIDENT_WITHDRAWN` with detail "resident withdrawn". | AC-ING-10 |
-| FEAT-025-AC-08 | Captured logs for a valid, an invalid and a duplicate POST contain one `ingest_request` event each, one `ingest_record_rejected` WARNING, one `ingest_duplicate` INFO, and no feature value or API key. | LOG-050, LOG-051, ING-057, API-056 |
-| FEAT-025-AC-09 | With the database stopped, the POST returns 503 `SERVICE_UNAVAILABLE` with `Retry-After: 30`. | LOG-052 |
+| FEAT-025-AC-06 | Two concurrent POSTs of one `session_id` yield exactly one non-duplicate response and one 200 `duplicate`, with `arrival_seq` order matching the verdicts. Verified by: Integration (`tests/integration/pipeline/test_concurrent_ingest.py`). | AC-ING-09, DB-021 |
+| FEAT-025-AC-07 | A record for a withdrawn resident returns 422 `RESIDENT_WITHDRAWN` with detail "resident withdrawn". Verified by: Integration (`tests/integration/api/test_sessions.py`; TST-043, TST-044, TST-045). | AC-ING-10 |
+| FEAT-025-AC-08 | Captured logs for a valid, an invalid and a duplicate POST contain one `ingest_request` event each, one `ingest_record_rejected` WARNING, one `ingest_duplicate` INFO, and no feature value or API key. Verified by: Security (log capture shows no feature value (API-056)). | LOG-050, LOG-051, ING-057, API-056 |
+| FEAT-025-AC-09 | With the database stopped, the POST returns 503 `SERVICE_UNAVAILABLE` with `Retry-After: 30`. Verified by: Integration (`tests/integration/api/test_sessions.py`). | LOG-052 |
 
 ## Definition of Done
 

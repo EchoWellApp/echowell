@@ -99,6 +99,8 @@ Required before implementation (BACKLOG.md): FEAT-036, FEAT-052, FEAT-073
 
 Gate: OQ-08 (facility norm definition) and OQ-20 (sex values).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 - Tables written: `facility_reference_ranges` (INSERT; replaced per facility run), `pipeline_runs` (the linked run row).
@@ -144,15 +146,16 @@ Gate: OQ-08 (facility norm definition) and OQ-20 (sex values).
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-095-AC-01 | `grep -n "facility_norms" analytics/pipeline.py` returns nothing. | ANL-057 |
-| FEAT-095-AC-02 | Running the pipeline with and without computed ranges yields identical `baselines`, `scores`, `cusum_state` and `alerts`. | ANL-057, FR-206 |
+| FEAT-095-AC-01 | `grep -n "facility_norms" analytics/pipeline.py` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | ANL-057 |
+| FEAT-095-AC-02 | Running the pipeline with and without computed ranges yields identical `baselines`, `scores`, `cusum_state` and `alerts`. Verified by: Test (Unit tests of the norm function (purity, determinism, exclusion of null-sex residents from F0 ranges, never touching baselines or scores)). | ANL-057, FR-206 |
 | FEAT-095-AC-03 | TST-186 passes against ranges produced by the new function. | TST-186, FR-202, FR-203 |
-| FEAT-095-AC-04 | No `facility_reference_ranges` row for `mean_f0_hz` has `sex` NULL, and residents with null sex are not counted in any F0 row's `n_residents`. | OQ-20 interim decision |
-| FEAT-095-AC-05 | Every stored row has a non-empty `method` naming the OQ-08 method and `n_residents` ≥ the OQ-08 minimum N. | FR-204, OQ-08 |
+| FEAT-095-AC-04 | No `facility_reference_ranges` row for `mean_f0_hz` has `sex` NULL, and residents with null sex are not counted in any F0 row's `n_residents`. Verified by: Integration (TST-186). | OQ-20 interim decision |
+| FEAT-095-AC-05 | Every stored row has a non-empty `method` naming the OQ-08 method and `n_residents` ≥ the OQ-08 minimum N. Verified by: Test (Method-specific expected values are written from the OQ-08 decision). | FR-204, OQ-08 |
 | FEAT-095-AC-06 | `pytest tests/validation -q` passes unchanged. | AGT-008 |
 
 ## Definition of Done
 
+- All FEAT-095 acceptance criteria pass.
 - Gates satisfied (OQ-08 answered, OQ-20 answered where F0 ranges are used); all FEAT-095 acceptance criteria pass; TRD 07/TRD 02/TRD 11 updated through a TRD change with the decided method before code merges.
 
 ## Implementation Notes

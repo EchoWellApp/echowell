@@ -92,7 +92,7 @@ Required before implementation (BACKLOG.md): FEAT-003, FEAT-004
 - FEAT-003 provides the backend app, settings validation (extended here by ENV-041) and the health endpoint the stack is checked with.
 - FEAT-004 provides the frontend project run by the `frontend` service.
 
-Features that build directly on this one: FEAT-008 (database layer runs on this `db`), FEAT-077 (demo profile and production images).
+Features that build directly on this one (BACKLOG.md §4): FEAT-008, FEAT-077.
 
 ## Database Impact
 
@@ -143,14 +143,14 @@ None. `analytics/` is bind-mounted into the backend container so edits apply on 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-006-AC-01 | `docker compose config` lists exactly the services `db`, `backend`, `frontend` (plus `frontend-prod` only under profile `demo` once FEAT-077 lands), with `db` image `postgres:16-alpine` and all ports bound to `127.0.0.1`. | DEP-010, DEP-011 |
-| FEAT-006-AC-02 | From a clean clone, `cp .env.development.example .env && docker compose up --build -d` yields `curl -fsS http://localhost:8000/api/v1/health` = 200 with `"database":"ok"` within 180 s. | DEP-014 |
-| FEAT-006-AC-03 | `docker compose ps` shows `db` healthy before `backend` starts, and the backend log shows `alembic upgrade head` completing before uvicorn starts. | DEP-011, DEP-012 |
-| FEAT-006-AC-04 | Editing a file in `backend/` triggers a uvicorn reload without rebuilding the image. | DEP-013 |
+| FEAT-006-AC-01 | `docker compose config` lists exactly the services `db`, `backend`, `frontend` (plus `frontend-prod` only under profile `demo` once FEAT-077 lands), with `db` image `postgres:16-alpine` and all ports bound to `127.0.0.1`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-010, DEP-011 |
+| FEAT-006-AC-02 | From a clean clone, `cp .env.development.example .env && docker compose up --build -d` yields `curl -fsS http://localhost:8000/api/v1/health` = 200 with `"database":"ok"` within 180 s. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-014 |
+| FEAT-006-AC-03 | `docker compose ps` shows `db` healthy before `backend` starts, and the backend log shows `alembic upgrade head` completing before uvicorn starts. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-011, DEP-012 |
+| FEAT-006-AC-04 | Editing a file in `backend/` triggers a uvicorn reload without rebuilding the image. Verified by: Demo (the demo method of DEP-013, applied to the condition stated in the criterion). | DEP-013 |
 | FEAT-006-AC-05 | Inside the backend container, `/app/database/seeds` and `/app/tests/fixtures` exist and are read-only. | DEP-119 |
-| FEAT-006-AC-06 | `grep -nE "password\|secret\|key" docker-compose.yml` shows only `local-dev-only-*` values, and `grep -rn "neon.tech" docker-compose.yml backend/Dockerfile` returns nothing. | DEP-018, AC-DEP-10 |
-| FEAT-006-AC-07 | The ENV-040 unit test passes; starting the backend with `APP_ENV=staging` and `JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef` exits with code 1. | ENV-040, ENV-041, AC-ENV-03 |
-| FEAT-006-AC-08 | `.env.development.example` and `.env.production.example` match the TRD 21 §4.6 blocks line for line (comments may differ only in whitespace). | ENV-040 |
+| FEAT-006-AC-06 | `grep -nE "password\|secret\|key" docker-compose.yml` shows only `local-dev-only-*` values, and `grep -rn "neon.tech" docker-compose.yml backend/Dockerfile` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | DEP-018, AC-DEP-10 |
+| FEAT-006-AC-07 | The ENV-040 unit test passes; starting the backend with `APP_ENV=staging` and `JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef` exits with code 1. Verified by: Unit (`tests/unit/backend/core/test_env_templates.py`). | ENV-040, ENV-041, AC-ENV-03 |
+| FEAT-006-AC-08 | `.env.development.example` and `.env.production.example` match the TRD 21 §4.6 blocks line for line (comments may differ only in whitespace). Verified by: Unit (`tests/unit/backend/core/test_env_templates.py`). | ENV-040 |
 
 ## Definition of Done
 

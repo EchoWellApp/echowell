@@ -89,7 +89,7 @@ Required before implementation (BACKLOG.md): FEAT-015
 
 - FEAT-015 provides `audit_service.record` and the CLI actor helper used by every command here.
 
-Features that build directly on this one: FEAT-017, FEAT-020.
+Features that build directly on this one (BACKLOG.md §4): FEAT-017, FEAT-020, FEAT-037.
 
 ## Database Impact
 
@@ -145,12 +145,12 @@ The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit cod
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-016-AC-01 | `hash_password("correct horse battery")` returns a string starting `$argon2id$v=19$m=65536,t=3,p=4$` and `verify_password` accepts the plaintext and rejects any other. | SEC-010, TST-032 |
-| FEAT-016-AC-02 | `validate_password` rejects an 11-character password, a 129-character password, the user's own e-mail in different case and a password from `common_passwords.txt`, and accepts a 12-character non-listed password. | SEC-012 |
-| FEAT-016-AC-03 | `create-api-key --name t1` prints one key matching `^ewk_[A-Za-z0-9_-]{43}$`, stores scopes `{ingest:write}` and `key_hash` = SHA-256 of the printed key; no log line or audit row contains the key. | SEC-020, SEC-021, FR-226 |
-| FEAT-016-AC-04 | `create-api-key --name t2 --scope pipeline:run --scope ingest:write --device D01` stores both scopes and `device_id` of D01; `--scope admin` exits with code 2 and writes nothing. | SEC-020, SEC-022, SEC-023 |
-| FEAT-016-AC-05 | `revoke-api-key --name t1` sets `active = false` and writes one `api_key.revoked` audit row with `actor_type = system` and `details.operator`. | SEC-024, SEC-103 |
-| FEAT-016-AC-06 | `echo 'a-valid-password-123' \| python -m backend.cli create-user --email Admin@Example.com --display-name Admin --role admin --password-stdin` stores email `admin@example.com`, an argon2id hash and one `user.created` audit row with `details.role = admin`. | SEC-016, SEC-017, SEC-103 |
-| FEAT-016-AC-07 | The OpenAPI document and `backend/api/` contain no route for API keys. | ARC-067, D-34 |
+| FEAT-016-AC-02 | `validate_password` rejects an 11-character password, a 129-character password, the user's own e-mail in different case and a password from `common_passwords.txt`, and accepts a 12-character non-listed password. Verified by: Unit (`tests/unit/backend/core/test_security.py`). | SEC-012 |
+| FEAT-016-AC-03 | `create-api-key --name t1` prints one key matching `^ewk_[A-Za-z0-9_-]{43}$`, stores scopes `{ingest:write}` and `key_hash` = SHA-256 of the printed key; no log line or audit row contains the key. Verified by: Unit (`tests/unit/backend/core/test_security.py`). | SEC-020, SEC-021, FR-226 |
+| FEAT-016-AC-04 | `create-api-key --name t2 --scope pipeline:run --scope ingest:write --device D01` stores both scopes and `device_id` of D01; `--scope admin` exits with code 2 and writes nothing. Verified by: Integration (`tests/integration/test_cli_credentials.py`). | SEC-020, SEC-022, SEC-023 |
+| FEAT-016-AC-05 | `revoke-api-key --name t1` sets `active = false` and writes one `api_key.revoked` audit row with `actor_type = system` and `details.operator`. Verified by: Integration (`tests/integration/test_cli_credentials.py`). | SEC-024, SEC-103 |
+| FEAT-016-AC-06 | `echo 'a-valid-password-123' \| python -m backend.cli create-user --email Admin@Example.com --display-name Admin --role admin --password-stdin` stores email `admin@example.com`, an argon2id hash and one `user.created` audit row with `details.role = admin`. Verified by: Unit (`tests/unit/backend/core/test_security.py`). | SEC-016, SEC-017, SEC-103 |
+| FEAT-016-AC-07 | The OpenAPI document and `backend/api/` contain no route for API keys. Verified by: Inspection (no router under `backend/api/` references `api_keys` creation (ARC-067)). | ARC-067, D-34 |
 
 ## Definition of Done
 

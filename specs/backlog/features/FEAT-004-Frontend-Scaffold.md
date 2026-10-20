@@ -93,7 +93,7 @@ Required before implementation (BACKLOG.md): FEAT-002
 
 - FEAT-002 provides the monorepo layout, `.gitignore` entries for `frontend/` build outputs and the pre-commit configuration.
 
-Features that build directly on this one: FEAT-006, FEAT-007, FEAT-062.
+Features that build directly on this one (BACKLOG.md §4): FEAT-006, FEAT-007, FEAT-062.
 
 ## Database Impact
 
@@ -140,13 +140,13 @@ None. `no-console` forbids `console.log` (FE-200). No audit records.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-004-AC-01 | In `frontend/` on Node 20, `npm ci && npm run lint && npm run typecheck && npm run format:check && npm run test && npm run build` exits 0. | AC-FE-01, FE-203 |
-| FEAT-004-AC-02 | The Vitest smoke test renders `/login` and passes. | TRD 25 §4.6 Phase 3 Required tests |
-| FEAT-004-AC-03 | `npm run build` with `NEXT_PUBLIC_API_BASE_URL` unset fails, and with `NEXT_PUBLIC_API_BASE_URL=http://api.example.org` and `NEXT_PUBLIC_APP_ENV=staging` fails. | AC-ENV-08, FE-171 |
-| FEAT-004-AC-04 | `grep -rn "fonts.googleapis.com\|fonts.gstatic.com" frontend/.next/server frontend/.next/static` after build returns no `<link>` or CSS URL to those hosts, and no font file is tracked by git. | FE-004, TPS-050, GIT-097 |
-| FEAT-004-AC-05 | `package.json` contains the scripts listed in Scope, does not contain a script named exactly `test:e2e`, and pins `next` 14.2.x, `react` 18.3.x, `@tanstack/react-query` 5.x, `recharts` 2.x. | FE-002, D-73, TRD 16 §6 |
-| FEAT-004-AC-06 | `next.config.js` sets `reactStrictMode: true` and `poweredByHeader: false` and has no `images.remotePatterns`; the built app's responses carry no `X-Powered-By` header. | FE-043 |
-| FEAT-004-AC-07 | `grep -rniE "openai\|anthropic\|langchain\|audio" frontend --include=*.ts --include=*.tsx --include=package.json` (excluding `node_modules`) returns no dependency or component. | FE-007, FE-008, AC-AGT-03 |
-| FEAT-004-AC-08 | With `NEXT_PUBLIC_APP_ENV=local` the rendered `/login` page shows the text "LOCAL" in the ribbon; with `production` no ribbon is rendered. | FE-172, ENV-032 |
+| FEAT-004-AC-02 | The Vitest smoke test renders `/login` and passes. Verified by: Test (`frontend/tests/pages/login.test.tsx`; TST-003). | TRD 25 §4.6 Phase 3 Required tests |
+| FEAT-004-AC-03 | `npm run build` with `NEXT_PUBLIC_API_BASE_URL` unset fails, and with `NEXT_PUBLIC_API_BASE_URL=http://api.example.org` and `NEXT_PUBLIC_APP_ENV=staging` fails. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | AC-ENV-08, FE-171 |
+| FEAT-004-AC-04 | `grep -rn "fonts.googleapis.com\|fonts.gstatic.com" frontend/.next/server frontend/.next/static` after build returns no `<link>` or CSS URL to those hosts, and no font file is tracked by git. Verified by: Inspection (run the command in the criterion and check its output). | FE-004, TPS-050, GIT-097 |
+| FEAT-004-AC-05 | `package.json` contains the scripts listed in Scope, does not contain a script named exactly `test:e2e`, and pins `next` 14.2.x, `react` 18.3.x, `@tanstack/react-query` 5.x, `recharts` 2.x. Verified by: Test (`frontend/tests/pages/login.test.tsx`; TST-003). | FE-002, D-73, TRD 16 §6 |
+| FEAT-004-AC-06 | `next.config.js` sets `reactStrictMode: true` and `poweredByHeader: false` and has no `images.remotePatterns`; the built app's responses carry no `X-Powered-By` header. Verified by: Inspection (the inspection method of FE-043, applied to the condition stated in the criterion). | FE-043 |
+| FEAT-004-AC-07 | `grep -rniE "openai\|anthropic\|langchain\|audio" frontend --include=*.ts --include=*.tsx --include=package.json` (excluding `node_modules`) returns no dependency or component. Verified by: Inspection (run the command in the criterion and check its output). | FE-007, FE-008, AC-AGT-03 |
+| FEAT-004-AC-08 | With `NEXT_PUBLIC_APP_ENV=local` the rendered `/login` page shows the text "LOCAL" in the ribbon; with `production` no ribbon is rendered. Verified by: Test (`frontend/tests/pages/login.test.tsx`; TST-003). | FE-172, ENV-032 |
 
 ## Definition of Done
 

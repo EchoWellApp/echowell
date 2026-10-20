@@ -85,6 +85,8 @@ Required before implementation (BACKLOG.md): FEAT-063
 
 - FEAT-063 provides `useAuth()`, `signOut`, `AuthGuard` and `lib/roles.ts`; FEAT-062 (through FEAT-063) provides the API client and formatters.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-065, FEAT-066, FEAT-069, FEAT-072, FEAT-073, FEAT-074.
+
 ## Database Impact
 
 None.
@@ -130,16 +132,16 @@ None in the frontend (LOG-082). Backend writes `access.denied` audit rows for 40
 |---|---|---|
 | FEAT-064-AC-01 | As clinician, `/admin` shows "You do not have access to this page." with "Back to all residents", no admin API request is made, and the nav has no "Admin" link. | E2E-14; FE-034; UX-215 |
 | FEAT-064-AC-02 | As clinician, the nav has no "Analytics" link and `/analytics` shows the access-denied state with no `GET /api/v1/analytics` request. | E2E-21; FE-037; FR-218 |
-| FEAT-064-AC-03 | With DS-07, the `/residents` header shows "EchoWell", the subline "Voice check-ins · Edgewood · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT" and the nav "Residents", "Alerts (2)", "New admissions" for a clinician, plus "Analytics" for a researcher and "Analytics" and "Admin" for an admin. | UX-011; UX-013; UX-014; FE-036 |
-| FEAT-064-AC-04 | `/` redirects to `/residents`; `/residents/R09` and `/admissions` show "← Back to all residents" and no global nav. | FE-021; FE-025; FR-331 |
-| FEAT-064-AC-05 | Document titles equal FE-032 on each route and "Skip to main content" is the first focusable element. | FE-032; FE-033 |
-| FEAT-064-AC-06 | `/residents/r09!` renders the resident not-found state without any API request. | FE-030 |
-| FEAT-064-AC-07 | With `NEXT_PUBLIC_APP_ENV=staging` the ribbon "STAGING – synthetic data" is visible; with `production` no ribbon renders. | ENV-032; FE-172 |
+| FEAT-064-AC-03 | With DS-07, the `/residents` header shows "EchoWell", the subline "Voice check-ins · Edgewood · Showing pipeline test data v0.1 as of Oct 30, 2026, 3:00 PM CT" and the nav "Residents", "Alerts (2)", "New admissions" for a clinician, plus "Analytics" for a researcher and "Analytics" and "Admin" for an admin. Verified by: Component (`components/AppHeader/AppHeader.test.tsx`). | UX-011; UX-013; UX-014; FE-036 |
+| FEAT-064-AC-04 | `/` redirects to `/residents`; `/residents/R09` and `/admissions` show "← Back to all residents" and no global nav. Verified by: Component (`components/AppHeader/AppHeader.test.tsx`; TST-090). | FE-021; FE-025; FR-331 |
+| FEAT-064-AC-05 | Document titles equal FE-032 on each route and "Skip to main content" is the first focusable element. Verified by: Component (`components/AppHeader/AppHeader.test.tsx`). | FE-032; FE-033 |
+| FEAT-064-AC-06 | `/residents/r09!` renders the resident not-found state without any API request. Verified by: Component (`components/AppHeader/AppHeader.test.tsx`; TST-090). | FE-030 |
+| FEAT-064-AC-07 | With `NEXT_PUBLIC_APP_ENV=staging` the ribbon "STAGING – synthetic data" is visible; with `production` no ribbon renders. Verified by: Component (`components/AppHeader/AppHeader.test.tsx`; TST-090). | ENV-032; FE-172 |
 
 ## Definition of Done
 
 - All FEAT-064 acceptance criteria pass; component, page and E2E tests listed above green.
-- Batch report lists IDs and the TRD conflicts below (AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

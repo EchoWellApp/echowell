@@ -90,6 +90,8 @@ Required before implementation (BACKLOG.md): FEAT-064, FEAT-027, FEAT-029
 - FEAT-027 provides `GET /api/v1/residents` with display status and sorts.
 - FEAT-029 provides `GET /api/v1/devices`.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
+
 ## Database Impact
 
 None (frontend only).
@@ -136,8 +138,8 @@ None in the frontend.
 | FEAT-065-AC-02 | The default rows are R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 with the device, badge, last check-in and count texts of TRD 11 §4.13.1 (e.g. R08 "Baseline forming · 13 of 16 sessions", "Oct 30, 2:28 PM", "13 · 5 · 0 · 12"; R07 "D07B (was D07)", "No alarm · baseline restarted Oct 13"). | E2E-04; FE-182; AC-FE-02 |
 | FEAT-065-AC-03 | Choosing "Resident ID" yields R01…R10 and "Last check-in" yields R02, R07, R05, R10, R06, R08, R09, R03, R04, R01, and the URL contains the matching `?sort=` value. | E2E-05; E2E-06; AC-UX-02; TST-092 |
 | FEAT-065-AC-04 | `/residents#devices` scrolls the Devices panel into view with cards "D02 · shared by R02, R03" / "Last upload Oct 30, 2:55 PM · silent all day Oct 12", "D07B · R07" / "In use since Oct 13 (replaced D07) · last upload Oct 30, 2:52 PM", and the dashed "D01, D04–D06, D08–D10" / "All uploaded on Oct 30 · firmware fw-1.0.0". | E2E-07; AC-UX-03; UX-058 |
-| FEAT-065-AC-05 | "Show all devices (10)" lists 10 devices, D08 shows 12 days with no device activity, D07 shows "Oct 1–12 · replaced by D07B". | AC-UX-03; UX-055..UX-057 |
-| FEAT-065-AC-06 | R04's row shows "30 · 0 · 0 · 0" (its two duplicates are not counted anywhere on the page). | UX-044; AGT-053 |
+| FEAT-065-AC-05 | "Show all devices (10)" lists 10 devices, D08 shows 12 days with no device activity, D07 shows "Oct 1–12 · replaced by D07B". Verified by: E2E (`overview.spec.ts`; FE-185, E2E-03, E2E-04). | AC-UX-03; UX-055..UX-057 |
+| FEAT-065-AC-06 | R04's row shows "30 · 0 · 0 · 0" (its two duplicates are not counted anywhere on the page). Verified by: Page test (`frontend/tests/pages/residents.test.tsx`; TST-094). | UX-044; AGT-053 |
 | FEAT-065-AC-07 | `StatusBadge` component tests assert the three TST-091 texts and that the alarm badge contains "▲". | TST-091; FE-092 |
 
 ## Definition of Done

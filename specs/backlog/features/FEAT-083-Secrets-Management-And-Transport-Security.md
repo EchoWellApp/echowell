@@ -86,6 +86,8 @@ Required before implementation (BACKLOG.md): FEAT-081, FEAT-082
 - [FEAT-081](FEAT-081-Railway-Backend-And-Nightly-Cron-Services.md) Railway and Neon configuration (where the secrets live).
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify configuration and header set (HSTS on the frontend origin).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-086.
+
 ## Database Impact
 
 - `audit_logs`: rows `config.changed` for secret rotations performed through the CLI (SEC-058); no schema change.
@@ -127,12 +129,12 @@ This feature is itself the security control set listed in the Functional Require
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-083-AC-01 | Starting the backend with APP_ENV=staging and a DATABASE_URL without `sslmode=require` exits with code 1; with APP_ENV=local it starts. | AC-ENV-02, SEC-061 |
-| FEAT-083-AC-02 | Starting with APP_ENV=production and the JWT_SECRET of `.env.development.example` exits with code 1 and the log does not contain the value. | AC-ENV-03, ENV-041 |
-| FEAT-083-AC-03 | `repr(get_settings())` shows `**********` for the five secret settings. | AC-ENV-09, ENV-004 |
-| FEAT-083-AC-04 | `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (and `GITHUB_TOKEN`). | AC-CIC-06, CIC-090 |
+| FEAT-083-AC-01 | Starting the backend with APP_ENV=staging and a DATABASE_URL without `sslmode=require` exits with code 1; with APP_ENV=local it starts. Verified by: Unit (staging with a URL lacking `sslmode=require` exits 1 (AC-ENV-02)). | AC-ENV-02, SEC-061 |
+| FEAT-083-AC-02 | Starting with APP_ENV=production and the JWT_SECRET of `.env.development.example` exits with code 1 and the log does not contain the value. Verified by: Unit (production with the development JWT_SECRET exits 1 without logging it (AC-ENV-03)). | AC-ENV-03, ENV-041 |
+| FEAT-083-AC-03 | `repr(get_settings())` shows `**********` for the five secret settings. Verified by: Unit (`repr(get_settings())` masks DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN (AC-ENV-09)). | AC-ENV-09, ENV-004 |
+| FEAT-083-AC-04 | `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (and `GITHUB_TOKEN`). Verified by: Inspection (run the command in the criterion and check its output). | AC-CIC-06, CIC-090 |
 | FEAT-083-AC-05 | `tests/smoke/test_tls.py` passes against a TLS 1.2-only test endpoint and fails when TLS 1.1 is accepted. | SEC-066 |
-| FEAT-083-AC-06 | `docs/deployment.md` contains the secret inventory with store, owner and rotation interval for every secret of TRD 21 §4.2 and no secret value (`gitleaks detect` on the file finds nothing). | SEC-050, SEC-058 |
+| FEAT-083-AC-06 | `docs/deployment.md` contains the secret inventory with store, owner and rotation interval for every secret of TRD 21 §4.2 and no secret value (`gitleaks detect` on the file finds nothing). Verified by: Inspection (the inspection method of SEC-050, applied to the condition stated in the criterion). | SEC-050, SEC-058 |
 
 ## Definition of Done
 

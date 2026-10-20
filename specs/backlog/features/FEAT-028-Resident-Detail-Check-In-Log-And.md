@@ -89,7 +89,8 @@ Serve everything the Resident detail page (`/residents/[residentCode]`, SRC-10) 
 Required before implementation (BACKLOG.md): FEAT-027
 
 - FEAT-027 (Residents overview API): provides the display-status function, the device-label and 30-day count assembly reused by the detail response, and transitively FEAT-021 (roles) and FEAT-014 (read-model queries, DB-065 restart cause).
-- Downstream: FEAT-038, FEAT-066, FEAT-068.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-066.
 
 ## Database Impact
 
@@ -139,23 +140,24 @@ None: values are read from persisted pipeline output (`scores.z` unsigned, `adju
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-028-AC-01 | `GET /api/v1/residents/R11` (no such resident) returns 404 with `type` `urn:echowell:error:RESIDENT_NOT_FOUND` on the detail, checkins and features paths. | API-075, FR-173 |
-| FEAT-028-AC-02 | With DS-07 loaded, `GET /residents/R09` returns `status` `alarm_on`, `alarm_since` 2026-10-21, `baseline.state` `frozen` with `n_usable` 16, `n_required` 16, `frozen_after_session_id` R09-20261016-01, `first_local_date` 2026-10-01, `frozen_after_local_date` 2026-10-16, `watching_since` 2026-10-17, `current_tally` 26.830256 (±1e-6) and `explanation.still_above_line` true. | AC-API-03, TDV-066, TRD 19 E-09 |
+| FEAT-028-AC-01 | `GET /api/v1/residents/R11` (no such resident) returns 404 with `type` `urn:echowell:error:RESIDENT_NOT_FOUND` on the detail, checkins and features paths. Verified by: Contract (TST-064). | API-075, FR-173 |
+| FEAT-028-AC-02 | With DS-07 loaded, `GET /residents/R09` returns `status` `alarm_on`, `alarm_since` 2026-10-21, `baseline.state` `frozen` with `n_usable` 16, `n_required` 16, `frozen_after_session_id` R09-20261016-01, `first_local_date` 2026-10-01, `frozen_after_local_date` 2026-10-16, `watching_since` 2026-10-17, `current_tally` 26.830256 (±1e-6) and `explanation.still_above_line` true. Verified by: DS-07 values (DS-07 values (FEAT-060, TDV-066): AC-API-03 R09 detail). | AC-API-03, TDV-066, TRD 19 E-09 |
 | FEAT-028-AC-03 | With DS-07 loaded, `GET /residents/R07/checkins` contains a `baseline_restarted` event on 2026-10-13 with `restart_cause` `device`, `previous_device_code` D07, `from_value` D07, `to_value` D07B, and a `baseline_complete` event on 2026-10-28; every other event has the four restart fields null. | API-077, DB-065, E2E-10 |
 | FEAT-028-AC-04 | With DS-07 loaded, `GET /residents/R03/checkins` contains a `set_aside` event on 2026-10-18 with detail "quality flag poor; noise above limit" and a `device_silent` event on 2026-10-12 with detail "all residents on shared device D02 have no record"; `GET /residents/R05/checkins` contains `quarantined` on 2026-10-08 with detail "possible other speaker (F0 z=-8.61; composite features with \|z\|>=3: 4)". | TRD 19 E-10, FR-181, E2E-12 |
-| FEAT-028-AC-05 | With DS-07 loaded, R04's check-in log contains no event for the duplicate arrivals of R04-20261005-01 and R04-20261018-01 and the log contains no event type other than the 8 of `CheckinEventType`. | FR-182, D-67 |
-| FEAT-028-AC-06 | `GET /residents/R09/checkins?from=2026-10-20&to=2026-10-10` returns 422 `INVALID_QUERY_PARAMETER`; a 367-day span returns 422. | API-077, API-093 |
-| FEAT-028-AC-07 | With DS-07 loaded, `GET /residents/R09/features` returns 7 `scored_features` in contract §6 order, the loudness series has `baseline_median` -22.405 and `baseline_robust_spread` 2.14977 (±1e-6), point R09-20261021-01 has `z` -2.737502 (±1e-6), a baseline point has `z` null and `in_baseline` true, and `stored_feature_keys` has the 12 keys from `mean_f0_hz` to `mfcc4`. | API-078, TRD 19 E-11 |
+| FEAT-028-AC-05 | With DS-07 loaded, R04's check-in log contains no event for the duplicate arrivals of R04-20261005-01 and R04-20261018-01 and the log contains no event type other than the 8 of `CheckinEventType`. Verified by: Integration (`tests/integration/api/test_residents.py`). | FR-182, D-67 |
+| FEAT-028-AC-06 | `GET /residents/R09/checkins?from=2026-10-20&to=2026-10-10` returns 422 `INVALID_QUERY_PARAMETER`; a 367-day span returns 422. Verified by: Integration (`tests/integration/api/test_residents.py`). | API-077, API-093 |
+| FEAT-028-AC-07 | With DS-07 loaded, `GET /residents/R09/features` returns 7 `scored_features` in contract §6 order, the loudness series has `baseline_median` -22.405 and `baseline_robust_spread` 2.14977 (±1e-6), point R09-20261021-01 has `z` -2.737502 (±1e-6), a baseline point has `z` null and `in_baseline` true, and `stored_feature_keys` has the 12 keys from `mean_f0_hz` to `mfcc4`. Verified by: Integration (`tests/integration/api/test_residents.py`). | API-078, TRD 19 E-11 |
 | FEAT-028-AC-08 | With DS-07 loaded, `GET /residents/R08` returns `status` `baseline_forming`, `baseline.n_usable` 13, `watching_since` null, `current_tally` 0 or null as stored in `cusum_state`, and `/features` returns 7 series whose points all have `z` null. | FR-163, E2E-11 |
 | FEAT-028-AC-09 | All three responses validate against their TRD 19 schemas and contain `meta`. | TST-061, TST-064 |
 | FEAT-028-AC-10 | With fixture rows that produce `set_aside`, `baseline_restarted` and `watching_started` events on one local date (inserted in that order), `GET /residents/{code}/checkins` returns that date's events as `watching_started`, `baseline_restarted`, `set_aside` (UX-141 order). Verified by: Integration (`tests/integration/api/test_residents.py`, same-date fixture case). | API-077, UX-141 |
 
 ## Definition of Done
 
+- All FEAT-028 acceptance criteria pass.
 - Three endpoints implemented with TRD 19 schemas and reusing the FEAT-027 status function.
 - Integration tests pass; DS-07 criteria pass in the FEAT-060 suite; coverage ≥ 85 % (TST-141); requirement markers present (TST-013).
 - OpenAPI regenerated and unchanged by the drift check (FEAT-038).
-- The open points in Implementation Notes are reported in the batch report (AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

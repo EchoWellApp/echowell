@@ -52,7 +52,7 @@ Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead r
 | FEAT-069-FR-03 | Each card shall show line 1 "<R> · <D>" (600) with the review badge right-aligned and line 2 "Alarm since <Mon D> · open <d> days · tally <x.x>" ("open 1 day" for 1, "opened today" for 0), d = `open_days`, tally = `current_tally` with one decimal. | FR-262, UX-302 |
 | FEAT-069-FR-04 | The badge shall read "Not reviewed" (accent, 600) for `open` without an active reminder; "Not reviewed · reminder <Mon D, h:mm AM/PM>" (secondary, 400) while `snoozed_until` is in the future; "Reviewed" (secondary) for `acknowledged`; when `snoozed_until` passes, the card returns to group 1 with the emphasis without a new API call. | UX-303, FR-261, FE-205 |
 | FEAT-069-FR-05 | Each card shall be a full-card button (min-height 44px) that selects the alarm and sets `?alert=<id>`; the selected card has a 2px ink left border and `aria-current="true"`; with no valid `?alert` the first card is selected. Selecting does not move focus; the panel is an `aria-live="polite"` region announcing "Reviewing <R>, alarm since <Mon D>." | FE-139, UX-304, UX-323, FR-264 |
-| FEAT-069-FR-06 | With no change alarms, Queue 1 shall show its empty text and the panel shall show its empty state (see Implementation Notes for the wording conflict). | UX-305, UX-319, FR-280 |
+| FEAT-069-FR-06 | With no change alarms, Queue 1 shall show its empty text and the panel shall show its empty state ("No change alarms right now." and "No change alarms to review."). | UX-305, UX-319, FR-280 |
 | FEAT-069-FR-07 | The review panel shall start with the heading "<R> · alarm since <Mon D>" (h2) and the link "Open full resident view →" to `/residents/<R>`. | UX-310, FR-264 |
 | FEAT-069-FR-08 | Under the label "Change tally since watching began (alarm line <h>)" the panel shall show `MiniTallyChart` (plot height 90px) with the same rules as the Resident detail chart: grey baseline slot "Baseline <Mon D>–<Mon D>", one bar per scored session of the current epoch, #BDBDB8 with #8A8A85 outline while `off`, #9A4508 when `rings`/`on`, dashed accent line at h, x labels for first and last scored dates, accessible name in the UX-091 form. | UX-311, FR-265, D-30 |
 | FEAT-069-FR-09 | "Leaning most" shall list up to 3 labels from the alert's `leaning_most` keys as lower-cased plain-language labels without the technical name, joined by ", " (R09 "more pauses, quieter, less voiced sound"); with none, "No single measurement stands out." | UX-312, FR-266 |
@@ -79,6 +79,8 @@ Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead r
 Required before implementation (BACKLOG.md): FEAT-064, FEAT-030, FEAT-032, FEAT-067, FEAT-048
 
 - FEAT-064: header, nav, route shell; FEAT-030: `GET /alerts`; FEAT-032: `GET /data-alerts`; FEAT-067: `CusumChart` reused by `MiniTallyChart`; FEAT-048: `leaning_most` values.
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-070.
 
 ## Database Impact
 
@@ -125,22 +127,21 @@ None in the frontend.
 | FEAT-069-AC-01 | As clinician on DS-07, `/alerts` shows nav "Alerts (2)" and the cards "R09 · D09" "Not reviewed" "Alarm since Oct 21 · open 9 days · tally 26.8" then "R10 · D10" "Not reviewed" "Alarm since Oct 24 · open 6 days · tally 13.4". | E2E-17; FR-263; TDV-067 |
 | FEAT-069-AC-02 | Queue 2 shows exactly the four data alerts of TRD 11 §4.17.6 in order (R08, R05, R03, D02 titles and details) with no "▲" and no form. | E2E-17; UX-331; TDV-068 |
 | FEAT-069-AC-03 | Without `?alert`, R09 is selected; the panel shows "R09 · alarm since Oct 21", "Open full resident view →" linking to `/residents/R09`, a mini chart with "Baseline Oct 1–16" and 14 bars (Oct 17–20 grey, Oct 21–30 accent), and "Leaning most" "more pauses, quieter, less voiced sound". | FE-193; UX-330; TDV-069 |
-| FEAT-069-AC-04 | Selecting R10 sets `?alert=<R10 id>`, does not move focus, announces "Reviewing R10, alarm since Oct 24." and shows "more pauses, slower while talking, fewer syllables per second". | UX-304; UX-323; UX-330 |
-| FEAT-069-AC-05 | With fake timers, an open alert whose `snoozed_until` is 1 minute after now is in the snoozed group without the "Not reviewed" emphasis, and after advancing past `snoozed_until` it re-enters the "Not reviewed" group with no new API call. | FE-205; UX-303 |
-| FEAT-069-AC-06 | The page footer reads "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | FR-278; UX-005 |
-| FEAT-069-AC-07 | With an empty alert list, Queue 1 shows its empty text and the panel shows its empty state, and no review form is rendered. | UX-305; UX-319; FR-280 |
+| FEAT-069-AC-04 | Selecting R10 sets `?alert=<R10 id>`, does not move focus, announces "Reviewing R10, alarm since Oct 24." and shows "more pauses, slower while talking, fewer syllables per second". Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | UX-304; UX-323; UX-330 |
+| FEAT-069-AC-05 | With fake timers, an open alert whose `snoozed_until` is 1 minute after now is in the snoozed group without the "Not reviewed" emphasis, and after advancing past `snoozed_until` it re-enters the "Not reviewed" group with no new API call. Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | FE-205; UX-303 |
+| FEAT-069-AC-06 | The page footer reads "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." Verified by: Inspection (the inspection method of FR-278, applied to the condition stated in the criterion). | FR-278; UX-005 |
+| FEAT-069-AC-07 | With an empty alert list, Queue 1 shows its empty text and the panel shows its empty state, and no review form is rendered. Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | UX-305; UX-319; FR-280 |
 
 ## Definition of Done
 
 - All FEAT-069 acceptance criteria pass; component, page and E2E (read-only) tests green.
 - Alert review shows R09 and R10 and the four data alerts with test data (TRD 25 Phase 8 DoD).
-- Batch report lists IDs and the TRD conflicts below (AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 
 - Columns stack below 1024px (UX-246, the TRD 04 FE-165 tablet breakpoint); TRD 02 FR-260 was aligned in the PR #2 consistency fixes.
 - With no open alarm, Queue 1 reads "No change alarms right now." (UX-305) and the panel "No change alarms to review." (UX-319, FE-139); TRD 02 FR-280 was aligned in the PR #2 consistency fixes.
-- FR-266 writes the empty Leaning-most text without a final period, UX-312 with one ("No single measurement stands out."); use the UX-312 string from `lib/wording.ts`.
 - The queue order is defined once in FR-261; compute the snoozed group client-side from `snoozed_until` vs the current time, because the API exposes only `snoozed_until` (TST-065 note).
 - Lower-case the TRD 11 §4.5.4 labels for Leaning most ("Quieter" → "quieter").
 - E-13 accepts a single `status` value; as TRD 02 UC-13 describes, call `getAlerts({ status: "open" })` and `getAlerts({ status: "acknowledged" })` (the open call also feeds the nav count, FE-036) and merge them for Queue 1.

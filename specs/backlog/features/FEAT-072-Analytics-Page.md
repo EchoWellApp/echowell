@@ -81,6 +81,8 @@ Required before implementation (BACKLOG.md): FEAT-064, FEAT-051
 - FEAT-064 provides the header, nav visibility and access-denied state.
 - FEAT-051 provides the `kpis`, `daily_series`, `funnel`, `by_resident` blocks (FEAT-035, through FEAT-051, provides the rest of E-18).
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
+
 ## Database Impact
 
 None (frontend only).
@@ -135,7 +137,7 @@ None in the frontend; the backend writes `export.csv` audit rows for CSV downloa
 
 - All FEAT-072 acceptance criteria pass; component, page and E2E tests green.
 - Analytics shows 281 of 300 (94 %), 267 of 300 (89 %), 9 of 10, 2 and the timing table (TRD 25 Phase 8 DoD).
-- Batch report lists IDs and the conflict below (AGT-022).
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

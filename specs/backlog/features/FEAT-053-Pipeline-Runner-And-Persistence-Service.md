@@ -100,6 +100,8 @@ Required before implementation (BACKLOG.md): FEAT-052, FEAT-024, FEAT-013
 - FEAT-024 provides the service interface, run endpoints and as-of resolution this feature fills.
 - FEAT-013 provides the connection layer, `advisory_key` helper and indexes.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-054, FEAT-055, FEAT-056.
+
 ## Database Impact
 
 - Tables written: `pipeline_runs` (insert, update), `processed_sessions`, `scores`, `cusum_state`, `day_ledger` (delete + insert per resident), `epochs` (upsert, conditional delete), `baselines` (insert only), `alerts` (insert, update of status/closed_reason/closed_at only), `data_alerts` (insert, update, resolve), `residents` (`cohort`), `audit_logs` (insert).
@@ -163,10 +165,10 @@ None directly. Pages show what the runner persisted; the `/admin` "Pipeline runs
 | FEAT-053-AC-01 | After a full `test_v0_1` run on SRC-05 at as-of 2026-10-30 15:00 America/Chicago, `pipeline_runs.counts` = 283/267/12/2/2/17/2/0/98/2/0/10 and `config_snapshot` contains the 23 keys, `config_hash` and `as_of`. | AC-ANL-09; DB-020; TST-051 |
 | FEAT-053-AC-02 | Two consecutive full runs leave every derived table identical except `id`, `created_at`, `updated_at`, `pipeline_run_id`; alert, epoch and ledger row counts are unchanged. | TST-050; DB-019; AGT-056 |
 | FEAT-053-AC-03 | A full rebuild with an R09 alert that has a saved review and a snooze keeps the alert id, its `alert_reviews` rows, `status = acknowledged` and `snoozed_until`. | AC-ANL-11; TST-067 |
-| FEAT-053-AC-04 | A deliberately failing write for R05 leaves R05's previously persisted derived rows unchanged, updates the other residents, and ends the run `failed` with an `exception` warning and an `error_message` naming R05. | AC-ANL-08; DB-013 |
-| FEAT-053-AC-05 | After the SRC-05 run, `alerts` holds exactly R09 (R09-20261021-01) and R10 (R10-20261024-01), both `open`, and `data_alerts` holds exactly the four open rows R08 baseline_stalled, R05 possible_other_speaker, R03 high_set_aside, D02 device_silent with `first_detected_at` = 2026-10-30T20:00:00Z. | CUS-028; DB-036 |
-| FEAT-053-AC-06 | As `echowell_app`, `SELECT * FROM evaluation_ground_truth` fails with a permission error, and a static scan of `backend/services/pipeline_runner.py` finds no reference to it. | AC-ANL-14; TDV-101 |
-| FEAT-053-AC-07 | Inserting a late record dated inside R01's baseline window and re-running leaves R01's `baselines` rows byte-identical and adds a `late_arrival` warning. | DB-016; AC-ANL-05 |
+| FEAT-053-AC-04 | A deliberately failing write for R05 leaves R05's previously persisted derived rows unchanged, updates the other residents, and ends the run `failed` with an `exception` warning and an `error_message` naming R05. Verified by: Integration (`tests/integration/pipeline/`, `tests/integration/test_rebuild_idempotent.py`; TST-002, TST-051, TST-050). | AC-ANL-08; DB-013 |
+| FEAT-053-AC-05 | After the SRC-05 run, `alerts` holds exactly R09 (R09-20261021-01) and R10 (R10-20261024-01), both `open`, and `data_alerts` holds exactly the four open rows R08 baseline_stalled, R05 possible_other_speaker, R03 high_set_aside, D02 device_silent with `first_detected_at` = 2026-10-30T20:00:00Z. Verified by: Integration (`tests/integration/pipeline/`, `tests/integration/test_rebuild_idempotent.py`; TST-002, TST-051, TST-050). | CUS-028; DB-036 |
+| FEAT-053-AC-06 | As `echowell_app`, `SELECT * FROM evaluation_ground_truth` fails with a permission error, and a static scan of `backend/services/pipeline_runner.py` finds no reference to it. Verified by: Grant test (TST-041). | AC-ANL-14; TDV-101 |
+| FEAT-053-AC-07 | Inserting a late record dated inside R01's baseline window and re-running leaves R01's `baselines` rows byte-identical and adds a `late_arrival` warning. Verified by: Integration (`tests/integration/pipeline/`, `tests/integration/test_rebuild_idempotent.py`; TST-002, TST-051, TST-050). | DB-016; AC-ANL-05 |
 | FEAT-053-AC-08 | The N01 fixture moves from `new_admission` to `longitudinal` in the run that freezes its baseline, with one `resident.cohort_changed` audit row. | TST-185; DB-025 |
 
 ## Definition of Done

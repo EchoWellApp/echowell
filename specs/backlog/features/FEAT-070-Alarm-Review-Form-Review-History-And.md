@@ -82,6 +82,8 @@ Required before implementation (BACKLOG.md): FEAT-069, FEAT-031
 - FEAT-069 provides the `/alerts` page, queue and panel frame into which the form is placed.
 - FEAT-031 provides the review, review-list and snooze endpoints.
 
+Features that build directly on this one (BACKLOG.md §4): FEAT-071, FEAT-075.
+
 ## Database Impact
 
 None directly. The backend writes `alert_reviews`, updates `alerts.status`/`snoozed_until`/`snoozed_by`, may create a `review_flagged_data_problem` data alert, and writes audit rows `alert.reviewed` / `alert.snoozed` (FEAT-031).
@@ -126,11 +128,11 @@ None in the frontend. Audit rows `alert.reviewed` and `alert.snoozed` are writte
 |---|---|---|
 | FEAT-070-AC-01 | Clicking "Save review" without an outcome shows "Choose a review outcome.", moves focus to the first radio and sends no request. | E2E-18; UX-316 |
 | FEAT-070-AC-02 | Saving R09 with "Checked on resident, no concern" announces "Review saved.", the R09 card shows "Reviewed", the nav shows "Alerts (1)", and the tally still reads 26.8. | E2E-18; TDV-076; AC-UX-11 |
-| FEAT-070-AC-03 | The checklist shows the five labels in the `GET /config/ui` order with the OQ-25 hint, and the request body contains the checked codes (e.g. `["cold_cough_sore_throat"]`). | FE-136; FE-137; UX-313 |
+| FEAT-070-AC-03 | The checklist shows the five labels in the `GET /config/ui` order with the OQ-25 hint, and the request body contains the checked codes (e.g. `["cold_cough_sore_throat"]`). Verified by: Component (`components/AlertReviewForm/AlertReviewForm.test.tsx`; TST-090). | FE-136; FE-137; UX-313 |
 | FEAT-070-AC-04 | "Remind me in 24 h" on R10 sends `POST /api/v1/alerts/{id}/snooze` with `{}`, creates no review, and the R10 badge changes to "Not reviewed · reminder <Mon D, h:mm AM/PM>". | FE-193; FE-138; UX-303 |
 | FEAT-070-AC-05 | As researcher on `/alerts`, the form is replaced by "Only clinicians and admins can review alarms." while chart, Leaning most and Previous reviews remain; a direct review POST returns 403. | E2E-21; UX-322 |
-| FEAT-070-AC-06 | After two reviews on the same alarm, "Previous reviews" lists both newest first with time, reviewer and outcome label. | UX-320; FR-272 |
-| FEAT-070-AC-07 | The panel ends with the UX-321 open-questions note. | UX-321; FR-277 |
+| FEAT-070-AC-06 | After two reviews on the same alarm, "Previous reviews" lists both newest first with time, reviewer and outcome label. Verified by: Component (`components/AlertReviewForm/AlertReviewForm.test.tsx`; TST-090). | UX-320; FR-272 |
+| FEAT-070-AC-07 | The panel ends with the UX-321 open-questions note. Verified by: Inspection (the inspection method of FR-277, applied to the condition stated in the criterion). | UX-321; FR-277 |
 
 ## Definition of Done
 

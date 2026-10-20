@@ -78,7 +78,8 @@ Required before implementation (BACKLOG.md): FEAT-049, FEAT-048
 
 - FEAT-049 (Day ledger): missing-day statuses and assignment resolution for device-days.
 - FEAT-048 (Alert generation): epoch summaries and alert facts produced before stage 11 (ordering per ANL-006; data alerts must not alter them).
-- Downstream: FEAT-051, FEAT-052, FEAT-053, FEAT-032 (reads persisted rows).
+
+Features that build directly on this one (BACKLOG.md §4): FEAT-051, FEAT-052.
 
 ## Database Impact
 
@@ -124,14 +125,15 @@ None in `analytics/` (LOG-006); the runner logs `data_alerts_updated` with count
 | FEAT-050-AC-02 | Two quarantined sessions on Oct 8 and Oct 22 give "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22"; one session gives "1 check-in quarantined: <Mon D>". | DA-03, CUS-043 |
 | FEAT-050-AC-03 | 7 set aside of 29 received with reasons noise, quality flag, too short gives "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short"; 2 of 9 gives no alert; a resident qualifying for both baseline_stalled and high_set_aside gets only baseline_stalled. | DA-04..DA-06, FR-293, FR-295 |
 | FEAT-050-AC-04 | Shared device D02 with no record from R02 or R03 on Oct 12 gives "D02 · device silent all day" / "Oct 12 · affects R02 and R03"; a single-resident device with non-consecutive silent days gives none, with 2 consecutive silent days one; a device with no assigned resident gives none. | DA-07..DA-10, FR-294 |
-| FEAT-050-AC-05 | On SRC-05 the output is exactly the four alerts of FEAT-050-FR-09 in that order and no other. | CUS-044, FR-301, AC-ANL-10 |
-| FEAT-050-AC-06 | Changing `data_alert_set_aside_fraction` in the config changes the high_set_aside result without changing `config_hash()`, and no `DataAlert` input or output touches tallies or alarm states. | CUS-046, D-56, FR-300 |
+| FEAT-050-AC-05 | On SRC-05 the output is exactly the four alerts of FEAT-050-FR-09 in that order and no other. Verified by: Validation and API (Validation and API (FEAT-059, FEAT-060): AC-ANL-10 data-alert list, AC-CUS-09, TDV-068). | CUS-044, FR-301, AC-ANL-10 |
+| FEAT-050-AC-06 | Changing `data_alert_set_aside_fraction` in the config changes the high_set_aside result without changing `config_hash()`, and no `DataAlert` input or output touches tallies or alarm states. Verified by: Unit (`tests/unit/analytics/test_data_alerts.py`; DA-01, DA-10). | CUS-046, D-56, FR-300 |
 
 ## Definition of Done
 
+- All FEAT-050 acceptance criteria pass.
 - `generate_data_alerts` implemented with the binding signature; DA-01..DA-10 pass (TST-020); test file exists (TST-011).
 - DA-11 passes with FEAT-053; FEAT-050-AC-05 passes in the validation suite; TDV-068 passes in FEAT-060.
-- The text conflict below recorded in the batch report.
+- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes
 

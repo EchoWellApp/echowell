@@ -102,7 +102,7 @@ Required before implementation (BACKLOG.md): FEAT-018, FEAT-014
 - FEAT-018 provides the request-ID context included in every Problem body and the `X-Request-ID` header exposed by CORS.
 - FEAT-014 provides the repositories used by `get_meta()` (facility row, latest succeeded run, profile parameters).
 
-Features that build directly on this one: FEAT-020, FEAT-023, and every endpoint feature.
+Features that build directly on this one (BACKLOG.md §4): FEAT-020, FEAT-023.
 
 ## Database Impact
 
@@ -152,15 +152,15 @@ This feature is the error handling layer. Mapping summary: validation → 422 `V
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-019-AC-01 | A forced exception returns 500 with `Content-Type: application/problem+json`, `type` `urn:echowell:error:INTERNAL_ERROR`, `detail` "An unexpected error occurred.", a `request_id` equal to the `X-Request-ID` header, and no stack trace or exception text. | AC-LOG-08, API-096, LOG-042 |
-| FEAT-019-AC-02 | A request to an unknown path returns 404 `NOT_FOUND` and a wrong method 405 `METHOD_NOT_ALLOWED`, both as Problem bodies with `errors: []`. | API-095, LOG-040 |
-| FEAT-019-AC-03 | A body with an unknown property returns 422 `VALIDATION_ERROR` with an `errors[]` item whose `code` is `extra_forbidden` and which contains no `input` key. | SEC-080, LOG-043 |
-| FEAT-019-AC-04 | With the database stopped, a read endpoint returns 503 `SERVICE_UNAVAILABLE` with `Retry-After: 30`. | API-097 |
-| FEAT-019-AC-05 | A 65,537-byte JSON body to any endpoint other than `/ingest` returns 413 `PAYLOAD_TOO_LARGE`; a `Content-Type: audio/wav` request returns 415 `UNSUPPORTED_MEDIA_TYPE`. | API-104, SEC-081, SEC-082 |
+| FEAT-019-AC-01 | A forced exception returns 500 with `Content-Type: application/problem+json`, `type` `urn:echowell:error:INTERNAL_ERROR`, `detail` "An unexpected error occurred.", a `request_id` equal to the `X-Request-ID` header, and no stack trace or exception text. Verified by: Integration (AC-LOG-08 (forced 500 returns Problem with `INTERNAL_ERROR`, no stack trace, `request_id`)). | AC-LOG-08, API-096, LOG-042 |
+| FEAT-019-AC-02 | A request to an unknown path returns 404 `NOT_FOUND` and a wrong method 405 `METHOD_NOT_ALLOWED`, both as Problem bodies with `errors: []`. Verified by: Unit (`tests/unit/backend/core/test_errors.py`; TST-034). | API-095, LOG-040 |
+| FEAT-019-AC-03 | A body with an unknown property returns 422 `VALIDATION_ERROR` with an `errors[]` item whose `code` is `extra_forbidden` and which contains no `input` key. Verified by: Integration (`tests/integration/api/test_http_middleware.py`). | SEC-080, LOG-043 |
+| FEAT-019-AC-04 | With the database stopped, a read endpoint returns 503 `SERVICE_UNAVAILABLE` with `Retry-After: 30`. Verified by: Unit (`tests/unit/backend/core/test_errors.py`). | API-097 |
+| FEAT-019-AC-05 | A 65,537-byte JSON body to any endpoint other than `/ingest` returns 413 `PAYLOAD_TOO_LARGE`; a `Content-Type: audio/wav` request returns 415 `UNSUPPORTED_MEDIA_TYPE`. Verified by: Integration (`tests/integration/api/test_http_middleware.py`; TST-133). | API-104, SEC-081, SEC-082 |
 | FEAT-019-AC-06 | A preflight from an origin in `CORS_ORIGINS` gets `Access-Control-Allow-Origin` equal to that origin and `Access-Control-Expose-Headers` including `X-Request-ID`; an origin not listed gets no `Access-Control-Allow-Origin`. | API-101, SEC-094, LOG-035, TST-134 |
-| FEAT-019-AC-07 | Every response carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`; with `APP_ENV=staging` it also carries `Strict-Transport-Security: max-age=31536000; includeSubDomains`. | API-106 |
-| FEAT-019-AC-08 | With one succeeded run whose `as_of` is 2026-10-30T20:00:00Z under `test_v0_1`, `get_meta()` returns `as_of` "2026-10-30T20:00:00Z", `baseline_n` 16, `cusum_h` 5.0, `pipeline_profile` "test_v0_1", `facility_name` "Edgewood". | API-057, API-069, FR-332, FR-333 |
-| FEAT-019-AC-09 | A query with `from=2026-10-20&to=2026-10-10` returns 422 `INVALID_QUERY_PARAMETER`. | API-093 |
+| FEAT-019-AC-07 | Every response carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`; with `APP_ENV=staging` it also carries `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Verified by: Integration (`tests/integration/api/test_http_middleware.py`; TST-134). | API-106 |
+| FEAT-019-AC-08 | With one succeeded run whose `as_of` is 2026-10-30T20:00:00Z under `test_v0_1`, `get_meta()` returns `as_of` "2026-10-30T20:00:00Z", `baseline_n` 16, `cusum_h` 5.0, `pipeline_profile` "test_v0_1", `facility_name` "Edgewood". Verified by: Unit (`get_meta()` returns NULL `as_of` with no succeeded run and the latest succeeded run's `as_of` otherwise). | API-057, API-069, FR-332, FR-333 |
+| FEAT-019-AC-09 | A query with `from=2026-10-20&to=2026-10-10` returns 422 `INVALID_QUERY_PARAMETER`. Verified by: Unit (`tests/unit/backend/core/test_errors.py`; TST-034). | API-093 |
 
 ## Definition of Done
 

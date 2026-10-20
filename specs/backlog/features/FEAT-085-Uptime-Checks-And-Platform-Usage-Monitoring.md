@@ -77,6 +77,8 @@ Required before implementation (BACKLOG.md): FEAT-081, FEAT-082
 - [FEAT-081](FEAT-081-Railway-Backend-And-Nightly-Cron-Services.md) Railway backend configuration (health endpoint host, usage limit).
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify frontend configuration (`/login` host, build minutes).
 
+Features that build directly on this one (BACKLOG.md §4): none.
+
 ## Database Impact
 
 None. Health checks run `SELECT 1` inside the backend (LOG-071) but this feature adds no table or query.
@@ -119,11 +121,11 @@ None.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-085-AC-01 | `uptime.yml` has `schedule: cron "*/30 * * * *"` and `workflow_dispatch`, and no schedule with a shorter interval. | CIC-060, CIC-061 |
-| FEAT-085-AC-02 | A dispatched run against a failing URL retries once after 60 s and then opens (or comments on) an issue titled "Uptime check failing" with label `incident`. | CIC-060 |
-| FEAT-085-AC-03 | `grep -n "secrets\." .github/workflows/uptime.yml` returns nothing. | CIC-090 |
-| FEAT-085-AC-04 | `docs/deployment.md` records owner, admins, plan, verified limits and verification date for Netlify, Railway and Neon, the Railway USD 20 hard limit with USD 10 alert, the weekly usage check and the DEP-102 fallback order. | TPS-006, TPS-007, TPS-021, DEP-101, DEP-102 |
-| FEAT-085-AC-05 | At least two team members are listed as watchers of `incident` issues in the runbook. | LOG-114 |
+| FEAT-085-AC-01 | `uptime.yml` has `schedule: cron "*/30 * * * *"` and `workflow_dispatch`, and no schedule with a shorter interval. Verified by: Inspection (schedule expression `*/30 * * * *` (CIC-061)). | CIC-060, CIC-061 |
+| FEAT-085-AC-02 | A dispatched run against a failing URL retries once after 60 s and then opens (or comments on) an issue titled "Uptime check failing" with label `incident`. Verified by: Negative test (dispatch with a temporary variable pointing to a non-existent path, observe one retry and the `incident` issue, then restore the variable and close the issue). | CIC-060 |
+| FEAT-085-AC-03 | `grep -n "secrets\." .github/workflows/uptime.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-090 |
+| FEAT-085-AC-04 | `docs/deployment.md` records owner, admins, plan, verified limits and verification date for Netlify, Railway and Neon, the Railway USD 20 hard limit with USD 10 alert, the weekly usage check and the DEP-102 fallback order. Verified by: Inspection (the inspection method of DEP-101, applied to the condition stated in the criterion). | TPS-006, TPS-007, TPS-021, DEP-101, DEP-102 |
+| FEAT-085-AC-05 | At least two team members are listed as watchers of `incident` issues in the runbook. Verified by: Negative test (dispatch with a temporary variable pointing to a non-existent path, observe one retry and the `incident` issue, then restore the variable and close the issue). | LOG-114 |
 
 ## Definition of Done
 
