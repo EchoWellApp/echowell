@@ -38,7 +38,7 @@ Create the first working `.github/workflows/ci.yml` so that every pull request f
 ## Out of Scope
 
 - Jobs `repo-hygiene`, `openapi-contract`, `security-audit`, `docker-build`, the coverage-gate steps (CIC-016), the `--validation-report` option, branch protection (CIC-070) and E2E/performance workflows (FEAT-078, FEAT-080).
-- The provisioning-script and migration round-trip steps of `backend-test` (CIC-015): they are added when FEAT-008 delivers `database/roles/provision_login_roles.sql` and `alembic.ini` (Phase 4 PR updates `ci.yml` accordingly; the full form is audited in FEAT-078).
+- The migration round-trip step of `backend-test` (CIC-015): it is added when FEAT-008 delivers the migrations (Phase 4 PR updates `ci.yml`; the full form is audited in FEAT-078). The provisioning step can run from Phase 3, because FEAT-006 delivers `database/roles/provision_login_roles.sql` and `alembic.ini` in Phase 3 (TRD 24 D-90); this job set is the Phase 3 state of `ci.yml` fixed by D-94.
 - Deploy workflows (FEAT-086).
 
 ## Functional Requirements

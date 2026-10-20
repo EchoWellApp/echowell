@@ -29,7 +29,7 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 - TRD 07 §4.7 `OperationalConfig` (`alert_snooze_hours`, `review_explanations`); TRD 21 ENV-020 (config keys, not env vars).
 - TRD 23 §4.2.17 (alerts), §4.4.1 (open days, alert tally, reviewed badge).
 - TRD 14 TDV-067; TRD 19 OAS-027; AC-API-14 (alerts half).
-- TRD 24 D-05 (dashboard only), D-64 (`GET /config/ui`); BACKLOG §12 Q-02 (phase split of `leaning_most`).
+- TRD 24 D-05 (dashboard only), D-64 (`GET /config/ui`); D-92 (phase split of `leaning_most`), D-79 (read-side call of `alert_generator.leaning_most`).
 
 ## Scope
 
@@ -40,7 +40,7 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 
 ## Out of Scope
 
-- Computing `leaning_most` values: owned by `analytics/alert_generator.leaning_most` and wired into this endpoint by FEAT-048 (Phase 6, BACKLOG §12 Q-02).
+- Computing `leaning_most` values: owned by `analytics/alert_generator.leaning_most` and wired into this endpoint by FEAT-048 (Phase 6, TRD 24 D-92).
 - Creating, closing or reconciling alerts (pipeline, FEAT-048 and FEAT-053); reviews and snooze (FEAT-031); data alerts (FEAT-032).
 - The queue's three-group ordering (not reviewed and not snoozed, snoozed, reviewed) and card texts, which the frontend applies (FR-261, FEAT-069).
 - Any SMS, e-mail or push channel (FR-109, OQ-06).
@@ -52,7 +52,7 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 | FEAT-030-FR-01 | `GET /api/v1/alerts` shall accept optional `status` ∈ {open, acknowledged, closed} and `resident_code` plus `limit`/`offset`; any other value returns 422 `INVALID_QUERY_PARAMETER`. | API-080; TRD 19 E-13; FR-108 |
 | FEAT-030-FR-02 | Items shall be ordered by `triggered_at` ascending and returned in the `AlertList` envelope with `meta`; `total` of `?status=open` is the nav count "Alerts (<n>)" (data alerts are never counted). | API-080, CUS-025, CUS-022; TRD 19 E-13 |
 | FEAT-030-FR-03 | Each `Alert` shall carry `id`, `resident_code`, `device_code` (device of the alert's epoch), `epoch_number`, `session_id`, `triggered_at`, `local_date`, `cusum_value`, `current_tally` (= `cusum_state.current_tally` of the alert's epoch), `open_days` (= as-of local date − `local_date` in days), `status`, `reviewed` (true when status is `acknowledged`), `review_count` and `last_reviewed_at` (from `alert_reviews`), `snoozed_until`, `snoozed_by`, `leaning_most` and `closed_reason`. | API-080, CUS-025; TRD 23 §4.4.1; FR-262 |
-| FEAT-030-FR-04 | `leaning_most` shall always be present as an array of at most 3 `ScoredFeatureKey` values; its values are supplied by the `leaning_most` provider delivered in FEAT-048 (an empty list when no feature has a positive mean, CUS-041). | API-080, CUS-041; BACKLOG §12 Q-02 |
+| FEAT-030-FR-04 | `leaning_most` shall always be present as an array of at most 3 `ScoredFeatureKey` values; its values are supplied by the `leaning_most` provider delivered in FEAT-048 (an empty list when no feature has a positive mean, CUS-041). | API-080, CUS-041; D-92 |
 | FEAT-030-FR-05 | Alerts shall be surfaced only through the authenticated API and dashboard; no code path in this feature shall send e-mail, SMS or push messages. | FR-109, CUS-022, D-05 |
 | FEAT-030-FR-06 | `GET /api/v1/config/ui` (all user roles) shall return `UiConfig` `{meta, alert_snooze_hours, review_explanations}` read from the `config_parameters` rows of the active profile on every request, with `review_explanations` as `{code, label}` items in configured order. | API-137; TRD 19 E-32; TRD 07 §4.7; ENV-020 |
 | FEAT-030-FR-07 | API responses shall return facts only; wording such as "Alarm since", "open <n> days" and the tally to 1 decimal is rendered by the frontend. | CUS-026, OAS-011 |
@@ -146,6 +146,6 @@ None in this feature. `leaning_most` is computed by `analytics.alert_generator.l
 
 - `backend/api/alarms.py` is the existing skeleton file that serves `/api/v1/alerts`; do not rename it (AGT-010, API-008). `backend/models/alarm.py` holds the Alert model.
 - Use one SQL query with the `alert_reviews` aggregate as a lateral or grouped subquery; avoid N+1 queries.
-- Keep `leaning_most` behind a small provider function in `alert_service` so FEAT-048 only replaces that function; until FEAT-048 is merged the provider yields an empty list (BACKLOG §12 Q-02 interim plan), and no acceptance criterion of this feature asserts its values.
+- Keep `leaning_most` behind a small provider function in `alert_service` so FEAT-048 only replaces that function; until FEAT-048 is merged the provider yields an empty list (TRD 24 D-92), and no acceptance criterion of this feature asserts its values.
 - `open_days` uses facility-local dates of the as-of and the alert, not UTC dates.
 - `current_tally` is shown to 1 decimal only in the UI; the API returns full float64 (OAS-011).

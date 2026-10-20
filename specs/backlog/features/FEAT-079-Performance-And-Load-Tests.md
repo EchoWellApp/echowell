@@ -45,7 +45,7 @@ Verify the contract R8 performance budgets automatically: generate the determini
 - The `e2e.yml` jobs that schedule these tests (`performance`, `lighthouse`; FEAT-080) and the `backend-test` wiring of the `budget` marker (FEAT-078).
 - Correctness claims on DS-08 (performance only, TRD 14 DS-08 row).
 - Load beyond ASM-08 (NFR-153: treated as a design change, not a defect).
-- External load tools: TRD 03 NFR-001 names "k6 or Locust" as examples, TRD 13 fixes pytest with `time.perf_counter`; this feature uses the TRD 13 tooling.
+- External load tools: none; NFR-001 is verified by TST-122 with pytest and `time.perf_counter` (TRD 03 NFR-001 aligned, TRD 24 D-98).
 
 ## Functional Requirements
 
@@ -60,10 +60,12 @@ Verify the contract R8 performance budgets automatically: generate the determini
 | FEAT-079-FR-07 | A full rebuild of SRC-05 including database writes shall complete in ≤ 30 s. | API-124, NFR-006 |
 | FEAT-079-FR-08 | `GET /api/v1/health` p95 latency shall be ≤ 200 ms. | API-120 |
 | FEAT-079-FR-09 | PR runs shall execute TST-120, TST-121 with 50 requests and TST-124; TST-121 with 200 requests, TST-122 and TST-123 run nightly. | TST-126 |
-| FEAT-079-FR-10 | Lighthouse CI (desktop preset) on `/residents` of the seeded Compose `demo` stack built from the PR shall report Performance ≥ 80 and LCP ≤ 2.5 s, after a scripted login. | TST-125, NFR-010, CIC-116 |
+| FEAT-079-FR-10 | Lighthouse CI (desktop preset) on `/residents`, `/residents/R09`, `/alerts` and `/analytics` of the seeded Compose `demo` stack built from the PR shall report for each page Performance ≥ 80 and LCP ≤ 2.5 s, after a scripted admin login. | TST-125, NFR-010, CIC-116 |
 | FEAT-079-FR-11 | The performance suite shall write `build/performance.json` with the measured p95 per budget and fail when any budget is exceeded. | CIC-035, TRD 16 §4.10 |
 | FEAT-079-FR-12 | DS-08 and test fixture data shall never be loaded into a database that holds real records. | TDV-007 |
 | FEAT-079-FR-13 | The nightly run shall record the DS-08 database size so the NFR-152 projection (100 residents × 3 years ≤ 2 GB) can be computed from it. | NFR-152, DB-049 |
+| FEAT-079-FR-14 | `tests/performance/test_ingest_sustained.py` shall send valid records to `POST /api/v1/sessions` with one API key at a sustained 10 records/s for 60 s and assert that every response is 201 or 200 (no 429, no 5xx); it runs nightly. | TST-190, NFR-151, CIC-035 |
+| FEAT-079-FR-15 | `npm run check:bundle`, run in the `frontend` CI job after `npm run build`, shall fail when the initial JavaScript (gzip) of any dashboard route exceeds 300 KB. | TST-191, NFR-012 |
 
 ## Inputs
 
@@ -143,7 +145,7 @@ Required before implementation (BACKLOG.md): FEAT-054, FEAT-077
 
 ## Definition of Done
 
-- All FEAT-079 acceptance criteria pass locally against `postgres:16`; test modules carry exactly one level marker (TST-006).
+- All FEAT-079 acceptance criteria pass locally against `postgres:16-alpine`; test modules carry exactly one level marker (TST-006).
 - `build/performance.json` format documented in the module docstring.
 - Batch report lists measured p95 values (AGT-022).
 
@@ -152,4 +154,4 @@ Required before implementation (BACKLOG.md): FEAT-054, FEAT-077
 - Use one session-scoped PostgreSQL container and load DS-08 once per session; keep DS-08 in a temporary directory.
 - Measure p95 with `statistics.quantiles(samples, n=100)[94]` over the sample list; report milliseconds.
 - TST-121 needs a resident with 120 days of history: pre-load 119 records for that resident, then time the POSTs with fresh session IDs and increasing timestamps.
-- TRD gaps to note in the batch report: NFR-151 (10 records/s for 60 s) and NFR-012 (≤ 300 KB initial JavaScript) have no TRD 13 test ID; NFR-010 names four pages while TST-125 audits only `/residents`; TST-120 and ANL-047 say `ubuntu-latest` while CIC-027 fixes `ubuntu-24.04` (use `ubuntu-24.04`).
+- Resolved in the PR #2 consistency fixes (TRD 24 D-98): NFR-151 and NFR-012 are verified by TRD 13 TST-190 and TST-191; TST-125 and CIC-116 cover the four NFR-010 pages; TST-120 and ANL-047 use `ubuntu-24.04` (CIC-027).

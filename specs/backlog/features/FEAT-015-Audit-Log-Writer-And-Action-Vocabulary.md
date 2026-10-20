@@ -50,7 +50,7 @@ Provide the single audit writer, `backend/services/audit.py` (`audit_service`), 
 | ID | Requirement | Trace |
 |---|---|---|
 | FEAT-015-FR-01 | Each audited event shall write exactly one `audit_logs` row with `occurred_at` (UTC, database default), `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `details`, `ip`, `request_id`. | SEC-100, FR-251 |
-| FEAT-015-FR-02 | The audit row shall be inserted in the same database transaction as the change it records; a rolled-back change leaves no audit row, and a failed audit insert fails the action. | SEC-101, DB-011, LOG-090 |
+| FEAT-015-FR-02 | The audit row shall be inserted in the same database transaction as the change it records; a rolled-back change leaves no audit row, and a failed audit insert fails the action. The writer shall also offer a committed-separately mode used only for refused-request rows that accompany no change (`auth.login.failed`, `access.denied`; TRD 12 SEC-101, TRD 24 D-87). | SEC-101, DB-011, LOG-090 |
 | FEAT-015-FR-03 | `action` shall be one of the 24 values of TRD 12 §4.12; the writer shall reject an unlisted action before the insert, and every listed action shall pass `audit_logs_action_ck`. | SEC-109, PGS-044 |
 | FEAT-015-FR-04 | `details` shall never contain passwords, password hashes, tokens, API keys, `DATABASE_URL`, ingest request bodies or feature values; note bodies and review note text are never included. | SEC-104, FR-251, TRD 12 §4.12 |
 | FEAT-015-FR-05 | CLI actions (create-user, create-api-key, revoke-api-key, set-config, rebuild and the other system actions of §4.12 run from the CLI) shall be recorded with `actor_type = 'system'` and `details.operator` = the OS user name. | SEC-103 |

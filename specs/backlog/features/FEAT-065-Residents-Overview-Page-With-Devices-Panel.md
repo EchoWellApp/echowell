@@ -150,6 +150,6 @@ None in the frontend.
 
 - Do not compute the overview order client-side; capture fixtures per sort value (TRD 04 §8).
 - Natural sort of device codes inside `compressDeviceCodes()` (D07 before D07B; runs only for codes without suffix) (FE-102, AGT-052).
-- TRD conflict: FR-150 says the Devices panel has a header nav "Devices"; the navigation link is retired (FE-026, UX-016, contract §20 R2). Keep only the `#devices` anchor.
-- FR-134 states "(was <old>)" applies after a device change in the current epoch, while TRD 11 §5 notes it applies when the replacement happened within the last 30 days; render "(was …)" whenever the API returns `previous_device_code` so the rule lives in the backend (FEAT-027).
+- The Devices navigation link is retired (FE-026, UX-016, contract §20 R2; TRD 02 FR-150 aligned in the PR #2 consistency fixes). Keep only the `#devices` anchor.
+- "(was <old>)" follows the single rule of TRD 23 §4.4.1 (previous assignment ended the day before the current one started), now cited by TRD 02 FR-134 and TRD 11 §8; render "(was …)" whenever the API returns `previous_device_code`, so the rule lives in the backend (FEAT-027).
 - "Last check-in" counts set-aside and quarantined records but never duplicates (TRD 11 §8).

@@ -138,6 +138,6 @@ None: silent and device-gap days are read-model derivations over the persisted d
 ## Implementation Notes
 
 - Natural sort key for device codes: prefix letters, integer part, then the remaining suffix (D07 < D07B < D08).
-- TRD 23 §4.4.2 does not define `in_use_since` in words; the earliest `valid_from` rule above reproduces every TRD 19 E-17 example value (D02 2026-10-01, D07 2026-10-01, D07B 2026-10-13). Note this in the batch report.
+- `in_use_since` = earliest `valid_from` of the device's assignments is now stated in TRD 06 DB-066 and TRD 23 §4.4.2 (TRD 24 D-82); it reproduces every TRD 19 E-17 example value (D02 2026-10-01, D07 2026-10-01, D07B 2026-10-13).
 - FR-150 says the panel lists every active device; the API returns all devices including retired ones with `active` false (API-086 test values require D07), and the frontend decides what to show.
 - Compute everything with grouped queries over the window (no per-device loops of queries) to stay inside the 500 ms budget on DS-08.

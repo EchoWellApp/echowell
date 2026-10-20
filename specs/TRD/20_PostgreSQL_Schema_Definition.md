@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -81,7 +81,7 @@ Out of scope:
 | PGS-024 | Migration `0002_seed_config_parameters` shall insert the 46 rows of section 4.11 (23 keys × 2 profiles: the 16 keys of contract §7, the 5 keys of contract §19/§20 R17 and the 2 ingest keys `supported_schema_versions`, `feature_name_map` of TRD 10) with exactly the listed JSON values. | Must | SRC-03 Parameters, D-OWNER-2, contract §19 | Test (`SELECT count(*) … GROUP BY profile` = 23 each; values equal contract) |
 | PGS-025 | `config_parameters` row `('production','baseline_n')` shall hold `30` and `('test_v0_1','baseline_n')` shall hold `16`. | Must | D-OWNER-2, ASM-04 | Test |
 | PGS-026 | The synthetic roster of section 4.12 (CSV files in `database/seeds/test_v0_1/`) shall be applied only by `python -m backend.cli seed test_v0_1` (with or without `--master-only`), which shall exit with code 2 without writing when `APP_ENV=production`. | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Test (CLI with APP_ENV=production writes nothing) |
-| PGS-027 | Backend and Alembic connections shall use TLS: every non-local `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
+| PGS-027 | Backend and Alembic connections shall use TLS: every non-local (`APP_ENV` not `local` or `test`, TRD 24 D-88) `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `DATABASE_READONLY_URL` shall include `sslmode=require` (or stricter `verify-full`), and the backend shall refuse to start when `APP_ENV` is `staging` or `production` and the URL lacks it. | Must | D-OWNER-3, BR-16 | Test (startup with URL lacking sslmode in APP_ENV=staging exits non-zero) |
 | PGS-028 | The backend shall map SQLSTATE `EW001` to an HTTP 500 `application/problem+json` response (error code from the TRD 05 catalogue, contract R19) and log an `error` event naming the table; no endpoint shall issue UPDATE, DELETE or TRUNCATE on `raw_sessions` or `audit_logs`. | Must | BR-02, TRD 17 | Test (repository unit test); Inspection |
 | PGS-029 | `alerts` shall have at most one non-closed row per `epoch_id` (partial unique index `alerts_one_active_per_epoch_uq`) and at most one row per `(epoch_id, session_id)`. | Must | BR-11, TRD 09 | Test |
 | PGS-030 | `epochs` shall have at most one row per resident with `ended_at IS NULL` (partial unique index `epochs_current_uq`) and unique `(resident_id, epoch_number)`. | Must | BR-08 | Test |
@@ -1245,3 +1245,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-02, R4-03, R4-09) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-08) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-06) | — |
+| 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (PGS-027 non-local (D-88)) | — |

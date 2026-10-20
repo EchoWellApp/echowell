@@ -35,7 +35,7 @@ Give operators the only supported way to manage master data and test databases: 
 
 - Roster files `database/seeds/test_v0_1/facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` with exactly the TRD 20 §4.12 content.
 - `backend/cli.py` commands:
-  - `bootstrap`: idempotently creates the facility row from `FACILITY_NAME`/`FACILITY_TZ` if missing and inserts missing `config_parameters` rows for both profiles from the `analytics/config.py` defaults without overwriting existing rows.
+  - `bootstrap`: idempotently creates the facility row from `FACILITY_NAME`/`FACILITY_TZ` if missing and verifies that `config_parameters` holds the rows of both profiles seeded by migration 0002 (exit code 2 naming any missing row); it never inserts or overwrites parameter rows (TRD 15 §4.8, TRD 24 D-85).
   - `import-master-data --dir D`: one transaction; idempotent upsert of facility, residents, devices and device assignments from the four CSV files (format DB-060); one `roster.loaded` audit row with counts and operator.
   - `withdraw-resident <resident_code> --on <YYYY-MM-DD>`: one UPDATE of `status`/`withdrawn_on` plus `resident.withdrawn` audit row; existing rows unchanged.
   - `purge-resident <resident_code> --confirm <resident_code>`: as `echowell_migrator` with `SET echowell.allow_purge = 'on'`, delete the withdrawn resident's rows in the DB-064 FK order in one transaction and insert one `resident.purged` audit row with per-table counts; audit rows are never deleted.
@@ -77,7 +77,7 @@ Give operators the only supported way to manage master data and test databases: 
 
 ## Outputs
 
-- Rows in `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `config_parameters` (bootstrap), `audit_logs`; status changes on `residents`; deletions by `purge-resident`; a reset schema.
+- Rows in `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `audit_logs`; status changes on `residents`; deletions by `purge-resident`; a reset schema.
 - Exit codes 0 (success), 1 (settings invalid), 2 (command refusal).
 
 ## Data Flow
@@ -95,7 +95,7 @@ Features that build directly on this one: FEAT-055 (full seed with SRC-05 ingest
 
 ## Database Impact
 
-- Tables written: `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `config_parameters` (bootstrap inserts only missing rows), `audit_logs`.
+- Tables written: `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `audit_logs` (`config_parameters` is only read by `bootstrap`, D-85).
 - Tables deleted from (purge-resident only, migrator with purge setting): `scores`, `cusum_state`, `data_alerts`, `alert_reviews`, `staff_notes`, `alerts`, `baselines`, `day_ledger`, `processed_sessions`, `epochs`, `raw_sessions`, `device_assignments`, `residents`.
 - Schema dropped and recreated (reset-test-db, via Alembic).
 
@@ -109,7 +109,7 @@ None directly. Withdrawn residents disappear from default lists (FR-228) through
 
 ## Analytics Impact
 
-None. `bootstrap` reads `analytics/config.py` default values only to insert missing parameter rows.
+None. `bootstrap` only checks that the migration-0002 parameter rows exist (D-85); it does not use `analytics/config.py`.
 
 ## Security Requirements
 
@@ -173,4 +173,4 @@ None. `bootstrap` reads `analytics/config.py` default values only to insert miss
 - `reset-test-db` drops tables through Alembic; DROP fires no row or TRUNCATE trigger, so neither `reject_mutation()` nor the purge setting is involved (DB-024, D-71).
 - Seed users use the RFC 2606 domain `example.com`; do not use `.test` (DB-057).
 - Until FEAT-055 adds the SRC-05 ingest and pipeline-run steps, `seed test_v0_1` without `--master-only` performs the master-data steps only; FEAT-055 completes DB-058 and DEP-015.
-- `bootstrap` inserts missing `config_parameters` rows "from `analytics/config.py` defaults" (TRD 15 §4.8), but `PipelineConfig` is delivered in Phase 6 (FEAT-040); in Phase 4 migration 0002 already seeds all 46 rows, so `bootstrap`'s parameter step finds nothing missing. Wire it to `PipelineConfig` defaults when FEAT-040 lands.
+- Resolved (TRD 24 D-85): migration 0002 seeds all 46 `config_parameters` rows, so `bootstrap`'s parameter step is a verification only (TRD 15 §4.8 aligned); it has no dependency on `PipelineConfig` (FEAT-040).

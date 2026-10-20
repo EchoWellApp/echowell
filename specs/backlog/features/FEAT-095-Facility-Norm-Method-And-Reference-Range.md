@@ -159,4 +159,4 @@ Gate: OQ-08 (facility norm definition) and OQ-20 (sex values).
 
 - The function's signature should follow the other stage contracts (frozen dataclasses in, frozen dataclasses out, config passed explicitly) so it stays pure and testable.
 - `UNIQUE NULLS NOT DISTINCT` requires PostgreSQL ≥ 15 (TRD 20 Implementation Notes); keep PostgreSQL 16.
-- Gap to report: `facility_reference_ranges.pipeline_run_id` is NOT NULL while ANL-057 places the computation outside `run_pipeline`; which `pipeline_runs` row (trigger, scope, frequency) owns a range computation is not specified and must be decided with OQ-08.
+- Resolved (TRD 24 D-76, TRD 07 ANL-057): the pipeline service calls the facility-norm function after `run_pipeline` within a full (`scope = all`) run and stamps every range row with that run's `pipeline_run_id` (NOT NULL in TRD 20); the computation method itself stays with OQ-08.

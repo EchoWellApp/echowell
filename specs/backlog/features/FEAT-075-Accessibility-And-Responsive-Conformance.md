@@ -32,7 +32,7 @@ Bring every page of the dashboard to WCAG 2.1 AA and the responsive layout of TR
 
 - Audit and fixes across all pages and components delivered by FEAT-062..FEAT-074: focus styles, target sizes, live regions, labels and `aria-describedby`, heading levels, scroll-container accessible names and `tabindex="0"`, reduced-motion CSS, breakpoint CSS (≥ 1024px, 640–1023px, < 640px).
 - `frontend/tests/e2e/a11y.spec.ts` (axe with tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions`, `/admin`).
-- `frontend/tests/e2e/responsive.spec.ts` (390×844 and 375×812 on `/residents` and `/residents/R09`; 200 % zoom check).
+- `frontend/tests/e2e/responsive.spec.ts` (320×568, 360×800, 375×812 and 390×844 on `/residents` and `/residents/R09`, D-78; 200 % zoom check).
 - Keyboard-only E2E (TST-111) and the `<noscript>` message.
 
 ## Out of Scope
@@ -113,7 +113,7 @@ None at runtime. CI publishes the axe report with the E2E artefacts.
 
 ## Testing Requirements
 
-- E2E (Playwright): `a11y.spec.ts` on the exact TST-110 route list (FE-190); keyboard-only flow (TST-111); `responsive.spec.ts` at 390×844 (FE-191) and E2E-16 at 375×812 (no page scroll, table scrolls within container, targets ≥ 44px); contrast via axe (TST-113); tally table reachable (TST-112).
+- E2E (Playwright): `a11y.spec.ts` on the exact TST-110 route list (FE-190); keyboard-only flow (TST-111); `responsive.spec.ts` at 320×568, 360×800, 375×812 and 390×844 (FE-191) and E2E-16 at the same widths (no page scroll, table scrolls within container, targets ≥ 44px); contrast via axe (TST-113); tally table reachable (TST-112).
 - Component: chart accessible names and tables (UX-091, UX-360, UX-370, UX-193); live-region announcements for sort and save.
 - Browser projects Chromium, Firefox, WebKit nightly (NFR-140, TST-100); tablet emulation ≥ 768px (NFR-141).
 - Inspection: manual keyboard and screen-reader pass recorded in `docs/reports/FRONTEND_IMPLEMENTATION_REPORT.md` (NFR-060).
@@ -123,7 +123,7 @@ None at runtime. CI publishes the axe report with the E2E artefacts.
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-075-AC-01 | `a11y.spec.ts` reports zero serious or critical axe violations on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions` and `/admin`. | TST-110; FE-190; MVP-11; AC-FE-08 |
-| FEAT-075-AC-02 | At 390×844, `document.documentElement.scrollWidth <= window.innerWidth` on `/residents` and `/residents/R09`. | FE-191; AC-FE-08 |
+| FEAT-075-AC-02 | At each of 320×568, 360×800, 375×812 and 390×844, `document.documentElement.scrollWidth <= window.innerWidth` on `/residents` and `/residents/R09`. | FE-191; AC-FE-08 |
 | FEAT-075-AC-03 | At 375×812, `/residents` and `/residents/R09` have no horizontal page scroll, the residents table scrolls within its container, and every interactive target is at least 44px. | E2E-16 |
 | FEAT-075-AC-04 | A keyboard-only run reaches and operates every control listed in TST-111 with a visible 3px focus outline. | TST-111; AC-UX-09 |
 | FEAT-075-AC-05 | axe colour-contrast checks pass on all routes. | TST-113 |
@@ -138,7 +138,7 @@ None at runtime. CI publishes the axe report with the E2E artefacts.
 
 ## Implementation Notes
 
-- TRD inconsistency on phone widths: UX-243 requires no horizontal page scroll from 320px, NFR-068 tests at 360/768/1280px, FE-191 at 390×844 and E2E-16 at 375×812; test all four widths (320, 360, 375, 390) so every row is satisfied.
+- Phone widths: UX-243 requires no horizontal page scroll from 320px; NFR-068, FE-191 and E2E-16 now all test 320, 360, 375 and 390px (plus 768 and 1280px for NFR-068) (TRD 24 D-78).
 - Scroll containers need `tabindex="0"` and an accessible name (UX-243), otherwise axe flags `scrollable-region-focusable`.
 - Use `prefers-reduced-motion` media queries globally; Recharts animation is already disabled (FE-099).
 - Playwright contexts use `timezoneId: "America/Los_Angeles"` (TRD 04 §8) so tests also prove facility-time rendering.

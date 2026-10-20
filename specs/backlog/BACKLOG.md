@@ -14,7 +14,7 @@ Inputs:
 - `specs/business-requirements/` (SRC-02 storage and processing flowcharts, SRC-03 answer-key workbook, REFERENCES.md, PROSPERO registration), `specs/data-samples/` (SRC-05 pipeline test input, 283 arrivals; legacy SRC-06 mock file, never used as input, AGT-025), `specs/algorithm/` (SRC-04 reference generator), `specs/architecture/Deployment_Architecture.md` (SRC-01). The workbook values and the generator rules are used as the TRDs state them (TRD 08, 09, 14), not re-derived here.
 - `specs/UI-wireframe/` (SRC-09 Main, SRC-10 Resident, SRC-11 Admission, SRC-18 Alerts, SRC-19 Analytics) and `docs/reports/TRD_VALIDATION_REPORT.md` (Phase 1 verdict PASS WITH FINDINGS; the round-8 Minor findings R8-01..R8-06 are recorded as fixed in the v0.9 revision rows of the affected TRDs).
 
-Rules applied: every feature cites the TRD requirement IDs it implements; nothing here adds, changes or overrides a TRD requirement; questions the TRDs do not settle are listed in section 12 for TRD 24 instead of being answered here (AGT-009).
+Rules applied: every feature cites the TRD requirement IDs it implements; nothing here adds, changes or overrides a TRD requirement; questions the TRDs did not settle were raised for TRD 24 instead of being answered here (AGT-009) and are now resolved there (section 12).
 
 ## 2. Conventions
 
@@ -210,7 +210,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Database roles, extensions and Alembic migration framework |
 | Epic | Database |
 | Build phase | Phase 4 Database layer |
-| Description | Create `database/roles/provision_login_roles.sql` (roles `echowell_migrator`, `echowell_app`, `echowell_readonly`, extensions `pgcrypto` and `btree_gist`, run as superuser), `alembic.ini` at the repository root, Alembic `env.py` connecting through `DATABASE_MIGRATION_URL`, the 15 enum types, the trigger functions `reject_mutation()` and `set_updated_at()`, naming conventions, the migration file naming rule and `scripts/dump_schema.sh` regenerating `database/schema.sql`. Tables themselves are delivered by the three table features. |
+| Description | Complete the Phase 3 `database/roles/provision_login_roles.sql` (roles `echowell_migrator`, `echowell_app`, `echowell_readonly`, extensions `pgcrypto` and `btree_gist`, run as superuser) and root `alembic.ini` (created by FEAT-006, D-90) with the grant tests, Alembic `env.py` connecting through `DATABASE_MIGRATION_URL`, the 15 enum types, the trigger functions `reject_mutation()` and `set_updated_at()`, naming conventions, the migration file naming rule and `scripts/dump_schema.sh` regenerating `database/schema.sql`. Tables themselves are delivered by the three table features. |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -388,7 +388,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Resident detail, check-in log and features APIs |
 | Epic | Backend API |
 | Build phase | Phase 5 Backend API |
-| Description | Implement `GET /api/v1/residents/{resident_code}` (status, device, current epoch, baseline period or progress, watching-since, structured `explanation` facts without clinical prose, epochs list for earlier-epoch views, 404 `RESIDENT_NOT_FOUND`), `/checkins` (event types of the check-in log newest first with `from`/`to` filters, restart cause fields, never duplicates or usable check-ins) and `/features` (adjusted values for the 7 composite features). |
+| Description | Implement `GET /api/v1/residents/{resident_code}` (status, device, current epoch, baseline period or progress, watching-since, structured `explanation` facts without clinical prose, `epoch_count` for earlier-epoch views (an earlier epoch is read with `GET /scores?epoch=`, TRD 19), 404 `RESIDENT_NOT_FOUND`), `/checkins` (event types of the check-in log newest first with `from`/`to` filters, restart cause fields, never duplicates or usable check-ins) and `/features` (adjusted values for the 7 composite features). |
 | Priority | P0 |
 | Complexity | High |
 | MVP Status | Required |
@@ -404,7 +404,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Devices API (GET /api/v1/devices) |
 | Epic | Backend API |
 | Build phase | Phase 5 Backend API |
-| Description | Implement `GET /api/v1/devices`: one item per device with residents assigned on the as-of date, `shared` flag, replacement facts (`replaced_device_code`, in use since, `in_use_until`), last upload time, firmware version, `silent_days_last_30` and `device_gap_days_last_30` derived on read. |
+| Description | Implement `GET /api/v1/devices`: one item per device with residents assigned on the as-of date, `shared` flag, replacement facts (`replaces_device_code` / `replaced_by_device_code`, `in_use_since`, `in_use_until`; TRD 19 `Device`, D-82), last upload time, firmware version, `silent_days_last_30` and `device_gap_days_last_30` derived on read. |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -521,7 +521,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | Medium |
 | MVP Status | Required |
 | Dependencies | FEAT-021, FEAT-014 |
-| Referenced TRDs | TRD 05 API-089, API-090; TRD 19 §4.3 (E-22..E-24); TRD 00 VIS-009; D-06 |
+| Referenced TRDs | TRD 05 API-089, API-090; TRD 19 §4.3 (E-22..E-24); TRD 00 VIS-009; D-06; OQ-29 |
 | FRs covered | FR-201, FR-202, FR-204, FR-206 |
 
 #### FEAT-037 User management API (GET/POST/PATCH /api/v1/users)
@@ -630,7 +630,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Baseline builder, freeze and late arrivals |
 | Epic | Analytics Engine |
 | Build phase | Phase 6 Analytics engine |
-| Description | Implement `analytics/baseline_builder.py`: membership from the first baseline_n usable sessions per epoch (count restarts per epoch), per-feature median / MAD / spread with floors and `floor_applied`, the composite entry with floor 0.1, freeze metadata, forming progress n of N, frozen baselines passed back unchanged, and late-arrival classification and isolation with the `late_arrival` warning. |
+| Description | Implement `analytics/baseline_builder.py`: membership from the first baseline_n usable sessions per epoch (count restarts per epoch), per-feature median / MAD / spread with floors and `floor_applied`, the composite entry with floor 0.1, freeze metadata, forming progress n of N, frozen baselines passed back unchanged, and late-arrival classification and isolation with the `late_arrival` warning; it also delivers `zscore_calculator.feature_z` and `composite_score.composite_raw` in their owning modules, because the composite baseline needs them (TRD 08 BSC-032, BSC-033). |
 | Priority | P0 |
 | Complexity | High |
 | MVP Status | Required |
@@ -646,7 +646,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Z-score and composite scoring stage |
 | Epic | Analytics Engine |
 | Build phase | Phase 6 Analytics engine |
-| Description | Implement `analytics/zscore_calculator.py` and `analytics/composite_score.py`: score every usable post-freeze session, z per composite feature on adjusted values, composite_raw = mean of sign × z with the TRD 08 signs, composite_z against the composite baseline, float64 without intermediate rounding; the 12 stored-not-scored features never contribute. |
+| Description | Complete `analytics/zscore_calculator.py` and `analytics/composite_score.py` with `composite_z` and the scoring stage, using `feature_z` and `composite_raw` delivered by FEAT-045: score every usable post-freeze session, z per composite feature on adjusted values, composite_raw = mean of sign × z with the TRD 08 signs, composite_z against the composite baseline, float64 without intermediate rounding; the 12 stored-not-scored features never contribute. |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -747,9 +747,9 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | High |
 | MVP Status | Future |
 | Dependencies | FEAT-059 |
-| Referenced TRDs | TRD 09 CUS-029..CUS-035; TRD 14 TDV-090..TDV-092; OQ-13; RSK-03 |
+| Referenced TRDs | TRD 09 CUS-029..CUS-035; TRD 14 TDV-090..TDV-092; OQ-13, OQ-27; D-75; RSK-03 |
 | FRs covered | None directly (enabling feature) |
-| Gate | OQ-13 and delivery of DS-04 by Team 1 |
+| Gate | OQ-13, OQ-27 and delivery of DS-04 by Team 1 |
 
 #### FEAT-094 Morning offset estimation from data
 
@@ -908,7 +908,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Ingest-triggered and nightly pipeline runs |
 | Epic | Data Processing |
 | Build phase | Phase 6 Analytics engine |
-| Description | Connect the triggers to the runner: synchronous resident-scoped run (resident plus co-residents of shared devices) inside `POST /sessions`, one background run per batch, and `backend/jobs/nightly_run.py` that proceeds only at 02:xx facility-local time and once per night (DST-safe, no in-process scheduler), extending the day ledger even without new records. |
+| Description | Connect the triggers to the runner: synchronous resident-scoped run (resident plus co-residents of shared devices) inside `POST /sessions`, one background run per batch, and `backend/jobs/nightly_run.py` that proceeds only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (02:xx by default) and once per night (DST-safe, no in-process scheduler), extending the day ledger even without new records. |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -929,7 +929,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | Medium |
 | MVP Status | Required |
 | Dependencies | FEAT-053, FEAT-017, FEAT-026 |
-| Referenced TRDs | TRD 15 §4.8; TRD 07 ANL-032; TRD 06 DB-058; TRD 10 ING-059; TRD 01 ARC-066; TRD 12 SEC-103; D-56, D-68, D-69 |
+| Referenced TRDs | TRD 15 §4.8; TRD 07 ANL-032; TRD 06 DB-058; TRD 10 ING-059; TRD 01 ARC-066; TRD 12 SEC-103; TRD 13 TST-192..TST-194; D-56, D-68, D-69, D-93 |
 | FRs covered | FR-229 |
 
 #### FEAT-097 Device speaker-verification input
@@ -1060,7 +1060,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | High |
 | MVP Status | Required |
 | Dependencies | FEAT-066, FEAT-034 |
-| Referenced TRDs | TRD 04 FE-093..FE-097, FE-099, FE-183, FE-184; TRD 11 UX-080..UX-092; TRD 13 TST-093, TST-112; D-30 |
+| Referenced TRDs | TRD 04 FE-093..FE-097, FE-099, FE-183, FE-184; TRD 11 UX-080..UX-092; TRD 13 TST-093, TST-112; D-30; OQ-28 |
 | FRs covered | FR-165..FR-168, FR-172 |
 
 #### FEAT-068 Check-in log
@@ -1087,7 +1087,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Alert review page: change-alarm queue, data-alert queue and review panel |
 | Epic | Frontend |
 | Build phase | Phase 8 Frontend |
-| Description | Implement `/alerts`: header and subline, two-column layout (stacked below 900 px), Queue 1 alarm cards in the FR-261 group order with badges and "Alarm since … · open n days · tally x.x", the selected alarm kept in the URL, the review panel title and link, mini tally chart reusing `CusumChart`, "Leaning most", Queue 2 data alerts without alarm styling or form, "No open alarms" state and the page footer. |
+| Description | Implement `/alerts`: header and subline, two-column layout (stacked below 1024 px, UX-246), Queue 1 alarm cards in the FR-261 group order with badges and "Alarm since … · open n days · tally x.x", the selected alarm kept in the URL, the review panel title and link, mini tally chart reusing `CusumChart`, "Leaning most", Queue 2 data alerts without alarm styling or form, the empty states "No change alarms right now." and "No change alarms to review." (UX-305, UX-319) and the page footer. |
 | Priority | P0 |
 | Complexity | High |
 | MVP Status | Required |
@@ -1183,7 +1183,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Accessibility and responsive conformance (WCAG 2.1 AA) |
 | Epic | Frontend |
 | Build phase | Phase 8 Frontend |
-| Description | Bring every page to WCAG 2.1 AA: status never by colour alone, text alternatives for every chart, keyboard operation of sort, links, forms and tabs, focus rings, 44 px touch targets, reduced motion, contrast ≥ 4.5:1, no horizontal page scroll at 375 px, verified by axe (`a11y.spec.ts`, single route list) and the responsive tests. |
+| Description | Bring every page to WCAG 2.1 AA: status never by colour alone, text alternatives for every chart, keyboard operation of sort, links, forms and tabs, focus rings, 44 px touch targets, reduced motion, contrast ≥ 4.5:1, no horizontal page scroll from 320 px (tested at 320, 360, 375 and 390 px, D-78), verified by axe (`a11y.spec.ts`, single route list) and the responsive tests. |
 | Priority | P1 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -1222,7 +1222,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | Medium |
 | MVP Status | Required |
 | Dependencies | FEAT-015 |
-| Referenced TRDs | TRD 12 SEC-010..SEC-012, SEC-016, SEC-017, SEC-020..SEC-024, SEC-103; TRD 15 §4.8, DEP-075; TRD 01 ARC-067; D-34 |
+| Referenced TRDs | TRD 12 SEC-010..SEC-012, SEC-016, SEC-017, SEC-020..SEC-024, SEC-103; TRD 15 §4.8, DEP-075; TRD 13 TST-195; TRD 01 ARC-067; D-34, D-86 |
 | FRs covered | FR-226 |
 
 #### FEAT-020 JWT authentication endpoints and authentication dependencies
@@ -1254,7 +1254,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | Medium |
 | MVP Status | Required |
 | Dependencies | FEAT-020 |
-| Referenced TRDs | TRD 12 SEC-040, SEC-045, §4.6; TRD 05 API-013; TRD 19 OAS-020..OAS-026; TRD 02 §4.26; TRD 25 AGT-062 |
+| Referenced TRDs | TRD 12 SEC-040, SEC-045, §4.6; TRD 05 API-013; TRD 19 OAS-020; TRD 02 §4.26; TRD 25 AGT-062 |
 | FRs covered | FR-004, FR-213, FR-243, FR-275, FR-310 |
 
 #### FEAT-022 Rate limiting and abuse controls
@@ -1432,7 +1432,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Complexity | Medium |
 | MVP Status | Required |
 | Dependencies | FEAT-054, FEAT-077 |
-| Referenced TRDs | TRD 13 TST-120..TST-126; TRD 05 API-120..API-125; TRD 07 ANL-047..ANL-050; TRD 03 NFR-001..NFR-013, NFR-150..NFR-153; TRD 14 TDV-008; TRD 06 DB-048; D-40 |
+| Referenced TRDs | TRD 13 TST-120..TST-126, TST-190, TST-191; TRD 05 API-120..API-125; TRD 07 ANL-047..ANL-050; TRD 03 NFR-001..NFR-013, NFR-150..NFR-153; TRD 14 TDV-008; TRD 06 DB-048; D-40 |
 | FRs covered | None directly (enabling feature) |
 
 #### FEAT-090 Demo acceptance and local fallback rehearsal (SRC-15 steps 4–5)
@@ -1477,7 +1477,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Local Docker Compose development stack |
 | Epic | DevOps & Deployment |
 | Build phase | Phase 3 Project skeleton |
-| Description | Provide `docker-compose.yml` with `db` (postgres:16, volume `pgdata`, healthcheck), `backend` (:8000, bind mounts of `backend/`, `analytics/`, read-only `database/` and `tests/fixtures/`) and `frontend` (:3000), development Dockerfiles, and `.env.example` / `.env.development.example` with local-only placeholder secrets. The production images and the `demo` profile are out of scope (FEAT for production images). |
+| Description | Provide `docker-compose.yml` with `db` (postgres:16-alpine, volume `pgdata`, healthcheck, running `database/roles/provision_login_roles.sql` on first start), `backend` (:8000, bind mounts of `backend/`, `analytics/`, read-only `database/` and `tests/fixtures/`) and `frontend` (:3000), development Dockerfiles, `database/roles/provision_login_roles.sql` and the root `alembic.ini` with an empty Alembic environment (so the Phase 3 health check passes, D-90), and `.env.example` / `.env.development.example` with local-only placeholder secrets. The production images and the `demo` profile are out of scope (FEAT for production images). |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -1493,7 +1493,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | CI workflow core jobs (lint, unit/integration tests, frontend build) |
 | Epic | DevOps & Deployment |
 | Build phase | Phase 3 Project skeleton |
-| Description | Create the first working `.github/workflows/ci.yml` with the `backend-lint`, `backend-test` (postgres:16-alpine service) and `frontend` jobs so every later phase PR is gated. The remaining required checks (security audit, repo hygiene, OpenAPI drift, docker build, coverage gates) are delivered by the full CI feature in Phase 9 (D-55). |
+| Description | Create the first working `.github/workflows/ci.yml` with the `backend-lint`, `backend-test` (postgres:16-alpine service) and `frontend` jobs so every later phase PR is gated (D-94). The remaining required checks (security audit, repo hygiene, OpenAPI drift, docker build, coverage gates) are delivered by the full CI feature in Phase 9 (D-55). |
 | Priority | P0 |
 | Complexity | Low |
 | MVP Status | Required |
@@ -1637,7 +1637,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Backups, restore drill and rollback procedure |
 | Epic | DevOps & Deployment |
 | Build phase | Phase 10 Deploy |
-| Description | Set up the weekly `pg_dump` of interim production to approved storage, run the restore drill into a Neon `restore-drill` branch (health plus R01–R10) before 15 Nov 2026, document rollback of frontend and backend versions without production `alembic downgrade`, and the full pipeline re-run after any restore. |
+| Description | Set up the weekly `pg_dump` of interim production to approved storage, run the single restore drill of DEP-097 (D-77) into a Neon `restore-drill` branch before 15 Nov 2026, document rollback of frontend and backend versions without production `alembic downgrade`, and the full pipeline re-run after any restore. |
 | Priority | P1 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -1688,7 +1688,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Pipeline run logging and operational alerts |
 | Epic | Monitoring & Logging |
 | Build phase | Phase 6 Analytics engine |
-| Description | Emit the structured pipeline events (`pipeline_run_started`, per-stage outcomes with exact stage names, `pipeline_run_finished` / failed), record non-fatal conditions in `pipeline_runs.warnings`, mark runs stuck in `running` > 30 min as failed, allow at most one automatic retry, log database size in nightly counts, and make missed nightly runs detectable for the operational alert path. |
+| Description | Emit the structured pipeline events (`pipeline_run_started`, per-stage outcomes with exact stage names, `pipeline_run_succeeded` / `pipeline_run_failed`, D-80), record non-fatal conditions in `pipeline_runs.warnings`, mark runs stuck in `running` > 30 min as failed, allow at most one automatic retry, log database size in nightly counts, and make missed nightly runs detectable for the operational alert path. |
 | Priority | P1 |
 | Complexity | Low |
 | MVP Status | Required |
@@ -1720,7 +1720,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Uptime checks and platform usage monitoring |
 | Epic | Monitoring & Logging |
 | Build phase | Phase 9 Deployment configuration |
-| Description | Create `uptime.yml` checking staging and production `/api/v1/health` and the production frontend at an interval no shorter than 30 minutes, and document the monthly usage check of Netlify build minutes, Railway spend (hard limit) and Neon compute hours with the interval fallback. |
+| Description | Create `uptime.yml` checking staging and production `/api/v1/health` and the production frontend at an interval no shorter than 30 minutes, and document the weekly usage check of Netlify build minutes, Railway spend (hard limit) and Neon compute hours with the interval fallback. |
 | Priority | P1 |
 | Complexity | Low |
 | MVP Status | Required |
@@ -1732,9 +1732,9 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 
 Features are listed in the order to implement them. The order follows the TRD 25 build sequence (Phase 2 → Phase 11, AGT-030) and is a valid topological order of the dependency graph: every feature appears after all of its dependencies. Within a phase, the order puts foundations first. A phase PR is opened only when every feature of that phase meets the phase definition of done (AGT-033); Phase 8 starts only after `pytest tests/validation -q` passes (AGT-023).
 
-Cross-phase wiring that this order makes explicit (see section 12, Q-01 to Q-03):
+Cross-phase wiring that this order makes explicit (TRD 24 D-90 to D-94; section 12):
 
-- FEAT-024 defines the pipeline service interface in Phase 5; FEAT-053 fills it in Phase 6 (TRD 25 Phase 5 definition of done).
+- FEAT-024 defines the pipeline service interface in Phase 5 with the interim executor of D-91; FEAT-053 fills it in Phase 6 (TRD 25 Phase 5 definition of done).
 - FEAT-030 delivers `GET /api/v1/alerts` in Phase 5; FEAT-048 adds `leaning_most` in Phase 6. FEAT-035 delivers `GET /api/v1/analytics` in Phase 5; FEAT-051 adds the `kpis`, `daily_series`, `funnel` and `by_resident` blocks in Phase 6.
 - FEAT-017 delivers `seed test_v0_1 --master-only` and `--reset` in Phase 4; FEAT-055 completes the full seed (SRC-05 ingest and pipeline run, D-68) in Phase 6.
 
@@ -2294,7 +2294,7 @@ Each is gated on an open question of TRD 24 and must not change the `test_v0_1` 
 
 | ID | Feature | Open question | Gate |
 |---|---|---|---|
-| FEAT-093 | Alarm-limit calibration on Team 1's 50-resident, 120-day dataset (DS-04) | OQ-13 | OQ-13 and delivery of DS-04 by Team 1 |
+| FEAT-093 | Alarm-limit calibration on Team 1's 50-resident, 120-day dataset (DS-04) | OQ-13, OQ-27 | OQ-13, OQ-27 and delivery of DS-04 by Team 1 |
 | FEAT-094 | Morning offset estimation from data | OQ-09 | OQ-09 (estimation method on DS-04) |
 | FEAT-095 | Facility norm method and reference-range computation for the new-admission arm | OQ-08, OQ-20 | OQ-08 (facility norm definition) and OQ-20 (sex values) |
 | FEAT-096 | EWMA trend display against a baseline band | OQ-18 | OQ-18 (whether to display EWMA) |
@@ -2315,8 +2315,8 @@ One sprint per TRD 25 build phase; each sprint ends with exactly one PR on branc
 | 5 | Phase 6 | `feat/analytics` | Phase 11 | Sprint 3: Analytics engine | FEAT-040, FEAT-041, FEAT-042, FEAT-043, FEAT-044, FEAT-045, FEAT-046, FEAT-047, FEAT-048, FEAT-049, FEAT-050, FEAT-051, FEAT-052, FEAT-053, FEAT-054, FEAT-055, FEAT-056 (17) | Stage order of TRD 07; determinism and rebuild idempotency; analytics coverage ≥ 95 %; ≤ 5 s on SRC-05 |
 | 6 | Phase 7 | `feat/validation` | Phase 12 | Sprint 4: Algorithm validation | FEAT-057, FEAT-058, FEAT-059, FEAT-060, FEAT-061 (5) | `pytest tests/validation -q` passes with zero failures (gate for Sprint 7, AGT-023) |
 | 7 | Phase 8 | `feat/frontend` | Phase 13 | Sprint 5: Frontend | FEAT-062, FEAT-063, FEAT-064, FEAT-065, FEAT-066, FEAT-067, FEAT-068, FEAT-069, FEAT-070, FEAT-071, FEAT-072, FEAT-073, FEAT-074, FEAT-075, FEAT-076 (15) | Tiles 2 / 7 / 1 / 19; R09 chart; Alert review and Analytics values; WCAG 2.1 AA; frontend coverage ≥ 80 % |
-| 8 | Phase 9 | `feat/deployment-config` | Phase 14A | Sprint 7: Deployment (configuration) | FEAT-077, FEAT-078, FEAT-079, FEAT-080, FEAT-081, FEAT-082, FEAT-083, FEAT-084, FEAT-085, FEAT-086, FEAT-087 (11) | Config validated against SRC-01 and TRD 22; CI runs all gates; no deployment performed |
-| 9 | Phase 10 | `feat/deploy` | Phase 14B | Sprint 7: Deployment (deploy) | FEAT-088, FEAT-089, FEAT-090 (3) | Health ok; HTTPS; login; R01–R10 on the deployed SHA; synthetic data only; demo acceptance recorded |
+| 8 | Phase 9 | `feat/deployment-config` | Phase 14A | — (no checklist section; the checklist's Sprint 7 is Backlog, Q-05) | FEAT-077, FEAT-078, FEAT-079, FEAT-080, FEAT-081, FEAT-082, FEAT-083, FEAT-084, FEAT-085, FEAT-086, FEAT-087 (11) | Config validated against SRC-01 and TRD 22; CI runs all gates; no deployment performed |
+| 9 | Phase 10 | `feat/deploy` | Phase 14B | — (no checklist section; Q-05) | FEAT-088, FEAT-089, FEAT-090 (3) | Health ok; HTTPS; login; R01–R10 on the deployed SHA; synthetic data only; demo acceptance recorded |
 | 10 | Phase 11 | `docs/audits` | Phase 15 | Sprint 6: Full repository audit | FEAT-091 (1) | Every TRD requirement pass/fail with evidence; READY or NOT READY FOR DEMO |
 | 11 | Post-MVP | `feat/aws-migration` | — | — | FEAT-092 (1) | OQ-07 answered; DEP-117 cut-over complete; go-live checklist signed (SEC-005) |
 | Research track | Future research | one branch per item | — | — | FEAT-093, FEAT-094, FEAT-095, FEAT-096, FEAT-097 (5) | Each item starts only when its OQ is answered and recorded in TRD 24 |
@@ -2453,7 +2453,7 @@ Status as of 20 October 2026. Phase 1 (TRD validation) is complete: TRDs 00–25
 | FEAT-090 | Demo acceptance and local fallback rehearsal (SRC-15 steps 4–5) | Not Started |  |
 | FEAT-091 | Final implementation, TRD traceability, documentation and UI traceability audits | Not Started |  |
 | FEAT-092 | AWS target platform migration (go-live platform) | Not Started | Gate: OQ-07 (AWS budget approval and account ownership) |
-| FEAT-093 | Alarm-limit calibration on Team 1's 50-resident, 120-day dataset (DS-04) | Not Started | Gate: OQ-13 and delivery of DS-04 by Team 1 |
+| FEAT-093 | Alarm-limit calibration on Team 1's 50-resident, 120-day dataset (DS-04) | Not Started | Gate: OQ-13, OQ-27 and delivery of DS-04 by Team 1 |
 | FEAT-094 | Morning offset estimation from data | Not Started | Gate: OQ-09 (estimation method on DS-04) |
 | FEAT-095 | Facility norm method and reference-range computation for the new-admission arm | Not Started | Gate: OQ-08 (facility norm definition) and OQ-20 (sex values) |
 | FEAT-096 | EWMA trend display against a baseline band | Not Started | Gate: OQ-18 (whether to display EWMA) |
@@ -2677,24 +2677,25 @@ TRD 02 defines 211 functional requirements (FR-001..FR-333, numbered with gaps b
 | FR-332 | 4.25 Page chrome, navigation and response metadata | FEAT-019 |
 | FR-333 | 4.25 Page chrome, navigation and response metadata | FEAT-019 |
 
-## 12. Questions for TRD 24
+## 12. Resolved questions
 
-These points are not settled by the TRDs or the prompts. Per AGT-009 they are proposed for TRD 24 (next free OQ number is OQ-27, TRD 24 §8); this backlog applies the stated interim plan and does not change any TRD requirement.
+The questions this backlog raised for TRD 24 (AGT-009) were resolved on 20 Oct 2026 in the PR #2 backlog consistency review. The TRDs, this backlog and the feature files now agree with the decisions below.
 
-| # | Question | Where | Interim plan used in this backlog |
+| # | Question (short) | Resolution | TRD 24 ID |
 |---|---|---|---|
-| Q-01 | TRD 25 Phase 5 requires every TRD 19 endpoint with its documented schema, but the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (E-18) come from `analytics/aggregates.py` (stage 12, ANL-061), which TRD 25 places in Phase 6, and API-006 forbids re-implementing analytics in the backend. In which phase must these blocks be complete? | TRD 25 §4.6 Phases 5–6; TRD 05 API-006, API-087; TRD 07 ANL-061 | FEAT-035 (Phase 5) delivers the endpoint, auth, `meta`, period, FR-240 content, alarm timing and review outcomes; FEAT-051 (Phase 6) adds the four aggregate blocks. |
-| Q-02 | `GET /api/v1/alerts` returns `leaning_most` (CUS-041), computed by `analytics/alert_generator.leaning_most` (TRD 07 §4.2), a Phase 6 module. Same phase question as Q-01. | TRD 09 CUS-041; TRD 07 §4.2; TRD 25 §4.6 Phase 5 | FEAT-030 (Phase 5) delivers the list endpoint; FEAT-048 (Phase 6) populates `leaning_most`. |
-| Q-03 | TRD 25 Phase 4 outputs include `python -m backend.cli seed test_v0_1` that ingests SRC-05 and runs the pipeline (D-68), but ingest arrives in Phase 5 and the pipeline in Phase 6. Is the Phase 4 definition of done met with `--master-only` and `--reset` only? | TRD 25 §4.6 Phase 4; TRD 06 DB-056..DB-058; D-68 | FEAT-017 (Phase 4) delivers the roster, users, key, `--master-only` and `--reset`; FEAT-055 (Phase 6) completes the SRC-05 ingest and pipeline-run step. |
-| Q-04 | TRD 25 Phase 3 lists `.github/workflows/ci.yml` as an output, while D-55 and Phase 9 say the legacy `ci.yml` stub is replaced in the deployment-configuration phase. Which jobs must exist after Phase 3? | TRD 25 §4.6 Phases 3 and 9; D-55; TRD 16 §4.2 | FEAT-007 (Phase 3) adds `backend-lint`, `backend-test` and `frontend`; FEAT-078 (Phase 9) completes all required checks. |
-| Q-05 | `specs/prompts/Implementation_Audit_Checklist.md` maps "Sprint 7" to "Backlog" in its step table but titles the section "Sprint 7: Deployment". Which name is intended? | Implementation_Audit_Checklist.md (step table and §Sprint 7); TRD 25 §4.6 Phases 9, 10, 12 | Section 9 maps TRD 25 Phases 9 and 10 to the checklist's "Sprint 7: Deployment" section and Phase 12 to its "Sprint 7: Backlog" table row; TRD 25 governs (AGT-001). |
-| Q-06 | TRD 25 Phase 12 requires that the backlog's completion status reflect audit results, but AGT-031 allows Phase 12 to run before Phase 2, when no audit exists. When must `BACKLOG.md` completion tracking be refreshed: after every phase PR, or only when Phase 12 is re-run after Phase 11? | TRD 25 §4.5 AGT-031, §4.6 Phase 12 | All features are Not Started; section 10 states that statuses are updated after each phase PR and reconciled with the Phase 11 audit. |
-| Q-07 | `docs/reports/TRD_VALIDATION_REPORT.md` (round 8) still lists R8-01..R8-06 as open, while the TRD revision histories (v0.9, 19 Oct 2026) record them as fixed. Is a round-9 confirmation of those fixes required before Phase 2 starts? | docs/reports/TRD_VALIDATION_REPORT.md §1; TRD 04, 05, 07, 08, 11, 12, 13, 15, 16, 17 revision rows | The backlog treats the TRDs as authoritative (AGT-001) and cites the fixed requirements (for example `resolve-data-alert --id <uuid> --reason`, TST-189). |
+| Q-01 | Phase of the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` | FEAT-035 (Phase 5) delivers the endpoint, auth, `meta`, period, FR-240 content, alarm timing and review outcomes; FEAT-051 (Phase 6) adds the four aggregate blocks; TRD 25 Phases 5 and 6 state this. | D-92 |
+| Q-02 | Phase of `leaning_most` in `GET /api/v1/alerts` | FEAT-030 (Phase 5) delivers the list endpoint; FEAT-048 (Phase 6) populates `leaning_most`. | D-92 |
+| Q-03 | Phase 4 definition of done for `seed test_v0_1` | FEAT-017 (Phase 4) delivers `--master-only` and `--reset`; FEAT-055 (Phase 6) completes the SRC-05 ingest and pipeline-run step. | D-93 |
+| Q-04 | Jobs in `ci.yml` after Phase 3 | FEAT-007 (Phase 3) adds `backend-lint`, `backend-test` and `frontend`; FEAT-078 (Phase 9) completes all required checks. | D-94 |
+| Q-05 | Name of the checklist's Sprint 7 section | The heading of `specs/prompts/Implementation_Audit_Checklist.md` now reads "Sprint 7: Backlog" (TRD 24 DSC-12). | DSC-12 |
+| Q-06 | When completion tracking (section 10) is refreshed | At the end of each implementation PR (Phases 2–11) and reconciled with the Phase 11 audit when Phase 12 is re-run (TRD 25 Phase 12). | D-95 |
+| Q-07 | Round 9 confirmation of the R8 fixes | Not required: `docs/reports/TRD_VALIDATION_FIXES.md` records the R8-01..R8-06 fixes, and `docs/reports/TRD_VALIDATION_REPORT.md` now states that they were fixed after the report (commits 1d7124f, 321eea0) and that no round 9 was run. | — |
 
-Open questions of TRD 24 that shape features in this backlog: OQ-03 (feature names, FEAT-023), OQ-04 (`phrase_id`, FEAT-023), OQ-05 (review does not reset the tally, FEAT-031, FEAT-071), OQ-06 (dashboard-only alerts, FEAT-030), OQ-07 (FEAT-092), OQ-08 and OQ-20 (FEAT-095), OQ-09 (FEAT-094), OQ-10 (late arrivals, FEAT-045), OQ-11 (withdrawal, FEAT-017), OQ-12 (clinical wording, FEAT-066), OQ-13 (FEAT-093), OQ-14 (FEAT-097), OQ-15 (missing days, FEAT-049), OQ-18 (FEAT-096), OQ-24 (data-alert thresholds, FEAT-050), OQ-25 and OQ-26 (review checklist and roles, FEAT-070). Each has an interim decision in TRD 24, so no MVP feature is blocked (TRD 25 §6).
+Open questions of TRD 24 that shape features in this backlog: OQ-03 (feature names, FEAT-023), OQ-04 (`phrase_id`, FEAT-023), OQ-05 (review does not reset the tally, FEAT-031, FEAT-071), OQ-06 (dashboard-only alerts, FEAT-030), OQ-07 (FEAT-092), OQ-08 and OQ-20 (FEAT-095), OQ-09 (FEAT-094), OQ-10 (late arrivals, FEAT-045), OQ-11 (withdrawal, FEAT-017), OQ-12 (clinical wording, FEAT-066), OQ-13 (FEAT-093), OQ-14 (FEAT-097), OQ-15 (missing days, FEAT-049), OQ-18 (FEAT-096), OQ-24 (data-alert thresholds, FEAT-050), OQ-25 and OQ-26 (review checklist and roles, FEAT-070), OQ-27 (false-alarm target, FEAT-093), OQ-28 (earlier-epoch view, FEAT-067), OQ-29 (admission comparison details, FEAT-036). Each has an interim decision in TRD 24, so no MVP feature is blocked (TRD 25 §6).
 
 ## Revision History
 
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 20 Oct 2026 | Initial backlog from Generate_Backlog.md Prompt 1 (TRD 25 Phase 12, run before Phase 2) | — |
+| 0.2 | 20 Oct 2026 | PR #2 backlog consistency fixes (section 12 resolved: D-75..D-98, OQ-27..OQ-29; FEAT-006, FEAT-007, FEAT-008, FEAT-021, FEAT-028, FEAT-029, FEAT-036, FEAT-045, FEAT-046, FEAT-054, FEAT-056, FEAT-067, FEAT-069, FEAT-075, FEAT-085, FEAT-089, FEAT-093 aligned with the TRDs) | — |

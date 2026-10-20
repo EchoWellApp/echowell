@@ -47,7 +47,7 @@ Blocked on OQ-18 (not decided here):
 - The EWMA input (composite z or individual features), the smoothing weight λ and its initial value, and the "baseline band" definition; the TRDs give none of these.
 - Where it is shown (Resident detail below or beside the tally chart, Alert review mini chart, Analytics) and its wording; no wireframe exists, so a wireframe and TRD 04/TRD 11 requirements are needed first.
 - Persistence and API: TRD 20 `scores` has no EWMA column and TRD 19 `ScoreRow`/score DTOs have no EWMA field; adding them requires TRD 20/TRD 19 changes (Alembic migration, OpenAPI regeneration, D-51) decided with OQ-18.
-- Stage placement wording: ANL-056 says "computed after step 10", but in the ANL-006 order step 7 is scoring, step 8 CUSUM and step 10 the day ledger; the intended placement (after scoring/CUSUM, before or after the ledger) must be confirmed in TRD 07 when OQ-18 closes. Either way it must not change CUSUM.
+- Stage placement: TRD 07 ANL-056 now says "after step 10 of the §4.5 algorithm (`run_cusum`; stage 8 in the ANL-006 numbering)", stored through a new `scores` column and `ScoreRow` field added with OQ-18 (aligned in the PR #2 consistency fixes). It must not change CUSUM.
 
 Trigger for starting: OQ-18 answered "yes" in TRD 24 (Megan Stubbs with Shaba Rahavi) with the input, λ, band definition and a wireframe for the display location; TRD 07, 09, 11, 19, 20 updated accordingly.
 

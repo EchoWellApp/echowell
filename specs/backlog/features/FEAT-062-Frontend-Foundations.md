@@ -170,4 +170,4 @@ None. The frontend computes no analytics; it renders API values and rounds only 
 - Implement and test the `shortGeneric` → `short` fallback by stubbing the formatter (TRD 04 §8).
 - MSW: register handlers for every §4.6.2 endpoint and set `onUnhandledRequest: "error"`; capture fixtures per sort value because the order comes from the API (FE-084).
 - Copy strings verbatim from TRD 11 into `wording.ts` and test them with exact matches (TRD 11 §8).
-- TRD inconsistency: LOG-080 names the route boundary `app/error.tsx` while TRD 04 §4.2 and FE-145 place it at `app/(protected)/error.tsx`; follow TRD 04 (the frontend source-tree owner) and keep `app/global-error.tsx` for the root.
+- The route boundary is `app/(protected)/error.tsx` (TRD 04 §4.2, FE-145; TRD 17 LOG-080 aligned in the PR #2 consistency fixes), with `app/global-error.tsx` for the root.

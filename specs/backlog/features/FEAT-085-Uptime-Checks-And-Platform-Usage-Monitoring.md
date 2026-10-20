@@ -134,4 +134,4 @@ None.
 
 - Repository variables hold the full API base including `/api/v1` (TRD 16 §4.9 examples), so the health URL is `<base>/health`.
 - Use `gh issue list --label incident --search "Uptime check failing in:title" --state open` to find an existing issue before creating one.
-- BACKLOG.md summarises the usage check as "monthly"; the TRDs set it weekly (TRD 15 DEP-101, TRD 17 §4.8). This specification follows the TRDs (weekly); the backlog wording difference is reported for reconciliation.
+- The usage check is weekly (TRD 15 DEP-101, TRD 17 §4.8); BACKLOG.md was aligned to weekly in the PR #2 consistency fixes.

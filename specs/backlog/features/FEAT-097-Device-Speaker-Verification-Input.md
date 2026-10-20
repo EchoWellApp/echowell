@@ -148,4 +148,4 @@ Gate: OQ-14 (speaker verification schedule and output type).
 
 - Keep v0.1 behaviour byte-for-byte: the registry exists precisely so a new version adds code beside the old one (ING-014).
 - The registry and mapping work (FEAT-097-FR-01..FEAT-097-FR-04) can be prepared as soon as Team 1 publishes the record specification, but the combination rule (FEAT-097-FR-06) waits for OQ-14.
-- Report the PGS-012 and ING-017 constraints above as TRD changes needed alongside OQ-14.
+- The PGS-012 and ING-017 constraints above are now recorded in the OQ-14 interim decision of TRD 24 as TRD changes needed when OQ-14 is answered.

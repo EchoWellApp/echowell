@@ -129,7 +129,7 @@ None at runtime. The batch report records commands run and their results (AGT-02
 | FEAT-001-AC-03 | Every table name listed under TRD 20 §4.6 appears in the Mermaid `erDiagram` of `Database_ERD.md` and in its writer/reader table. | TRD 25 §4.6 Phase 2 DoD |
 | FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. | FE-020; D-23; OQ-18 |
 | FEAT-001-AC-05 | Mermaid diagrams exist for the ERD, the request flow, the pipeline stages and the page hierarchy, and `Repository_Structure.md` contains the repository dependency diagram. | TRD 25 §4.6 Phase 2 Outputs and DoD |
-| FEAT-001-AC-06 | `grep -rnE "T[B]D|T[O]DO" docs/design` exits with status 1 (no match). | TRD 25 §4.6 Phase 2 Commands |
+| FEAT-001-AC-06 | `grep -rnE "T[B]D\|T[O]DO" docs/design` exits with status 1 (no match). | TRD 25 §4.6 Phase 2 Commands |
 | FEAT-001-AC-07 | No file outside `docs/design/` (and the batch report) is changed by the PR, and no TRD file is modified. | AGT-001; TRD 25 §4.6 Phase 2 |
 
 ## Definition of Done

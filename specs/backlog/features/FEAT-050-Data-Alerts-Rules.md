@@ -139,5 +139,5 @@ None in `analytics/` (LOG-006); the runner logs `data_alerts_updated` with count
 - Map reason strings to kinds: "noise above limit" → noise, "quality flag poor" → quality flag, "speech too short" → too short; count set-aside sessions, list kinds that occur in the fixed order.
 - Date format "<Mon D>" uses English month abbreviations without leading zero ("Oct 8").
 - R08 set-aside 5 of 18 (0.278) is suppressed by baseline_stalled; D08's 12 silent days are never consecutive, so no device alert (TRD 09 §4.9 verification).
-- TRD conflict: TRD 09 §4.9 defines a multi-day title "<D> · device silent on <k> days", while TRD 02 FR-294 and TRD 11 §4.17.2 give only "<D> · device silent all day"; the multi-day case does not occur in SRC-05. Implement TRD 09 (CUS-043 owns the texts) and report the difference for TRD 24.
+- TRD 09 §4.9 defines the multi-day title "<D> · device silent on <k> days" next to "<D> · device silent all day"; TRD 02 FR-294 and TRD 11 §4.17.2 now give both (aligned in the PR #2 consistency fixes). The multi-day case does not occur in SRC-05.
 - Thresholds are provisional (OQ-24); never hard-code them in the rule bodies (CUS-046).

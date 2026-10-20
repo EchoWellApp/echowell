@@ -33,7 +33,7 @@ Provide the one place where database connections are created and serialised: the
 
 - `backend/core/db.py`:
   - `create_engine_for(url, ...)` — the single engine factory used by the app (`DATABASE_URL`), the read-only engine (`DATABASE_READONLY_URL`, used only by `analytics_summary.py`), Alembic and the CLI: synchronous SQLAlchemy 2.0, `postgresql+psycopg://`, `pool_size=5`, `max_overflow=5`, `pool_pre_ping=True`, `pool_recycle=300`, `connect_args={"prepare_threshold": None}`.
-  - TLS enforcement: a URL without `sslmode=require` or `verify-full` is refused at engine creation unless `APP_ENV` is `local` or `test` (the TRDs define "non-local" through ENV-011 and SEC-065; this complements the FEAT-003 startup guard).
+  - TLS enforcement: a URL without `sslmode=require` or `verify-full` is refused at engine creation unless `APP_ENV` is `local` or `test` ("non-local" = `APP_ENV` not `local` or `test`, TRD 06 DB-053, TRD 24 D-88; this complements the FEAT-003 startup guard).
   - `SessionLocal` session factory used by `get_db()` (FEAT-003).
   - `advisory_key(namespace: str, value: str)` returning the SQL expression `hashtextextended('echowell:' || namespace || ':' || value, 0)` and a helper `lock_xact(session, namespace, value)` issuing `SELECT pg_advisory_xact_lock(<key>)`; a helper to lock several residents in ascending `resident_code` order.
 - Migration 0001 index section: every index of TRD 20 §4.7 not already created by FEAT-011/FEAT-012, with exact names, columns, order, INCLUDE list and predicates.

@@ -127,7 +127,7 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 | FEAT-091-AC-01 | The four report files exist at their `docs/reports/` paths. | AC-AGT-07 |
 | FEAT-091-AC-02 | `TRD_Implementation_Audit.md` has a PASS, FAIL or NOT APPLICABLE status with evidence for every requirement ID defined in TRDs 00–25 (count of rows equals the count of IDs extracted from the TRD tables). | TRD 25 §4.6 Phase 11 DoD |
 | FEAT-091-AC-03 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` and `grep -rn "evaluation_ground_truth" analytics` return no matches, recorded in the final audit. | AC-AGT-02 |
-| FEAT-091-AC-04 | `grep -rniE "openai|anthropic|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. | AC-AGT-03 |
+| FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. | AC-AGT-03 |
 | FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. | TRD 25 §4.6 Phase 11 Outputs |
 | FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. | TRD 25 §4.6 Phase 11 DoD |
 | FEAT-091-AC-07 | `git diff --stat` of the Phase 11 PR shows changes only under `docs/reports/` and `specs/backlog/`. | TRD 25 §4.6 Phase 11 Pitfalls |

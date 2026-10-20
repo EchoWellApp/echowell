@@ -50,7 +50,7 @@ Implement `/admissions` (SRC-11), the experimental page for the new-admission st
 | FEAT-073-FR-04 | The comparison badge shall read "▲ Outside facility range" (2px accent, accent text, 600) for `outside_range`, "Within facility range" (1px border) for `within_range`, "Not enough check-ins yet" (1px dashed) for `not_enough_checkins`, "Facility range not available yet" (1px dashed) for `range_not_available`. | UX-185, FR-202 |
 | FEAT-073-FR-05 | Each row shall have a "Show comparison" button (min-height 44px) selecting the resident; the selected row has `aria-selected="true"` and a 2px ink left border. | UX-187 |
 | FEAT-073-FR-06 | The page shall list only new-admission residents without an own formed baseline, as returned by the API; residents whose baseline formed appear on the overview instead. | UX-188, FR-205, UX-046 |
-| FEAT-073-FR-07 | The comparison section shall be headed "<R> compared with facility range" and show one row per feature with a band from `facility_low` to `facility_high` in `--color-range-band` (#E2E2DE) and the resident value as an 8px circle — outside the band accent with "▲", inside ink — with the caption "grey band = usual range across current residents". | FE-100, UX-189, UX-190, FR-203, D-44 |
+| FEAT-073-FR-07 | The comparison section shall be headed "<R> compared with facility range" and show one row per feature with a band from `low` to `high` (TRD 19 `AdmissionComparison`) in `--color-range-band` (#E2E2DE) and the resident value as an 8px circle — outside the band accent with "▲", inside ink — with the caption "grey band = usual range across current residents". | FE-100, UX-189, UX-190, FR-203, D-44 |
 | FEAT-073-FR-08 | Feature rows shall use the TRD 11 §4.5.4 plain-language labels for the 7 scored measurements and the API label otherwise. | UX-191 |
 | FEAT-073-FR-09 | Under the chart: "Once <N> days of check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." and, when the API returns them, "Range from <n_residents> current residents, computed <Mon D> (method: <method>)." | UX-192, UX-195 |
 | FEAT-073-FR-10 | A disclosure "Show comparison as a table" shall show "Measurement", "Resident value", "Facility range", "Outside range" ("▲ Yes" / "No"). | UX-193, UX-225 |
@@ -60,7 +60,7 @@ Implement `/admissions` (SRC-11), the experimental page for the new-admission st
 ## Inputs
 
 - `GET /api/v1/admissions?limit=500` → `AdmissionList` (`AdmissionRow`: code, admitted date, check-ins so far, `comparison_status`, baseline progress; `meta`).
-- `GET /api/v1/admissions/{code}/comparison` → `AdmissionComparison` (per feature value, `facility_low`, `facility_high`).
+- `GET /api/v1/admissions/{code}/comparison` → `AdmissionComparison` (per feature value, `low`, `high`).
 - `GET /api/v1/facility/reference-ranges` → `ReferenceRangeList` (method, `n_residents`, `computed_at`).
 
 ## Outputs

@@ -145,7 +145,7 @@ None. `no-console` forbids `console.log` (FE-200). No audit records.
 | FEAT-004-AC-04 | `grep -rn "fonts.googleapis.com\|fonts.gstatic.com" frontend/.next/server frontend/.next/static` after build returns no `<link>` or CSS URL to those hosts, and no font file is tracked by git. | FE-004, TPS-050, GIT-097 |
 | FEAT-004-AC-05 | `package.json` contains the scripts listed in Scope, does not contain a script named exactly `test:e2e`, and pins `next` 14.2.x, `react` 18.3.x, `@tanstack/react-query` 5.x, `recharts` 2.x. | FE-002, D-73, TRD 16 §6 |
 | FEAT-004-AC-06 | `next.config.js` sets `reactStrictMode: true` and `poweredByHeader: false` and has no `images.remotePatterns`; the built app's responses carry no `X-Powered-By` header. | FE-043 |
-| FEAT-004-AC-07 | `grep -rniE "openai|anthropic|langchain|audio" frontend --include=*.ts --include=*.tsx --include=package.json` (excluding `node_modules`) returns no dependency or component. | FE-007, FE-008, AC-AGT-03 |
+| FEAT-004-AC-07 | `grep -rniE "openai\|anthropic\|langchain\|audio" frontend --include=*.ts --include=*.tsx --include=package.json` (excluding `node_modules`) returns no dependency or component. | FE-007, FE-008, AC-AGT-03 |
 | FEAT-004-AC-08 | With `NEXT_PUBLIC_APP_ENV=local` the rendered `/login` page shows the text "LOCAL" in the ribbon; with `production` no ribbon is rendered. | FE-172, ENV-032 |
 
 ## Definition of Done

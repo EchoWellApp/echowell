@@ -36,7 +36,7 @@ Calibrate the production alarm settings on a realistic dataset instead of the 30
 Decided by the TRDs:
 
 - Intake: DS-04 accepted only with its answer key as a separate file under `tests/fixtures/answer_key/team1_v1/`; ingested through `POST /api/v1/ingest` into an isolated database; every rejection listed with its reason in an intake report; the dataset is not used until rejections are 0 or explained by Team 1.
-- Grid: `baseline_n` ∈ {16, 20, 30, 45, 60}, `cusum_k` ∈ {0.25, 0.5, 0.75, 1.0}, `cusum_h` ∈ {3, 4, 5, 6, 7, 8, 10}, one `run_pipeline` run per combination through `scripts/run_engine.py`, all other parameters at production values.
+- Grid: `baseline_n` ∈ {16, 20, 30, 45, 60}, `cusum_k` ∈ {0.25, 0.5, 0.75, 1.0}, `cusum_h` ∈ {3, 4, 5, 6, 7, 8, 10}, one `run_pipeline` run per combination through `scripts/run_engine.py`, all other parameters at production values; `baseline_n` values other than 30 are reported only and applied only with owner approval (CUS-031, D-01).
 - Metrics per combination: (a) false-alarm proportion (no-change residents with ≥ 1 alert, plus alerts before the true onset in change residents); (b) false alerts per 100 scored sessions; (c) detection proportion (first alert on or after true onset and within 30 days); (d) detection delay in scored sessions and days (median and IQR); (e) share of residents whose baseline never forms. Plus TDV-091 per-resident outputs under profiles `production` and `test_v0_1` (alarm yes/no, delay, false alarm yes/no, epoch count for moved residents).
 - Answer-key isolation: only the calibration evaluation code reads the DS-04 answer key, after the pipeline run; never `analytics/` or the backend.
 - Selection rule: among combinations with false-alarm proportion ≤ the PI's target, highest detection proportion, then shortest median delay.
@@ -46,12 +46,12 @@ Decided by the TRDs:
 
 Blocked on open questions (not decided here):
 
-- OQ-13: the PI's false-alarm target, the acceptance thresholds for detection metrics, and the minimum length of stay. Without the target the selection rule cannot be applied and no `set-config` is run.
+- OQ-13 (calibration, minimum length of stay) and OQ-27 (the PI's false-alarm target and detection thresholds). Under the OQ-27 interim decision the grid runs and is reported, but no combination is selected and no `set-config` is run.
 - Delivery of DS-04 by Team 1 (SRC-13 §5–6).
 - Whether `baseline_n` may change in production: D-01 records production `baseline_n` = 30 as an owner decision, while CUS-031 includes `baseline_n` in the grid and RSK-03 allows raising it "with owner approval". A `baseline_n` change therefore needs a new owner decision (D entry) in addition to OQ-13; k and h changes need only OQ-13.
-- Where the isolated database lives: CUS-030 says "ingested by CSV upload into the staging environment", TDV-090 says "an isolated database". Staging runs profile `test_v0_1` with a fixed PIPELINE_AS_OF and is re-seeded with `seed test_v0_1 --reset`, which would wipe DS-04. Until TRD 24 settles this (new OQ under AGT-009), the evaluation runs in-process through `scripts/run_engine.py` and the intake on a local or disposable isolated database, never on production.
+- Where the isolated database lives: resolved by TRD 24 D-75 (TRD 09 CUS-030 and TRD 14 TDV-090 aligned): a dedicated calibration database of the local docker-compose stack, never staging (fixed PIPELINE_AS_OF, `test_v0_1`, re-seeded with `seed test_v0_1 --reset`) and never production; the evaluation runs in-process through `scripts/run_engine.py`.
 
-Trigger for starting: Team 1 delivers DS-04 with a separate answer key, and OQ-13 is answered in TRD 24 with the PI's false-alarm target (the grid evaluation of CUS-031/CUS-032 may run as soon as DS-04 arrives; the selection and any `set-config` wait for OQ-13).
+Trigger for starting: Team 1 delivers DS-04 with a separate answer key, and OQ-27 is answered in TRD 24 with the PI's false-alarm target (the grid evaluation of CUS-031/CUS-032 may run as soon as DS-04 arrives; the selection and any `set-config` wait for OQ-27).
 
 ## Out of Scope
 
@@ -67,7 +67,7 @@ Trigger for starting: Team 1 delivers DS-04 with a separate answer key, and OQ-1
 | FEAT-093-FR-01 | DS-04 shall be accepted for evaluation only with its answer key as a separate file stored under `tests/fixtures/answer_key/team1_v1/`, never in a pipeline input folder. | TDV-004, TDV-010 |
 | FEAT-093-FR-02 | On receipt, DS-04 shall be ingested through `POST /api/v1/ingest` into an isolated database, with every rejection listed with its reason in an intake report; the dataset shall not be used until rejections are 0 or explained by Team 1. | TDV-090, CUS-030 |
 | FEAT-093-FR-03 | DS-04 and its outputs shall never be loaded into production, and test fixture data shall never share a database with real records. | CUS-030, TDV-007, AGT-014 |
-| FEAT-093-FR-04 | The calibration shall evaluate every combination of `baseline_n` ∈ {16, 20, 30, 45, 60}, `cusum_k` ∈ {0.25, 0.5, 0.75, 1.0}, `cusum_h` ∈ {3, 4, 5, 6, 7, 8, 10} by running `run_pipeline` once per combination through the engine CLI with all other parameters at production values. | CUS-031, ANL-007 |
+| FEAT-093-FR-04 | The calibration shall evaluate every combination of `baseline_n` ∈ {16, 20, 30, 45, 60}, `cusum_k` ∈ {0.25, 0.5, 0.75, 1.0}, `cusum_h` ∈ {3, 4, 5, 6, 7, 8, 10} by running `run_pipeline` once per combination through the engine CLI with all other parameters at production values; a `baseline_n` other than 30 is applied only with owner approval. | CUS-031, ANL-007, D-01 |
 | FEAT-093-FR-05 | For each combination the calibration shall report metrics (a)–(e) of CUS-032. | CUS-032 |
 | FEAT-093-FR-06 | The evaluation shall also report, under profiles `production` and `test_v0_1`, per changed resident alarm yes/no and delay in days from true onset to first alarm, per unchanged resident false alarm yes/no, and the epoch count for moved residents. | TDV-091 |
 | FEAT-093-FR-07 | The DS-04 answer key shall be read only by the calibration evaluation code after the pipeline run, never by `analytics/` or the backend. | CUS-033, AGT-007 |
@@ -166,4 +166,4 @@ None. The Analytics page already shows the active settings; no detection-perform
 
 - Run the grid in-process (pure `run_pipeline`) for speed; 140 runs on 50 × 120 records fit easily within the ANL-048 scale.
 - Keep the evaluation code out of `analytics/` and `backend/` so the import-linter and AGT-007 checks stay green.
-- When TRD gaps block a step (target, baseline_n authority, database location), stop that step and raise an OQ in TRD 24 (AGT-009) rather than choosing.
+- The former gaps are settled in TRD 24: target OQ-27 (open, interim: report only), `baseline_n` authority D-01 (owner approval), database location D-75. Any new gap that blocks a step stops that step and goes to TRD 24 as an OQ (AGT-009).

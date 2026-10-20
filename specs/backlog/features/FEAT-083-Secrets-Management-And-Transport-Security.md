@@ -51,7 +51,7 @@ Define, document and verify how every secret of every environment is created, st
 | FEAT-083-FR-02 | Secret settings shall be `pydantic.SecretStr` so they are masked in `repr()`, logs and error messages. | ENV-004, AC-ENV-09 |
 | FEAT-083-FR-03 | `NEXT_PUBLIC_*` variables shall contain no secret. | SEC-054 |
 | FEAT-083-FR-04 | Each environment shall have its own JWT_SECRET, API keys, user accounts and database role passwords; a credential issued in one environment shall be rejected in every other. | DEP-006, ENV-051, SEC-056 |
-| FEAT-083-FR-05 | JWT_SECRET shall be generated with `python -c "import secrets; print(secrets.token_urlsafe(48))"` and rotated every 180 days and immediately on suspected exposure or departure of a team member with access; rotation invalidates all tokens (users log in again). | SEC-055, ENV-052 |
+| FEAT-083-FR-05 | JWT_SECRET shall be generated with `openssl rand -hex 32` (64 hex characters) and rotated every 180 days and immediately on suspected exposure or departure of a team member with access; rotation invalidates all tokens (users log in again). | SEC-055, ENV-052 |
 | FEAT-083-FR-06 | Database role passwords of staging, production and AWS shall differ per environment and role, be ≥ 32 random characters and be rotated every 180 days and on team-member departure; `echowell_migrator_login` shall also be rotated after each environment rebuild. | SEC-056, RSK-15 |
 | FEAT-083-FR-07 | Device API keys shall be rotated every 365 days, on device replacement and on suspected exposure (create new, deploy, revoke old). | SEC-057 |
 | FEAT-083-FR-08 | Each rotation shall be recorded as an `audit_logs` row `config.changed` with the secret name and `{"rotated": true}` (never the value) or, for platform-side secrets, in the operations log of `docs/deployment.md`. | SEC-058, TRD 12 §4.12 |
@@ -141,6 +141,6 @@ This feature is itself the security control set listed in the Functional Require
 
 ## Implementation Notes
 
-- The `.env.production.example` comment of TRD 21 §4.6 suggests `openssl rand -hex 32` for JWT_SECRET, while SEC-055 prescribes `secrets.token_urlsafe(48)`; both exceed the 32-byte minimum (AC-ENV-04). Use SEC-055 in the runbook and report the wording difference for TRD 24.
+- JWT_SECRET is generated with `openssl rand -hex 32`, as TRD 21 §4.2/§4.6 and CI use; TRD 12 SEC-055 was aligned to it in the PR #2 consistency fixes (it exceeds the 32-byte minimum, AC-ENV-04).
 - Record platform-side rotations (Railway variables, Neon role passwords) in the operations log because they have no CLI and therefore no audit row (SEC-058).
 - Credentials are never migrated between environments; AWS cut-over creates them anew (DEP-117 step 4).

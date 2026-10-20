@@ -158,5 +158,5 @@ None directly; writes to these tables are audited by the CLI and endpoint featur
 
 - Write the DDL with `op.execute()` using the TRD 20 SQL verbatim, especially the exclusion constraint and array CHECKs (TRD 20 §8).
 - `resident.py` is an existing skeleton file and must hold `Resident` (ARC-050, AGT-010).
-- TRD 23 §4.2.3 describes `resident_code` as "upper-case letters, digits, hyphen, 1–32 chars", while TRD 20 §4.6.3 constrains it with `^[A-Z0-9]{1,16}$`. The DDL of TRD 20 is the binding schema (PGS-006) and is implemented; the difference is reported for TRD 24.
+- `resident_code` follows `^[A-Z0-9]{1,16}$` (TRD 20 §4.6.3, TRD 19 `ResidentCode`); TRD 23 §4.2.3 was aligned to the same pattern in the PR #2 consistency fixes.
 - 0002 must not be edited to change parameters later; parameter changes go through `set-config` (FR-229, D-69) and the `test_v0_1` values are never changed to make a test pass (AGT-008).

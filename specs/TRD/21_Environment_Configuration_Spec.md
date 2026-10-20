@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -104,7 +104,7 @@ the AWS target.
 | Concern | Where | Changed by |
 |---|---|---|
 | Which parameter profile is active | env `PIPELINE_PROFILE` | deployment (Railway variable / `.env`) |
-| Algorithm and alerting parameter values (`baseline_n`, `noise_limit_dbfs`, `cusum_k`, `cusum_h`, `morning_offsets`, `facility_tz`, `data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, …) | table `config_parameters` (profile, key) | operator via `python -m backend.cli set-config --profile <p> --key <k> --value '<json>' --reason "<text>"` (runs as `echowell_migrator`, validates, audited `config.changed`; algorithm keys then need `backend.cli rebuild`, TRD 24 D-56/D-69); initial rows by `backend.cli bootstrap` (TRD 15 §4.8) |
+| Algorithm and alerting parameter values (`baseline_n`, `noise_limit_dbfs`, `cusum_k`, `cusum_h`, `morning_offsets`, `facility_tz`, `data_alert_set_aside_fraction`, `data_alert_device_silent_days`, `data_alert_baseline_stalled_enabled`, `alert_snooze_hours`, `review_explanations`, …) | table `config_parameters` (profile, key) | operator via `python -m backend.cli set-config --profile <p> --key <k> --value '<json>' --reason "<text>"` (runs as `echowell_migrator`, validates, audited `config.changed`; algorithm keys then need `backend.cli rebuild`, TRD 24 D-56/D-69); initial rows by migration `0002_seed_config_parameters` (TRD 20 PGS-024); `backend.cli bootstrap` only verifies them (TRD 15 §4.8, TRD 24 D-85) |
 | Parameter snapshot used by a run | `pipeline_runs.config_snapshot` | pipeline (immutable record) |
 | Facility display name | table `facilities.name` (created from env `FACILITY_NAME` by bootstrap/seed) | bootstrap/seed CLI |
 | Time zone for the nightly job | env `FACILITY_TZ` | deployment |
@@ -113,7 +113,7 @@ the AWS target.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ENV-020 | Algorithm, data-alert and review parameters (including the contract §19 keys `data_alert_*`, `alert_snooze_hours`, `review_explanations`) shall never be read from environment variables; the only algorithm-related environment variables are PIPELINE_PROFILE and PIPELINE_AS_OF (test as-of). | Must | contract §7, BR-15 | Inspection |
-| ENV-021 | At startup the backend shall verify that the profile named by PIPELINE_PROFILE has rows in `config_parameters`. If the profile has no rows, or a stored value fails the validation of TRD 07 ANL-029, `/api/v1/health` shall still return 200 but every pipeline run shall fail with warning code `pipeline_config_invalid` (TRD 17) until `bootstrap` or `set-config` fixes it; a single missing key is not an error: the built-in default is used with warning `config_default_used` (TRD 07 ANL-031). | Must | TRD 17 | Test |
+| ENV-021 | At startup the backend shall verify that the profile named by PIPELINE_PROFILE has rows in `config_parameters`. If the profile has no rows, or a stored value fails the validation of TRD 07 ANL-029, `/api/v1/health` shall still return 200 but every pipeline run shall fail with warning code `pipeline_config_invalid` (TRD 17) until the migrations (`alembic upgrade head`, migration 0002) or `set-config` fix it; a single missing key is not an error: the built-in default is used with warning `config_default_used` (TRD 07 ANL-031). | Must | TRD 17 | Test |
 | ENV-022 | If FACILITY_TZ differs from the active profile's `facility_tz`, the backend shall log WARNING `config_mismatch` at startup and add a `config_mismatch` warning to each pipeline run; the pipeline shall use the profile value. | Must | ASM-01, TRD 17 LOG-064 | Test |
 
 ### 4.5 Frontend, Compose, CI and test-harness variables
@@ -306,3 +306,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02, R7-03) | — |
+| 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (ENV-021 and config ownership: migration 0002 seeds, bootstrap verifies (D-85)) | — |

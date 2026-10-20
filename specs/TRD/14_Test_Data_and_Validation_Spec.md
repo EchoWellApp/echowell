@@ -1,6 +1,6 @@
 # 14 Test Data and Validation Spec
 
-Document ID: ECHOWELL-TRD-14 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-14 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -721,7 +721,7 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TDV-090 | On receipt, DS-04 shall be ingested through `POST /api/v1/ingest` into an isolated database; every rejection shall be listed with its reason in an intake report, and the dataset shall not be used until rejections are 0 or explained by Team 1. | Must | SRC-13 §6, BR-01 | Test |
+| TDV-090 | On receipt, DS-04 shall be ingested through `POST /api/v1/ingest` into an isolated database (the calibration database of TRD 09 CUS-030, never staging or production; TRD 24 D-75); every rejection shall be listed with its reason in an intake report, and the dataset shall not be used until rejections are 0 or explained by Team 1. | Must | SRC-13 §6, BR-01 | Test |
 | TDV-091 | The DS-04 evaluation shall run under profiles `production` (baseline_n 30) and `test_v0_1`, and report per changed resident: alarm yes/no and delay in days from true onset to first alarm; per unchanged resident: false alarm yes/no; plus epoch count for moved residents. | Should | SRC-13 §5, OQ-13 | Analysis |
 | TDV-092 | DS-04 results shall be informational and shall not gate CI until OQ-13 defines acceptance thresholds. | Must | OQ-13 | Inspection |
 | TDV-093 | Morning-offset estimation (OQ-09) shall be evaluated on DS-04 offline; configured offsets remain in force until OQ-09 closes. | Should | SRC-03 README note 3, OQ-09 | Analysis |
@@ -790,3 +790,4 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-24, F-51, F-52) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-02, R2-19) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-07) | — |
+| 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (TDV-090 calibration database (D-75)) | — |

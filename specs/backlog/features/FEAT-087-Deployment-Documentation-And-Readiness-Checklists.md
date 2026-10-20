@@ -133,6 +133,6 @@ None at runtime. The batch report lists documents created and validation results
 
 ## Implementation Notes
 
-- Path conflict to report: TRD 15 §8 lists `/DEPLOYMENT_CONFIGURATION_GUIDE.md` at the repository root, while TRD 25 §4.6 Phase 9 and D-21 put reports under `docs/reports/`. Use `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md` (D-21 is the decision log) and note the difference for TRD 24.
+- The guide lives at `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md` (TRD 25 §4.6 Phase 9, D-21); TRD 15 §4.2 and §8 were aligned to this path in the PR #2 consistency fixes.
 - Keep the checklists as Markdown tables with columns ID, Criterion, Source, Evidence, Status so Phase 11 can parse them.
 - Copy procedures verbatim where TRD 15 says so (local setup); paraphrasing risks drift.

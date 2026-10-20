@@ -138,6 +138,6 @@ No pipeline stage. The only calculation is the median of a new-admission residen
 
 ## Implementation Notes
 
-- OQ-08 gaps (do not guess the method): the TRDs do not define the minimum number of check-ins that separates `not_enough_checkins` from a comparison, whether the resident value uses raw or morning-adjusted values, which features are compared (TST-186 uses the 7 scored features; `AdmissionComparison.feature_key` admits all 19), or how a `sex`-specific range is chosen (OQ-20). Implement `range_not_available` (the v0.1 state) fully; for the other statuses implement only what TST-186 fixes (median outside any stored range → `outside_range`, otherwise `within_range`) and raise the remaining points for TRD 24 per AGT-009.
-- TRD conflict: TRD 04 FE-100 names the band fields `facility_low` / `facility_high`, while TRD 19 `AdmissionComparison` uses `low` / `high`; the API follows TRD 19 (TRD 05 §1); report it so FEAT-073 maps the generated types.
+- The comparison details are TRD 24 OQ-29 (open). Implement its interim decision: compare the 7 composite features using the median of the resident's morning-adjusted usable values, `not_enough_checkins` below 5 usable check-ins, and choose the range row whose `sex` equals the resident's sex, else the row with `sex` NULL, else `range_not_available`; `range_not_available` is the v0.1 state. TST-186 (median outside any stored range → `outside_range`, otherwise `within_range`) holds under this interim.
+- The band fields are `low` / `high` (TRD 19 `AdmissionComparison`); TRD 04 FE-100 was aligned in the PR #2 consistency fixes.
 - Select residents with SQL on cohort and baseline existence; the list is expected to be empty for DS-07 (UX-194).

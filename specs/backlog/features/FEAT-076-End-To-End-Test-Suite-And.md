@@ -70,7 +70,7 @@ Implement the Playwright end-to-end suite that proves the whole stack (PostgreSQ
 | FEAT-076-FR-12 | `frontend/package.json` shall define exactly the scripts `test:e2e:readonly`, `test:e2e:mutating` and `test:e2e:isolated` with the commands of D-73 and no bare `test:e2e`. | D-73, TST-004 |
 | FEAT-076-FR-13 | Playwright shall run with `retries: 1` in CI and `retries: 0` locally; a scenario that passes only on retry shall be reported as flaky. | TST-101, TST-161 |
 | FEAT-076-FR-14 | `privacy.spec.ts` shall assert that no request targets a host other than the frontend origin and `NEXT_PUBLIC_API_BASE_URL` and that no `<audio>` or `<video>` element exists on any route. | FE-192, TPS-050, TPS-081 |
-| FEAT-076-FR-15 | `responsive.spec.ts` shall load `/residents` and `/residents/R09` at 390×844 and assert `document.documentElement.scrollWidth <= window.innerWidth`; E2E-16 shall assert the same at 375×812 plus table scrolling within its container and touch targets ≥ 44 px. | FE-191, E2E-16 |
+| FEAT-076-FR-15 | `responsive.spec.ts` shall load `/residents` and `/residents/R09` at 320×568, 360×800, 375×812 and 390×844 and assert `document.documentElement.scrollWidth <= window.innerWidth`; E2E-16 shall assert the same at those widths plus table scrolling within its container and touch targets ≥ 44 px. | FE-191, E2E-16, D-78 |
 | FEAT-076-FR-16 | The E2E stack shall use RATE_LIMIT_LOGIN=`60/minute` (APP_ENV `local`), and E2E credentials shall be the SEED_* values supplied by the environment, never literals in test code. | D-74 (b), ENV-054, CIC-034 |
 | FEAT-076-FR-17 | E2E scenarios shall depend on the current time only where stated (E2E-15, TST-187, E2E-19) and otherwise on the documented D-73 order. | TST-005 |
 

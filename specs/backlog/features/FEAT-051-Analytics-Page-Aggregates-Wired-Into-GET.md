@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Analytics page (SRC-19): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (BACKLOG.md §12, first question). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
+Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Analytics page (SRC-19): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (TRD 24 D-92; BACKLOG.md §12 Q-01). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
 
 ## Business Context
 
@@ -152,7 +152,7 @@ None in this feature. The blocks are rendered by FEAT-072 (`KpiTiles`, `DailyChe
 
 ## Implementation Notes
 
-- The TRDs do not say how `GET /api/v1/analytics` obtains the `AnalyticsSummary` at request time: TRD 20 has no table for it, while TRD 05's endpoint map lists the derived tables as read by `analytics_summary.build`. Interim approach consistent with API-006 and ANL-062: rebuild the stage inputs (`AdjustedRecord`, `LedgerDay`, `EpochSummary`, `AlertEvent`, `DataAlert`) from the persisted rows of the latest succeeded run and call the pure `analytics.aggregates.build_analytics_summary` (no SQL formulas). This gap should be recorded as a new OQ in TRD 24 (AGT-009).
+- `GET /api/v1/analytics` obtains the `AnalyticsSummary` at request time as TRD 05 API-087 and API-006 now state (TRD 24 D-79; TRD 20 has no table for it): rebuild the stage inputs (`AdjustedRecord`, `LedgerDay`, `EpochSummary`, `AlertEvent`, `DataAlert`) from the persisted rows of the latest succeeded run and call the pure `analytics.aggregates.build_analytics_summary` (no SQL formulas, ANL-062).
 - The internal `funnel` is a 4-item list and `restarts` a dict (TRD 07 §4.13), while the DTO uses an object and a list (TRD 19 E-18); the mapping lives only in `analytics_summary.py`.
 - The internal `note` strings of TRD 07 §4.13 are not DTO fields; the frontend composes notes from the DTO counts (TRD 11 UX-354/UX-355).
 - Use `local_date` from `AdjustedRecord`/`LedgerDay` (FACILITY_TZ), never the UTC date (TRD 07 §8).

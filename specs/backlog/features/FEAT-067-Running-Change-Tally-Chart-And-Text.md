@@ -143,5 +143,5 @@ None in the frontend.
 - Implement the baseline slot as the categorical x value `"__baseline__"` before the first scored date and keep it even with many scored sessions (TRD 04 §8).
 - Bars follow `alarm_state` from `/scores`; after a first crossing bars stay accent even if the tally drops below h (TRD 04 §8, TRD 11 §8).
 - Missed days have no bar (TRD 11 §8); never draw zero-height bars for non-scored days.
-- TRD conflict: FR-168 lists the text table columns as "date, composite z, tally, alarm state", while UX-090 (and TST-093, FE-184) specify "Date", "Tally", "Alarm". Implement UX-090 and report FR-168.
-- TRD gap: FR-172 (Should) requires viewing an earlier epoch, but TRD 04 and TRD 11 define no control, label or position for the epoch choice and UX-092 describes only the current period; no OQ in TRD 24 covers it. Interim: a labelled native `<select>` "Device period" listing epochs 1..`epoch_count` (default current), reusing the UX-092 line pattern; propose a new OQ in TRD 24 (AGT-009).
+- The text table columns are "Date", "Tally", "Alarm" (UX-090, TST-093, FE-184); TRD 02 FR-168 was aligned in the PR #2 consistency fixes.
+- FR-172 (Should, earlier epoch view) has no control in TRD 04 or TRD 11; it is TRD 24 OQ-28 (open). Implement its interim decision: a labelled native `<select>` "Device period" above the chart listing epochs 1..`epoch_count` (default current, hidden when `epoch_count` is 1), loading the chosen epoch with `GET /api/v1/scores?resident_code=&epoch=` and reusing the chart and the UX-092 line pattern.

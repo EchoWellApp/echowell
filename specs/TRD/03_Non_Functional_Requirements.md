@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -45,7 +45,7 @@ Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sl
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| NFR-001 | `GET /api/v1/residents` shall respond with p95 ≤ 500 ms for 100 residents (DS-08), warm. | Must | BR-12, ASM-08, R8 | Test (load test, k6 or Locust, TRD 13) |
+| NFR-001 | `GET /api/v1/residents` shall respond with p95 ≤ 500 ms for 100 residents (DS-08), warm. | Must | BR-12, ASM-08, R8 | Test (TRD 13 TST-122: pytest with `time.perf_counter` in the nightly `performance` job, TRD 16 CIC-035) |
 | NFR-002 | `GET /api/v1/residents/{code}`, `/checkins`, `/features`, `/notes` and `GET /api/v1/scores?resident_code=` shall each respond with p95 ≤ 500 ms on DS-08, warm. | Must | BR-13, ASM-08, R8 | Test |
 | NFR-003 | `GET /api/v1/devices`, `GET /api/v1/alerts`, `GET /api/v1/data-alerts`, `GET /api/v1/alerts/{id}/reviews` and `GET /api/v1/analytics` shall each respond with p95 ≤ 500 ms on DS-08, warm. | Must | BR-12, BR-13, BR-15, SRC-18, SRC-19, R8 | Test |
 | NFR-004 | `POST /api/v1/sessions` shall respond with p95 ≤ 1,000 ms including the synchronous resident-scoped pipeline run, on DS-08, warm. | Must | BR-01, SRC-15 demo step 4, R8 | Test |
@@ -54,9 +54,9 @@ Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sl
 | NFR-007 | A full rebuild of DS-08 (100 residents, 10,800 records) shall complete in ≤ 120 s. | Must | BR-02, ASM-08, R8 | Test (scheduled performance job) |
 | NFR-008 | The first request after an idle period (cold start of backend or database on interim tiers) shall complete in < 15 s; the frontend shall show a loading state (not an error) for up to 20 s. | Should | BR-12, RSK-07 | Test (manual, staging) |
 | NFR-009 | Batch ingest of the reference CSV (283 rows) shall return 202 in ≤ 2 s and the batch shall be fully processed in ≤ 30 s. | Must | BR-15, R8 | Test |
-| NFR-010 | The Residents overview, Resident detail, Alert review and Analytics pages shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI) |
+| NFR-010 | The Residents overview, Resident detail, Alert review and Analytics pages shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI, TRD 13 TST-125) |
 | NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E timing test TRD 13 TST-187), Demo (TST-181, 60 s incl. cold start) |
-| NFR-012 | The initial JavaScript transferred for any dashboard route shall be ≤ 300 KB gzip. | Should | BR-12 | Test (`next build` output check in CI) |
+| NFR-012 | The initial JavaScript transferred for any dashboard route shall be ≤ 300 KB gzip. | Should | BR-12 | Test (`next build` output check in CI, TRD 13 TST-191) |
 | NFR-013 | The Alert review page shall reflect a saved review or snooze (badge change, history entry) within 1 s of the API response, without a full page reload. | Should | BR-13, SRC-18 | Test (E2E) |
 
 ### 4.3 Availability and reliability
@@ -68,7 +68,7 @@ These targets are honest for a research prototype on free/trial tiers with no on
 | NFR-020 | During the demo and presentation window (16 Nov – 8 Dec 2026), the production environment shall achieve ≥ 99.0% monthly availability of `GET /api/v1/health` measured by the 30-minute uptime check of TRD 16 CIC-060 (`uptime.yml`), excluding announced maintenance. | Should | BR-17, RSK-07 | Analysis (uptime monitor report) |
 | NFR-021 | The system shall not lose an acknowledged record: every record for which `POST /api/v1/sessions` returned 200 or 201 shall exist in `raw_sessions` after any subsequent failure of the pipeline, backend restart or redeploy. | Must | BR-02 | Test (fault injection: kill process after commit) |
 | NFR-022 | A pipeline failure shall not prevent ingestion: raw records shall continue to be accepted while runs fail, and the next successful run shall process them. | Must | BR-02, ARC-025 | Test |
-| NFR-023 | A failed nightly run shall not be retried automatically within the same night (the cron fires at 07:00 and 08:00 UTC and proceeds only at 02:xx local); the failure shall be recorded in `pipeline_runs`, shown on the Admin page (NFR-103), and recoverable by a manual run. | Must | BR-06, BR-11, R18 | Test |
+| NFR-023 | A failed nightly run shall not be retried automatically within the same night (the cron fires at 07:00 and 08:00 UTC and proceeds only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL`, default 2, i.e. 02:xx); the failure shall be recorded in `pipeline_runs`, shown on the Admin page (NFR-103), and recoverable by a manual run. | Must | BR-06, BR-11, R18 | Test |
 | NFR-024 | The production database that holds live data (AWS target) shall have RDS automated backups with point-in-time recovery and ≥ 7 days retention, encrypted at rest. The interim stack, which holds synthetic and test data only (D-OWNER-4), is waived from this target: it uses the point-in-time restore window of the Neon plan in use (hours on Neon Free, TRD 22) plus the weekly logical dump of TRD 15 DEP-096, and its data can be regenerated from SRC-05 and the seeds (TRD 24 D-60). This row is the single backup target; TRD 06, 12, 15 and 22 reference it. | Must | BR-02, BR-16, D-OWNER-3, D-OWNER-4 | Inspection (provider settings evidence, TRD 22) |
 | NFR-025 | For production with live data (AWS target), the recovery point objective shall be ≤ 24 h and the recovery time objective ≤ 8 working hours; a restore drill shall be run before go-live on AWS and every 6 months thereafter. On the interim stack (waiver of NFR-024) one restore drill shall be run before 15 Nov 2026 to rehearse the procedure; no RPO/RTO applies there. | Should | BR-02, D-OWNER-4 | Demo (restore drill record) |
 | NFR-026 | Batch ingest shall be atomic per record: a failure on one record shall not roll back other accepted records of the batch. | Must | BR-01, BR-02 | Test |
@@ -121,7 +121,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-065 | All functions shall be operable by keyboard alone with a visible focus indicator and a logical tab order. | Must | BR-12, BR-13 | Test (Playwright keyboard flow) |
 | NFR-066 | User-facing text shall use plain language: no statistical terms without a plain-language label (e.g. "Running change tally", "Quieter (loudness)"); the "What this means" text shall score ≤ grade 8 on the Flesch-Kincaid scale. | Should | BR-13, BR-18, SRC-10 | Analysis (readability check of configured strings) |
 | NFR-067 | Wording shall follow detection-not-diagnosis rules (TRD 00 §4.2); a CI text check shall fail on forbidden terms in UI copy. | Must | BR-18, VIS-003 | Test (CI) |
-| NFR-068 | Pages shall remain usable at 200% browser zoom and at viewport widths ≥ 360 px without horizontal page scroll; data tables may scroll horizontally inside their container below 900 px (overview) and 760 px (admissions). | Must | BR-12, SRC-09, SRC-11 | Test (Playwright at 360, 768, 1280 px) |
+| NFR-068 | Pages shall remain usable at 200% browser zoom and at viewport widths ≥ 320 px (TRD 11 UX-243) without horizontal page scroll; data tables may scroll horizontally inside their container below 900 px (overview) and 760 px (admissions). | Must | BR-12, SRC-09, SRC-11 | Test (Playwright at 320, 360, 375, 390, 768 and 1280 px; TRD 04 FE-191, TRD 24 D-78) |
 | NFR-069 | A first-time clinician shall be able to identify which residents have an alarm and open one resident's detail within 60 s without training, in a usability session with at least 3 Edgewood staff or proxy participants. | Should | BR-12, BR-13, SRC-14 Part D §7 | Demo (usability session after the Ann and Lovette interviews) |
 | NFR-070 | Loading, empty and error states shall be shown in words for every data region (e.g. "Baseline forming · 5 of 30 sessions", "No new admissions"). | Must | BR-12, BR-13 | Test |
 
@@ -195,7 +195,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-131 | Local date, local time and morning classification shall be correct across daylight-saving transitions: test vectors 2026-11-01 06:30:00 UTC → 01:30 CDT, and 2026-11-01 07:30:00 UTC → 01:30 CST, both local date 2026-11-01 and morning; 2027-03-14 08:30:00 UTC → 03:30 CDT, morning. | Must | BR-06, BR-07 | Test |
 | NFR-132 | Records with local time just before and after midnight shall be assigned to the correct local date (e.g. 2026-10-02 04:59:59 UTC → 2026-10-01 23:59:59 CDT, local date 2026-10-01). | Must | BR-06 | Test |
 | NFR-133 | The dashboard shall display all dates and times in the facility timezone with its abbreviation (e.g. "Oct 30, 2026, 3:00 PM CT"), independent of the viewer's browser timezone. | Must | BR-12, SRC-09 | Test (Playwright with browser timezone set to Europe/London) |
-| NFR-134 | The nightly run (separate Railway Cron Job service, `0 7,8 * * *` UTC) shall run exactly once per local day, at 02:xx facility time, including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
+| NFR-134 | The nightly run (separate Railway Cron Job service, `0 7,8 * * *` UTC) shall run exactly once per local day, in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx), including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
 
 ### 4.13 Browser and device support
 
@@ -210,7 +210,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | NFR-150 | The MVP shall meet all performance NFRs at the ASM-08 limits: ≤ 25 dashboard users (≤ 10 concurrent), ≤ 100 residents, ≤ 1 session per resident per day, measured on DS-08. | Must | ASM-08, R8 | Test (load test at limits) |
-| NFR-151 | The ingest API shall sustain 10 records/s for 60 s (batch or single) without errors, below the 600/min/key rate limit. | Must | BR-01, ASM-08 | Test |
+| NFR-151 | The ingest API shall sustain 10 records/s for 60 s (batch or single) without errors, below the 600/min/key rate limit. | Must | BR-01, ASM-08 | Test (TRD 13 TST-190) |
 | NFR-152 | Database size for 100 residents × 3 years (extrapolated linearly from DS-08) shall stay ≤ 2 GB including indexes, to fit interim free/trial tier limits. | Should | BR-17, RSK-07 | Analysis (size projection) |
 | NFR-153 | Exceeding the ASM-08 limits shall be treated as a design change requiring review of TRD 01 (in-process analytics, synchronous resident runs), not as a defect. | Must | ASM-08 | Inspection |
 
@@ -244,7 +244,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 
 ## 8. Implementation Notes
 
-- Load tests: seed DS-08 with `tests/performance/make_load_dataset.py`, run k6 or Locust from CI on a scheduled workflow against staging, never against production with real data.
+- Load tests: seed DS-08 with `tests/performance/make_load_dataset.py`, run `pytest tests/performance -m performance` in the nightly `performance` job (TRD 16 CIC-035) against its own PostgreSQL service, never against production.
 - Use pandas/numpy float64 throughout; avoid `round()` in analytics; compare with `abs(a - b) <= 1e-6` in tests.
 - Overview performance: compute 30-day counts with one grouped SQL query over `processed_sessions` and `day_ledger` using indexes on `(resident_id, local_date)`; do not loop per resident in Python.
 - Provide `backend/core/config.py` startup checks: `sslmode` for staging/production (ARC-057), refusal of `test_v0_1` in production (ARC-056), presence and length of `JWT_SECRET`.
@@ -273,3 +273,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-05) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-08) | — |
+| 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (NFR-001, NFR-010, NFR-012, NFR-151 verification (D-98); NFR-068 widths (D-78); NFR-023, NFR-134 NIGHTLY_RUN_HOUR_LOCAL) | — |

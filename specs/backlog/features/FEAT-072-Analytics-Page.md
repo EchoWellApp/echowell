@@ -139,7 +139,7 @@ None in the frontend; the backend writes `export.csv` audit rows for CSV downloa
 
 ## Implementation Notes
 
-- TRD conflict: FR-310 and TRD 02 UC-14 say a clinician gets a 403 page "Not available for your role", while FE-034/FE-037 and UX-350 specify "You do not have access to this page." with "Back to all residents"; implement the TRD 04/TRD 11 text (shared access-denied component, FEAT-064) and report FR-310.
+- A clinician gets the access-denied state "You do not have access to this page." with "Back to all residents" (FE-034/FE-037, UX-350; shared component, FEAT-064); TRD 02 FR-310 and UC-14 were aligned in the PR #2 consistency fixes.
 - The E-18 DTO carries counts and codes but no note strings (TRD 07 §4.13 notes are internal); compose notes in `lib/wording.ts` per UX-354 and UX-355.
 - The "Other <k>" row groups `alarm_timing` items with `planted_change` "None" (`result` `correct_no_alarm`); show them individually as false alarms only when one of them alarmed (UX-372).
 - All Recharts components set `isAnimationActive={false}` (FE-099).

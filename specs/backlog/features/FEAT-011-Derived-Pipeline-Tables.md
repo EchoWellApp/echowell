@@ -128,7 +128,7 @@ None computed. The tables store the outputs of the TRD 07 stages (epochs, status
 
 ## Logging Requirements
 
-None from the tables. Run lifecycle logs (`pipeline_run_started`, `pipeline_run_finished`) belong to FEAT-056.
+None from the tables. Run lifecycle logs (`pipeline_run_started`, `pipeline_run_succeeded` / `pipeline_run_failed`, D-80) belong to FEAT-056.
 
 ## Testing Requirements
 

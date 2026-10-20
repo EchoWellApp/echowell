@@ -55,7 +55,7 @@ Provide the page frame that all dashboard pages share: the exact route tree, the
 | FEAT-064-FR-03 | Sublines: `/residents` "Voice check-ins · <facility_name> · Showing <data_source_label> as of <Mon D, YYYY, h:mm AM/PM TZ>"; `/alerts` "For the charge nurse or clinical lead · <data_source_label> as of <Mon D, YYYY>"; `/analytics` "For the study team · <data_source_label>, <period> · numbers match the pipeline answer key" with the last clause only when `meta.pipeline_profile` is `test_v0_1`; values from `meta` only, facility never hard-coded. | UX-011, UX-012, UX-017, FE-088 |
 | FEAT-064-FR-04 | The navigation shall contain, in order, "Residents", "Alerts (<n>)", "Analytics", "New admissions", plus "Admin" after "New admissions" for role admin; "Analytics" renders only for admin and researcher. | FE-023, FE-028, UX-013, UX-014, UX-018, FR-218, SEC-043 |
 | FEAT-064-FR-05 | The current route's link shall carry `aria-current="page"` with a 2px solid ink border and weight 600; others a 1px solid `--color-border` border; padding 12px 16px on white. | FE-027, UX-013 |
-| FEAT-064-FR-06 | n in "Alerts (<n>)" shall be `total` of `GET /api/v1/alerts?status=open` (change alarms not yet reviewed; data alerts not counted), refreshed with the residents query (test data: 2; after one review: 1). | FE-036, UX-018, FR-330 |
+| FEAT-064-FR-06 | n in "Alerts (<n>)" shall be `total` of `GET /api/v1/alerts?status=open` (change alarms not yet reviewed; data alerts not counted), refreshed with the residents query (test data: 2; after one review: 1); while the count is loading or its request fails the link reads "Alerts" without a count (D-97). | FE-036, UX-018, FR-330 |
 | FEAT-064-FR-07 | The header shall show the signed-in user's display name (14px secondary) and a "Sign out" button (min-height 44px) that calls `signOut` (FEAT-063). | FE-029, UX-015 |
 | FEAT-064-FR-08 | `/residents/[residentCode]` and `/admissions` shall start with `BackLink` "← Back to all residents" to `/residents` (keeping the last `?sort=`) and shall not render `AppHeader`. | FE-025, UX-060, UX-180, FR-331 |
 | FEAT-064-FR-09 | Loading `/residents#devices` shall scroll to `<section id="devices">` and move focus to its heading "Devices"; there is no "Devices" navigation link. | FE-026, UX-016 |
@@ -110,7 +110,7 @@ None.
 
 ## Error Handling
 
-- Count query failure: the TRDs do not define the link text for this case; keep the last known count from the cache (FE-144 pattern) and let the page sections show their own errors (see Implementation Notes).
+- Count query loading or failure: the link reads "Alerts" without a count (UX-018, FE-036, D-97); the page sections show their own errors.
 - 403 → inline "You do not have access to this information." (FE-035).
 - Invalid resident code → not-found state (FE-030, UX-205).
 
@@ -143,7 +143,7 @@ None in the frontend (LOG-082). Backend writes `access.denied` audit rows for 40
 
 ## Implementation Notes
 
-- TRD conflict: TRD 13 E2E-01 expects a clinician's nav to include "Analytics", while FR-218, FE-028, UX-018, SEC-043 and E2E-21 hide it for clinicians. Implement the role rule (four requirements agree) and report E2E-01 for correction.
-- TRD conflict: TRD 02 FR-150 still mentions a header nav "Devices", retired by contract §20 R2 (FE-026, UX-016); do not render a Devices link.
-- The header error case for a failed count query is not defined by the TRDs; keep the last value or render "Alerts" and raise an OQ (AGT-009) if reviewers need a defined text.
+- A clinician's nav has no "Analytics" link (FR-218, FE-028, UX-018, SEC-043, E2E-21); TRD 13 E2E-01 was corrected to the same rule in the PR #2 consistency fixes.
+- There is no "Devices" navigation link (contract §20 R2, FE-026, UX-016); TRD 02 FR-150 was aligned in the PR #2 consistency fixes.
+- Count loading or failure: the link reads "Alerts" without a count and stays usable (TRD 11 UX-018, TRD 04 FE-036; TRD 24 D-97).
 - Use `next/navigation` `redirect()` in `app/page.tsx` (FE-021).

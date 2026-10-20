@@ -55,10 +55,10 @@ Create the two deployment verification and release workflows and the smoke-test 
 | FEAT-086-FR-03 | Both workflows shall wait up to 15 minutes for `<meta name="echowell-build" content="<SHA>">` on `/login`, comparing with `git log -1 --format=%H -- frontend netlify.toml` when Netlify skipped the build. | TRD 16 §4.4 step 3, §8 |
 | FEAT-086-FR-04 | `deploy-staging.yml` shall re-seed with `python -m backend.cli seed test_v0_1 --reset` and then the DS-10 loader when the push modifies `backend/alembic/**` or `analytics/**` or when dispatched with `reseed: true`, using DATABASE_URL and DATABASE_MIGRATION_URL = `secrets.STAGING_DATABASE_URL`, APP_ENV=staging, PIPELINE_PROFILE=test_v0_1, PIPELINE_AS_OF=2026-10-30T15:00:00-05:00, FACILITY_NAME=Edgewood, FACILITY_TZ=America/Chicago and SEED_* from `STAGING_SEED_*`, without printing them. | CIC-041, DEP-074, ENV-053, D-71 |
 | FEAT-086-FR-05 | `deploy-staging.yml` shall run `pytest tests/smoke -m smoke` with SMOKE_ENV=staging and the seeded researcher credentials, run in GitHub environment `staging` (secrets available only on the `staging` branch), and fail on any smoke failure. | CIC-042, CIC-043, DEP-080 |
-| FEAT-086-FR-06 | Staging smoke tests shall verify all eight checks (a)–(h) of DEP-080. | DEP-080, TST-152, TST-134 |
+| FEAT-086-FR-06 | Staging smoke tests shall verify all ten checks (a)–(j) of DEP-080. | DEP-080, TST-152, TST-134 |
 | FEAT-086-FR-07 | `deploy-production.yml` shall use no repository or environment secret and access production only through public HTTPS endpoints. | CIC-050, DEP-033 |
 | FEAT-086-FR-08 | `deploy-production.yml` shall fail if production does not report the merged SHA within 15 minutes or if any test of `pytest tests/smoke -m "smoke and not authenticated"` fails; failure triggers the TRD 15 §4.12 rollback decision. | CIC-051, DEP-081 |
-| FEAT-086-FR-09 | Production smoke tests shall be unauthenticated and read-only and verify checks (a)–(f) of DEP-081. | DEP-081, TST-152 |
+| FEAT-086-FR-09 | Production smoke tests shall be unauthenticated and read-only and verify checks (a)–(g) of DEP-081. | DEP-081, TST-152 |
 | FEAT-086-FR-10 | A Git tag `vX.Y.Z` and a GitHub Release with generated notes (`gh release create vX.Y.Z --generate-notes --target $SHA`) shall be created only after production smoke tests pass and only when the head commit message starts with `release: vX.Y.Z`. | CIC-052 |
 | FEAT-086-FR-11 | A smoke-test run shall finish within 5 minutes, excluding the up-to-15-minute wait for the new version. | DEP-082 |
 | FEAT-086-FR-12 | Smoke tests shall assert `Strict-Transport-Security` on API and frontend responses and run the TLS 1.1-refused / TLS 1.2-accepted check. | TST-135, SEC-062, SEC-066 |
@@ -153,5 +153,5 @@ None in code. The staging re-seed runs the pipeline with profile `test_v0_1` at 
 
 - Re-seeding runs from the CI checkout, which contains `database/seeds/` and `tests/fixtures/` (DEP-119 note).
 - Operator commands validate only their own variables (ENV-053); do not pass JWT_SECRET or CORS settings to the re-seed step.
-- Gaps to report: TST-135 asks smoke tests to assert the `http://` → `https://` redirect, which is not in the DEP-080/DEP-081 lists; SEC-066 (TLS check) is likewise outside those lists. This feature includes both checks (they add no contradiction) and notes the list difference for TRD 24.
+- The `http://` → `https://` redirect (TST-135) and the TLS check (SEC-066) are now items (i)/(j) of DEP-080 and (e)/(g) of DEP-081 (aligned in the PR #2 consistency fixes).
 - Production deploys should avoid the 08:00–20:00 facility-local window while OQ-15 is open (TRD 15 §9).

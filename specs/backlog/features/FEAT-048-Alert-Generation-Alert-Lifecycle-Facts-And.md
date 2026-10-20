@@ -28,7 +28,7 @@ Create exactly one alarm event when a resident's tally first crosses the alarm l
 - TRD 06 DB-018 (alert reconciliation).
 - TRD 05 API-080 (`leaning_most` on `GET /api/v1/alerts`), API-006.
 - TRD 13 Table 4.3-A AL-01..AL-04, Table 4.3-B AN-08; TRD 09 AC-CUS-02, AC-CUS-03, AC-CUS-07, AC-CUS-09; TRD 19 OAS-027; TRD 14 TDV-069, VC-G10.
-- TRD 25 AGT-058; TRD 24 D-03, D-11; BACKLOG §12 Q-02.
+- TRD 25 AGT-058; TRD 24 D-03, D-11, D-79, D-92.
 
 ## Scope
 
@@ -53,7 +53,7 @@ Create exactly one alarm event when a resident's tally first crosses the alarm l
 | FEAT-048-FR-04 | Alert events shall carry everything the natural key `(epoch_id, session_id)` needs (resident, epoch number, session_id) so that a rebuild maps them to existing alert rows and their reviews and snooze survive; an event the computation no longer produces is the signal for "superseded by rebuild". | CUS-014, CUS-015, API-128; AL-04 |
 | FEAT-048-FR-05 | The engine shall offer no manual closure; `closed_reason` "admin" is reserved and never produced. | CUS-019; FR-110 |
 | FEAT-048-FR-06 | `leaning_most(scores, alert, config)` shall take the scored sessions of the alert's epoch with `local_date` ≥ the alert's `local_date` (ringing session included) up to as-of, compute per composite feature the mean of signed z (sign_f × z_f), keep features with mean > 0, sort by mean descending with ties broken by canonical feature order, and return at most 3 feature keys (an empty tuple when none qualifies). | CUS-041; TRD 09 §4.8; FR-266 |
-| FEAT-048-FR-07 | `GET /api/v1/alerts` shall return `leaning_most` for each alert computed as in FEAT-048-FR-06 from persisted scores up to the as-of of the latest succeeded run. | API-080, CUS-041; BACKLOG §12 Q-02 |
+| FEAT-048-FR-07 | `GET /api/v1/alerts` shall return `leaning_most` for each alert computed as in FEAT-048-FR-06 from persisted scores up to the as-of of the latest succeeded run. | API-080, CUS-041; D-92 |
 | FEAT-048-FR-08 | Alerts shall be produced only from longitudinal own-baseline scoring; new-admission facility comparisons never create alerts or affect any tally. | FR-206; D-06 |
 | FEAT-048-FR-09 | No code in this feature shall send e-mail, SMS or push notifications. | FR-109, CUS-022 |
 
@@ -143,6 +143,6 @@ None in `analytics/` (LOG-006); the runner logs alert counts (`alerts_opened`) a
 ## Implementation Notes
 
 - Sessions for "Leaning most" are the alert epoch's scored sessions with `local_date` ≥ the alert date up to as-of; reference means for R09: pauses 2.158, loudness 2.133, voiced 2.092 (TRD 09 §4.8).
-- TRD gap: TRD 20 has no column for `leaning_most`, so it must be computed on read; TRD 05 API-006 says analytics computations happen "only by calling `analytics.pipeline`", while TRD 07 §4.2 exposes `alert_generator.leaning_most` as a public function and API-080 requires the value on every alert. Calling `analytics.alert_generator.leaning_most` from the alert service re-implements nothing (TRD 07 §8); report the wording mismatch for TRD 24.
+- TRD 20 has no column for `leaning_most`, so it must be computed on read; TRD 05 API-006 says analytics computations happen "only by calling `analytics.pipeline`", while TRD 07 §4.2 exposes `alert_generator.leaning_most` as a public function and API-080 requires the value on every alert. Calling `analytics.alert_generator.leaning_most` from the alert service re-implements nothing (TRD 07 §8); API-006 now names this read-side call explicitly (TRD 24 D-79).
 - Keep the alert row free of human state in the engine: reviews, acknowledgement and snooze are never engine inputs (AGT-058).
 - `triggered_at` is the session's `timestamp_utc`, so alert ids and times are deterministic under rebuild (TRD 19 E-13 note).

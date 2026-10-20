@@ -45,7 +45,7 @@ Make every backend log line machine-readable, safe and traceable: configure logg
 ## Out of Scope
 
 - The Problem-details error handler and CORS middleware (FEAT-019); this feature only guarantees the header is present and provides the context.
-- Pipeline-run log events (`pipeline_run_started`, `pipeline_run_finished`, stage warnings, `run_abandoned`, `nightly_run_missing`) (FEAT-056) and the Admin warning (NFR-103, FEAT-074).
+- Pipeline-run log events (`pipeline_run_started`, `pipeline_run_succeeded` / `pipeline_run_failed` (D-80), stage warnings, `run_abandoned`, `nightly_run_missing`) (FEAT-056) and the Admin warning (NFR-103, FEAT-074).
 - Sentry SDK integration (FEAT-084, NFR-102), uptime monitoring (FEAT-085, NFR-104), silent-device visibility (NFR-105, delivered by FEAT-049 and FEAT-029).
 - Ingest-specific log events (`ingest_record_rejected`, etc.) (FEAT-025, FEAT-026).
 - Frontend sending a UUID `X-Request-ID` and showing "Reference: <id>" (LOG-032, FEAT-062).

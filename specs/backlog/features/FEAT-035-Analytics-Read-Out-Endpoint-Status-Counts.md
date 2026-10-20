@@ -32,7 +32,7 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 - TRD 20 PGS-040 (app role has no privilege on `evaluation_ground_truth`; readonly login role).
 - TRD 23 §4.7.3 (Exp_status_counts mapping), §4.7.4 (Exp_resident_outcomes mapping), DME-024.
 - TRD 14 TDV-101..TDV-104; TRD 13 TST-068; TRD 05 AC-API-16 (analytics part); TRD 07 ANL-064.
-- TRD 24 D-38 (ground truth use), D-46 (Analytics page roles); BACKLOG §12 Q-01 (aggregates delivered by FEAT-051).
+- TRD 24 D-38 (ground truth use), D-46 (Analytics page roles); D-92 (aggregates delivered by FEAT-051), D-81 (alarm timing result rule).
 
 ## Scope
 
@@ -59,10 +59,10 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 | FEAT-035-FR-04 | `resident_outcomes` shall have one `ResidentOutcome` per resident-epoch with at least one usable session: `epoch_number`, `device_code`, `usable_in_epoch`, `baseline_formed` (20 baseline rows exist), `baseline_frozen_after`, `scored_sessions` (null when no baseline), `first_alarm_session` (alert session id or null), `note` ("Too few usable sessions: baseline pending, nothing scored" when the baseline is not formed, else null). | FR-240; TRD 23 §4.7.4 |
 | FEAT-035-FR-05 | `pipeline_run` shall be the `PipelineRun` DTO of the latest succeeded run (the run that defines `meta.as_of`), or null when none exists. | FR-240, API-069; TRD 19 `AnalyticsResponse` |
 | FEAT-035-FR-06 | Exactly one of `alarm_timing` and `review_outcomes` shall be non-null: `alarm_timing` when `PIPELINE_PROFILE` is `test_v0_1`, `review_outcomes` when it is `production`. | API-087, FR-322; TRD 19 E-18 |
-| FEAT-035-FR-07 | `alarm_timing` shall be built after the run by comparing persisted alerts with `evaluation_ground_truth` (resident_code, planted_change, true_onset_date): one `AlarmTimingRow` per resident with `planted_change`, `change_began` (true onset), `alarm_rang` (alert local date or null), `delay_days` (alarm local date − true onset date) and `result` ∈ {detected, missed, correct_no_alarm, false_alarm}. | CUS-047, FR-318; TRD 19 `AlarmTimingRow` |
+| FEAT-035-FR-07 | `alarm_timing` shall be built after the run by comparing persisted alerts with `evaluation_ground_truth` (resident_code, planted_change, true_onset_date): one `AlarmTimingRow` per resident with `planted_change`, `change_began` (true onset), `alarm_rang` (alert local date or null), `delay_days` (alarm local date − true onset date; null for an alarm before the onset) and `result` ∈ {detected, missed, correct_no_alarm, false_alarm}, where an alarm before the onset is `false_alarm`. | CUS-047, FR-318; TRD 19 `AlarmTimingRow`; D-81 |
 | FEAT-035-FR-08 | `evaluation_ground_truth` shall be read only by `backend/services/analytics_summary.py`, only when `PIPELINE_PROFILE` is `test_v0_1`, through a second engine built by the `backend/core/db.py` factory from `DATABASE_READONLY_URL` (`pool_size=1`, read-only transactions), without `SET ROLE`; when the profile is `production` that engine shall not be created. | API-136, SEC-116, ARC-015, ARC-034, ANL-064, D-38 |
 | FEAT-035-FR-09 | `review_outcomes` shall be `{alarms_raised, reviewed, by_outcome: {no_concern, known_cause, referred, data_problem}}` over alerts of the period, counting alerts with ≥ 1 review as reviewed and, per alert, its latest review's outcome. | CUS-049, FR-319, TDV-104 |
-| FEAT-035-FR-10 | The response shall be a complete `AnalyticsResponse` including `meta` (with `baseline_n`, `cusum_h`, `pipeline_profile`) and the `kpis`, `daily_series`, `funnel`, `by_resident` blocks produced by FEAT-051's mapping. | API-087, FR-322, CUS-029; BACKLOG §12 Q-01 |
+| FEAT-035-FR-10 | The response shall be a complete `AnalyticsResponse` including `meta` (with `baseline_n`, `cusum_h`, `pipeline_profile`) and the `kpis`, `daily_series`, `funnel`, `by_resident` blocks produced by FEAT-051's mapping. | API-087, FR-322, CUS-029; D-92 |
 
 ## Inputs
 
@@ -154,8 +154,8 @@ No engine computation. Calculations performed in the backend read path: per-resi
 
 - Create the read-only engine lazily inside `analytics_summary.py` only when `PIPELINE_PROFILE == "test_v0_1"`, through the single engine factory of `backend/core/db.py` (API-125); set `default_transaction_read_only` or `SET TRANSACTION READ ONLY` per transaction; never share it with any other module.
 - Use `true_onset_date` and the alert `local_date` (facility local) for `delay_days`; both are dates, so subtraction gives whole days.
-- `result` mapping: planted change with an alarm on or after onset → `detected`; planted change without an alarm → `missed`; no planted change and no alarm → `correct_no_alarm`; no planted change with an alarm → `false_alarm`; this follows the four enum values of TRD 19 `AlarmTimingRow` and CUS-047 ("else listing them as false alarms"). An alarm raised before a planted onset is not classified by the TRDs; report it if encountered (it does not occur in DS-07).
+- `result` mapping: planted change with an alarm on or after onset → `detected`; planted change without an alarm → `missed`; no planted change and no alarm → `correct_no_alarm`; no planted change with an alarm → `false_alarm`; this follows the four enum values of TRD 19 `AlarmTimingRow` and CUS-047 ("else listing them as false alarms"). An alarm raised before a planted onset is `false_alarm` with `delay_days` null (TRD 19 `AlarmTimingRow`, TRD 24 D-81); it does not occur in DS-07.
 - The UI groups the 8 "None" rows into "Other 8" (TRD 19 E-18 note); the API returns one row per resident.
-- TRD gap: CUS-029 asks the analytics response to include `cusum_k`, `cusum_h`, `baseline_n` and the profile, but `Meta` has no `cusum_k` and E-18 has no other place for it; return what TRD 19 defines and report the gap (TRD 19 wins for fields).
-- TRD gap: FR-240 says "latest pipeline run" without saying whether a newer running or failed run counts; this file uses the latest succeeded run so that it matches `meta.as_of` (API-069); report it.
-- Until FEAT-051 lands, the aggregate blocks are provided by the FEAT-051 mapping seam; no acceptance criterion of this feature asserts their values (BACKLOG §12 Q-01).
+- TRD 09 CUS-029 now asks only for `cusum_h`, `baseline_n` and the profile in `meta` (aligned with TRD 19 in the PR #2 consistency fixes); `cusum_k` is not a response field. The `pipeline_run` block is the latest succeeded run (FR-240, API-069). An alarm that rings before the planted change began is `false_alarm` with `delay_days` null (TRD 24 D-81).
+- FR-240 and API-087 now say "latest succeeded pipeline run" (aligned in the PR #2 consistency fixes), which matches `meta.as_of` (API-069).
+- Until FEAT-051 lands, the aggregate blocks are provided by the FEAT-051 mapping seam; no acceptance criterion of this feature asserts their values (TRD 24 D-92).

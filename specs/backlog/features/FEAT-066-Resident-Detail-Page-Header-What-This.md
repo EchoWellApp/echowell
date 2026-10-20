@@ -140,7 +140,7 @@ None in the frontend.
 
 ## Implementation Notes
 
-- TRD conflict: FR-169 describes the sparkline as "recent adjusted values", while UX-102 and FE-098 require signed deviations `sign × z`. Implement `sign × z` (two detailed rows agree with the SRC-10 wireframe semantics) and report FR-169 for correction.
+- The sparkline plots signed deviations `sign × z` (UX-102, FE-098); TRD 02 FR-169 was aligned in the PR #2 consistency fixes.
 - FR-163 says the header shows "Baseline forming · n of N sessions" as a progress indicator; this is satisfied by the large badge text plus the UX-063 baseline line and the UX-064 `<progress>` element.
 - Use the typographic apostrophe "’" exactly as in TRD 11 (e.g. "R09’s", "<R>’s own baseline").
 - Labels for the 7 cards come from the API `label` where it matches TRD 11 §4.5.4; split "Quieter (loudness)" into label and technical name for the two-tone rendering.

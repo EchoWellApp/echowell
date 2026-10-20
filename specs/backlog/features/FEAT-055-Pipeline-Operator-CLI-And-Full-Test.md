@@ -135,7 +135,7 @@ None. Failed runs caused by `config_changed_requires_rebuild` appear in the `/ad
   - `rebuild` without `--confirm REBUILD` refuses; with it, baselines are deleted and re-inserted inside each resident transaction and `pipeline.rebuild` is audited.
   - `seed test_v0_1` on an empty migrated database: 283 raw rows, one `ingest_batches` row with `source = 'seed'`, a `manual` run with as-of 2026-10-30T20:00:00Z and counts of DB-020; `APP_ENV=production` → exit 2.
   - TST-188 logins after `seed test_v0_1`.
-- No dedicated TRD 13 test ID exists for `run-pipeline`, `rebuild` and `set-config`; tests carry `@pytest.mark.req("ANL-032")`, `req("FR-229")`, `req("DB-058")` (TST-013).
+- TRD 13 now defines TST-192 (`set-config`), TST-193 (`rebuild`) and TST-194 (`run-pipeline`) (TRD 24 D-98); the tests carry `@pytest.mark.req("TST-192")` etc. as well as `req("ANL-032")`, `req("FR-229")`, `req("DB-058")` (TST-013).
 
 ## Acceptance Criteria
 

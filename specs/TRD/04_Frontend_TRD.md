@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -195,7 +195,7 @@ flowchart LR
 | FE-033 | The root layout shall render a "Skip to main content" link as the first focusable element, targeting `<main id="main">`. | Must | WCAG 2.4.1 | T |
 | FE-034 | A signed-in user whose role is not `admin` who navigates to `/admin` shall see the access-denied state "You do not have access to this page." with a link "Back to all residents"; no admin API call shall be made. | Must | BR-16 | T |
 | FE-035 | When the API returns 403 for any call, the affected component shall render "You do not have access to this information." and shall not retry. | Must | BR-16 | T |
-| FE-036 | The "Alerts (<n>)" link text shall show n = the number of change alarms with status `open` (not yet reviewed) from `GET /alerts?status=open`, refreshed with the residents query; data alerts are not counted. With the test data n = 2. | Must | SRC-18, contract §19 | T |
+| FE-036 | The "Alerts (<n>)" link text shall show n = the number of change alarms with status `open` (not yet reviewed) from `GET /alerts?status=open`, refreshed with the residents query; data alerts are not counted. With the test data n = 2. While the count is loading or when its request fails, the link text shall be "Alerts" without a count (TRD 11 UX-018; TRD 24 D-97). | Must | SRC-18, contract §19 | T |
 | FE-037 | A signed-in clinician who navigates to `/analytics` shall see the access-denied state of FE-034 and no analytics API call shall be made. | Must | contract §19 roles | T |
 
 ### 4.4 Rendering model
@@ -481,7 +481,7 @@ All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located
 | FE-097 | `CusumChart` shall expose `role="img"` with an `aria-label` produced by `lib/wording.ts` `cusumSummary()` (TRD 11 UX-091), and shall be followed by a `<details>` element "Show tally as a table" containing `CusumTable`. | Must | WCAG 1.1.1, contract §11 | T |
 | FE-098 | `Sparkline` shall plot signed deviations `sign × z` (so that upward always means "in the direction named by the label") as a 1.5px `--color-ink` line with a dashed zero line in `--color-rule`, without axes, grid, tooltip or animation. | Must | SRC-10, contract §6 | T |
 | FE-099 | All Recharts components shall set `isAnimationActive={false}` so rendering is deterministic for tests and respects reduced-motion preferences. | Must | WCAG 2.3.3, testability | T |
-| FE-100 | `FacilityRangeChart` shall render one horizontal row per feature returned by the comparison endpoint with a band from `facility_low` to `facility_high` in `--color-range-band` (#E2E2DE) and the resident's value as an 8px circle; a value outside the band shall be drawn in `--color-accent` with a "▲" glyph next to it, a value inside in `--color-ink`. | Must | SRC-11, BR-14 | T |
+| FE-100 | `FacilityRangeChart` shall render one horizontal row per feature returned by the comparison endpoint with a band from `low` to `high` (TRD 19 `AdmissionComparison` field names) in `--color-range-band` (#E2E2DE) and the resident's value as an 8px circle; a value outside the band shall be drawn in `--color-accent` with a "▲" glyph next to it, a value inside in `--color-ink`. | Must | SRC-11, BR-14 | T |
 | FE-101 | `CheckinLog` shall render events in the order returned by the API (newest first, TRD 11 UX-141) as a `<ul>` whose items use the wording of TRD 11 UX-142. | Must | SRC-10, BR-13 | T |
 | FE-102 | `DevicePanel` shall compute device-range labels such as "D01, D04–D06, D08–D10" with `lib/deviceGroups.ts` `compressDeviceCodes()`, which sorts codes naturally and joins runs of 3 or more consecutive numbers that share a prefix and have no suffix with an en dash (U+2013), and lists runs of 1 or 2 individually separated by ", ". | Must | SRC-09 | T |
 | FE-103 | `Footer` shall render in IBM Plex Mono 13px `--color-text-secondary` the text of TRD 11 UX-005 for the given variant. | Must | SRC-09, SRC-10, SRC-11 | T |
@@ -612,7 +612,7 @@ Fixtures in `frontend/tests/fixtures/ds07/` are JSON responses captured from the
 | FE-188 | E2E test `auth.spec.ts` shall assert redirect to `/login` without a token, redirect back to the `next` path after sign-in, rejection of an external `next` value, sign-out, and that a researcher sees no note form and an access-denied state on `/admin`. | Must | BR-16 | T |
 | FE-189 | E2E test `admissions.spec.ts` shall assert the experimental banner text and the empty state for the test data set (no new admissions). | Must | SRC-11, BR-14 | T |
 | FE-190 | E2E test `a11y.spec.ts` shall run axe on exactly the route list of TRD 13 TST-110 (`/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions`, `/admin`) and fail on any `serious` or `critical` violation. | Must | WCAG 2.1 AA, NFR | T |
-| FE-191 | E2E test `responsive.spec.ts` shall load `/residents` and `/residents/R09` at 390×844 and assert `document.documentElement.scrollWidth <= window.innerWidth` (no page-level horizontal scroll). | Must | TRD 11 §4.12 | T |
+| FE-191 | E2E test `responsive.spec.ts` shall load `/residents` and `/residents/R09` at each of 320×568, 360×800, 375×812 and 390×844 (TRD 11 UX-243 minimum 320px, TRD 03 NFR-068, TRD 13 E2E-16; TRD 24 D-78) and assert `document.documentElement.scrollWidth <= window.innerWidth` (no page-level horizontal scroll). | Must | TRD 11 §4.12 | T |
 | FE-192 | E2E test `privacy.spec.ts` shall assert that no request made by the application targets a host other than the frontend origin and `NEXT_PUBLIC_API_BASE_URL`, and that no `<audio>` or `<video>` element exists on any route. | Must | BR-01, BR-16 | T |
 | FE-193 | E2E test `alerts.spec.ts` shall assert on `/alerts` with the test data: change-alarm cards "R09 · D09" / "Alarm since Oct 21 · open 9 days · tally 26.8" and "R10 · D10" / "Alarm since Oct 24 · open 6 days · tally 13.4", both "Not reviewed"; exactly the four data-alert cards of TRD 11 §4.17.6 in that order; R09 selected by default with "Leaning most" "more pauses, quieter, less voiced sound"; "Save review" without an outcome shows the required-outcome error; "Remind me in 24 h" changes the R10 badge text to the snoozed form of TRD 11 UX-303 (this snooze step is step 3 of `mutating.spec.ts`, tag `@mutating`, TRD 24 D-73; every other assertion of FE-193 is read-only). | Must | SRC-18, contract §19 | T |
 | FE-194 | E2E test `analytics.spec.ts` shall log in as a researcher and assert on `/analytics` the KPI tiles, funnel values, by-resident order and percentages, the daily chart table alternative for Oct 1, Oct 12 and Oct 22, and the alarm timing table of TRD 11 §4.18.7; and shall assert that a clinician gets the access-denied state. | Must | SRC-19, contract §19 | T |
@@ -706,7 +706,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | AC-FE-05 | Opening any protected route without a token redirects to `/login`; after sign-in the user returns to that route; `next=https://example.com` is ignored. |
 | AC-FE-06 | Searching the built `.next/static` output for the token storage key shows only `sessionStorage` usage; no `localStorage` write of the token exists (FE-051 inspection). |
 | AC-FE-07 | Response headers of `/residents` on the staging deploy include the TRD 12 §4.9 CSP (connect-src lists the staging API origin), HSTS, `X-Frame-Options: DENY` and `Cache-Control: private, no-store`. |
-| AC-FE-08 | axe reports zero serious/critical violations on all routes (FE-190) and no page-level horizontal scroll at 390px width (FE-191). |
+| AC-FE-08 | axe reports zero serious/critical violations on all routes (FE-190) and no page-level horizontal scroll at the FE-191 widths 320, 360, 375 and 390px. |
 | AC-FE-09 | No network request to any host other than the frontend origin and the API origin occurs during the E2E suite (FE-192). |
 | AC-FE-10 | After saving a review for R09 via "Mark as reviewed", the R09 alert shows "Reviewed", the nav shows "Alerts (1)" and the badge still reads "▲ Alarm since Oct 21" (FE-187). |
 | AC-FE-11 | `/alerts` and `/analytics` render the test-data values of TRD 11 §4.17.6 and §4.18.7 (FE-193, FE-194 pass); a clinician cannot open `/analytics`. |
@@ -750,3 +750,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-03, R6-05) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01, R8-02, R8-03, R8-04, R8-05) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (FE-100 field names low/high; FE-191, AC-FE-08 widths (D-78); FE-036 count fallback (D-97)) | — |

@@ -32,7 +32,7 @@ Split each resident's records into epochs — continuous periods on one device w
 
 ## Scope
 
-- `analytics/epoch_detection.py::assign_epochs(rows: Sequence[ScreenedRecord]) -> list[EpochedRecord]` (with the late-arrival set supplied by the orchestrator per TRD 07 §4.5 step 6 and TRD 08 §4.3).
+- `analytics/epoch_detection.py::assign_epochs(rows: Sequence[ScreenedRecord], late: Collection[ScreenedRecord] = ()) -> list[EpochedRecord]` (the late-arrival set supplied by the orchestrator per TRD 07 §4.5 step 6 and TRD 08 §4.3).
 - Epoch numbering, epoch boundaries (`started_at`, `ended_at`) and the local fields carried on `EpochedRecord`.
 - Unit tests `tests/unit/analytics/test_epoch_detection.py`.
 
@@ -133,5 +133,5 @@ None in `analytics/` (LOG-006).
 ## Implementation Notes
 
 - Compare the three key strings exactly as received; ingest stores text without trimming or case change (ING-022), so "fw-1.0.0" and "fw-1.0.0 " would be different keys by design.
-- TRD 07 §4.2 lists the signature `assign_epochs(rows)`, while §4.5 step 6 and TRD 08 §4.3 call it with the late set; accept the late set as a keyword argument with an empty default so both forms hold, and note it in the batch report.
+- TRD 07 §4.2 now lists the signature with the late set as a keyword argument with an empty default, matching the calls in §4.5 step 6 and TRD 08 §4.3 (aligned in the PR #2 consistency fixes).
 - Keep sorting keyed on `(timestamp_utc, arrival_seq)`; never rely on dict insertion order (ANL-021).

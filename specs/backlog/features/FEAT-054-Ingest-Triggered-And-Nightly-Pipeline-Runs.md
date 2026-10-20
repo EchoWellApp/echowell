@@ -26,7 +26,7 @@ Connect the automatic triggers to the pipeline runner (FEAT-053) so that results
 
 - TRD 07 ANL-043 (synchronous ingest run), ANL-044 (batch background run), ANL-045 (nightly cron job), ANL-046 (as-of precedence for ingest and nightly runs).
 - TRD 05 API-045 (single-record scope), API-046, API-047 (`pending` on failure), API-053 (batch scope and `pipeline_run_id` in the 202), API-060..API-062 (nightly hour, dedupe, full run, exit code), API-135 (as-of resolution).
-- TRD 01 ARC-061 (cron service, 02:xx, dedupe, no in-process scheduler), ARC-062 (ledger extended nightly), ARC-065 (co-residents in scope).
+- TRD 01 ARC-061 (cron service, hour `NIGHTLY_RUN_HOUR_LOCAL`, dedupe, no in-process scheduler), ARC-062 (ledger extended nightly), ARC-065 (co-residents in scope).
 - TRD 15 DEP-046, DEP-047 (single dedupe condition), DEP-048 (schema-revision check, no migrations).
 - TRD 06 DB-021 (d) (nightly advisory key), DB-022.
 - TRD 21 `NIGHTLY_RUN_HOUR_LOCAL` (default 2), `FACILITY_TZ`, `PIPELINE_AS_OF`.
@@ -155,13 +155,13 @@ None beyond calling the runner; the scope rule (resident plus device co-resident
 
 ## Definition of Done
 
-- All FEAT-054 acceptance criteria pass; `python -m backend.jobs.nightly_run` exits without running outside 02:xx facility-local time or when that night already ran (TRD 25 Phase 6 Commands).
+- All FEAT-054 acceptance criteria pass; `python -m backend.jobs.nightly_run` exits without running outside the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (02:xx by default) or when that night already ran (TRD 25 Phase 6 Commands).
 - Integration and unit tests above pass; backend coverage ≥ 85 % (TST-141).
 - Batch report lists IDs and commands (AGT-022).
 
 ## Implementation Notes
 
-- ANL-045 and ARC-061 write the hour as "02:xx" while API-060 and LOG-110 read `NIGHTLY_RUN_HOUR_LOCAL` (default 2); implement the env-driven hour with default 2, which satisfies both.
+- ANL-045, ARC-061, DEP-047 and API-060/LOG-110 all use `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) after the PR #2 consistency fixes; implement the env-driven hour.
 - Compute the facility-local hour and date with `zoneinfo.ZoneInfo(FACILITY_TZ)` from an injectable clock; never use a fixed UTC offset (AGT-040).
 - The dedupe condition is exactly the one of API-061 / DEP-047 (`running` or `succeeded`, same facility-local date of `started_at`); a `failed` nightly run does not block a later run.
 - Create the background run row before returning 202 so the response can carry its id (API-053).

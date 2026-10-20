@@ -32,7 +32,7 @@ Provide the Python test foundation that every later feature uses to prove its re
 ## Scope
 
 - Directories: `tests/unit/analytics/`, `tests/unit/backend/`, `tests/integration/db/`, `tests/integration/api/`, `tests/integration/pipeline/`, `tests/contract/`, `tests/validation/`, `tests/security/`, `tests/performance/`, `tests/smoke/`, `tests/fixtures/` (sub-directories `pipeline_input/`, `answer_key/`, `legacy/`, `seeds/demo_overlay/` are created empty here and populated by FEAT-057 and FEAT-076).
-- `tests/conftest.py` with shared fixtures: configuration profile selection, frozen clock (`time-machine`), PostgreSQL 16 database (testcontainers `postgres:16`, or `DATABASE_URL` when `APP_ENV=test`), per-test SQLAlchemy session, FastAPI `TestClient` built from `create_app()` with `app.dependency_overrides`, and an autouse fixture that empties the in-memory slowapi storage before each test (becomes active once FEAT-022 adds the limiter).
+- `tests/conftest.py` with shared fixtures: configuration profile selection, frozen clock (`time-machine`), PostgreSQL 16 database (testcontainers `postgres:16-alpine`, or `DATABASE_URL` when `APP_ENV=test`), per-test SQLAlchemy session, FastAPI `TestClient` built from `create_app()` with `app.dependency_overrides`, and an autouse fixture that empties the in-memory slowapi storage before each test (becomes active once FEAT-022 adds the limiter).
 - `pyproject.toml` `[tool.pytest.ini_options]` with the TST-006 markers and `--strict-markers`; no `pytest.ini`.
 - `pyproject.toml` `[tool.coverage]` configuration: sources `analytics` and `backend`, exclusions limited to TST-144.
 - `tests/trace_report.py` listing requirement IDs without a test or inspection (TST-013).
@@ -53,7 +53,7 @@ Provide the Python test foundation that every later feature uses to prove its re
 | ID | Requirement | Trace |
 |---|---|---|
 | FEAT-005-FR-01 | Backend and analytics tests shall run with pytest 8.x on Python 3.12 with pytest-cov and the httpx-based FastAPI `TestClient`. | TST-001 |
-| FEAT-005-FR-02 | A session-scoped fixture shall start PostgreSQL 16 with testcontainers (image `postgres:16`) unless `DATABASE_URL` is set and `APP_ENV=test`, in which case that database is used; no SQL-exercising test uses SQLite. | TST-002 |
+| FEAT-005-FR-02 | A session-scoped fixture shall start PostgreSQL 16 with testcontainers (image `postgres:16-alpine`) unless `DATABASE_URL` is set and `APP_ENV=test`, in which case that database is used; no SQL-exercising test uses SQLite. | TST-002 |
 | FEAT-005-FR-03 | A frozen-clock fixture based on `time-machine` shall be available; no test depends on wall-clock time, network outside the test stack or execution order (compatible with `pytest -p randomly`). | TST-005 |
 | FEAT-005-FR-04 | `pyproject.toml` `[tool.pytest.ini_options]` shall register exactly the markers `unit`, `integration`, `contract`, `validation`, `security`, `performance`, `smoke`, `slow`, `authenticated`, `budget`, `req` with `--strict-markers`; a conftest hook shall fail collection of a test module that does not carry exactly one level marker. | TST-006 |
 | FEAT-005-FR-05 | A repository scan test shall fail if any tracked file has extension `.wav`, `.mp3`, `.flac`, `.ogg` or `.m4a`. | TST-007 |
@@ -80,7 +80,7 @@ Provide the Python test foundation that every later feature uses to prove its re
 
 ## Data Flow
 
-`pytest` → loads `pyproject.toml` options and markers → `tests/conftest.py` session fixture starts `postgres:16` (or connects to `DATABASE_URL`) → per-test fixtures open a session, freeze the clock, build `TestClient(create_app())` with overrides → tests run → pytest-cov aggregates line and branch coverage for `analytics` and `backend` → fail-under thresholds decide the exit code.
+`pytest` → loads `pyproject.toml` options and markers → `tests/conftest.py` session fixture starts `postgres:16-alpine` (or connects to `DATABASE_URL`) → per-test fixtures open a session, freeze the clock, build `TestClient(create_app())` with overrides → tests run → pytest-cov aggregates line and branch coverage for `analytics` and `backend` → fail-under thresholds decide the exit code.
 
 ## Dependencies
 
@@ -135,7 +135,7 @@ None at runtime. Pytest output and coverage reports are the artefacts; no audit 
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-005-AC-01 | `pytest -q` exits 0 on a machine with Docker and no `DATABASE_URL`, starting a `postgres:16` container. | TST-001, TST-002 |
+| FEAT-005-AC-01 | `pytest -q` exits 0 on a machine with Docker and no `DATABASE_URL`, starting a `postgres:16-alpine` container. | TST-001, TST-002 |
 | FEAT-005-AC-02 | With `APP_ENV=test` and `DATABASE_URL` pointing to a running PostgreSQL 16, `pytest -q` uses it and starts no container. | TST-002 |
 | FEAT-005-AC-03 | `grep -n "markers" pyproject.toml` shows exactly the eleven TST-006 markers; no `pytest.ini` exists; a test using an unregistered marker fails collection. | TST-006 |
 | FEAT-005-AC-04 | Adding a tracked file `tests/fixtures/sample.wav` makes the no-audio test fail. | TST-007 |
@@ -152,7 +152,7 @@ None at runtime. Pytest output and coverage reports are the artefacts; no audit 
 
 ## Implementation Notes
 
-- Use `testcontainers.postgres.PostgresContainer("postgres:16")` with session scope; wrap each test in a transaction or truncate between tests so order does not matter (TST-005).
+- Use `testcontainers.postgres.PostgresContainer("postgres:16-alpine")` (the image of TST-002, DEP-010 and CIC-012) with session scope; wrap each test in a transaction or truncate between tests so order does not matter (TST-005).
 - The rate-limit reset fixture (D-74) must be autouse and import the limiter lazily, so it is harmless before FEAT-022 exists.
 - Keep the answer-key loader out of `tests/conftest.py`; it lives only in `tests/validation/conftest.py` (TRD 13 §8, AGT-007).
 - Coverage thresholds are enforced in CI by FEAT-078; locally they are available as `--cov-fail-under` options so early phases are not blocked by empty modules.

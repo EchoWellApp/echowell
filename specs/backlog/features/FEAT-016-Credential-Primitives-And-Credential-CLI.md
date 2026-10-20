@@ -121,12 +121,12 @@ None.
 | Failure | Behaviour |
 |---|---|
 | Invalid settings | Exit code 1 with CRITICAL `startup_config_invalid` (ENV-002) |
-| Password policy violation | Error message naming the rule, non-zero exit, nothing written (SEC-012) |
-| Duplicate e-mail or key name collision | Non-zero exit with a clear message; transaction rolled back |
-| Unknown `--device` code or invalid `--scope` | Non-zero exit, nothing written (SEC-022, SEC-023) |
-| `revoke-api-key` with an unknown name | Non-zero exit, nothing written |
+| Password policy violation | Error message naming the rule, exit code 2, nothing written (SEC-012, D-86) |
+| Duplicate e-mail or key name collision | Exit code 2 with a clear message; transaction rolled back (D-86) |
+| Unknown `--device` code or invalid `--scope` | Exit code 2, nothing written (SEC-022, SEC-023, D-86) |
+| `revoke-api-key` with an unknown name | Exit code 2, nothing written (D-86) |
 
-The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit code 2 for the command-specific refusals listed in TRD 15 §4.8; they do not state an exit code for a refused input to these three commands, and no TRD 24 OQ covers it. The requirement here is only that the command exits non-zero and writes nothing; if a specific code is needed, raise an OQ under AGT-009.
+The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit code 2 for the command-specific refusals listed in TRD 15 §4.8; TRD 24 D-86 extends the refusal convention to these three commands: a refused input exits with code 2, prints the reason and writes nothing (TRD 15 §4.8; tested by TRD 13 TST-195).
 
 ## Logging Requirements
 
@@ -147,7 +147,7 @@ The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit cod
 | FEAT-016-AC-01 | `hash_password("correct horse battery")` returns a string starting `$argon2id$v=19$m=65536,t=3,p=4$` and `verify_password` accepts the plaintext and rejects any other. | SEC-010, TST-032 |
 | FEAT-016-AC-02 | `validate_password` rejects an 11-character password, a 129-character password, the user's own e-mail in different case and a password from `common_passwords.txt`, and accepts a 12-character non-listed password. | SEC-012 |
 | FEAT-016-AC-03 | `create-api-key --name t1` prints one key matching `^ewk_[A-Za-z0-9_-]{43}$`, stores scopes `{ingest:write}` and `key_hash` = SHA-256 of the printed key; no log line or audit row contains the key. | SEC-020, SEC-021, FR-226 |
-| FEAT-016-AC-04 | `create-api-key --name t2 --scope pipeline:run --scope ingest:write --device D01` stores both scopes and `device_id` of D01; `--scope admin` exits non-zero and writes nothing. | SEC-020, SEC-022, SEC-023 |
+| FEAT-016-AC-04 | `create-api-key --name t2 --scope pipeline:run --scope ingest:write --device D01` stores both scopes and `device_id` of D01; `--scope admin` exits with code 2 and writes nothing. | SEC-020, SEC-022, SEC-023 |
 | FEAT-016-AC-05 | `revoke-api-key --name t1` sets `active = false` and writes one `api_key.revoked` audit row with `actor_type = system` and `details.operator`. | SEC-024, SEC-103 |
 | FEAT-016-AC-06 | `echo 'a-valid-password-123' \| python -m backend.cli create-user --email Admin@Example.com --display-name Admin --role admin --password-stdin` stores email `admin@example.com`, an argon2id hash and one `user.created` audit row with `details.role = admin`. | SEC-016, SEC-017, SEC-103 |
 | FEAT-016-AC-07 | The OpenAPI document and `backend/api/` contain no route for API keys. | ARC-067, D-34 |
@@ -162,4 +162,4 @@ The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit cod
 - Use `argon2.PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, hash_len=32, salt_len=16, type=Type.ID)`; `check_needs_rehash` implements SEC-011.
 - `secrets.token_urlsafe(32)` yields 43 URL-safe characters (256 bits).
 - Print the key with a short warning that it is shown only once; never echo it into logs (`print` to stdout only).
-- `create-user` requires `--display-name` because `users.display_name` is NOT NULL (TRD 20 §4.6.2; TRD 05 §8 lists `--display-name`), although the TRD 15 §4.8 table abbreviates the command to `--email E --role R`.
+- `create-user` requires `--display-name` because `users.display_name` is NOT NULL (TRD 20 §4.6.2; TRD 05 §8 lists `--display-name`); TRD 15 §4.8 and DEP-075 now show the same syntax (D-86).

@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -92,8 +92,8 @@ gitGraph
 
 | Branch | Purpose | Deploys to | Protection |
 |---|---|---|---|
-| `main` | Production line; always releasable | production (TRD 15) | PR required, 1 approving review (CODEOWNERS where applicable), required checks (TRD 16 CIC-070), up-to-date before merge, no force push, no deletion, linear history, conversation resolution required |
-| `staging` | Integration and staging deploys | staging | Same as `main` |
+| `main` | Production line; always releasable | production (TRD 15) | PR required, 1 approving review (CODEOWNERS where applicable), required checks (TRD 16 CIC-070), up-to-date before merge, no force push, no deletion, conversation resolution required; no linear-history rule (release merge commits, GIT-010, GIT-014) |
+| `staging` | Integration and staging deploys | staging | Same as `main`, plus "Require linear history" (GIT-010) |
 | `feat/<short-kebab>` | New feature / prompt batch | Netlify deploy preview only | none |
 | `fix/<short-kebab>` | Bug fix | deploy preview | none |
 | `docs/<short-kebab>` | Documentation / TRD changes | deploy preview | none |
@@ -216,7 +216,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | GIT-050 | The TRDs in `specs/TRD/` shall be the source of truth for behaviour; where code and a TRD disagree, the code is the defect unless a PR changes the TRD. | Must | SRC-12 | Inspection |
 | GIT-051 | Any change to a TRD shall be made by PR (`docs(trd): ...`), shall update the TRD's Revision History row (version, date, description, author), and shall be approved by a CODEOWNER of that file. | Must | SRC-12 | Inspection |
 | GIT-052 | Every TRD shall keep the structure Purpose, Scope, References, Requirements, Assumptions, Dependencies, Acceptance Criteria, Implementation Notes, Open Questions, Revision History. | Must | SRC-12 | Inspection |
-| GIT-053 | Open questions, assumptions and risks shall be registered only in TRD 24 with their fixed IDs (OQ-xx, ASM-xx, RSK-xx) and cited elsewhere by ID; requirement texts shall not contain "TBD", "TODO" or placeholders. | Must | SRC-12 rule 4 | Inspection |
+| GIT-053 | Open questions, assumptions and risks shall be registered only in TRD 24 with their fixed IDs (OQ-xx, ASM-xx, RSK-xx) and cited elsewhere by ID; requirement texts shall not contain to-be-determined or to-do markers or placeholders. | Must | SRC-12 rule 4 | Inspection |
 | GIT-054 | `docs/` shall contain generated/derived design documentation (SRC-17 Phase 7) and operational guides (`docs/deployment.md`); `docs/` documents shall cite the TRD requirement IDs they elaborate and shall not contradict a TRD. | Must | SRC-17 | Inspection |
 | GIT-055 | Diagrams shall be written in Mermaid inside Markdown; binary diagram files are allowed only under `specs/` and `docs/design/` and only alongside a Mermaid or text equivalent. | Should | SRC-17 Phase 7 | Inspection |
 | GIT-056 | `README.md` shall state the project purpose in one paragraph, the statement "EchoWell is a research system, not a medical device; it detects a change and prompts a check-in, it does not diagnose", the local quick start (TRD 15 §4.2) and links to `specs/TRD/` and `docs/`. | Must | BR-18, RSK-09 | Inspection |
@@ -434,3 +434,4 @@ updates:
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-06) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-03) | — |
 | 0.10 | 19 Oct 2026 | Preprint purged from git history (PR #1 review); OQ-21/D-29 resolved | — |
+| 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (branch table: linear history on staging only (GIT-010); GIT-053 wording avoids the literal marker words so the TRD 25 Phase 1 grep returns nothing) | — |

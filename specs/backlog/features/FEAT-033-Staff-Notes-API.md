@@ -145,5 +145,5 @@ None: notes are human state; the pipeline never reads them and rebuilds never de
 
 - Trim only for the length check; store the body as received (TRD 20 check uses `btrim` for the minimum and raw length for the maximum).
 - The "edited" marker of DB-010 is derivable by the client from `supersedes_id` being non-null on the shown note; TRD 19 `StaffNote` has no separate flag, so do not add one (OAS-004).
-- TRD gap (do not guess, AGT-009): the TRDs define no response when `supersedes_id` names a note that is already superseded (TRD 20 `staff_notes_supersedes_uq` forbids it). Report it for TRD 24 before implementing that branch; it must not surface as an unhandled database error.
+- Resolved (TRD 24 D-83, TRD 05 API-085): a `supersedes_id` that names a note already superseded returns 422 `VALIDATION_ERROR` with field `supersedes_id`; a concurrent insert rejected by `staff_notes_supersedes_uq` is mapped to the same 422, never an unhandled database error.
 - `marked_reviewed` is always written false; the request has no such field (TRD 12 §8).

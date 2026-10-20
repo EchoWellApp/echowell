@@ -170,7 +170,7 @@ None.
 
 ## Implementation Notes
 
-- `get_db()` rolls back on exceptions (API-011), so the `auth.login.failed` audit row must be written and committed in the failure path before the 401 is raised (for example with a dedicated short transaction); the TRDs require the row (API-022) without prescribing the mechanism.
+- `get_db()` rolls back on exceptions (API-011), so the `auth.login.failed` audit row must be written and committed in the failure path before the 401 is raised in its own short transaction on a separate session, as TRD 12 SEC-101 now requires (TRD 24 D-87).
 - Count lockout failures with an indexed query on `audit_logs (action, occurred_at DESC)` filtered by `details->>'email'` (index `audit_logs_action_idx`).
 - Keep the dummy hash generated with the SEC-010 parameters so verification time matches real users.
 - `expires_in` is in seconds (`JWT_EXPIRES_MINUTES` × 60).

@@ -139,7 +139,7 @@ None directly. Pages show what the runner persisted; the `/admin` "Pipeline runs
 
 - Audit: `pipeline.run.started` at row creation, `pipeline.run.finished` at completion, `alert.closed` per closed alert, `resident.cohort_changed` per transition (TRD 12 §4.12; API-063; DB-025).
 - Run warnings stored in `pipeline_runs.warnings` with shape `{code, resident_code, session_id, detail}` (TRD 23 §4.2.10).
-- The structured log events (`pipeline_run_started`, `pipeline_run_finished`, `pipeline_warning`) are emitted by FEAT-056 around this service.
+- The structured log events (`pipeline_run_started`, `pipeline_run_succeeded` / `pipeline_run_failed`, `pipeline_warning`; D-80) are emitted by FEAT-056 around this service.
 
 ## Testing Requirements
 
@@ -179,6 +179,6 @@ None directly. Pages show what the runner persisted; the `/admin` "Pipeline runs
 
 - Keep the file name `backend/services/pipeline_runner.py` (TRD 07 §4.8); `backend/services/{baseline,cusum,scoring,speaker_screen,morning_adjustment}.py` stay thin read services and must not reimplement formulas (TRD 07 §8).
 - Commit the run row in its own transaction before loading data, so a crash leaves a visible `running` row that FEAT-056 can mark `run_abandoned`.
-- TRD conflict to report: ANL-037 records a recomputed-vs-persisted baseline difference as warning `baseline_mismatch`, while DB-016 records a membership difference as `late_arrival` with detail "epoch <n>". Interim: emit `baseline_mismatch` for value/membership differences of a frozen baseline (ANL-037, ANL-052) and `late_arrival` for records classified late (ANL-025) and for blocked renumbering (DB-017); raise the inconsistency as an OQ in TRD 24 (AGT-009).
+- Emit `baseline_mismatch` (detail "epoch <n>") for value or membership differences of a frozen baseline (ANL-037, ANL-052; TRD 06 DB-016 aligned in the PR #2 consistency fixes) and `late_arrival` for records classified late (ANL-025) and for blocked renumbering (DB-017).
 - `alerts` updates by `echowell_app` are limited to status/closure columns; the table has no DELETE grant for the app role (DB-009).
 - Use the scope JSON shapes of TRD 20 `pipeline_runs_scope_ck`: `{"type": "all"}` or `{"type": "residents", "resident_codes": [...]}`.

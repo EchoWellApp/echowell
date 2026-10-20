@@ -28,7 +28,7 @@ Let any developer, CI job or demo operator run the whole of EchoWell (PostgreSQL
 - TRD 01 ARC-080, ARC-081.
 - TRD 12 SEC-065.
 - TRD 03 NFR-087.
-- TRD 24 D-55 (legacy `version: "3"` compose stub replaced), D-68, D-72.
+- TRD 24 D-55 (legacy `version: "3"` compose stub replaced), D-68, D-72, D-90 (provisioning script and `alembic.ini` delivered in Phase 3).
 
 ## Scope
 
@@ -37,6 +37,7 @@ Let any developer, CI job or demo operator run the whole of EchoWell (PostgreSQL
   - `backend`: built from `backend/Dockerfile` with the repository root as context, `env_file: .env`, the three login-role URLs, command `alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`, port `127.0.0.1:8000`, bind mounts `./backend`, `./analytics`, `./database:ro`, `./tests/fixtures:ro`, `depends_on` db healthy.
   - `frontend`: `node:20-alpine`, `npm ci && npm run dev` on port `127.0.0.1:3000`, `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`, volume `frontend_node_modules`.
 - A development-capable `backend/Dockerfile` (`python:3.12-slim`, repository-root context, copies `backend/`, `analytics/`, `alembic.ini`, installs `backend/requirements.txt`); hardening (non-root UID 10001, `.dockerignore`, default command without migration) is FEAT-077.
+- `database/roles/provision_login_roles.sql` (extensions `pgcrypto` and `btree_gist`, database `timezone` = `UTC`, NOLOGIN group roles, schema ownership and the three login roles, with the content FEAT-008 specifies) and the root `alembic.ini` (`script_location = backend/alembic`) with an empty `backend/alembic/` environment, so the Phase 3 health check returns 200 (TRD 25 §4.6 Phase 3; TRD 24 D-90).
 - Root templates `.env.example` (every variable with a comment, secrets empty), `.env.development.example` (exact TRD 21 §4.6 content) and `.env.production.example` (exact TRD 21 §4.6 content).
 - Settings validator addition: refuse `local-dev-only`/`ci-only` values in `JWT_SECRET`, any `SEED_*` value or a database URL password when `APP_ENV` is `staging` or `production` (ENV-041).
 - Unit test asserting every `Settings` field appears in `.env.example` (ENV-040).
@@ -44,7 +45,7 @@ Let any developer, CI job or demo operator run the whole of EchoWell (PostgreSQL
 
 ## Out of Scope
 
-- `database/roles/provision_login_roles.sql` contents and Alembic migrations (FEAT-008).
+- Alembic migrations, grants and grant tests (FEAT-008).
 - The `seed test_v0_1` command and ground-truth loader (FEAT-017, FEAT-055, FEAT-057).
 - The `demo` profile service `frontend-prod` (DEP-017), `frontend/Dockerfile` (DEP-023) and production image hardening (DEP-021, DEP-022) (FEAT-077).
 - CI service containers (FEAT-007), staging and production hosting (FEAT-081, FEAT-082).
@@ -67,6 +68,7 @@ Let any developer, CI job or demo operator run the whole of EchoWell (PostgreSQL
 | FEAT-006-FR-12 | From a clean clone with `.env` copied from `.env.development.example`, `docker compose up` shall make `http://localhost:8000/api/v1/health` return 200 with `database: "ok"` within 180 s on Docker 24+. | DEP-014, NFR-087 |
 | FEAT-006-FR-13 | The local environment shall run the same backend, analytics and frontend code as the cloud environments, configured only through TRD 21 variables. | ARC-080, ARC-081 |
 | FEAT-006-FR-14 | The bind mounts shall let `docker compose exec backend python -m backend.cli seed test_v0_1` find `database/seeds/test_v0_1/` and `tests/fixtures/pipeline_input/` (the command itself is delivered later). | DEP-015, DEP-119, D-68 |
+| FEAT-006-FR-15 | This feature shall deliver `database/roles/provision_login_roles.sql` and the root `alembic.ini` with an empty Alembic environment, so that the Compose `db` provisions the login roles and the backend connects as `echowell_app_login` in Phase 3. | D-90, D-72, DEP-024 |
 
 ## Inputs
 
@@ -146,7 +148,7 @@ None. `analytics/` is bind-mounted into the backend container so edits apply on 
 | FEAT-006-AC-03 | `docker compose ps` shows `db` healthy before `backend` starts, and the backend log shows `alembic upgrade head` completing before uvicorn starts. | DEP-011, DEP-012 |
 | FEAT-006-AC-04 | Editing a file in `backend/` triggers a uvicorn reload without rebuilding the image. | DEP-013 |
 | FEAT-006-AC-05 | Inside the backend container, `/app/database/seeds` and `/app/tests/fixtures` exist and are read-only. | DEP-119 |
-| FEAT-006-AC-06 | `grep -nE "password|secret|key" docker-compose.yml` shows only `local-dev-only-*` values, and `grep -rn "neon.tech" docker-compose.yml backend/Dockerfile` returns nothing. | DEP-018, AC-DEP-10 |
+| FEAT-006-AC-06 | `grep -nE "password\|secret\|key" docker-compose.yml` shows only `local-dev-only-*` values, and `grep -rn "neon.tech" docker-compose.yml backend/Dockerfile` returns nothing. | DEP-018, AC-DEP-10 |
 | FEAT-006-AC-07 | The ENV-040 unit test passes; starting the backend with `APP_ENV=staging` and `JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef` exits with code 1. | ENV-040, ENV-041, AC-ENV-03 |
 | FEAT-006-AC-08 | `.env.development.example` and `.env.production.example` match the TRD 21 §4.6 blocks line for line (comments may differ only in whitespace). | ENV-040 |
 
@@ -158,8 +160,8 @@ None. `analytics/` is bind-mounted into the backend container so edits apply on 
 
 ## Implementation Notes
 
-- The provisioning script mounted by `db` is authored by FEAT-008 (Phase 4) although the Compose mount is defined here in Phase 3; until it exists the `db` container starts but the `echowell_*_login` roles do not, so FEAT-006-AC-02 is fully verifiable only with the script present. Raise this sequencing point under AGT-009 if it blocks the Phase 3 definition of done (TRD 25 §4.6 Phase 3: "`GET /api/v1/health` returns 200").
-- `alembic upgrade head` with the empty Alembic environment of Phase 3 (TRD 25 §4.6 Phase 3 Outputs list `backend/alembic/`) is a no-op; FEAT-008 adds the root `alembic.ini` (DEP-024) and migrations.
-- TRD 15 DEP-010 names `postgres:16-alpine` for Compose; TRD 13 TST-002 names `postgres:16` for testcontainers; both are PostgreSQL 16 and both are kept as written.
+- Resolved (TRD 24 D-90): this feature authors `database/roles/provision_login_roles.sql` and the root `alembic.ini` in Phase 3, so the `echowell_*_login` roles exist and FEAT-006-AC-02 (health 200 with database "ok") is verifiable in the Phase 3 PR; FEAT-008 adds migrations, grants and grant tests on top.
+- `alembic upgrade head` with the empty Alembic environment of Phase 3 (TRD 25 §4.6 Phase 3 Outputs list `backend/alembic/`) is a no-op; this feature adds the root `alembic.ini` (DEP-024, D-90) and FEAT-008 the migrations.
+- TRD 15 DEP-010, TRD 16 CIC-012 and TRD 13 TST-002 all name `postgres:16-alpine` (TST-002 aligned in the PR #2 consistency fixes).
 - Initialisation scripts in `/docker-entrypoint-initdb.d` run only on an empty volume; changes to the script require `docker compose down -v`.
 - Never put `PIPELINE_AS_OF` or `test_v0_1` into `.env.production.example` values for production; the template already documents the staging-only values in comments.

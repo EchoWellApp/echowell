@@ -138,6 +138,6 @@ None in the frontend; the backend writes `note.created` and `alert.reviewed` aud
 
 ## Implementation Notes
 
-- FR-192 and E-16 allow a new note to supersede an earlier one (`supersedes_id`), but TRD 11 offers no edit control (UX-129) and FR-193 only requires that the list shows the latest versions; do not build an edit UI. The list relies on the API default `include_superseded=false` (API-083).
+- FR-192 and E-16 allow a new note to supersede an earlier one (`supersedes_id`), but TRD 11 offers no edit control (UX-129, now also stated in FR-192) and FR-193 only requires that the list shows the latest versions; do not build an edit UI. The list relies on the API default `include_superseded=false` (API-083).
 - Keep the draft in component state only, never in storage (FE-089, FE-045).
 - Use the native `<dialog>` element with `showModal()` so focus trapping and Escape work without extra libraries (FE-131).

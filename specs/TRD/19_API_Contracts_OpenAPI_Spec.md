@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -320,7 +320,7 @@ Other event examples: R03 2026-10-18 `set_aside` detail "quality flag poor; nois
 `quarantined` detail "possible other speaker (F0 z=-8.61; composite features with |z|>=3: 4)"; R02 2026-10-04
 `missed` detail "no record received"; R02 2026-10-12 `device_silent` detail "all residents on shared device D02
 have no record"; R07 2026-10-13 `baseline_restarted` detail "new epoch 2 on device D07B" with `restart_cause` "device",
-`previous_device_code` "D07", `from_value` "D07", `to_value` "D07B". For every other event type `restart_cause`,
+`previous_device_code` "D07", `from_value` "D07", `to_value` "D07B". A firmware or software restart uses the same detail template "new epoch <n> on device <device code of the new epoch>"; its `restart_cause`, `from_value` and `to_value` carry the change (TRD 24 D-82). For every other event type `restart_cause`,
 `previous_device_code`, `from_value` and `to_value` are null. When several parts of the epoch key change at once,
 `restart_cause` is the first changed part in the order device, firmware, software, derived from the epoch and the
 resident's previous epoch (TRD 06 DB-065). `Device.in_use_until` is derived per TRD 06 DB-066.
@@ -584,7 +584,7 @@ record from D02. For D08 (single resident R08) the 12 missed days are silent day
 Abbreviated arrays: `daily_series` has 30 rows (Oct 12 shown: R02 and R03 missed via the D02 device gap),
 `by_resident` 10 rows ordered by `used_percent` ascending then resident code (R08 43, R03 73, R02 80, R05 93, then R01,
 R04, R06, R07, R09, R10 at 100), `alarm_timing` 10 rows (the 8 residents with planted change "None" all
-`correct_no_alarm`; the UI groups them as "Other 8"), `status_counts` 10 rows, `resident_outcomes` 11 rows.
+`correct_no_alarm`; the UI groups them as "Other 8"; a resident whose first alarm precedes its planted change would be `false_alarm` with `delay_days` null, D-81), `status_counts` 10 rows, `resident_outcomes` 11 rows; `pipeline_run` is the latest succeeded run (TRD 05 API-069).
 In production `alarm_timing` is null and `review_outcomes` is
 `{"alarms_raised": n, "reviewed": n, "by_outcome": {"no_concern": n, "known_cause": n, "referred": n, "data_problem": n}}`.
 
@@ -1493,7 +1493,7 @@ components:
       properties:
         compared_with: {type: string, const: own_baseline}
         alarm_crossed_on: {type: [string, "null"], format: date}
-        still_above_line: {type: boolean}
+        still_above_line: {type: boolean, description: "true when the latest cusum_tally of the current epoch is >= cusum_h (TRD 24 D-82)"}
         baseline_restarted_on: {type: [string, "null"], format: date}
         baseline_n_usable: {type: integer}
         baseline_n_required: {type: integer}
@@ -1916,7 +1916,7 @@ components:
         change_began: {type: [string, "null"], format: date}
         alarm_rang: {type: [string, "null"], format: date}
         delay_days: {type: [integer, "null"]}
-        result: {type: string, enum: [detected, missed, correct_no_alarm, false_alarm]}
+        result: {type: string, enum: [detected, missed, correct_no_alarm, false_alarm], description: "detected = first alarm on or after change_began; missed = planted change and no alarm; correct_no_alarm = no planted change and no alarm; false_alarm = alarm with no planted change, or an alarm before change_began (delay_days null) (TRD 09 CUS-032, TRD 24 D-81)"}
     ReviewOutcomes:
       type: object
       required: [alarms_raised, reviewed, by_outcome]
@@ -1963,7 +1963,7 @@ components:
         frozen_after_session_id: {$ref: "#/components/schemas/SessionId"}
         median: {type: number}
         mad: {type: number, minimum: 0}
-        robust_spread: {type: number, exclusiveMinimum: 0}
+        robust_spread: {type: number, minimum: 0, description: "0 is possible only for a non-composite feature with floor 0 (TRD 08 BSC-035, TRD 20 baselines_spread_ck)"}
         floor_applied: {type: boolean}
     BaselineRowList:
       allOf:
@@ -2079,3 +2079,4 @@ components:
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-08, F-09, F-10, F-12, F-39, F-41, F-43) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-11) | — |
+| 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (BaselineRow.robust_spread minimum 0; still_above_line and restart detail (D-82); AlarmTimingRow.result (D-81); E-18 latest succeeded run) | — |

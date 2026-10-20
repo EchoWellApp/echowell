@@ -138,8 +138,8 @@ None in the frontend.
 
 ## Implementation Notes
 
-- TRD conflict: FR-260 stacks the columns "below 900 px", UX-246 "below 1024px" (the TRD 04 FE-165 tablet breakpoint). Implement 1024px (consistent with FE-165 breakpoints) and report FR-260.
-- TRD conflict: FR-280 requires Queue 1 text "No open alarms" with no review panel, while UX-305 requires "No change alarms right now." and UX-319 the panel text "No change alarms to review."; FE-139 also points to UX-319. Implement UX-305/UX-319 (component-level owners) and report FR-280.
+- Columns stack below 1024px (UX-246, the TRD 04 FE-165 tablet breakpoint); TRD 02 FR-260 was aligned in the PR #2 consistency fixes.
+- With no open alarm, Queue 1 reads "No change alarms right now." (UX-305) and the panel "No change alarms to review." (UX-319, FE-139); TRD 02 FR-280 was aligned in the PR #2 consistency fixes.
 - FR-266 writes the empty Leaning-most text without a final period, UX-312 with one ("No single measurement stands out."); use the UX-312 string from `lib/wording.ts`.
 - The queue order is defined once in FR-261; compute the snoozed group client-side from `snoozed_until` vs the current time, because the API exposes only `snoozed_until` (TST-065 note).
 - Lower-case the TRD 11 §4.5.4 labels for Leaning most ("Quieter" → "quieter").

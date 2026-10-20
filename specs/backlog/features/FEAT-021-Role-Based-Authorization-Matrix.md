@@ -96,7 +96,7 @@ Features that build directly on this one: FEAT-024, FEAT-027, and every protecte
 
 ## Frontend Impact
 
-None in code; the frontend mirrors these rules for display only (SEC-043, FEAT-064) and shows "Not available for your role" on 403 (FR-310, FEAT-064).
+None in code; the frontend mirrors these rules for display only (SEC-043, FEAT-064) and shows the access-denied state "You do not have access to this page." on 403 (FR-310, FE-037, FEAT-064).
 
 ## Analytics Impact
 
@@ -147,7 +147,7 @@ None.
 
 ## Implementation Notes
 
-- Write the `access.denied` row in its own committed transaction before raising, because `get_db()` rolls back on exceptions (API-011); TRD 12 SEC-108 requires the row without prescribing the mechanism.
+- Write the `access.denied` row in its own committed transaction before raising, because `get_db()` rolls back on exceptions (API-011); TRD 12 SEC-101 prescribes this mechanism (TRD 24 D-87).
 - Use the route template (`request.scope["route"].path`) as `entity_id`, never the concrete path with resident codes beyond study IDs.
 - TRD 12 §4.6 and TRD 02 §4.26 are consistent; keep both role names and scope names exactly as AGT-062 lists them.
-- The BACKLOG row cites OAS-020..OAS-026 for this feature; only OAS-020 concerns status codes, while OAS-021..OAS-026 are response-content checks realised by FEAT-027, FEAT-034, FEAT-035 and FEAT-038.
+- The BACKLOG row cites OAS-020 only (aligned in the PR #2 consistency fixes); OAS-021..OAS-026 are response-content checks realised by FEAT-027, FEAT-034, FEAT-035 and FEAT-038.

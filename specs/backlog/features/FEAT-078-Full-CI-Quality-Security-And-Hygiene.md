@@ -165,4 +165,4 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 - `openapi-contract` must not need a database: the app factory connects lazily in the lifespan handler (TRD 16 §8).
 - Register `--validation-report` with `pytest_addoption` in `tests/validation/conftest.py` and write the report in `pytest_sessionfinish` (owned by FEAT-059; only invoked here).
 - `npm audit --omit=dev` deliberately ignores build-only packages; Dependabot still raises them.
-- TRD conflict to respect: TRD 12 SEC-154 asks for full-SHA pinning of all third-party actions, TRD 16 CIC-025 allows major tags for `actions/*`, `docker/*` and `microsoft/playwright`; follow CIC-025 (the workflow owner) and record the difference in the batch report for TRD 24.
+- Action pinning follows TRD 16 CIC-025 (major tags for `actions/*`, `docker/*` and `microsoft/playwright`, full SHA otherwise); TRD 12 SEC-154 was aligned to CIC-025 in the PR #2 consistency fixes.

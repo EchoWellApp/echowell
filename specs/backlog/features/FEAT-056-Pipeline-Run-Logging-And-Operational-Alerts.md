@@ -30,7 +30,7 @@ Make every pipeline run observable and every operational failure detectable. Aro
 
 ## Scope
 
-- Structured JSON events in `backend/services/pipeline_runner.py` (via `backend/core/logging.py` from FEAT-018): `pipeline_run_started`, `pipeline_run_finished` (success) / `pipeline_run_failed` (failure) with `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`, `duration_ms`, `counts`, `warning_count`; one `pipeline_warning` per warning (WARNING; ERROR for `baseline_mismatch` and `epoch_key_changed`); `data_alerts_updated` with per-kind counts.
+- Structured JSON events in `backend/services/pipeline_runner.py` (via `backend/core/logging.py` from FEAT-018): `pipeline_run_started`, `pipeline_run_succeeded` (success, INFO) / `pipeline_run_failed` (failure, ERROR) (D-80) with `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`, `duration_ms`, `counts`, `warning_count`; one `pipeline_warning` per warning (WARNING; ERROR for `baseline_mismatch`); `data_alerts_updated` with per-kind counts.
 - Stage naming: exceptions and warnings carry the exact stage names of LOG-063 in `detail` ("<stage name>: <exception type>: <sanitised message>").
 - Stuck-run handling: at the start of every run and at backend startup, any `pipeline_runs` row `running` for more than 30 minutes is set `failed` with warning `run_abandoned` and a non-empty `error_message`.
 - Retry rule: a failed run is retried automatically at most once, and only by the next ingest or nightly trigger; there is no in-process retry loop.
@@ -52,8 +52,8 @@ Make every pipeline run observable and every operational failure detectable. Aro
 | FEAT-056-FR-01 | Every run (trigger `ingest`, `nightly`, `manual`, `test`) shall have its `pipeline_runs` row with status `running`, `config_profile`, `config_snapshot`, `code_version` and `started_at` committed before the first stage executes, and an INFO `pipeline_run_started` event with `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`. | LOG-060, ANL-053 |
 | FEAT-056-FR-02 | On success the runner shall log INFO with `pipeline_run_id`, `counts` (keys of TRD 23 §4.2.10), `duration_ms` and `warning_count`. | LOG-065, ANL-053 |
 | FEAT-056-FR-03 | On failure the run row shall be updated per ANL-041 and one ERROR `pipeline_run_failed` log with `pipeline_run_id` shall be written; each failed resident adds `{"code": "exception", "resident_code": <code or null>, "session_id": null, "detail": "<stage name>: <exception type>: <sanitised message>"}`. | LOG-062, LOG-061 |
-| FEAT-056-FR-04 | Stage names in warnings and logs shall be exactly `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`. | LOG-063 |
-| FEAT-056-FR-05 | Each run warning shall be stored in `pipeline_runs.warnings` as `{code, resident_code, session_id, detail}` without failing the run, and logged as one `pipeline_warning` event (WARNING; ERROR for `baseline_mismatch` and `epoch_key_changed`). | LOG-064, ANL-052, ANL-053 |
+| FEAT-056-FR-04 | Stage names in warnings and logs shall be exactly `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`, `data_alerts`, `aggregates`. | LOG-063, D-80 |
+| FEAT-056-FR-05 | Each run warning shall be stored in `pipeline_runs.warnings` as `{code, resident_code, session_id, detail}` without failing the run, and logged as one `pipeline_warning` event (WARNING; ERROR for `baseline_mismatch`). | LOG-064, ANL-052, ANL-053 |
 | FEAT-056-FR-06 | A run row left `running` for more than 30 minutes shall be marked `failed` with warning `run_abandoned` and a non-empty `error_message` by the next run (before it proceeds) or at backend startup. | LOG-066, API-068 |
 | FEAT-056-FR-07 | A failed run shall be retried automatically at most once, at the next ingest or nightly trigger; repeated failure stays visible in `GET /api/v1/pipeline/runs` for the `/admin` list. | LOG-067 |
 | FEAT-056-FR-08 | Nightly runs shall add `db_size_bytes` (`pg_database_size`) to `counts`. | DB-049; TRD 23 §4.2.10 |
@@ -148,8 +148,8 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
 
 ## Implementation Notes
 
-- TRD inconsistency on event names: ANL-053 names the end event `pipeline_run_finished`, LOG-065 `pipeline_run_succeeded` and LOG-062 `pipeline_run_failed`. Interim: emit `pipeline_run_finished` with `status` in all cases (ANL-053) and additionally `pipeline_run_succeeded` / `pipeline_run_failed` (LOG-062, LOG-065); raise an OQ in TRD 24 to pick one (AGT-009).
-- LOG-063 lists 10 stage names and has none for stages 11 (data alerts) and 12 (aggregates) of ANL-006; interim: use the module names `data_alerts` and `aggregates` and report the gap.
-- AC-LOG-05 speaks of a warning "whose `stage` is `cusum`", but the warning shape (TRD 23 §4.2.10, LOG-062) has no `stage` field; the stage is the prefix of `detail`.
-- ANL-053 mentions an ERROR-level warning code `epoch_key_changed` that is not in the ANL-052 code list; the renumbering case is recorded as `late_arrival` with detail "epoch renumbering blocked" (ANL-038).
+- Resolved (TRD 24 D-80): the end event is exactly one of `pipeline_run_succeeded` (LOG-065) or `pipeline_run_failed` (LOG-062); TRD 07 ANL-053 no longer names `pipeline_run_finished`.
+- LOG-063 now lists `data_alerts` and `aggregates` for stages 11 and 12 of ANL-006 (D-80).
+- AC-LOG-05 now checks an `exception` warning whose `detail` starts with `cusum:`; the warning shape (TRD 23 §4.2.10, LOG-062) has no `stage` field (D-80).
+- `epoch_key_changed` was removed from ANL-053 (D-80); the renumbering case is recorded as `late_arrival` with detail "epoch renumbering blocked" (ANL-038).
 - Use `contextvars` from FEAT-018 so `pipeline_run_id` and `resident_code` appear on every record without passing them explicitly (LOG-004).

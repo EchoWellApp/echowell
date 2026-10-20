@@ -34,7 +34,7 @@ Protect the interim production database and make every deploy reversible: establ
 
 - Backup procedure in `docs/deployment.md`: weekly (Mondays) and pre-migration-release `pg_dump --format=custom --no-owner` of production by the data steward from a UND-managed workstation, encrypted at rest, stored only on storage approved for the study's research data; never committed or uploaded as an Actions artifact; the Neon plan restore window in force recorded.
 - Pre-release restore point: Neon branch `pre-<short-sha>` from `main` before merging a release with a migration; deleted after 7 days if unused.
-- Restore drill (once before 15 Nov 2026): restore the latest dump into a new Neon branch `restore-drill`, point a temporary backend at it (or use `railway run` with the branch URLs), `GET /api/v1/health`, `run-pipeline --scope all`, compare row counts of `raw_sessions`, `alerts` and `audit_logs` with the source, run `pytest tests/validation -q` on the deployed SHA, record the result, delete the branch within 7 days.
+- Restore drill (once before 15 Nov 2026; the single definition of DEP-097, D-77): restore the latest dump into a new Neon branch `restore-drill`, run the schema diff test (PGS-016) against it, point a temporary backend at it (or use `railway run` with the branch URLs), `GET /api/v1/health`, `run-pipeline --scope all`, compare row counts of `raw_sessions`, `alerts` and `audit_logs` with the source, run `pytest tests/validation -q` on the deployed SHA, record the result in `docs/deployment.md`, delete the branch within 7 days.
 - Rollback rehearsal (once before 15 Nov 2026): Netlify "Publish deploy" of the previous deploy and Railway "Redeploy" of the previous deployment, timed (≤ 10 minutes), plus the failing-healthcheck check on staging (AC-DEP-06).
 - Rollback table and PITR procedure reproduced in `docs/deployment.md` (TRD 15 §4.12, §4.13), including "never `alembic downgrade` in production" and the post-restore full pipeline run.
 
@@ -55,7 +55,7 @@ Protect the interim production database and make every deploy reversible: establ
 | FEAT-089-FR-05 | Every production deploy shall be reversible to the previous frontend and backend version within 10 minutes using the platform "publish/redeploy previous" actions, rehearsed once before 15 Nov 2026. | DEP-085 |
 | FEAT-089-FR-06 | `alembic downgrade` shall not be executed against production; schema rollback in production shall be done only by restoring a Neon branch or PITR point. | DEP-086 |
 | FEAT-089-FR-07 | After any restore the full pipeline shall be re-run (`run-pipeline --scope all`) and shall reproduce previously frozen baselines. | DEP-087, ASM-07, SEC-163 |
-| FEAT-089-FR-08 | One restore drill shall be performed on the interim stack before 15 Nov 2026: latest dump into Neon branch `restore-drill`, `GET /api/v1/health`, `run-pipeline --scope all`, comparison of `raw_sessions` and `alerts` row counts (and `audit_logs`, DB-051) with the source, and the R01–R10 validation on the deployed SHA. | DEP-097, DB-051, SEC-162, NFR-025 |
+| FEAT-089-FR-08 | One restore drill shall be performed on the interim stack before 15 Nov 2026: latest dump into Neon branch `restore-drill`, schema diff test, `GET /api/v1/health`, `run-pipeline --scope all`, comparison of `raw_sessions`, `audit_logs` and `alerts` row counts with the source, the R01–R10 validation on the deployed SHA, and the result recorded in `docs/deployment.md`. | DEP-097, DB-051, SEC-162, NFR-025, D-77 |
 | FEAT-089-FR-09 | Recovery shall restore `raw_sessions`, reference tables, `staff_notes`, `alerts` (status, snoozes), `alert_reviews`, `users`, `api_keys` and `audit_logs`, then run a full pipeline. | SEC-163 |
 | FEAT-089-FR-10 | The rollback table of TRD 15 §4.12 (frontend broken; backend fails healthcheck; backend functionally broken; broken after additive migration; data damaged) with its actions and time targets shall be documented, including revoking device keys with `revoke-api-key`, restoring, redeploying the matching backend, re-running the pipeline and issuing new keys with `create-api-key`, and recording the incident in an issue labelled `incident`. | TRD 15 §4.12 |
 | FEAT-089-FR-11 | Storage and backups holding non-synthetic data shall be encrypted at rest; every connection to a non-local database shall use TLS. | DB-052, DB-053, PGS-039 |
@@ -128,7 +128,7 @@ None in code; rollback rehearsal republishes a previous Netlify deploy.
 | FEAT-089-AC-02 | Rollback rehearsal restores the previous frontend and backend within 10 minutes, with the measured time recorded. | AC-DEP-07, DEP-085 |
 | FEAT-089-AC-03 | The restore drill is completed and documented before 15 Nov 2026 with matching `raw_sessions` and `alerts` row counts and a healthy `GET /api/v1/health` on the restored branch. | AC-DEP-08, DEP-097 |
 | FEAT-089-AC-04 | `docs/deployment.md` records the Neon restore window in force, the weekly dump schedule and storage location class, and the rollback table. | DEP-095, DEP-096 |
-| FEAT-089-AC-05 | `git ls-files | grep -Ei '\.(dump|sql\.gz|backup)$'` returns nothing and no workflow uploads a dump artifact. | DEP-098 |
+| FEAT-089-AC-05 | `git ls-files \| grep -Ei '\.(dump\|sql\.gz\|backup)$'` returns nothing and no workflow uploads a dump artifact. | DEP-098 |
 
 ## Definition of Done
 
@@ -139,5 +139,5 @@ None in code; rollback rehearsal republishes a previous Netlify deploy.
 ## Implementation Notes
 
 - PITR restore: Neon console → project `echowell` → branch `main` → Restore → timestamp (UTC) → verify `SELECT max(received_at) FROM raw_sessions` → redeploy the matching backend → `run-pipeline --scope all` (TRD 15 §4.13).
-- TRD differences to report: DEP-097 compares `raw_sessions` and `alerts` and records in `docs/deployment.md`; DB-051 compares `raw_sessions` and `audit_logs`, runs a schema diff and records in `docs/database_design.md`; SEC-162 asks for health plus R01–R10. The drill above performs the union of these checks and records the result in both files.
-- "Approved storage" for interim dumps depends on OQ-01 (open); until it is answered, use storage the PI designates for the study's research data and record the decision.
+- The drill is defined once by TRD 15 DEP-097 (TRD 24 D-77); TRD 06 DB-051 and TRD 12 SEC-162 refer to it, and the record lives only in `docs/deployment.md`.
+- "Approved storage" for interim dumps depends on OQ-01 (open); its interim decision in TRD 24 is the UND-managed storage designated by the PI for the study's research data (encrypted; never GitHub or personal devices).

@@ -65,7 +65,7 @@ Implement `analytics/pipeline.py::run_pipeline`, the single entry point of the a
 | FEAT-052-FR-12 | When `frozen_baselines` is supplied for an epoch, scoring shall use those persisted values (passed through to the baseline stage of FEAT-045). | ARC-043, ANL-037, TRD 07 §4.5 |
 | FEAT-052-FR-13 | For profile `test_v0_1`, SRC-05, R01–R10 enrolled 2026-10-01, the TRD 10 §4.9 assignments and as-of 2026-10-30 15:00 America/Chicago, the result shall reproduce SRC-03 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes, Exp_baselines 180 rows, Exp_scores 98 rows) within 1e-6 and exact strings. | ANL-017, NFR-031 |
 | FEAT-052-FR-14 | Removing duplicate arrivals from the input shall leave every non-duplicate result unchanged (R04 arrivals 89 and 283). | FR-031; AC-ANL-03 |
-| FEAT-052-FR-15 | `run_pipeline` on SRC-05 including data alerts and aggregates shall complete in ≤ 5 s on a GitHub-hosted ubuntu-latest runner; no stage worse than O(n log n) per resident except late-arrival detection. | ANL-047, ANL-050 |
+| FEAT-052-FR-15 | `run_pipeline` on SRC-05 including data alerts and aggregates shall complete in ≤ 5 s on a GitHub-hosted `ubuntu-24.04` runner (CIC-027); no stage worse than O(n log n) per resident except late-arrival detection. | ANL-047, ANL-050, CIC-027 |
 | FEAT-052-FR-16 | `scripts/run_engine.py` shall run the engine from files with the arguments of ANL-007 and write the result as JSON files to `--out`; it shall live outside `analytics/` so no `analytics` module performs file I/O. | ANL-007, ARC-041 |
 | FEAT-052-FR-17 | `analytics/pipeline.py` shall not import a database, HTTP or `backend` module, read a clock or environment variable, or use randomness. | ANL-002, ANL-003, ARC-041 |
 
@@ -166,5 +166,5 @@ None. The engine has no UI; its results reach the pages through the API features
 - Sort explicitly with `(timestamp_utc, arrival_seq)` keys even though `sorted` is stable (TRD 07 §8).
 - Parse `timestamp_utc` in the CLI with `datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)`; read the CSV in file row order (arrival order, TDV-002).
 - `frozen_baselines` is a keyword addition to the contract signature (TRD 07 §5 note); keep the five positional parameters unchanged.
-- TRD 01 ARC-040 says "data-alert generation last" while TRD 07 ANL-006/§4.5 place analytics aggregates (step 15) after data alerts; follow the TRD 07 order, which is the binding algorithm (aggregates read data alerts).
+- TRD 01 ARC-040 now follows the TRD 07 ANL-006/§4.5 order, with analytics aggregates (step 15) after data alerts (aligned in the PR #2 consistency fixes; aggregates read data alerts).
 - Late-arrival detection reruns stages 1–8 on a prefix only for out-of-order records (ANL-024, ANL-050); SRC-05 exercises only the fast path.
