@@ -74,6 +74,8 @@ Implement the first two pipeline stages. Duplicate detection processes arrivals 
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-040
+
 - FEAT-040 (Analytics contracts and PipelineConfig): `RawRecord`, `ScreenedRecord`, `PipelineConfig`, `ContractError`.
 - Downstream: FEAT-042 (epochs), FEAT-049 (day ledger), FEAT-052 (orchestrator).
 

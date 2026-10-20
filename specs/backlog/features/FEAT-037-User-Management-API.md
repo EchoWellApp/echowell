@@ -73,6 +73,8 @@ Let an admin manage dashboard accounts from `/admin`: list users, create a user 
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-016
+
 - FEAT-021 (Role-based authorization matrix): admin-only access and `access.denied` audit for 403.
 - FEAT-016 (Credential primitives): `hash_password`, the password policy, e-mail normalisation.
 - Downstream: FEAT-038 (OpenAPI), FEAT-074 (Admin Users tab).

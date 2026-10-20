@@ -3,12 +3,13 @@
 | Field | Value |
 |---|---|
 | Epic | DevOps & Deployment |
-| Build phase | Post-MVP (after Phase 11; TRD 25) |
+| Build phase | Post-MVP (TRD 25) |
 | Priority | P2 |
 | Complexity | High |
 | MVP status | Future |
 | Dependencies | FEAT-091 |
 | Status | Not Started |
+| Gate | TRD 25 |
 
 ## Purpose
 

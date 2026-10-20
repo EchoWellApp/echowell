@@ -86,6 +86,8 @@ Implement the single review model of the Alert review page (SRC-18) and the Resi
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-030, FEAT-015
+
 - FEAT-030 (Alerts list and UI configuration APIs): the `Alert` DTO builder, alert loading and `review_explanations` / `alert_snooze_hours` reading.
 - FEAT-015 (Audit log writer): `audit_service.record` in the same transaction.
 - Transitively FEAT-021 (roles) and FEAT-012 (tables and append-only grants).

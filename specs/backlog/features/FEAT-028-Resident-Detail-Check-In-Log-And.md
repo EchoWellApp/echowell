@@ -86,6 +86,8 @@ Serve everything the Resident detail page (`/residents/[residentCode]`, SRC-10) 
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-027
+
 - FEAT-027 (Residents overview API): provides the display-status function, the device-label and 30-day count assembly reused by the detail response, and transitively FEAT-021 (roles) and FEAT-014 (read-model queries, DB-065 restart cause).
 - Downstream: FEAT-038, FEAT-066, FEAT-068.
 

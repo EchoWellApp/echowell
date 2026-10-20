@@ -74,6 +74,8 @@ Split each resident's records into epochs — continuous periods on one device w
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-041
+
 - FEAT-041 (Duplicate detection and quality gate): `ScreenedRecord` statuses (duplicates excluded; set-aside included).
 - Transitively FEAT-040 (contracts).
 - Downstream: FEAT-044 (screen per epoch), FEAT-045, FEAT-048 (epoch-ended facts), FEAT-052.

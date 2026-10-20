@@ -76,6 +76,8 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
+
 - FEAT-021 (Role-based authorization matrix): roles for GET /alerts and GET /config/ui.
 - FEAT-014 (Read-model derivations): as-of local date, alert open days and alert tally queries.
 - Downstream: FEAT-031 (reviews and snooze return the `Alert` DTO built here), FEAT-048 (fills `leaning_most`), FEAT-060, FEAT-069.

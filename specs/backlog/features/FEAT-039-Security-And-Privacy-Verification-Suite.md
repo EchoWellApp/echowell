@@ -81,6 +81,8 @@ Prove, with automated tests that run on every PR, that the finished API enforces
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-038
+
 - FEAT-038 (OpenAPI contract export and drift check): every endpoint exists and the document is final, so the matrix and the audio scan cover the whole API (and transitively all Phase 5 endpoint features, FEAT-020, FEAT-021).
 - Downstream: FEAT-078 (CI runs the suite as a required check), FEAT-091 (audit evidence).
 

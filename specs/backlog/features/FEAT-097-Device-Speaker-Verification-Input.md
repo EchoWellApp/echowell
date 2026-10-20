@@ -3,12 +3,13 @@
 | Field | Value |
 |---|---|
 | Epic | Data Processing |
-| Build phase | Future research (TRD 25 Phase 12 open items; gated on OQ-14) |
+| Build phase | Future research (TRD 25) |
 | Priority | P2 |
 | Complexity | Medium |
 | MVP status | Future |
 | Dependencies | FEAT-023, FEAT-044 |
 | Status | Not Started |
+| Gate | Gated on OQ-14 |
 
 ## Purpose
 

@@ -84,6 +84,8 @@ Build each resident's personal baseline per epoch from the first N usable check-
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-044
+
 - FEAT-044 (Speaker screen): final `usable` / `quarantined` statuses that define baseline membership (and transitively FEAT-042 epochs, FEAT-043 adjusted values, FEAT-040 `robust` and config).
 - Downstream: FEAT-046 (scoring), FEAT-049/FEAT-050 (forming state for data alerts via `EpochSummary`), FEAT-052, FEAT-053.
 

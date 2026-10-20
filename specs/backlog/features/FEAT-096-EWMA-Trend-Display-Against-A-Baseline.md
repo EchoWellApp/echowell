@@ -3,12 +3,13 @@
 | Field | Value |
 |---|---|
 | Epic | Analytics Engine |
-| Build phase | Future research (TRD 25 Phase 12 open items; gated on OQ-18) |
+| Build phase | Future research (TRD 25) |
 | Priority | P2 |
 | Complexity | Medium |
 | MVP status | Future |
 | Dependencies | FEAT-046, FEAT-067 |
 | Status | Not Started |
+| Gate | Gated on OQ-18 |
 
 ## Purpose
 

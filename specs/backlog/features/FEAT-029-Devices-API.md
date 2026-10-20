@@ -75,6 +75,8 @@ Serve the Devices panel of the Residents overview (`/residents#devices`, SRC-09)
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
+
 - FEAT-021 (Role-based authorization matrix): role check for GET /devices.
 - FEAT-014 (Read-model derivations): silent days (DB-044), device-gap days and `in_use_until` (DB-066) queries.
 - Downstream: FEAT-038, FEAT-060 (DS-07 device values), FEAT-065 (Devices panel).

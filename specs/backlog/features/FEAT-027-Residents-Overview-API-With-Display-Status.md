@@ -87,6 +87,8 @@ Serve the data of the Residents overview (`/residents`, SRC-09): one row per res
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
+
 - FEAT-021 (Role-based authorization matrix): `require_roles` and the role matrix for GET /residents (admin, clinician, researcher).
 - FEAT-014 (Read-model derivations): the 30-day window, counts, last check-in, baseline progress, alarm-since and restart facts.
 - Downstream: FEAT-028 (reuses the display-status service), FEAT-060 (asserts DS-07 values), FEAT-065 (overview page).

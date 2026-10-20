@@ -82,6 +82,8 @@ Lay the foundation every analytics stage builds on: the frozen data contracts pa
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-002, FEAT-009
+
 - FEAT-002 (Monorepo skeleton): `analytics/` package location, pinned numpy 2.x, pytest configuration.
 - FEAT-009 (Master data, identity and configuration tables): `config_parameters` with the 46 seeded rows the loader reads.
 - Downstream: every analytics stage feature (FEAT-041..FEAT-052) and FEAT-055 (`set-config` validation).

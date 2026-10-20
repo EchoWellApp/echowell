@@ -75,6 +75,8 @@ Record, for every resident and every facility-local day from enrolment to the as
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-041, FEAT-043
+
 - FEAT-041 (Duplicate detection and quality gate): duplicate vs non-duplicate statuses (duplicates never count).
 - FEAT-043 (Local time derivation): local dates of records and of the as-of.
 - Downstream: FEAT-050, FEAT-051, FEAT-052, FEAT-053.

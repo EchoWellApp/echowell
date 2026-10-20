@@ -103,6 +103,8 @@ Give Team 1 devices (API key) and study admins (dashboard upload) a way to submi
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-025
+
 - FEAT-025 (Single-record ingest endpoint): provides the validated-record insert path (`raw_sessions` insert, session advisory lock, rejection storage, payload-as-received rules) that this feature reuses per record, and transitively FEAT-023 (validator), FEAT-022 (ingest rate limit), FEAT-024 (`pipeline_runner.run` interface) and FEAT-015 (audit writer).
 - Downstream: FEAT-038 (OpenAPI export), FEAT-054 (ingest-triggered runs), FEAT-055 (seed through this path), FEAT-074 (admin upload UI) depend on this feature.
 

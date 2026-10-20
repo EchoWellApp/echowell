@@ -73,6 +73,8 @@ Provide the three read-only endpoints of the experimental New admissions study a
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
+
 - FEAT-021 (Role-based authorization matrix): all-role access.
 - FEAT-014 (Read-model derivations): baseline progress and usable-session counts.
 - Downstream: FEAT-038 (OpenAPI), FEAT-073 (page), FEAT-095 (future range computation).

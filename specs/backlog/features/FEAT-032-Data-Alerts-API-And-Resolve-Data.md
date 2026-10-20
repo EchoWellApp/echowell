@@ -76,6 +76,8 @@ Serve the second queue of the Alert review page, "Data alerts · go to the study
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-015
+
 - FEAT-021 (Role-based authorization matrix): roles for GET /data-alerts.
 - FEAT-015 (Audit log writer): `data_alert.resolved` row with operator.
 - Transitively FEAT-012 (`data_alerts` table, app-role UPDATE grant) and FEAT-016/FEAT-017 (CLI framework in `backend/cli.py`).

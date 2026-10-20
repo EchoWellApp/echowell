@@ -77,6 +77,8 @@ Expose the scored sessions (per-feature z, composite, running tally and alarm st
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
+
 - FEAT-021 (Role-based authorization matrix): per-representation role rules.
 - FEAT-014 (Read-model derivations): as-of local date for the filename and date filters.
 - Transitively FEAT-015 (audit writer) via FEAT-021's dependency chain for `export.csv`, and FEAT-011 (tables).

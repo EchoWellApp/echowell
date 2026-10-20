@@ -71,6 +71,8 @@ Turn the daily composite scores into the "running change tally" that decides whe
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-046
+
 - FEAT-046 (Z-score and composite scoring): `ScoreRow`s with `composite_z` and `scored_ordinal`.
 - Downstream: FEAT-048 (alerts), FEAT-052, FEAT-053.
 

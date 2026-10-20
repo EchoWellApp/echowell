@@ -70,6 +70,8 @@ Score every usable check-in that arrives after a resident's baseline has frozen:
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-045
+
 - FEAT-045 (Baseline builder): formed baselines, membership ordinals, `feature_z`, `composite_raw`.
 - Downstream: FEAT-047 (CUSUM), FEAT-048 (leaning most uses signed z), FEAT-052.
 

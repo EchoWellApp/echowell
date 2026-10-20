@@ -74,6 +74,8 @@ Create exactly one alarm event when a resident's tally first crosses the alarm l
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-047, FEAT-030
+
 - FEAT-047 (CUSUM engine): tallies and "rings" states.
 - FEAT-030 (Alerts list API): the `leaning_most` provider seam and the `Alert` DTO.
 - Downstream: FEAT-050 (data alerts use epochs and alerts), FEAT-052, FEAT-053, FEAT-069.

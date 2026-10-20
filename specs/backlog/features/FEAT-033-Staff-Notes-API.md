@@ -72,6 +72,8 @@ Let clinicians and admins write free-text staff notes about a resident (observat
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-021, FEAT-015
+
 - FEAT-021 (Role-based authorization matrix): POST clinician/admin, GET all roles.
 - FEAT-015 (Audit log writer): `note.created`.
 - Transitively FEAT-012 (`staff_notes` table with append-only grants).

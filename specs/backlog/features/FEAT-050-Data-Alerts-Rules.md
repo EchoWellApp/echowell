@@ -74,6 +74,8 @@ Compute the data-quality alerts for the study team on every pipeline run over th
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-049, FEAT-048
+
 - FEAT-049 (Day ledger): missing-day statuses and assignment resolution for device-days.
 - FEAT-048 (Alert generation): epoch summaries and alert facts produced before stage 11 (ordering per ANL-006; data alerts must not alter them).
 - Downstream: FEAT-051, FEAT-052, FEAT-053, FEAT-032 (reads persisted rows).

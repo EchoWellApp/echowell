@@ -72,6 +72,8 @@ Quarantine check-ins that were probably spoken by someone else (a visitor or sta
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-042, FEAT-043
+
 - FEAT-042 (Epoch detection): records grouped by epoch, late records marked.
 - FEAT-043 (Local time derivation): the shared ordering/local-time helper and the separation of raw and adjusted values in the contracts.
 - Transitively FEAT-040 (`robust`, config).

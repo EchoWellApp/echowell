@@ -72,6 +72,8 @@ Convert every record's UTC timestamp to the facility's local time with the IANA 
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-040
+
 - FEAT-040 (Analytics contracts and PipelineConfig): `EpochedRecord`, `AdjustedRecord`, `PipelineConfig` with `facility_tz`, `morning_cutoff_hour`, `morning_offsets`.
 - Downstream: FEAT-044 (local dates for ordering context), FEAT-045, FEAT-049 (local date per record).
 

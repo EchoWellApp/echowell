@@ -81,6 +81,8 @@ Make the API contract of TRD 19 executable: serve the generated OpenAPI 3.1 docu
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-024, FEAT-026, FEAT-028, FEAT-029, FEAT-031, FEAT-032, FEAT-033, FEAT-035, FEAT-036, FEAT-037
+
 - FEAT-024 (pipeline run endpoints), FEAT-026 (ingest endpoints), FEAT-028 (resident detail, check-ins, features), FEAT-029 (devices), FEAT-031 (reviews and snooze), FEAT-032 (data alerts), FEAT-033 (notes), FEAT-035 (analytics), FEAT-036 (admissions), FEAT-037 (users): every TRD 19 endpoint must exist before the path-equality test can pass (their own dependencies bring in health, auth, residents, scores, alerts and config).
 - Downstream: FEAT-039 (security suite uses the document), FEAT-062 (frontend type generation), FEAT-078 (CI job).
 

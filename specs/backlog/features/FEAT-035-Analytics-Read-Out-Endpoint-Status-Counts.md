@@ -84,6 +84,8 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 
 ## Dependencies
 
+Required before implementation (BACKLOG.md): FEAT-034, FEAT-008
+
 - FEAT-034 (Scores and baselines read-outs): `analytics.py` router module, the baseline/epoch read queries and the researcher/admin role pattern reused here (and transitively FEAT-021, FEAT-014).
 - FEAT-008 (Database roles, extensions and Alembic): the `echowell_readonly` role and its login role with SELECT on `evaluation_ground_truth`, and no privilege for `echowell_app` (PGS-040).
 - Downstream: FEAT-051 (adds the aggregate blocks), FEAT-060 (DS-07 analytics values), FEAT-072.
