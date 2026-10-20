@@ -151,7 +151,7 @@ None: no algorithm runs here. The endpoint reads persisted pipeline output; disp
 ## Definition of Done
 
 - Endpoint implemented with the TRD 19 schema; display-status function unit-tested (TST-033) and reusable by FEAT-028.
-- Integration tests pass on PostgreSQL 16; DS-07 assertions (FEAT-027-AC-07, AC-08) are part of the FEAT-060 suite and pass there.
+- Integration tests pass on PostgreSQL 16; DS-07 assertions (FEAT-027-AC-07, FEAT-027-AC-08) are part of the FEAT-060 suite and pass there.
 - Requirement IDs referenced by `@pytest.mark.req` (TST-013); backend coverage ≥ 85 % (TST-141).
 - OpenAPI regenerated (FEAT-038 drift check passes).
 

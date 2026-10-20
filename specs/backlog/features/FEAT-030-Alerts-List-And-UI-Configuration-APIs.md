@@ -56,6 +56,7 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 | FEAT-030-FR-05 | Alerts shall be surfaced only through the authenticated API and dashboard; no code path in this feature shall send e-mail, SMS or push messages. | FR-109, CUS-022, D-05 |
 | FEAT-030-FR-06 | `GET /api/v1/config/ui` (all user roles) shall return `UiConfig` `{meta, alert_snooze_hours, review_explanations}` read from the `config_parameters` rows of the active profile on every request, with `review_explanations` as `{code, label}` items in configured order. | API-137; TRD 19 E-32; TRD 07 §4.7; ENV-020 |
 | FEAT-030-FR-07 | API responses shall return facts only; wording such as "Alarm since", "open <n> days" and the tally to 1 decimal is rendered by the frontend. | CUS-026, OAS-011 |
+| FEAT-030-FR-08 | Every non-closed alert shall carry `status`, `reviewed`, `snoozed_until`, `local_date` and `resident_code`, which are the inputs of the change-alarm queue order (not reviewed and not snoozed, snoozed, reviewed; then alarm date, then resident code) that the frontend applies; the API order itself stays `triggered_at` ascending. | FR-261, CUS-037; TRD 09 §4.8 |
 
 ## Inputs
 

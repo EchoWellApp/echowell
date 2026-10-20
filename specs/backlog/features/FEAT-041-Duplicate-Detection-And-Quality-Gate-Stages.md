@@ -129,7 +129,7 @@ None in `analytics/` (LOG-006). Duplicate and set-aside counts appear in `Pipeli
 
 - Both modules implemented with the binding signatures; unit cases DUP-01..DUP-04 and QG-01..QG-07 pass (TST-020).
 - Test files exist for both modules (TST-011); `analytics/` coverage ≥ 95 % (TST-140).
-- AC-06 passes in the validation suite once FEAT-052 assembles the pipeline.
+- FEAT-041-AC-06 passes in the validation suite once FEAT-052 assembles the pipeline.
 
 ## Implementation Notes
 

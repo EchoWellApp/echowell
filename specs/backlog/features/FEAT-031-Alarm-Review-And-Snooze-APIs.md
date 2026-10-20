@@ -89,7 +89,7 @@ Implement the single review model of the Alert review page (SRC-18) and the Resi
 - FEAT-030 (Alerts list and UI configuration APIs): the `Alert` DTO builder, alert loading and `review_explanations` / `alert_snooze_hours` reading.
 - FEAT-015 (Audit log writer): `audit_service.record` in the same transaction.
 - Transitively FEAT-021 (roles) and FEAT-012 (tables and append-only grants).
-- TST-067 performs a real full rebuild and therefore runs once FEAT-053 (pipeline runner) is merged; until then this feature's guarantee is FR-12 (stable ids, no review data held outside the alert's natural key).
+- TST-067 performs a real full rebuild and therefore runs once FEAT-053 (pipeline runner) is merged; until then this feature's guarantee is FEAT-031-FR-12 (stable ids, no review data held outside the alert's natural key).
 
 ## Database Impact
 

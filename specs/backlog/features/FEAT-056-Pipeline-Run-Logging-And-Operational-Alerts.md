@@ -116,7 +116,7 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
 
 ## Logging Requirements
 
-- Events and levels as in FEAT-056-FR-01..FR-12; every record carries `ts`, `level`, `logger`, `msg`, `event`, `env`, `version` and the `pipeline_run_id` context (LOG-001, LOG-004).
+- Events and levels as in FEAT-056-FR-01..FEAT-056-FR-12; every record carries `ts`, `level`, `logger`, `msg`, `event`, `env`, `version` and the `pipeline_run_id` context (LOG-001, LOG-004).
 - Audit rows `pipeline.run.started` / `pipeline.run.finished` remain the runner's (FEAT-053); this feature adds no audit action.
 
 ## Testing Requirements

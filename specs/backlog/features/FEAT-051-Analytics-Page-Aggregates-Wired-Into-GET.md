@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Analytics page (SRC-19): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (BACKLOG §12 Q-01). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
+Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Analytics page (SRC-19): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (BACKLOG.md §12, first question). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
 
 ## Business Context
 

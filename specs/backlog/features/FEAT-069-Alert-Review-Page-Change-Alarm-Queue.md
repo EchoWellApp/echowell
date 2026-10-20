@@ -34,7 +34,7 @@ Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead r
 
 - `app/(protected)/alerts/page.tsx` (`AlertsPage`) with `AppHeader` (title "Alert review", active "alerts"), two-column grid (left 5fr, right 7fr, gap 24px), footer variant `alerts`.
 - `AlertQueue`, `AlertCard`, `DataAlertQueue`, `AlertReviewPanel` frame with title row, link, `MiniTallyChart` (90px variant of `CusumChart`) and `LeaningMost`.
-- Queries: `getAlerts({})` for non-closed alarms (open and acknowledged), `getDataAlerts({ status: "open" })`, `getScores({ residentCode, epoch })` for the selected alarm.
+- Queries: `getAlerts({ status: "open" })` and `getAlerts({ status: "acknowledged" })` for the alarms of Queue 1 (TRD 02 UC-13), `getDataAlerts({ status: "open" })`, `getScores({ residentCode, epoch })` for the selected alarm.
 - URL state `?alert=<id>`; live-region announcement on selection.
 
 ## Out of Scope
@@ -64,7 +64,7 @@ Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead r
 
 ## Inputs
 
-- `GET /api/v1/alerts` (non-closed: `status` open and acknowledged; `AlertList` with `open_days`, `current_tally`, `snoozed_until`, `reviewed`, `leaning_most`), `GET /api/v1/data-alerts?status=open`, `GET /api/v1/scores?resident_code=<R>&epoch=<n>` for the selected alarm; `meta` for formatting; `?alert=` URL parameter; the client clock (for the snooze comparison).
+- `GET /api/v1/alerts?status=open` and `?status=acknowledged` (`AlertList` with `open_days`, `current_tally`, `snoozed_until`, `reviewed`, `leaning_most`), `GET /api/v1/data-alerts?status=open`, `GET /api/v1/scores?resident_code=<R>&epoch=<n>` for the selected alarm; `meta` for formatting; `?alert=` URL parameter; the client clock (for the snooze comparison).
 
 ## Outputs
 
@@ -72,7 +72,7 @@ Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead r
 
 ## Data Flow
 
-`["alerts", {…}]` and `["data-alerts", {status: "open"}]` queries → client groups and orders alarm cards per FR-261 using `reviewed`/`status`, `snoozed_until` vs now, `local_date`, `resident_code` → selected id from `?alert` → `["resident", code, "scores", epoch]` → `AlertReviewPanel` (title, link, `MiniTallyChart`, `LeaningMost`; form slot for FEAT-070).
+`["alerts", {status: "open"}]`, `["alerts", {status: "acknowledged"}]` and `["data-alerts", {status: "open"}]` queries → client groups and orders alarm cards per FR-261 using `reviewed`/`status`, `snoozed_until` vs now, `local_date`, `resident_code` → selected id from `?alert` → `["resident", code, "scores", epoch]` → `AlertReviewPanel` (title, link, `MiniTallyChart`, `LeaningMost`; form slot for FEAT-070).
 
 ## Dependencies
 
@@ -143,4 +143,4 @@ None in the frontend.
 - FR-266 writes the empty Leaning-most text without a final period, UX-312 with one ("No single measurement stands out."); use the UX-312 string from `lib/wording.ts`.
 - The queue order is defined once in FR-261; compute the snoozed group client-side from `snoozed_until` vs the current time, because the API exposes only `snoozed_until` (TST-065 note).
 - Lower-case the TRD 11 §4.5.4 labels for Leaning most ("Quieter" → "quieter").
-- E-13 accepts a single `status` value; call `getAlerts({})` without a status filter and drop items with status `closed` to obtain the open and acknowledged alarms of Queue 1.
+- E-13 accepts a single `status` value; as TRD 02 UC-13 describes, call `getAlerts({ status: "open" })` and `getAlerts({ status: "acknowledged" })` (the open call also feeds the nav count, FE-036) and merge them for Queue 1.

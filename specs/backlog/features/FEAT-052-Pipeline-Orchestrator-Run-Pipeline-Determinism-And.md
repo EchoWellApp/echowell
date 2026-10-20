@@ -136,7 +136,7 @@ None. The engine has no UI; its results reach the pages through the API features
 - Invariance: R04 duplicates removed → identical R04 outputs (AC-ANL-03, VC-R04-INV).
 - Static: import-linter contract fails on database/HTTP/backend imports in `analytics/` (AC-ANL-04, TST-021).
 - Performance (`tests/performance/test_pipeline_runtime.py`, marker `performance`): TST-120 ≤ 5 s.
-- CLI smoke: `python scripts/run_engine.py` on SRC-05 writes JSON whose counts equal FR-11 values.
+- CLI smoke: `python scripts/run_engine.py` on SRC-05 writes JSON whose counts equal the FEAT-052-FR-11 values.
 - Coverage `analytics/` ≥ 95 % (TST-140).
 
 ## Acceptance Criteria

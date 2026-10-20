@@ -40,7 +40,7 @@ Give every endpoint the same outer contract before any business endpoint is writ
 - CORS via Starlette `CORSMiddleware` exactly as API-101 (exact `CORS_ORIGINS`, `CORS_ORIGIN_REGEX` only when non-empty, `allow_credentials=False`, methods GET/POST/PATCH/OPTIONS, headers Authorization/Content-Type/X-Request-ID, expose X-Request-ID/Retry-After/X-EchoWell-Experimental, `max_age=600`).
 - Security-header middleware (API-106).
 - Request-size middleware: 64 KB default, 5 MB for `POST /api/v1/ingest`, checking `Content-Length` and streamed bytes → 413 `PAYLOAD_TOO_LARGE`.
-- Media-type guard: `application/json` everywhere; `multipart/form-data` with a single `text/csv` part only on `POST /api/v1/ingest`; any `audio/*` or other type → 415 `UNSUPPORTED_MEDIA_TYPE`.
+- Media-type guard: `application/json` everywhere; `multipart/form-data` with a single `text/csv` (or browser `application/vnd.ms-excel`, ING-012) part only on `POST /api/v1/ingest`; any `audio/*` or other type → 415 `UNSUPPORTED_MEDIA_TYPE`.
 - `backend/schemas/common.py`: `Meta`, `PageMeta`, generic `Page[T]` (`{meta, items, total, limit, offset}`), `Problem`, `ProblemFieldError` (TRD 23 §4.6 cross-cutting schemas).
 - `get_meta()` dependency: `facility_name` from `facilities.name`, `facility_tz` from `FACILITY_TZ`, `data_source_label` from `DATA_SOURCE_LABEL`, `as_of` = `as_of` of the most recent `succeeded` `pipeline_runs` row (NULL when none), `baseline_n` and `cusum_h` of the active profile, `pipeline_profile`.
 - Date parameter helpers: ISO calendar dates interpreted in `FACILITY_TZ`; `from` > `to` → 422 `INVALID_QUERY_PARAMETER`; response timestamp serialisation rules (UTC `Z`; `*_local` with facility offset; `local_date` as `YYYY-MM-DD`).
@@ -75,7 +75,7 @@ Give every endpoint the same outer contract before any business endpoint is writ
 | FEAT-019-FR-15 | Bodies larger than 64 KB (5 MB for `POST /ingest`) shall be rejected with 413 `PAYLOAD_TOO_LARGE`, checking `Content-Length` and the streamed byte count. | API-104, SEC-081 |
 | FEAT-019-FR-16 | Every response shall carry `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, plus `Strict-Transport-Security: max-age=31536000; includeSubDomains` in staging and production. | API-106 |
 | FEAT-019-FR-17 | All request bodies shall be validated by Pydantic models with `extra="forbid"`; unknown properties return 422. | SEC-080 |
-| FEAT-019-FR-18 | Only `application/json` (all endpoints) and `multipart/form-data` with a single `text/csv` part (`POST /ingest` only) shall be accepted; `audio/*` or any other media type returns 415 `UNSUPPORTED_MEDIA_TYPE`. | SEC-082 |
+| FEAT-019-FR-18 | Only `application/json` (all endpoints) and `multipart/form-data` with a single `text/csv` part (`POST /ingest` only; `application/vnd.ms-excel` as sent by browsers for .csv files is also accepted for that part) shall be accepted; `audio/*` or any other media type returns 415 `UNSUPPORTED_MEDIA_TYPE`. | SEC-082, ING-012 |
 | FEAT-019-FR-19 | Database access shall use SQLAlchemy expressions or `text()` with bound parameters only (Bandit B608 clean). | SEC-083 |
 | FEAT-019-FR-20 | Path and query parameters shall be validated against the TRD 19 patterns (codes `^[A-Z0-9]{1,16}$`, UUIDs, dates, enums, ranges). | SEC-084 |
 | FEAT-019-FR-21 | CSV cell values starting with `=`, `+`, `-`, `@` shall be treated as data only and never evaluated; this rule is exposed as a shared helper for the CSV features. | SEC-086 |
