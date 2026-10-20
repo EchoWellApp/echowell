@@ -33,6 +33,7 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 - TRD 23 §4.7.3 (Exp_status_counts mapping), §4.7.4 (Exp_resident_outcomes mapping), DME-024.
 - TRD 14 TDV-101..TDV-104; TRD 13 TST-068; TRD 05 AC-API-16 (analytics part); TRD 07 ANL-064.
 - TRD 24 D-38 (ground truth use), D-46 (Analytics page roles); D-92 (aggregates delivered by FEAT-051), D-81 (alarm timing result rule).
+- TRD 01 ARC-035 (production profile: empty `evaluation_ground_truth`, review outcomes instead of alarm timing).
 
 ## Scope
 
@@ -63,6 +64,7 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 | FEAT-035-FR-08 | `evaluation_ground_truth` shall be read only by `backend/services/analytics_summary.py`, only when `PIPELINE_PROFILE` is `test_v0_1`, through a second engine built by the `backend/core/db.py` factory from `DATABASE_READONLY_URL` (`pool_size=1`, read-only transactions), without `SET ROLE`; when the profile is `production` that engine shall not be created. | API-136, SEC-116, ARC-015, ARC-034, ANL-064, D-38 |
 | FEAT-035-FR-09 | `review_outcomes` shall be `{alarms_raised, reviewed, by_outcome: {no_concern, known_cause, referred, data_problem}}` over alerts of the period, counting alerts with ≥ 1 review as reviewed and, per alert, its latest review's outcome. | CUS-049, FR-319, TDV-104 |
 | FEAT-035-FR-10 | The response shall be a complete `AnalyticsResponse` including `meta` (with `baseline_n`, `cusum_h`, `pipeline_profile`) and the `kpis`, `daily_series`, `funnel`, `by_resident` blocks produced by FEAT-051's mapping. | API-087, FR-322, CUS-029; D-92 |
+| FEAT-035-FR-11 | In the `production` profile `evaluation_ground_truth` shall be empty and the response shall carry `review_outcomes` instead of `alarm_timing`. | ARC-035, API-087 |
 
 ## Inputs
 

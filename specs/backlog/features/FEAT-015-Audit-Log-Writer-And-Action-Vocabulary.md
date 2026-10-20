@@ -27,6 +27,7 @@ Provide the single audit writer, `backend/services/audit.py` (`audit_service`), 
 - TRD 20 PGS-044 (`audit_logs_action_ck`), §4.6.23.
 - TRD 23 §4.2.23, §4.5 (`audit_logs.details` shape).
 - TRD 02 FR-250..FR-252.
+- TRD 01 ARC-103 (security-relevant actions in append-only `audit_logs`).
 
 ## Scope
 
@@ -60,6 +61,7 @@ Provide the single audit writer, `backend/services/audit.py` (`audit_service`), 
 | FEAT-015-FR-09 | The writer shall only INSERT; no code path updates or deletes `audit_logs` (append-only for `echowell_app`). | SEC-102, FR-252 |
 | FEAT-015-FR-10 | The events of FR-250 (login, logout, failed login, ingest batch, note created, review saved, alarm snoozed, pipeline run, config change, user change) shall be expressible with the vocabulary and detail shapes of TRD 12 §4.12. | FR-250 |
 | FEAT-015-FR-11 | Audit logs shall be readable only through the `echowell_readonly` database role; no endpoint returns them. | SEC-105 |
+| FEAT-015-FR-12 | Every security-relevant action listed in TRD 12 §4.12 shall be written to the append-only `audit_logs` table through this writer. | ARC-103, SEC-100 |
 
 ## Inputs
 

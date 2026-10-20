@@ -33,6 +33,7 @@ Give Team 1 devices (API key) and study admins (dashboard upload) a way to submi
 - TRD 17 LOG-050, LOG-051, LOG-052, LOG-053 (ingest logs), LOG-021 (no bodies or feature values in logs).
 - TRD 13 TST-046, TST-047, TST-124; TRD 14 TDV-005, TDV-031, VC-G11; AC-API-01, AC-API-17, AC-ING-01, AC-ING-03, AC-ING-06.
 - TRD 24 D-25 (SRC-06 is never ingest input), D-09 (duplicates stored, first arrival kept).
+- TRD 23 DME-018 (SRC-06 legacy data is mapped to no table; 422 rejections only).
 
 ## Scope
 
@@ -74,6 +75,7 @@ Give Team 1 devices (API key) and study admins (dashboard upload) a way to submi
 | FEAT-026-FR-16 | A valid record whose device is known but not assigned to the resident on the record's local date shall be accepted; the warning `device_assignment_mismatch` is added to `pipeline_runs.warnings` by the pipeline run (not by this endpoint). | API-055 |
 | FEAT-026-FR-17 | `GET /api/v1/ingest/batches/{id}` (admin, researcher) shall return `IngestBatch` with source, filename, the four counts, `uploaded_by`, `received_at`, linked `pipeline_run_id` and `rejections[]` (`row_number`, `session_id` if parseable, `received_at`, `errors`), never `raw_body`; an unknown id returns 404 `BATCH_NOT_FOUND` and a malformed uuid 422 `INVALID_QUERY_PARAMETER`. | ING-009, API-054; TRD 19 E-07; DME-005 |
 | FEAT-026-FR-18 | Responses and logs shall never echo feature values or payloads; logs carry only identifiers, counts and error locations. | API-056, LOG-021 |
+| FEAT-026-FR-19 | The SRC-06 legacy mock file shall be mapped to no table: submitting it produces 422 rejections only and no `raw_sessions` row. | DME-018, D-25 |
 
 ## Inputs
 

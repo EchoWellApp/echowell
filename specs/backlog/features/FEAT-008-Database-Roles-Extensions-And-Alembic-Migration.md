@@ -29,6 +29,7 @@ Establish the database foundation every table feature relies on: the provisionin
 - TRD 13 TST-040, TST-041.
 - TRD 23 DME-003, §4.6 (model package layout).
 - TRD 24 D-49, D-58, D-72.
+- TRD 01 ARC-102 (timestamps stored as `timestamptz` in UTC).
 
 ## Scope
 
@@ -70,6 +71,7 @@ Establish the database foundation every table feature relies on: the provisionin
 | FEAT-008-FR-15 | Database constraints duplicate (not replace) application validation; staging and production migrations are forward-only with downgrades implemented for local/test; no migration UPDATEs or DELETEs `raw_sessions` or `audit_logs`. | DB-029, DB-030, DB-032 |
 | FEAT-008-FR-16 | The schema shall contain no column for names, birth dates, contact details, addresses or audio. | DB-035 |
 | FEAT-008-FR-17 | Owner/superuser credentials are never used by applications; `DATABASE_READONLY_URL` is referenced only by `backend/services/analytics_summary.py`, and the only `SET ROLE` in the codebase is to `echowell_migrator` in Alembic and the migrator commands. | SEC-115, SEC-116, PGS-040 |
+| FEAT-008-FR-18 | Every timestamp column created by the migrations shall be `timestamptz` holding UTC; local-time conversion uses the IANA zone of `facilities.timezone` through Python `zoneinfo`. | ARC-102 |
 
 ## Inputs
 

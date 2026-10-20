@@ -28,6 +28,7 @@ Make every backend log line machine-readable, safe and traceable: configure logg
 - TRD 03 NFR-100..NFR-105.
 - TRD 02 FR-254.
 - TRD 21 ENV-012 (`console` refused in staging/production), ENV-018 (`version` = `GIT_SHA`).
+- TRD 01 ARC-100 (request ID on every response, in logs and `audit_logs.request_id`).
 
 ## Scope
 
@@ -73,6 +74,7 @@ Make every backend log line machine-readable, safe and traceable: configure logg
 | FEAT-018-FR-17 | `X-Request-ID` shall be listed in the CORS `Access-Control-Expose-Headers` (configured by FEAT-019 using the exported constant). | LOG-035 |
 | FEAT-018-FR-18 | An unhandled exception during a request shall be logged once at ERROR `unhandled_exception` with `exc_type`, sanitised `exc_message`, `stack`, `request_id`. | LOG-070 |
 | FEAT-018-FR-19 | Logs shall not be exported to an additional log store on the interim stack; incident excerpts beyond retention are summarised by IDs and timestamps only. | LOG-120, LOG-122 |
+| FEAT-018-FR-20 | Every HTTP response shall carry `X-Request-ID`, and the request ID shall be propagated into logs and `audit_logs.request_id`, including the `pipeline.run.started` row of a run started by that request. | ARC-100 |
 
 ## Inputs
 

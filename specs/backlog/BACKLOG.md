@@ -10,7 +10,7 @@ This is the master implementation roadmap for EchoWell. It breaks the MVP define
 
 Inputs:
 
-- `specs/TRD/` 00–25 (source of truth, AGT-001). TRD 02 holds the FR list; TRD 24 the OQ, ASM, RSK, DSC and D-01..D-74 registers; TRD 13 and TRD 14 the tests and the R01–R10 validation cases; TRD 25 the build phases and agent rules.
+- `specs/TRD/` 00–25 (source of truth, AGT-001). TRD 02 holds the FR list; TRD 24 the OQ, ASM, RSK and DSC registers and the decision log (every D-xx row of TRD 24 §4.6); TRD 13 and TRD 14 the tests and the R01–R10 validation cases; TRD 25 the build phases and agent rules.
 - `specs/business-requirements/` (SRC-02 storage and processing flowcharts, SRC-03 answer-key workbook, REFERENCES.md, PROSPERO registration), `specs/data-samples/` (SRC-05 pipeline test input, 283 arrivals; legacy SRC-06 mock file, never used as input, AGT-025), `specs/algorithm/` (SRC-04 reference generator), `specs/architecture/Deployment_Architecture.md` (SRC-01). The workbook values and the generator rules are used as the TRDs state them (TRD 08, 09, 14), not re-derived here.
 - `specs/UI-wireframe/` (SRC-09 Main, SRC-10 Resident, SRC-11 Admission, SRC-18 Alerts, SRC-19 Analytics) and `docs/reports/TRD_VALIDATION_REPORT.md` (Phase 1 verdict PASS WITH FINDINGS; the round-8 Minor findings R8-01..R8-06 are recorded as fixed in the v0.9 revision rows of the affected TRDs).
 

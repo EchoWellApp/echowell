@@ -30,6 +30,7 @@ Build the shared frontend layer every page uses: the single typed API client `fr
 - TRD 12 SEC-076 (API text as text nodes).
 - TRD 19 OAS-014; TRD 14 TDV-016; TRD 13 TST-063, TST-094, TST-095, TST-097, TST-142.
 - TRD 25 AGT-018, AGT-023; TRD 24 D-18, D-51, D-65.
+- TRD 04 FE-090, FE-091 (component props interfaces; presentational components do not fetch).
 
 ## Scope
 
@@ -78,6 +79,7 @@ Build the shared frontend layer every page uses: the single typed API client `fr
 | FEAT-062-FR-21 | `Footer` shall render, in IBM Plex Mono 13px secondary, the UX-005 text for variants `overview`, `default`, `alerts`, `analytics`. | FE-103, UX-005 |
 | FEAT-062-FR-22 | Frontend fixtures shall be captured from the DS-07 API by `npm run fixtures:capture` into `frontend/tests/fixtures/ds07/` (one capture per sort value) and committed; a test re-records and diffs them; MSW handlers and fixture JSON are imported only from `frontend/tests/`. | TDV-016, TST-095, TRD 04 §4.14 |
 | FEAT-062-FR-23 | Frontend work shall start only after `pytest tests/validation -q` passes with zero failures. | AGT-023 |
+| FEAT-062-FR-24 | Each component of TRD 04 §4.8 shall export its listed props interface from its module, and presentational components shall receive their data as props only: they shall not call the API client or a query hook (data is fetched by the page components). | FE-090, FE-091 |
 
 ## Inputs
 

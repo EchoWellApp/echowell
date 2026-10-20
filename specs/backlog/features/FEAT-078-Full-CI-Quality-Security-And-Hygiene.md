@@ -29,6 +29,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 - TRD 18 GIT-010, GIT-110, GIT-111, GIT-112, GIT-113, §4.12 `dependabot.yml` outline.
 - TRD 01 ARC-041 (analytics purity, import-linter contracts).
 - TRD 25 AGT-004, AGT-007, AGT-019, AC-AGT-02, AC-AGT-03, AC-AGT-11; TRD 24 D-39, D-51, D-55, D-72.
+- TRD 01 ARC-104 (no LLM component and no ML model in the processing path).
 
 ## Scope
 
@@ -70,6 +71,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 | FEAT-078-FR-17 | `.github/dependabot.yml` shall match TRD 18 §4.12, target `staging`, and Dependabot security updates and alerts shall be enabled; dependency PRs merge only with all required checks green. | GIT-110, GIT-113, SEC-150 |
 | FEAT-078-FR-18 | A security-audit failure on an unchanged dependency may be waived for at most 7 days with an ignore entry that references a tracking issue and is recorded in `SECURITY_EXCEPTIONS.md` with an expiry date. | CIC-072, TST-136 |
 | FEAT-078-FR-19 | A merge shall be blocked when any test was skipped without a `reason=` naming a requirement or OQ ID (conftest hook). | TST-153 |
+| FEAT-078-FR-20 | The CI dependency scan shall fail when an LLM SDK or a machine-learning model dependency appears in the processing path (`backend/`, `analytics/`, `frontend/`). | ARC-104, AGT-004, AGT-005 |
 
 ## Inputs
 

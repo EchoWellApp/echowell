@@ -301,7 +301,7 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
 
 #### E-10 GET /api/v1/residents/{resident_code}/checkins
 - Auth: bearer (A, C, Rs). Query `from`, `to` (date, optional, from ≤ to, span ≤ 366 days), `limit`, `offset`.
-- 200 `CheckinEventList` (newest first). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
+- 200 `CheckinEventList` (newest first; events on the same local date in the order `alarm_on`, `watching_started`, `baseline_complete`, `baseline_restarted`, `quarantined`, `set_aside`, `device_silent`, `missed`, TRD 11 UX-141). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
 {"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",

@@ -29,6 +29,7 @@ Create the reference tables every other table points to (`facilities`, `users`, 
 - TRD 12 SEC-120, SEC-122, SEC-123, SEC-125.
 - TRD 02 FR-227, FR-229.
 - TRD 13 TST-041, TST-042, CFG-01, CFG-02, CFG-05.
+- TRD 01 ARC-105 (one `facilities` row, Edgewood, referenced by every resident and device).
 
 ## Scope
 
@@ -63,6 +64,7 @@ Create the reference tables every other table points to (`facilities`, `users`, 
 | FEAT-009-FR-13 | No HTTP endpoint shall create or modify facilities, residents, devices or assignments; these tables are written only by the seed and CLI features. | FR-227 |
 | FEAT-009-FR-14 | `residents.status` changes only from `active` to `withdrawn` (CLI, FEAT-017), and `residents.cohort` only from `new_admission` to `longitudinal` (pipeline, FEAT-053); the repository exposes only these transitions. | DME-008, DME-009 |
 | FEAT-009-FR-15 | `config_parameters` shall be changed only through the `set-config` operator command (delivered later); no endpoint writes it. | FR-229 |
+| FEAT-009-FR-16 | The facility shall be modelled as a row in `facilities`; every resident and device shall reference it, and the MVP shall operate with exactly one facility (Edgewood). | ARC-105 |
 
 ## Inputs
 

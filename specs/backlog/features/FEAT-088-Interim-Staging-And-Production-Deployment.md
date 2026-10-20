@@ -31,6 +31,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 - TRD 12 SEC-001, SEC-003, SEC-004, SEC-017.
 - TRD 13 TST-152, MVP-08, MVP-15.
 - TRD 24 D-28, D-47, D-54, D-59, D-60, D-72.
+- TRD 22 TPS-040 (organisation two-factor authentication).
 
 ## Scope
 
@@ -66,6 +67,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 | FEAT-088-FR-12 | Regions shall be Neon `aws-us-east-1` and Railway US East. | ARC-084, D-54 |
 | FEAT-088-FR-13 | `docs/reports/DEPLOYMENT_REPORT.md` shall end in "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED" with evidence, state that the deployment is a synthetic-data interim deployment and not a go-live, and state that no real resident data was loaded. | TRD 25 §4.6 Phase 10 Outputs and DoD, AC-AGT-10, VIS-024 |
 | FEAT-088-FR-14 | Every deviation from the TRD 21 §4.7 matrix shall be recorded in `docs/deployment.md` with a reason. | ENV-050 |
+| FEAT-088-FR-15 | Before the first deployment, two-factor authentication shall be required for all members of the `EchoWellApp` GitHub organisation, verified in the organisation settings and recorded in DEPLOYMENT_CHECKLIST.md A.04. | TPS-040 |
 
 ## Inputs
 

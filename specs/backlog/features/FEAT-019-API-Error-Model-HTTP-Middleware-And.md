@@ -31,6 +31,7 @@ Give every endpoint the same outer contract before any business endpoint is writ
 - TRD 02 FR-027, FR-332, FR-333.
 - TRD 13 TST-034, TST-133 (request part), TST-134.
 - TRD 24 D-32, D-48, D-66.
+- TRD 01 ARC-100, ARC-101 (request ID header; `application/problem+json` error shape).
 
 ## Scope
 
@@ -79,6 +80,7 @@ Give every endpoint the same outer contract before any business endpoint is writ
 | FEAT-019-FR-19 | Database access shall use SQLAlchemy expressions or `text()` with bound parameters only (Bandit B608 clean). | SEC-083 |
 | FEAT-019-FR-20 | Path and query parameters shall be validated against the TRD 19 patterns (codes `^[A-Z0-9]{1,16}$`, UUIDs, dates, enums, ranges). | SEC-084 |
 | FEAT-019-FR-21 | CSV cell values starting with `=`, `+`, `-`, `@` shall be treated as data only and never evaluated; this rule is exposed as a shared helper for the CSV features. | SEC-086 |
+| FEAT-019-FR-22 | Errors shall be returned as `application/problem+json` with `{type, title, status, detail, request_id, errors}` (`type` = `urn:echowell:error:<CODE>`, `errors[]` items `{field, code, message}`), and every response, including errors, shall carry `X-Request-ID`. | ARC-100, ARC-101 |
 
 ## Inputs
 
