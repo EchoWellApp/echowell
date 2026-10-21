@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -101,7 +101,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | SEC-014 | Unknown email, wrong password and inactive user shall all return 401 `INVALID_CREDENTIALS` with identical body. | Must | T-02 | Test |
 | SEC-015 | After 10 failed logins for the same email within 15 minutes (counted from `audit_logs` action `auth.login.failed`), further attempts for that email shall return 429 `ACCOUNT_TEMPORARILY_LOCKED` until 15 minutes after the last failure. | Should | T-02 | Test |
 | SEC-016 | Emails shall be normalised to lower case and trimmed before lookup and storage. | Must | — | Test |
-| SEC-017 | The first admin account shall be created only by the CLI `python -m backend.cli create-user --role admin` run by a team member with database access; there shall be no self-registration endpoint and no default credentials. | Must | BR-16 | Inspection |
+| SEC-017 | The first admin account shall be created only by the CLI `python -m backend.cli create-user --email <email> --display-name <name> --role admin` run by a team member with database access; there shall be no self-registration endpoint and no default credentials. | Must | BR-16 | Inspection |
 
 ### 4.4 Authentication: devices (API keys)
 
@@ -193,7 +193,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
 | SEC-054 | `NEXT_PUBLIC_*` variables shall contain no secrets (they are embedded in the browser bundle). | Must | T-09 | Inspection |
-| SEC-055 | JWT_SECRET shall be generated with `python -c "import secrets; print(secrets.token_urlsafe(48))"`, differ per environment, and be rotated every 180 days and immediately on suspected exposure or departure of a team member with access. | Must | T-03 | Inspection |
+| SEC-055 | JWT_SECRET shall be generated with `openssl rand -hex 32` (64 hex characters, the generator of TRD 21 §4.2 and §4.6), differ per environment, and be rotated every 180 days and immediately on suspected exposure or departure of a team member with access. | Must | T-03 | Inspection |
 | SEC-056 | Database role passwords of staging, production and AWS shall differ per environment and per role (local/CI placeholders: SEC-050 exception), be at least 32 random characters, and be rotated every 180 days and on team-member departure. | Must | T-09 | Inspection |
 | SEC-057 | Device API keys shall be rotated every 365 days, on device replacement and on suspected exposure (create new key, deploy to device, revoke old key). | Must | T-01 | Inspection |
 | SEC-058 | Each rotation shall be recorded as an audit row (`config.changed` with the secret name, never its value) or, for platform-side secrets, in the operations log in `docs/deployment.md`. | Should | T-07 | Inspection |
@@ -229,7 +229,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 The `connect-src` origins are the Railway public domains of the staging and production API services, which
 shall be configured as `echowell-backend-staging.up.railway.app` and `echowell-backend-production.up.railway.app`
 (TRD 15 §4.5 step 3; Railway service settings → Networking → generate domain with these names). They are exactly the
-values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) in the Netlify deploy contexts; if Railway assigns other names,
+values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) of the two Netlify sites; if Railway assigns other names,
 the recorded names replace both entries here and in TRD 15 in the same change. Local development (`next dev` on :3000 against
 :8000) is not served through Netlify and therefore not subject to this header. When the API moves to AWS, the
 AWS API origin replaces these entries in the same change that switches NEXT_PUBLIC_API_BASE_URL.
@@ -303,7 +303,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | SEC-100 | Every event in the table above shall write exactly one `audit_logs` row with `occurred_at` (UTC), `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `details`, `ip`, `request_id`. | Must | contract §9, §12, BR-16 | Test |
-| SEC-101 | The audit row shall be written in the same database transaction as the change it records, so that a rolled-back change leaves no audit row and a committed change always has one. | Must | T-07 | Test |
+| SEC-101 | The audit row shall be written in the same database transaction as the change it records, so that a rolled-back change leaves no audit row and a committed change always has one. Audit rows that record a refused request and accompany no change (`auth.login.failed`, including reason `rate_limited`, and `access.denied`) shall be written and committed in their own short transaction on a separate session, so that the rollback of the request session (TRD 05 API-011) does not remove them (TRD 24 D-87). | Must | T-07 | Test |
 | SEC-102 | `audit_logs` shall be append-only: the TRD 20 triggers `audit_logs_no_update_delete` (row level, UPDATE or DELETE) and its statement-level TRUNCATE trigger shall call `reject_mutation()` (SQLSTATE `EW001`, TRD 20 PGS-018), and `echowell_app` shall have only INSERT and SELECT on it. TRUNCATE shall be revoked from all non-owner roles. `raw_sessions` carries the same triggers (`raw_sessions_no_update_delete`); `alert_reviews` and `staff_notes` are append-only through grants only (`echowell_app`: SELECT, INSERT; TRD 20 PGS-021), without a trigger. | Must | contract §12, §21 R20, T-04, T-07 | Test |
 | SEC-103 | CLI actions (create-user, create-api-key, revoke-api-key, set-config, rebuild) shall write audit rows with `actor_type`=`system` and `details.operator` = the OS user name running the CLI. | Must | T-07 | Test |
 | SEC-104 | Audit `details` shall never contain passwords, password hashes, tokens, API keys, DATABASE_URL, request bodies of ingest calls, or feature values. | Must | BR-16, T-09 | Test |
@@ -323,7 +323,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-110 | The three roles above shall be created by the first Alembic migration (or a bootstrap SQL script run by the database owner) with the listed privileges, in every environment. | Must | contract §12 | Test |
+| SEC-110 | The three roles above and their login roles shall be created by the provisioning step run with owner/superuser rights (`database/roles/provision_login_roles.sql` locally and in CI; the documented owner step on Neon, Railway PostgreSQL and RDS; TRD 20 §4.3, TRD 24 D-72), never by an Alembic migration, and the migrations shall grant the listed privileges, in every environment. | Must | contract §12 | Test |
 | SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as the Railway pre-deploy command `alembic upgrade head`, never in the web start command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`) shall use DATABASE_MIGRATION_URL as `echowell_migrator` (each runs `SET ROLE echowell_migrator` after connecting); application request, pipeline and job code shall never read it (import-boundary test), and it shall not be set on the Railway cron (`nightly`) service; on AWS only the one-off migration task receives it (TRD 24 D-58, RSK-15). | Must | contract §12, §21 R20 | Inspection |
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
@@ -354,7 +354,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | SEC-151 | CI shall run `pip-audit` on the backend and analytics requirements and fail on any known vulnerability with a fix available. | Must | T-06 | Test |
 | SEC-152 | CI shall run `npm audit --audit-level=high` in `frontend/` and fail on high or critical findings. | Must | T-06 | Test |
 | SEC-153 | CI shall run Bandit on `backend/` and `analytics/` and fail on medium or higher severity findings. | Should | T-15 | Test |
-| SEC-154 | Third-party GitHub Actions shall be pinned to a full commit SHA; workflows shall declare least-privilege `permissions:` (default `contents: read`). | Must | T-06 | Inspection |
+| SEC-154 | Third-party GitHub Actions shall be pinned as TRD 16 CIC-025 requires (a major version tag only for actions published by `actions/*`, `docker/*` and `microsoft/playwright`; a full commit SHA for every other action); workflows shall declare least-privilege `permissions:` (default `contents: read`). | Must | T-06 | Inspection |
 | SEC-155 | Python and npm dependencies shall be pinned (exact versions in requirements files; `package-lock.json` committed). | Must | T-06 | Inspection |
 | SEC-156 | A critical vulnerability affecting a deployed component shall be patched and deployed within 7 days of disclosure, a high one within 30 days. | Should | T-06 | Inspection |
 
@@ -364,7 +364,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 |---|---|---|---|---|
 | SEC-160 | On the interim stack, Neon point-in-time restore (history retention as provided by the Neon plan in use, recorded in TRD 22) shall be the backup mechanism; because the interim stack holds synthetic/test data only (SEC-001), data can also be regenerated from the SRC-05 input and seeds. | Must | D-OWNER-4, SRC-02 | Inspection |
 | SEC-161 | On AWS, RDS automated backups shall be enabled with at least 7 days retention, encrypted with the KMS key (SEC-063), and deletion protection enabled. | Must | D-OWNER-3 | Inspection |
-| SEC-162 | A restore drill (restore to a new branch/instance, run `GET /health` and the R01–R10 validation against it) shall be performed at the cadence of TRD 03 NFR-025 (interim: once before 15 Nov 2026; AWS: before go-live and every 6 months thereafter). | Should | TRD 13 | Demo |
+| SEC-162 | The restore drill defined once by TRD 15 DEP-097 (restore to a new branch/instance, schema diff, `GET /api/v1/health`, full pipeline run, row-count comparison, R01–R10 suite on the deployed commit; TRD 24 D-77) shall be performed at the cadence of TRD 03 NFR-025 (interim: once before 15 Nov 2026; AWS: before go-live and every 6 months thereafter). | Should | TRD 13 | Demo |
 | SEC-163 | Because derived tables are rebuildable from `raw_sessions` (SRC-02), recovery shall restore `raw_sessions`, reference tables, `staff_notes`, `alerts` (status, snoozes), `alert_reviews`, `users`, `api_keys` and `audit_logs`, then run a full pipeline. | Must | BR-02, SRC-02 | Demo |
 
 ### 4.17 Incident response
@@ -433,7 +433,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 - Failed-login rows are written in their own short transaction because the login request itself does not commit other changes.
 - For tests, create users with a reduced argon2 memory cost only via a test-only settings override; never weaken production parameters.
 - Pitfall: Railway's edge sets `X-Forwarded-For`; without `--proxy-headers` every client appears as the proxy and the login limit would lock everyone out together.
-- Pitfall: the only permitted `allow_origin_regex` is CORS_ORIGIN_REGEX of TRD 21, set in staging only to the anchored Netlify deploy-preview pattern `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` (deploy previews call the staging API, TRD 15 DEP-054); it is refused in production (TRD 21 ENV-012). Every other allowed origin is an exact entry of CORS_ORIGINS.
+- Pitfall: the only permitted `allow_origin_regex` is CORS_ORIGIN_REGEX of TRD 21, set in staging only to the anchored Netlify deploy-preview pattern `^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$` of the staging site (deploy previews call the staging API, TRD 15 DEP-054); it is refused in production (TRD 21 ENV-012). Every other allowed origin is an exact entry of CORS_ORIGINS.
 
 ## 9. Open Questions
 
@@ -459,3 +459,5 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (SEC-017 create-user syntax; SEC-055 openssl rand -hex 32; SEC-101 refused-request audit rows (D-87); SEC-110 provisioning step; SEC-154 per CIC-025; SEC-162 refers to DEP-097 (D-77)) | — |
+| 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

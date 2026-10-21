@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -99,7 +99,7 @@ Wireframe SRC-09 header: a row with, on the left, "EchoWell" (28px, weight 600) 
 | UX-015 | The header shall show the signed-in user's display name in 14px `--color-text-secondary` and a button "Sign out" (min-height 44px, 1px solid `--color-border`). | Must | BR-16 | T |
 | UX-016 | (Retired by contract §20 R2: the navigation has no "Devices" link.) Opening `/residents#devices` shall scroll to the Devices panel and move keyboard focus to its heading "Devices". | Must | SRC-09, contract §20 R2 | T |
 | UX-017 | The Alert review subline shall read "For the charge nurse or clinical lead · <data source label> as of <Mon D, YYYY>" (test data: "For the charge nurse or clinical lead · pipeline test data v0.1 as of Oct 30, 2026"); the Analytics subline shall read "For the study team · <data source label>, <period> · numbers match the pipeline answer key", where the clause " · numbers match the pipeline answer key" appears only when `meta.pipeline_profile` is `test_v0_1` and `<period>` is the 30-day window as a date range with year (test data: "For the study team · pipeline test data v0.1, Oct 1–30, 2026 · numbers match the pipeline answer key"). | Must | SRC-18, SRC-19, contract §19 | T |
-| UX-018 | In "Alerts (<n>)", n shall be the number of change alarms not yet reviewed (alert status `open`); data alerts are not counted (test data: "Alerts (2)"; after one review "Alerts (1)"). The "Analytics" link shall be shown only to roles `admin` and `researcher`. | Must | SRC-18, contract §19 | T |
+| UX-018 | In "Alerts (<n>)", n shall be the number of change alarms not yet reviewed (alert status `open`); data alerts are not counted (test data: "Alerts (2)"; after one review "Alerts (1)"). While the count is loading or when its request fails, the link shall read "Alerts" without a count and stay usable (TRD 24 D-97). The "Analytics" link shall be shown only to roles `admin` and `researcher`. | Must | SRC-18, contract §19 | T |
 
 ### 4.3 Residents overview (`/residents`)
 
@@ -383,13 +383,13 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 | UX-183 | The table shall have the columns "Resident", "Admitted", "Check-ins so far", "Compared with facility range", "Own baseline", header background `--color-table-header`, `min-width: 760px` inside a horizontally scrolling container. | Must | SRC-11, contract §11 | T |
 | UX-184 | "Resident" shall show the study ID; "Admitted" the admission date "<Mon D>"; "Check-ins so far" the number of usable check-ins since admission. | Must | SRC-11 | T |
 | UX-185 | "Compared with facility range" shall show a badge: "▲ Outside facility range" (2px solid accent, accent text, weight 600) when at least one feature value is outside the facility range; "Within facility range" (1px solid `--color-border`) when all are within; "Not enough check-ins yet" (1px dashed `--color-border`) when the API reports too few check-ins to compare (`not_enough_checkins`); "Facility range not available yet" (1px dashed `--color-border`) when the API reports `range_not_available` (TRD 02 FR-202, TRD 19 `ComparisonStatus`). | Must | SRC-11, UX-004 | T |
-| UX-186 | "Own baseline" shall read "<n> of <N> days" where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-11, OQ-08 | T |
+| UX-186 | "Own baseline" shall read "<n> of <N> usable check-ins" (the SRC-11 wireframe says "days"; the count is usable check-ins, which differ from days when days are missed or set aside) where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-11, OQ-08 | T |
 | UX-187 | Each row shall contain a button "Show comparison" (min-height 44px) that selects the resident for the comparison section; the selected row shall have `aria-selected="true"` and a 2px ink left border. | Must | SRC-11 | T |
 | UX-188 | The page shall list only residents of the new-admission cohort whose own baseline has not formed; when their baseline forms they shall leave this page and appear on the Residents overview, where they are compared with their own baseline only. | Must | SRC-12, BR-14 | T |
 | UX-189 | The comparison section shall have the heading "<R> compared with facility range" and a chart with one row per feature: a grey band (`--color-range-band` #E2E2DE) from the facility range low to high and the resident's value as a dot; a dot outside the band shall be accent with "▲", a dot inside ink. | Must | SRC-11, BR-14 | T |
 | UX-190 | The chart shall have the caption "grey band = usual range across current residents" (IBM Plex Mono 12px, secondary). | Must | SRC-11 | T |
 | UX-191 | Feature rows shall use the plain-language labels of section 4.5.4 when the feature is one of the 7 scored measurements and the API label otherwise. | Must | SRC-10, SRC-11 | T |
-| UX-192 | Under the chart the sentence "Once <N> days of check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." (14px, secondary) shall appear, with N from the API. | Must | SRC-11, SRC-12 | T |
+| UX-192 | Under the chart the sentence "Once <N> usable check-ins are collected, this resident moves to the main list and is compared with their own baseline instead." (14px, secondary) shall appear, with N from the API. | Must | SRC-11, SRC-12 | T |
 | UX-193 | The comparison chart shall have a text alternative table (disclosure "Show comparison as a table") with columns "Measurement", "Resident value", "Facility range", "Outside range" ("▲ Yes" / "No"). | Must | WCAG 1.1.1 | T |
 | UX-194 | When no new admissions exist, the table area shall read "No new admissions. The pipeline test data v0.1 has no admission arm." when the data source is the test data, otherwise "No new admissions."; the comparison section shall then read "Select a resident to see the comparison." | Must | SRC-11, BR-14 | T |
 | UX-195 | The facility range method, number of residents and computation date returned by the API shall be shown under the chart as "Range from <n_residents> current residents, computed <Mon D> (method: <method>)." | Should | OQ-08, RSK-13 | T |
@@ -429,9 +429,10 @@ SRC-11 order: Back link → experimental banner → header ("New admissions" + i
 |---|---|---|---|---|
 | UX-210 | The Admin page shall show the global header and three tabs (ARIA tabs pattern, arrow-key navigation): "Users", "Pipeline runs", "Upload data"; the selected tab shall be kept in `?tab=`. | Must | contract §11 | T |
 | UX-211 | "Users" shall list users with columns "Email", "Display name", "Role", "Active", "Last sign-in", and provide a form "Add user" (Email, Display name, Role select "Admin"/"Clinician"/"Researcher", Temporary password) and per-row "Deactivate"/"Reactivate" buttons with a confirmation dialog "Deactivate <email>? They will not be able to sign in." | Must | contract §10, §12 | T |
-| UX-212 | "Pipeline runs" shall list recent runs from GET /pipeline/runs (columns "Started", "Finished", "Trigger", "Profile", "Status", "As of", "Counts") newest first, and provide a button "Run pipeline now" with a profile select whose options are those allowed by the backend for the environment; a started run shall be shown with its status refreshed every 5 seconds until it is "succeeded" or "failed". | Must | contract §7, §10, §20 R4 | T |
+| UX-212 | "Pipeline runs" shall list recent runs from GET /pipeline/runs (columns "Started", "Finished", "Trigger", "Profile", "Status", "As of", "Counts") newest first, and provide a button "Run pipeline now" with a profile select whose only option is the environment's active profile `meta.pipeline_profile` (TRD 06 DB-024, TRD 05 API-066; TRD 24 D-96); a started run shall be shown with its status refreshed every 5 seconds until it is "succeeded" or "failed". | Must | contract §7, §10, §20 R4 | T |
 | UX-213 | "Upload data" shall provide a file input accepting `.csv` labelled "CSV file (pipeline input format v0.1)" and a button "Upload", then show "Accepted <a> · Rejected <r> · Duplicates <d>" and a table of rejections with columns "Row", "Errors". | Must | BR-01, contract §10 | T |
 | UX-217 | When an upload is rejected as a whole (for example the legacy SRC-06 file, 422 schema mismatch, contract §20 R12), the Upload tab shall show "The file was not accepted: <detail>. Nothing was stored." and list `errors[]` messages. | Must | contract §20 R12, §21 R19 | T |
+| UX-219 | When no pipeline run with trigger `nightly` and status `succeeded` started within the previous 26 hours (read at page load from GET /pipeline/runs with `trigger=nightly`, `status=succeeded`, `limit=1`), the Admin page shall show above the tabs the banner "Nightly run missing for <Mon D>", where the date is the most recent facility-local date (`meta.facility_tz`) whose 02:00 has passed (TRD 17 LOG-111; TRD 24 D-96). | Must | TRD 17 LOG-111, RSK-05 | T |
 | UX-218 | The Admin page shall not offer creation or editing of residents, devices, device assignments or API keys (managed by CLI and seed files in the MVP, contract §20 R4). | Must | contract §20 R4 | I |
 | UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Railway/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
 | UX-215 | Users without the admin role shall see "You do not have access to this page." and the link "Back to all residents". | Must | BR-16 | T |
@@ -653,7 +654,7 @@ Data alerts are data-quality signals for the study team, not health alarms: they
 | baseline_stalled | "<R> · baseline stuck at <n> of <N>" | "<missed> missed and <set aside> set aside in 30 days" | baseline forming and days in the current epoch, counted inclusively ((as-of − epoch start) + 1), ≥ N (TRD 09 §4.9) |
 | possible_other_speaker | "<R> · possible other speaker" | "<k> check-ins quarantined: <Mon D>, <Mon D>" (k = 1: "1 check-in quarantined: <Mon D>") | ≥ 1 quarantined session |
 | high_set_aside | "<R> · many check-ins set aside" | "<set aside> of <received> received: <reason kinds>" with kinds in the fixed order noise, quality flag, too short, listing only kinds that occurred | set aside / received ≥ 0.20 and received ≥ 10; suppressed when baseline_stalled is listed for the resident |
-| device_silent | "<D> · device silent all day" | "<Mon D>[, <Mon D>] · affects <R> and <R>" (one resident: "affects <R>"; three or more: "affects R01, R02 and R03") | shared device with no record from any resident that day, or ≥ 2 consecutive silent days on a single-resident device |
+| device_silent | "<D> · device silent all day" (one flagged day) or "<D> · device silent on <k> days" (k ≥ 2 flagged days; TRD 09 §4.9) | "<Mon D>[, <Mon D>] · affects <R> and <R>" (one resident: "affects <R>"; three or more: "affects R01, R02 and R03") | shared device with no record from any resident that day, or ≥ 2 consecutive silent days on a single-resident device |
 | review_flagged_data_problem | "<R> · review flagged a data problem" | "Reviewed <Mon D> by <display name>" | a saved review with outcome `data_problem` |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -763,7 +764,7 @@ Purpose: counts for the study team. Roles: `researcher`, `admin` (clinicians: ac
 |---|---|---|---|---|
 | UX-371 | When `meta.pipeline_profile` is `test_v0_1`, a section headed "Alarm timing check" with the inline secondary text "· test data only, where the true change date is known" shall show a table (min width 640px) with columns "Resident", "Planted change", "Change began", "Alarm rang", "Delay". | Must | SRC-19, contract §19 | T |
 | UX-372 | The table shall have one row per resident with a planted change (resident-code order), then one row "Other <k>" with "None", "—", "No alarm" and "Correct" when none of them alarmed (otherwise "<n> alarms" and "<n> false alarms"). | Must | SRC-19 | T |
-| UX-373 | "Delay" shall be "<d> days" ("1 day") from change began to alarm rang; a planted change without alarm shall show "No alarm" and "Missed". | Must | SRC-19 | T |
+| UX-373 | "Delay" shall be "<d> days" ("1 day") from change began to alarm rang; a planted change without alarm shall show "No alarm" and "Missed"; an alarm that rang before the change began shall show its date under "Alarm rang" and "False alarm" under "Delay" (API `result` `false_alarm`, `delay_days` null; TRD 24 D-81). | Must | SRC-19 | T |
 | UX-374 | Under the table a caption (IBM Plex Mono 12px, secondary) shall read "With real residents the true change date is unknown, so this panel becomes: alarms raised, reviewed, and the review outcomes." | Must | SRC-19 | T |
 | UX-375 | When `meta.pipeline_profile` is `production`, the section shall instead be headed "Alarms and review outcomes" with a two-column table ("", "Count") and rows "Alarms raised", "Reviewed", "Checked on resident, no concern", "Explained by a known cause", "Referred to nurse or provider", "Looks like a data problem: send to study team" for the period. | Must | SRC-19, contract §19 | T |
 | UX-376 | The timing data comes from evaluation data the pipeline never reads; the UI shall label it "test data only" and shall never show it in the production profile. | Must | SRC-02, contract §19 | T |
@@ -795,12 +796,12 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 ## 5. Assumptions
 
 - ASM-01: facility time zone America/Chicago (rendered from the API).
-- ASM-02: at most one session per resident per local day, so "n of N days" on the admissions page equals usable check-ins.
+- ASM-02: at most one session per resident per local day, so the admissions-page count "<n> of <N> usable check-ins" (UX-186) never exceeds the number of days with a usable record.
 - ASM-03: one facility (Edgewood); facility name from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: production N = 30; the test profile N = 16 is used only for build-out and testing. Screens render N from the API.
 - ASM-06: a new epoch closes the previous epoch's open alert and restarts the tally, so the badge reflects the current epoch only.
 - ASM-08: fewer than 100 residents, so the overview shows all rows without paging.
-- Note for lead (TRD-local definitions): "Last check-in" = most recent non-duplicate record of any status; "Days with no device activity" = days while assigned with no non-duplicate record from the device; "(was <D>)" and the replacement card apply when the replacement happened within the last 30 days.
+- Note for lead (TRD-local definitions): "Last check-in" = most recent non-duplicate record of any status; "Days with no device activity" = days while assigned with no non-duplicate record from the device; "(was <D>)" follows the single rule of TRD 23 §4.4.1 and is rendered whenever the API returns `previous_device_code`; the replacement card applies when the replacement happened within the last 30 days.
 
 ## 6. Dependencies
 
@@ -829,7 +830,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | AC-UX-06 | A clinician can save a note of each type (the note appears with its type and "Note saved." is announced, UX-130) and, separately, save a review of R09 through "Mark as reviewed" ("Review saved." is announced, UX-137); a note never marks the alarm reviewed (UX-123, contract R5), and the badge still reads "▲ Alarm since Oct 21". A researcher sees "Only clinicians and admins can add notes." |
 | AC-UX-07 | `/admissions` shows the experimental banner text of UX-181 and the empty state of UX-194. |
 | AC-UX-08 | No rendered page contains the words listed in UX-161 (except "not a diagnosis"), "Edge4Care" or "[Facility name]". |
-| AC-UX-09 | axe reports no serious/critical violations; keyboard-only navigation reaches every control with visible focus; at 390px width there is no page-level horizontal scroll. |
+| AC-UX-09 | axe reports no serious/critical violations; keyboard-only navigation reaches every control with visible focus; at each tested width (320, 360, 375 and 390px; TRD 04 FE-191) there is no page-level horizontal scroll. |
 | AC-UX-11 | On the test environment, `/alerts` renders exactly section 4.17.6 and the nav reads "Alerts (2)"; after a review of R09 the card shows "Reviewed", the nav "Alerts (1)", and R09's badge still reads "▲ Alarm since Oct 21". |
 | AC-UX-12 | A researcher sees `/analytics` exactly as section 4.18.7; a clinician gets "You do not have access to this page."; with the production profile the timing panel is replaced by the review outcomes panel. |
 | AC-UX-10 | Switching the backend to the production profile (N = 30) changes "of 16" to "of 30" on all screens without a frontend change. |
@@ -869,3 +870,5 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-09, F-10, F-11, F-12, F-24, F-25, F-28, F-37) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (UX-018 count fallback (D-97); UX-212 profile select and UX-219 nightly banner (D-96); UX-373 false alarm (D-81); device_silent titles; (was) rule; AC-UX-09 widths (D-78)) | — |
+| 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-10: UX-186, UX-192 and §8 note count usable check-ins, not days) | — |

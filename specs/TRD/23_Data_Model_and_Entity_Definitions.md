@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -116,7 +116,7 @@ Enrolled resident identified by study ID only. Written by roster load / seed CLI
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
 | `facility_id` | uuid | no | Facility of enrolment | Roster load / seed |
-| `resident_code` | text | no | Study ID (e.g. `R01`); upper-case letters, digits, hyphen, 1–32 chars; the only resident identifier in EchoWell (no names) | Roster load / seed; equals ingest field `resident_id` |
+| `resident_code` | text | no | Study ID (e.g. `R01`); upper-case letters and digits, 1–16 chars (pattern `^[A-Z0-9]{1,16}$`, TRD 20 `residents_resident_code_ck`, TRD 19 `ResidentCode`); the only resident identifier in EchoWell (no names) | Roster load / seed; equals ingest field `resident_id` |
 | `sex` | text | yes | `F`, `M` or NULL (unknown, OQ-20); used for F0 ranges and facility norms | Roster load / seed (SRC-04 for test) |
 | `cohort` | resident_cohort | no | `longitudinal` or `new_admission` (future arm, BR-14); one-way transition to longitudinal (section 4.3.3) | Roster load; Pipeline (transition) |
 | `enrolled_on` | date | no | First local day of the day ledger | Roster load / seed (2026-10-01 for test) |
@@ -194,7 +194,7 @@ Schema-invalid record; never enters the raw store. Read by `/api/v1/ingest/batch
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
 | `ingest_batch_id` | uuid | yes | Batch, NULL for a rejected single POST /sessions | Ingestion |
 | `api_key_id` | uuid | yes | Submitting key, if any | Ingestion |
-| `row_number` | integer | yes | 1-based data row number in the CSV (header excluded); NULL for JSON | Ingestion |
+| `row_number` | integer | yes | 1-based position of the record in its batch (CSV data row with header excluded, or JSON array position); NULL only for a single-record `POST /api/v1/sessions` rejection (TRD 24 D-84) | Ingestion |
 | `received_at` | timestamptz | no | Instant received | Ingestion |
 | `raw_body` | jsonb | no | The rejected record as received (JSON object; CSV row as strings) | Ingestion |
 | `errors` | jsonb | no | Non-empty JSON array of validation errors, each with at least `field` and `message` (exact shape TRD 10) | Ingestion |
@@ -661,6 +661,7 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | residents assigned | residents with an assignment to the device covering `d` |
 | shared | residents assigned ≥ 2 |
 | replaced-by / was | device of the assignment that follows / precedes on the same resident |
+| in use since / until | `in_use_since` = earliest `valid_from` of the device's assignments (null when none); `in_use_until` = null while an assignment covers the as-of date, otherwise the latest `valid_to` (TRD 06 DB-066; D07: Oct 1–12, D07B: since Oct 13; TRD 24 D-82) |
 | last upload | max `raw_sessions.timestamp_utc` for the device (local display) |
 | firmware | `devices.firmware_version_last` |
 | silent day | local day in the 30-day window where ≥ 1 `day_ledger` row has the device and none of them is `checked_in` (TRD 02 §4.1, TRD 06 DB-044; API `silent_days_last_30`; D02: Oct 12; D08: R08's 12 missed days) |
@@ -918,3 +919,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-07) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |
+| 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (resident_code pattern per TRD 20; ingest_rejections.row_number (D-84); in use since/until (D-82)) | — |

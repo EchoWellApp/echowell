@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -77,7 +77,7 @@ flowchart TB
     subgraph Railway
         API["FastAPI 0.115 (Python 3.12)<br/>backend/api routers -> services -> repositories -> models"]
         ANA["analytics/ (pure Python package)<br/>pipeline.py + stage modules<br/>numpy 2.x (pandas in tests only)"]
-        SCH["Railway Cron Job service (separate)<br/>python -m backend.jobs.nightly_run<br/>cron 0 7,8 * * * UTC, runs only at 02:xx FACILITY_TZ"]
+        SCH["Railway Cron Job service (separate)<br/>python -m backend.jobs.nightly_run<br/>cron 0 7,8 * * * UTC, runs only in hour NIGHTLY_RUN_HOUR_LOCAL (02:xx) FACILITY_TZ"]
         API -- "import, in-process call" --> ANA
         SCH -- "same image; calls PipelineService" --> PG
     end
@@ -90,8 +90,8 @@ flowchart TB
 
 | Container | Technology (pinned per contract) | Responsibility | Hosting (current interim → target AWS) |
 |---|---|---|---|
-| Frontend | Next.js 14.2.x App Router, React 18.3.x, TypeScript 5.x, Recharts 2.x, Node.js 20 LTS | Dashboard pages, login, admin UI; calls backend REST API only | Netlify (prod from `main`, branch deploy `staging`) → AWS Amplify |
-| Backend API | Python 3.12, FastAPI 0.115.x, Pydantic 2.x, SQLAlchemy 2.0.x, Alembic 1.13.x, psycopg 3.x | Auth, ingest, validation, persistence, pipeline orchestration, read APIs, audit | Railway (production and staging services) → AWS App Runner |
+| Frontend | Next.js 14.2.x App Router, React 18.3.x, TypeScript 5.x, Recharts 2.x, Node.js 20 LTS | Dashboard pages, login, admin UI; calls backend REST API only | Netlify (staging site auto-deploys `main`; production site published only by the manual release workflow, D-99) → AWS Amplify |
+| Backend API | Python 3.12, FastAPI 0.115.x, Pydantic 2.x, SQLAlchemy 2.0.x, Alembic 1.13.x, psycopg 3.x | Auth, ingest, validation, persistence, pipeline orchestration, read APIs, audit | Railway (staging environment auto-deploys `main`; production environment deployed only by the release workflow) → AWS App Runner |
 | Analytics engine | Python package `analytics/` (numpy 2.x only at runtime; pandas and openpyxl in tests only, TRD 07 ANL-005) | Pure deterministic pipeline functions (stages 1–12 of TRD 07 ANL-006) | Imported by the backend; runs in the backend process |
 | Database | PostgreSQL 16 | System of record: raw store, derived tables, users, config, audit | Neon (preferred) or Railway PostgreSQL → AWS RDS PostgreSQL (KMS-encrypted) |
 | CI/CD | GitHub Actions | Lint, type-check, tests, validation suite, build, deploy | GitHub |
@@ -242,7 +242,7 @@ SRC-02's final box also mentions "EWMA trend shown against baseline band"; this 
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ARC-040 | `analytics.pipeline.run_pipeline` shall execute the stages in the order of section 4.5, with data-alert generation last, and shall be the single entry point used by every trigger. | Must | BR-03..BR-11, SRC-02, SRC-04, SRC-18 | Inspection, Test |
+| ARC-040 | `analytics.pipeline.run_pipeline` shall execute the stages in the order of section 4.5 and TRD 07 ANL-006 (data alerts as stage 11, analytics aggregates as stage 12, last), and shall be the single entry point used by every trigger. | Must | BR-03..BR-11, SRC-02, SRC-04, SRC-18 | Inspection, Test |
 | ARC-041 | Modules in `analytics/` shall be pure: they shall not import `backend`, SQLAlchemy, psycopg, FastAPI, httpx, or perform file, network, clock or random-number access; current time is passed in as `as_of`. | Must | BR-15, SRC-01 | Inspection (import-lint in CI), Test |
 | ARC-042 | Given identical raw records (in arrival order), identical frozen baselines, identical configuration snapshot and identical `as_of`, `run_pipeline` shall return identical outputs (bit-identical float64 values and identical ordering). | Must | BR-15, SRC-02 | Test (run twice, compare) |
 | ARC-043 | A baseline that has been persisted as frozen shall be passed to the pipeline as an input on later runs and shall not be recomputed, except by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56); a late record that would change its membership shall be recorded as a `late_arrival` warning in `pipeline_runs.warnings`. | Must | BR-09, ASM-07, OQ-10 | Test |
@@ -312,7 +312,7 @@ echowell/
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ARC-060 | Every pipeline execution shall create one `pipeline_runs` row recording trigger, scope, config profile, config snapshot, code version (`GIT_SHA`), start and finish times, status, counts and warnings. | Must | BR-15, BR-16, TRD 17 | Test |
-| ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when facility-local time is 02:xx and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047), so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
+| ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when the facility-local hour is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047), so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
 | ARC-062 | The nightly run shall recompute the day ledger up to the new as-of date so that a resident with no record on the previous local day receives a missing-day entry even when no record arrived. | Must | BR-06, SRC-03 | Test |
 | ARC-063 | Pipeline executions that touch the same resident shall be serialized using a transaction-scoped PostgreSQL advisory lock keyed on the resident, taken by every run including full-scope runs (keys and helper in TRD 06 DB-021); there is no global run lock, because session-level advisory locks do not work over the Neon pooled endpoint. | Must | BR-02, BR-15 | Test (concurrent ingest) |
 | ARC-064 | The derived-table writes of one pipeline execution shall commit in a single database transaction per resident, so that readers never observe a partially processed resident. | Must | BR-12, BR-13 | Test |
@@ -339,13 +339,13 @@ flowchart LR
         LF["frontend :3000"] --> LB["backend :8000"] --> LP[("postgres:16")]
     end
     subgraph Staging
-        SF["Netlify branch deploy 'staging'"] --> SB["Railway staging service<br/>+ nightly Cron Job (US East)"] --> SP[("Neon branch 'staging'<br/>aws-us-east-1")]
+        SF["Netlify site 'echowell-und-staging'"] --> SB["Railway staging service<br/>+ nightly Cron Job (US East)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
     end
     subgraph Production
-        PF["Netlify production (main)"] --> PB["Railway production service"] --> PP[("Neon main branch")]
+        PF["Netlify site 'echowell-und'"] --> PB["Railway production service"] --> PP[("Neon database branch 'main'")]
     end
-    GH["GitHub Actions"] -->|staging branch| SF & SB
-    GH -->|main| PF & PB
+    GH["GitHub main branch"] -->|every merge, GitHub integrations| SF & SB
+    REL["deploy-production.yml<br/>manual, approved release"] -->|chosen main commit| PF & PB
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -468,3 +468,5 @@ flowchart LR
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-06, R2-07, R2-10, R2-24, R2-25) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03, R3-04) | — |
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-08) | — |
+| 0.6 | 20 Oct 2026 | PR #2 backlog consistency fixes (ARC-040 stage order per TRD 07; ARC-061 and nightly diagram use NIGHTLY_RUN_HOUR_LOCAL) | — |
+| 0.7 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

@@ -1,5 +1,7 @@
 # TRD Validation Report (Phase 1, round 8)
 
+> Note (20 Oct 2026): findings R8-01..R8-06 of this report were fixed after it was written, in commits 1d7124f and 321eea0 (recorded in `docs/reports/TRD_VALIDATION_FIXES.md` and the TRD revision histories, v0.9); no round 9 was run.
+
 | Field | Value |
 |---|---|
 | Scope | `specs/TRD/00`–`25`, checked against `specs/prompts/TRD_Generation_Prompt.md`, `specs/architecture/Deployment_Architecture.md`, `specs/UI-wireframe/*.dc.html` (5 files), `specs/business-requirements/*`, `specs/data-samples/*` |

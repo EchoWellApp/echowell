@@ -1,6 +1,6 @@
 # 02 Functional Requirements Specification
 
-Document ID: ECHOWELL-TRD-02 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-02 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -189,7 +189,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-131 | Each resident shall have exactly one display status: `alarm_on` ("▲ Alarm since <Mon D>") when an open alarm (status `open` or `acknowledged`) exists in the current epoch; `baseline_forming` ("Baseline forming · n of N sessions") when the current epoch has fewer than `baseline_n` usable sessions; otherwise `no_alarm` ("No alarm"). | Must | BR-12, SRC-09, SRC-12 | 11 UX | T |
 | FR-132 | A `no_alarm` resident whose current epoch is greater than 1 shall show " · baseline restarted <Mon D>" using the current epoch start date. | Must | BR-08, BR-12, SRC-09 (R07) | 11 UX | T |
 | FR-133 | The overview shall offer three sorts — "Alarms first" (default), "Resident ID", "Last check-in" — implementing the exact ordering rules of TRD 11. | Must | BR-12, SRC-09, SRC-12 | 11 UX, 05 API | T |
-| FR-134 | Each row shall show Resident, Device (with "(shared)" when the device is currently assigned to ≥ 2 residents, or "(was <old>)" after a device change in the current epoch), Status, Last check-in (latest non-duplicate record of any status, local, e.g. "Oct 30, 2:28 PM") and an "Open" link. | Must | BR-12, SRC-09, R10 | 04 FE, 11 UX | T |
+| FR-134 | Each row shall show Resident, Device (with "(shared)" when the device is currently assigned to ≥ 2 residents, or "(was <old>)" when the resident's previous device assignment ended the day before the current one started, the single rule of TRD 23 §4.4.1), Status, Last check-in (latest non-duplicate record of any status, local, e.g. "Oct 30, 2:28 PM") and an "Open" link. | Must | BR-12, SRC-09, R10 | 04 FE, 11 UX | T |
 | FR-135 | Each row shall show "Last 30 days: used · set aside · quarantined · missed", where missed = missing_resident + missing_device_gap days and duplicates are never counted. | Must | BR-06, BR-12, SRC-09, SRC-12 | 11 UX | T |
 | FR-136 | The overview shall show four summary tiles: "Alarm on" (count), "Being watched, no alarm" (count), "Baseline still forming" (count), "Missed check-ins, last 30 days" (sum of missed over listed residents). | Must | BR-12, SRC-09 | 11 UX | T |
 | FR-137 | For the SRC-05 data at as-of 2026-10-30 15:00 America/Chicago with profile `test_v0_1`, the tiles shall read 2, 7, 1, 19 and the rows shall show the counts of SRC-03 Exp_status_counts. | Must | BR-12, BR-15, SRC-09 | 14 TDV | T |
@@ -201,7 +201,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
-| FR-150 | The overview shall include a Devices panel (anchor `#devices`, header nav "Devices") listing every active device with its currently assigned residents. | Must | BR-12, SRC-09, SRC-12 | 11 UX | T |
+| FR-150 | The overview shall include a Devices panel (anchor `#devices`; there is no "Devices" navigation link, TRD 11 UX-016) listing every active device with its currently assigned residents. | Must | BR-12, SRC-09, SRC-12 | 11 UX | T |
 | FR-151 | A device assigned to ≥ 2 residents shall be shown as "<device> · shared by <residents>" (e.g. "D02 · shared by R02, R03"). | Must | BR-12, SRC-09 | 11 UX | T |
 | FR-152 | For each device the panel shall show the last upload time (local) and firmware version. | Must | BR-12, SRC-09 | 11 UX | T |
 | FR-153 | For each shared device the panel shall list its device-gap days in the last 30 days (e.g. "silent all day Oct 12"). | Must | BR-06, BR-12, SRC-09, SRC-12 | 11 UX | T |
@@ -221,11 +221,11 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-165 | The page shall show a "Running change tally" bar chart of the current epoch with one bar per scored session (height = cusum_tally), coloured #BDBDB8 with a 1 px #8A8A85 outline while alarm_state is `off` and #9A4508 when `rings` or `on`, preceded by a grey baseline slot labelled "Baseline <Mon D>–<Mon D>", with a dashed line at cusum_h labelled "alarm line 5.0" and x-axis labels including the watched-since date and the alarm date. | Must | BR-11, BR-13, SRC-10, SRC-12, R1 | 04 FE, 11 UX | T |
 | FR-166 | The tally chart shall make alarm persistence visible by a non-colour cue (▲ marker at the first crossing and the "Oct 21 · alarm"-style label) in addition to the accent colour of bars with alarm_state `rings` or `on`. | Must | BR-11, BR-13, SRC-12 ("alarm persistence"), R1 | 11 UX | T |
 | FR-167 | The tally chart shall carry the caption "Set-aside, quarantined and missed days leave the tally unchanged." | Must | BR-11, SRC-10 | 11 UX | I |
-| FR-168 | The tally chart shall have an equivalent text table (date, composite z, tally, alarm state) available to assistive technology and by a visible toggle. | Must | BR-13, BR-16 (accessibility, TRD 03) | 11 UX | T |
-| FR-169 | The page shall show "The 7 measurements behind the score" with one card per composite feature, showing the plain-language label of TRD 08 (e.g. "Quieter (loudness)", "More pauses (number of pauses)") and a sparkline of recent adjusted values. | Must | BR-10, BR-13, SRC-10, SRC-12 | 11 UX | T |
+| FR-168 | The tally chart shall have an equivalent text table (columns "Date", "Tally", "Alarm", TRD 11 UX-090) available to assistive technology and by a visible toggle. | Must | BR-13, BR-16 (accessibility, TRD 03) | 11 UX | T |
+| FR-169 | The page shall show "The 7 measurements behind the score" with one card per composite feature, showing the plain-language label of TRD 08 (e.g. "Quieter (loudness)", "More pauses (number of pauses)") and a sparkline of the signed deviations (sign × z) of the current epoch's scored sessions (TRD 11 UX-102). | Must | BR-10, BR-13, SRC-10, SRC-12 | 11 UX | T |
 | FR-170 | The page shall show an eighth card "12 other measurements (pitch, jitter, MFCCs …) — stored, not scored" without values in the scoring summary. | Must | BR-10, BR-13, SRC-10, SRC-12 | 11 UX | I |
 | FR-171 | The measurements section shall carry the caption "Column names are placeholders until Team 1 confirms extractor output names. Morning check-ins are adjusted before comparing." | Must | BR-07, OQ-03, SRC-10 | 11 UX | I |
-| FR-172 | A user shall be able to view an earlier epoch's tally and baseline for a resident with more than one epoch. | Should | BR-08, BR-13 | 04 FE, 05 API | T |
+| FR-172 | A user shall be able to view an earlier epoch's tally and baseline for a resident with more than one epoch. | Should | BR-08, BR-13, OQ-28 | 04 FE, 05 API | T |
 | FR-173 | Requesting an unknown resident code shall show a "Resident not found" page and the API shall return 404. | Must | BR-13 | 05 API, 04 FE | T |
 
 ### 4.15 Check-in log (BR-13, BR-06)
@@ -244,7 +244,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 |---|---|---|---|---|---|
 | FR-190 | A user with role `clinician` or `admin` shall be able to add a staff note to a resident with a type (`observation`, `action_taken`, `follow_up`) and a body of 1 to 2000 characters. | Must | BR-13, SRC-10, SRC-12 | 05 API, 11 UX | T |
 | FR-191 | The "Mark as reviewed" button on Resident detail shall open the alarm review form of FR-266–FR-270 for the resident's open alarm (single review model) and shall be hidden (not rendered) when the resident has no open alarm in the current epoch (TRD 04 FE-131, TRD 11 UX-121, UX-138); staff notes themselves shall not change alert status. | Must | BR-13, SRC-10 ("Mark as reviewed"), SRC-18, R5 | 11 UX, 09 CUS | T |
-| FR-192 | Staff notes shall be append-only; an edit shall create a new note row referencing the superseded note via `supersedes_id`. | Must | BR-13, BR-16 | 06 DB | T |
+| FR-192 | Staff notes shall be append-only; a correction submitted through the API shall create a new note row referencing the superseded note via `supersedes_id` (the MVP UI offers no edit control, TRD 11 UX-129). | Must | BR-13, BR-16 | 06 DB | T |
 | FR-193 | The Staff review section shall list the resident's notes newest first with type, author display name and local timestamp, showing only the latest version of edited notes. | Must | BR-13 | 11 UX | T |
 | FR-194 | Users with role `researcher` shall see notes and reviews read-only and shall not see the note form, the review form, "Mark as reviewed" or "Remind me in 24 h". | Must | BR-13, BR-16, OQ-26 | 12 SEC, 11 UX | T |
 | FR-195 | The Staff review section shall display the open-question note of TRD 11 UX-125 ("Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are.") until OQ-05 is closed. | Must | BR-13, OQ-05, SRC-10 | 11 UX | I |
@@ -296,11 +296,11 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
-| FR-240 | `GET /api/v1/analytics` shall return per-resident status counts in the shape of SRC-03 Exp_status_counts and per-resident outcomes in the shape of Exp_resident_outcomes, plus the latest pipeline run information. | Must | BR-15, SRC-03 | 05 API | T |
+| FR-240 | `GET /api/v1/analytics` shall return per-resident status counts in the shape of SRC-03 Exp_status_counts and per-resident outcomes in the shape of Exp_resident_outcomes, plus the latest succeeded pipeline run information (TRD 05 API-069). | Must | BR-15, SRC-03 | 05 API | T |
 | FR-241 | `GET /api/v1/analytics/baselines` shall return baselines in the shape of SRC-03 Exp_baselines (resident, epoch, feature, n, median, MAD, spread, floor_applied). | Must | BR-15, SRC-03 | 05 API | T |
 | FR-242 | `GET /api/v1/scores` shall return scored sessions in the shape of SRC-03 Exp_scores, filterable by resident, epoch and date range. | Must | BR-15, SRC-03 | 05 API | T |
 | FR-243 | The analytics endpoints shall be available only to roles `researcher` and `admin`. | Must | BR-16 | 12 SEC | T |
-| FR-244 | `GET /api/v1/analytics/baselines` and `GET /api/v1/scores` shall return CSV when requested with `Accept: text/csv` by a researcher or admin, using the column names of the corresponding SRC-03 sheet. | Must | BR-15, SRC-14 B.2 (offline mixed-effects analysis), R4 | 05 API | T |
+| FR-244 | `GET /api/v1/analytics/baselines` and `GET /api/v1/scores` shall return CSV when requested with `Accept: text/csv` by a researcher or admin, using the TRD 19 DTO field names as column names (TRD 05 API-129). | Must | BR-15, SRC-14 B.2 (offline mixed-effects analysis), R4 | 05 API | T |
 | FR-245 | Exports shall contain study IDs only and no free-text staff notes. | Must | BR-16 | 05 API, 12 SEC | T |
 
 ### 4.21 Audit and health (BR-16, BR-17)
@@ -317,13 +317,13 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
-| FR-260 | The Alert review page (`/alerts`) shall show the header "Alert review", the subline "For the charge nurse or clinical lead · <DATA_SOURCE_LABEL> as of <Mon D, YYYY>", and a two-column layout: queues on the left, the review panel for the selected alarm on the right (stacked below 900 px). | Must | BR-13, SRC-18 | 04 FE, 11 UX | T |
+| FR-260 | The Alert review page (`/alerts`) shall show the header "Alert review", the subline "For the charge nurse or clinical lead · <DATA_SOURCE_LABEL> as of <Mon D, YYYY>", and a two-column layout: queues on the left, the review panel for the selected alarm on the right (stacked below 1024 px, TRD 11 UX-246). | Must | BR-13, SRC-18 | 04 FE, 11 UX | T |
 | FR-261 | Queue 1 "Change alarms · need a nurse review" shall show one card per open alarm (status `open` or `acknowledged` in the resident's current epoch), ordered in three groups: (1) not reviewed and not snoozed, (2) not reviewed and snoozed (`snoozed_until` after now), (3) reviewed; within each group by alarm date ascending, then resident code. This row is the single definition of the queue order (TRD 09 §4.8, TRD 11 UX-301 reference it). | Must | BR-11, BR-13, SRC-18 | 11 UX | T |
 | FR-262 | Each alarm card shall show "<resident> · <device>", a badge "Not reviewed" (status `open`) or "Reviewed" (status `acknowledged`), and "Alarm since <Mon D> · open <n> days · tally <x.x>", where n = as-of local date − alarm local date and the tally is `cusum_state.current_tally` rounded to 1 decimal. | Must | BR-11, SRC-18 | 11 UX, 05 API | T |
 | FR-263 | With the reference data at as-of 2026-10-30 15:00 America/Chicago, Queue 1 shall show R09 (since Oct 21, open 9 days, tally 26.8) and R10 (since Oct 24, open 6 days, tally 13.4), both "Not reviewed". | Must | BR-11, BR-15, SRC-18 | 14 TDV | T |
 | FR-264 | Selecting an alarm card shall show the review panel titled "<resident> · alarm since <Mon D>" with the link "Open full resident view →" to `/residents/<resident_code>`; the first card shall be selected by default. | Must | BR-13, SRC-18 | 11 UX | T |
 | FR-265 | The review panel shall show a mini chart "Change tally since watching began (alarm line 5.0)" from the watched-since date to the as-of date, drawn with the bar rules of FR-165. | Must | BR-11, SRC-18, R1 | 11 UX | T |
-| FR-266 | The review panel shall show "Leaning most": up to 3 composite features with the highest mean signed z over the scored sessions from the alarm session (inclusive) to the as-of date, listing only features whose mean signed z is > 0, as lowercased plain-language labels without the parenthesised technical name, joined by ", " (test data R09: "more pauses, quieter, less voiced sound"); ties shall be broken by feature order of TRD 08; when no feature qualifies the text shall read "No single measurement stands out". | Must | BR-10, BR-13, SRC-18 | 08 BSC, 11 UX | T |
+| FR-266 | The review panel shall show "Leaning most": up to 3 composite features with the highest mean signed z over the scored sessions from the alarm session (inclusive) to the as-of date, listing only features whose mean signed z is > 0, as lowercased plain-language labels without the parenthesised technical name, joined by ", " (test data R09: "more pauses, quieter, less voiced sound"); ties shall be broken by feature order of TRD 08; when no feature qualifies the text shall read "No single measurement stands out." (TRD 11 UX-312). | Must | BR-10, BR-13, SRC-18 | 08 BSC, 11 UX | T |
 | FR-267 | The review form shall contain the multi-select fieldset "Anything that could explain it?" with the options of configuration list `review_explanations` (initially: `cold_cough_sore_throat` "Cold, cough or sore throat"; `dental_dentures` "Dental problem or dentures out"; `medication_change` "New or changed medication"; `poor_sleep_unusual_day` "Poor sleep or unusual day"; `room_device_moved` "Room or device moved"). | Must | BR-13, SRC-18, OQ-25 | 11 UX | T |
 | FR-268 | The review form shall require exactly one outcome: `no_concern` "Checked on resident, no concern"; `known_cause` "Explained by a known cause"; `referred` "Referred to nurse or provider"; `data_problem` "Looks like a data problem: send to study team". | Must | BR-13, SRC-18 | 11 UX | T |
 | FR-269 | The review form shall contain an optional note of at most 2000 characters. | Must | BR-13, SRC-18 | 11 UX | T |
@@ -337,7 +337,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-277 | The review panel shall show "Open questions: Does a saved review reset the tally or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." until OQ-05 and OQ-26 are closed. | Must | BR-18, SRC-18, OQ-05, OQ-26 | 11 UX | I |
 | FR-278 | The page footer shall read "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | Must | BR-01, BR-18, SRC-18 | 11 UX | I |
 | FR-279 | Saving a review and snoozing an alarm shall each write an `audit_logs` entry. | Must | BR-16 | 12 SEC | T |
-| FR-280 | When no open alarm exists, Queue 1 shall read "No open alarms" and the review panel shall not be shown. | Must | BR-13 | 11 UX | T |
+| FR-280 | When no open alarm exists, Queue 1 shall read "No change alarms right now." and the review panel shall read "No change alarms to review." (TRD 11 UX-305, UX-319). | Must | BR-13 | 11 UX | T |
 
 ### 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18
 
@@ -347,7 +347,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 | FR-291 | `baseline_stalled` (enabled by `data_alert_baseline_stalled_enabled` = true) shall be raised for a resident whose status is baseline forming and whose number of local days in the current epoch, counted inclusively as (as-of local date − current epoch start local date) + 1, is ≥ `baseline_n` (the rule of TRD 09 §4.9), with title "<R> · baseline stuck at <n> of <N>" and detail "<missed> missed and <set aside> set aside in 30 days". | Must | BR-06, BR-09, SRC-18 | 07 ANL | T |
 | FR-292 | `possible_other_speaker` shall be raised for a resident with ≥ 1 quarantined session in the last 30 days, with title "<R> · possible other speaker" and detail "<n> check-ins quarantined: <Mon D>, <Mon D>". | Must | BR-05, SRC-18 | 07 ANL | T |
 | FR-293 | `high_set_aside` shall be raised for a resident with ≥ 10 received (non-duplicate) records and set_aside / received ≥ `data_alert_set_aside_fraction` (0.20) in the last 30 days, with title "<R> · many check-ins set aside" and detail "<set aside> of <received> received: <reason kinds>", reason kinds in the fixed order noise, quality flag, too short, listing only those present. | Must | BR-04, SRC-18 | 07 ANL | T |
-| FR-294 | `device_silent` shall be raised for a device with ≥ 2 assigned residents and at least one device-gap day in the last 30 days, or for a single-resident device with ≥ `data_alert_device_silent_days` (2) consecutive silent days, with title "<device> · device silent all day" and detail "<Mon D> · affects <residents joined by \", \" and \" and \">". | Must | BR-06, SRC-18 | 07 ANL | T |
+| FR-294 | `device_silent` shall be raised for a device with ≥ 2 assigned residents and at least one device-gap day in the last 30 days, or for a single-resident device with ≥ `data_alert_device_silent_days` (2) consecutive silent days, with title "<device> · device silent all day" (one flagged day) or "<device> · device silent on <k> days" (k ≥ 2 flagged days; TRD 09 §4.9) and detail "<Mon D>[, <Mon D> …] · affects <residents joined by \", \" and \" and \">". | Must | BR-06, SRC-18 | 07 ANL | T |
 | FR-295 | Each resident (or device) shall appear at most once per data-alert kind, and a resident with `baseline_stalled` shall not also be listed as `high_set_aside`. | Must | BR-06, SRC-18 | 07 ANL | T |
 | FR-296 | A pipeline-generated data alert shall keep `first_detected_at` across runs, update `last_detected_at` while its rule holds, and change to status `resolved` on the first run in which the rule no longer holds. | Must | BR-02, SRC-18, R15 | 07 ANL, 06 DB | T |
 | FR-297 | A data alert of kind `review_flagged_data_problem` shall remain `open` until an admin resolves it with a command-line action; the pipeline shall not resolve it. | Must | BR-13, R4 | 09 CUS | T |
@@ -360,7 +360,7 @@ Column "Detail" names the TRD and prefix where the behaviour is specified in ful
 
 | ID | Requirement | Priority | Trace | Detail | Verif. |
 |---|---|---|---|---|---|
-| FR-310 | The Analytics page (`/analytics`) and `GET /api/v1/analytics` shall be available only to roles `researcher` and `admin`; a clinician shall receive 403 and a "Not available for your role" page. | Must | BR-16, SRC-19 | 12 SEC, 04 FE | T |
+| FR-310 | The Analytics page (`/analytics`) and `GET /api/v1/analytics` shall be available only to roles `researcher` and `admin`; a clinician shall receive 403 and the access-denied page "You do not have access to this page." with "Back to all residents" (TRD 04 FE-037, TRD 11 UX-350). | Must | BR-16, SRC-19 | 12 SEC, 04 FE | T |
 | FR-311 | The page shall show the header "Analytics" and the subline "For the study team · <DATA_SOURCE_LABEL>, <period> · numbers match the pipeline answer key", where the last clause is shown only in the `test_v0_1` profile. | Must | BR-15, SRC-19 | 11 UX | T |
 | FR-312 | The analytics period shall be the last 30 local days ending on the as-of date (reference data: Oct 1–30, 2026). | Must | BR-12, SRC-19, R10 | 05 API | T |
 | FR-313 | The page shall show four KPI tiles: "Check-ins received" (percentage and "<received> of <expected> expected", received = non-duplicate records, expected = Σ over active residents of enrolled days in the period); "Used for scoring" (usable / expected); "Baselines formed" ("<n> of <active residents>" with a note naming forming residents and restart counts); "Alarms raised" (count of alarms triggered in the period with a note naming residents and review state). | Must | BR-12, BR-15, SRC-19 | 05 API, 11 UX | T |
@@ -434,7 +434,7 @@ Note: `GET /api/v1/scores` is authorised for any user (contract §10) because th
 
 | Field | Content |
 |---|---|
-| Actor | Nightly job (separate Railway Cron Job service running `python -m backend.jobs.nightly_run`, proceeding only at 02:xx facility time, R18); Admin or API key `pipeline:run` (manual) |
+| Actor | Nightly job (separate Railway Cron Job service running `python -m backend.jobs.nightly_run`, proceeding only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL`, default 02:xx, R18); Admin or API key `pipeline:run` (manual) |
 | Inputs | Scope (`all` or resident codes), profile, as-of time |
 | Processing | Create `pipeline_runs` row → load raw records, frozen baselines, config snapshot → `analytics.pipeline.run_pipeline` → upsert derived rows per resident in one transaction → record counts, warnings (`late_arrival`) → status `succeeded` |
 | Outputs | Updated derived tables; day ledger extended to as-of date; run record |
@@ -542,7 +542,7 @@ Note: `GET /api/v1/scores` is authorised for any user (contract §10) because th
 | Inputs | Selected alarm; explanations (0..5 codes from `review_explanations`); outcome (required); note (optional, ≤ 2000 chars); or "Remind me in 24 h" |
 | Processing | `GET /api/v1/alerts?status=open` and `GET /api/v1/alerts?status=acknowledged` (E-13 takes one status value per call) and `GET /api/v1/data-alerts?status=open` → render queues → select card → mini tally chart (`GET /scores`), "Leaning most", review history (`GET /alerts/{id}/reviews`) → "Save review" → `POST /alerts/{id}/reviews` → `alert_reviews` row, alert `acknowledged`, data alert for outcome `data_problem` → audit; or "Remind me in 24 h" → `POST /alerts/{id}/snooze` → audit |
 | Outputs | Card shows "Reviewed" (or snoozed without emphasis); review history updated; alarm stays on and tally unchanged (OQ-05) |
-| Errors / alternatives | Missing outcome or bad code → 422; researcher → 403 (read-only view); alert closed meanwhile (epoch ended) → 409 and the queue refreshes; no open alarms → "No open alarms" |
+| Errors / alternatives | Missing outcome or bad code → 422; researcher → 403 (read-only view); alert closed meanwhile (epoch ended) → 409 and the queue refreshes; no open alarms → "No change alarms right now." (FR-280) |
 | Related FRs | FR-106, FR-107, FR-191, FR-260–FR-280, FR-330 |
 
 #### UC-14 View study analytics
@@ -554,7 +554,7 @@ Note: `GET /api/v1/scores` is authorised for any user (contract §10) because th
 | Inputs | None (period = last 30 local days ending at `meta.as_of`) |
 | Processing | `GET /api/v1/analytics` → KPI tiles, check-ins per day, loss funnel, usable check-ins by resident, and alarm timing check (`test_v0_1`, from `evaluation_ground_truth`) or review outcomes (`production`) |
 | Outputs | Analytics page per SRC-19 with text-table alternatives; for reference data the values of FR-323 |
-| Errors / alternatives | Clinician → 403 page "Not available for your role"; no succeeded run → empty state "No pipeline run yet" |
+| Errors / alternatives | Clinician → 403 access-denied page "You do not have access to this page." (FR-310); no succeeded run → empty state "No pipeline run yet" |
 | Related FRs | FR-240–FR-245, FR-310–FR-323, FR-330, FR-332, FR-333 |
 
 #### UC-15 Triage data alerts
@@ -598,7 +598,7 @@ Every FR in sections 4.2–4.25 is exercised by at least one use case: ingestion
 
 - ASM-01 (America/Chicago), ASM-02 (≤ 1 session per resident per local day), ASM-03 (single facility), ASM-04 (16 test / 30 production; D-OWNER-2), ASM-05 (HTTPS POST or CSV), ASM-06 (new epoch closes open alert), ASM-07 (frozen baselines never recomputed), ASM-08 (small scale).
 - Decided by the lead (contract §20–§21) and applied here: watching since (R9), last check-in and 30-day window (R10), as-of precedence (R21), logout, pipeline runs list, CSV export and CLI-only master data (R4), single review model (R5), chart bars (R1), page chrome (R2), meta block (R3), legacy file rejection (R12), `pending` status (R23).
-- Notes for lead (TRD-local definitions introduced here): "Open alarm" = status open or acknowledged; "Silent day (device)" and "Device-gap day" (section 4.1); comparison status "Facility range not available yet" (FR-202); strict rejection of unknown fields (FR-013); ledger stops at `withdrawn_on` (FR-120); alarm queue order and default selection (FR-261, FR-264); "Leaning most" window, tie-break and empty text (FR-266); review history display (FR-272); `review_flagged_data_problem` resolved only by admin CLI (FR-297); "No open alarms" empty state (FR-280); production review-outcome counting uses the latest review per alarm (FR-319); Analytics nav hidden from clinicians (FR-218).
+- Notes for lead (TRD-local definitions introduced here): "Open alarm" = status open or acknowledged; "Silent day (device)" and "Device-gap day" (section 4.1); comparison status "Facility range not available yet" (FR-202); strict rejection of unknown fields (FR-013); ledger stops at `withdrawn_on` (FR-120); alarm queue order and default selection (FR-261, FR-264); "Leaning most" window, tie-break and empty text (FR-266); review history display (FR-272); `review_flagged_data_problem` resolved only by admin CLI (FR-297); alert-queue empty state (FR-280); production review-outcome counting uses the latest review per alarm (FR-319); Analytics nav hidden from clinicians (FR-218).
 
 ## 6. Dependencies
 
@@ -664,3 +664,4 @@ Every FR in sections 4.2–4.25 is exercised by at least one use case: ingestion
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-06, F-07, F-08, F-09, F-12, F-21, F-24, F-25, F-29, F-36, F-37) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01, R2-03, R2-13, R2-23) | — |
+| 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (FR-134, FR-150, FR-168, FR-169, FR-192, FR-240, FR-244, FR-260, FR-266, FR-280, FR-294, FR-310, UC-13, UC-14 aligned with TRD 11/19/23; FR-172 traces OQ-28; nightly actor hour) | — |

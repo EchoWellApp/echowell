@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -20,7 +20,7 @@ workflows / test automation workflows / deployment workflows" output of Phase 14
 - Frontend lint, typecheck, unit tests, build; Playwright E2E against the Docker Compose stack.
 - OpenAPI contract check, dependency audits, repository hygiene checks (no audio files, no secrets, no `.env`).
 - Required status checks for branch protection, caching, artifacts, secrets and time budgets.
-- Choice of deployment mechanism (platform GitHub integrations plus verification workflows) and its justification.
+- Choice of deployment mechanism (platform GitHub integrations for staging, a manual approved release workflow for production) and its justification.
 
 **Out of scope**
 
@@ -39,7 +39,8 @@ workflows / test automation workflows / deployment workflows" output of Phase 14
 | D-OWNER-3 | AWS target / interim stack decision |
 | TRD 13 | Testing Strategy and Acceptance Criteria (test pyramid, coverage policy) |
 | TRD 14 | Test Data and Validation (R01–R10 validation suite) |
-| TRD 15 | Deployment and DevOps (staging/production release, smoke tests, Railway "Wait for CI") |
+| TRD 15 | Deployment and DevOps (staging deploy from `main`, manual production release, smoke tests, Railway "Wait for CI") |
+| D-99 | TRD 24: branching is `main` plus short-lived feature branches only; staging deploys from `main`; production only through the manual release workflow (PR #2 review) |
 | TRD 17 | Logging, Monitoring and Error Handling (uptime check) |
 | TRD 18 | GitHub Repository Standards (branch protection, Conventional Commits) |
 | TRD 19 | API Contracts / OpenAPI (committed contract file) |
@@ -49,22 +50,29 @@ workflows / test automation workflows / deployment workflows" output of Phase 14
 
 ### 4.1 Deployment mechanism decision
 
-**Decision:** code deployment is performed by the **platform GitHub integrations** (Netlify builds `main`, `staging`
-and PR previews; Railway builds `main` and `staging` with "Wait for CI"). GitHub Actions does **not** push code to the
-platforms. The workflows `deploy-staging.yml` and `deploy-production.yml` are **deployment verification and release
-workflows**: they wait for the new version to go live, re-seed staging when needed, run smoke tests (TRD 15 §4.11) and
-tag releases.
+**Decision (TRD 24 D-99):** the repository has only `main` and short-lived feature branches; pull requests target
+`main`. **Staging** is deployed by the **platform GitHub integrations** on every merge to `main` (the Netlify staging
+site builds `main` and PR deploy previews; the Railway `staging` environment builds `main` with "Wait for CI");
+`deploy-staging.yml` then verifies it, re-seeds the staging database when needed and runs the staging smoke tests.
+**Production** is deployed only by a deliberate manual release: a `workflow_dispatch` run of `deploy-production.yml` for a
+chosen `main` commit, gated by the GitHub environment `production` with a required reviewer. That run checks the commit
+("Wait for CI" semantics), deploys the Railway production services with `railway up`, publishes the Netlify production
+site with `netlify deploy --build --prod`, runs the production smoke tests (TRD 15 §4.11) and tags `vX.Y.Z`.
 
 **Justification:**
 
-1. SRC-01 specifies "GitHub → Netlify" and "GitHub → Railway"; the native integrations are the literal implementation.
-2. No platform deploy tokens (Netlify personal access token, Railway token) are needed in GitHub, so a leaked
-   Actions secret cannot deploy code or read production variables (BR-16).
-3. Railway "Wait for CI" makes a backend deploy conditional on green checks; Netlify deploys only commits that reached
-   `main`/`staging` through protected PRs, whose checks already passed.
-4. Platform-native rollback ("publish previous deploy" / "redeploy") stays available (TRD 15 §4.12).
-5. Migrations run as the Railway pre-deploy command (`alembic upgrade head`, TRD 15 DEP-040), so no workflow needs the
-   production database URL.
+1. SRC-01 specifies "GitHub → Netlify" and "GitHub → Railway"; the native integrations are the literal implementation for
+   staging, and the release workflow builds production from the same repository commit.
+2. A merge to `main` can never reach production by accident: the production site's builds are stopped and the Railway
+   production services have no GitHub trigger; only an approved release run deploys them.
+3. The only platform deploy tokens in GitHub are the two secrets of the `production` environment (CIC-090); they are
+   released to a job only after the required reviewer approves it, and they give no access to the production database
+   URL or application secrets (BR-16).
+4. Railway "Wait for CI" makes a staging deploy conditional on green checks; the release workflow refuses a commit whose
+   required checks or staging deploy did not succeed (CIC-053).
+5. Platform-native rollback ("publish previous deploy" / "redeploy") stays available (TRD 15 §4.12).
+6. Migrations run as the Railway pre-deploy command (`alembic upgrade head`, TRD 15 DEP-040), also for `railway up`
+   deploys, so no workflow needs the production database URL.
 
 ```mermaid
 sequenceDiagram
@@ -73,31 +81,35 @@ sequenceDiagram
   participant CI as ci.yml
   participant NF as Netlify
   participant RW as Railway
+  participant DS as deploy-staging.yml
   participant DV as deploy-production.yml
-  Dev->>GH: open PR
+  Dev->>GH: open PR (feature branch to main)
   GH->>CI: pull_request
   CI-->>GH: required checks green
-  GH->>NF: deploy preview (staging API)
+  GH->>NF: deploy preview (staging site, staging API)
   Dev->>GH: merge to main
   GH->>CI: push main
-  GH->>NF: production build + publish
+  GH->>NF: staging site build + publish
   CI-->>RW: checks green (Wait for CI)
-  RW->>RW: build image, pre-deploy alembic upgrade head, start uvicorn, healthcheck
-  GH->>DV: push main
-  DV->>RW: poll /api/v1/health until version == sha
-  DV->>NF: poll frontend build meta == sha
-  DV->>DV: smoke tests, tag vX.Y.Z, GitHub Release
+  RW->>RW: staging: build image, pre-deploy alembic upgrade head, start uvicorn, healthcheck
+  GH->>DS: push main
+  DS->>DS: wait for sha, re-seed if needed, staging smoke tests
+  Dev->>DV: workflow_dispatch (sha, version), reviewer approves
+  DV->>DV: verify sha on main, checks green, staging run green
+  DV->>RW: railway up (production)
+  DV->>NF: netlify deploy --build --prod (production site)
+  DV->>DV: wait for sha, production smoke tests, tag vX.Y.Z, GitHub Release
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-001 | Code shall be deployed to Netlify and Railway only through their GitHub integrations; no workflow shall hold a Netlify or Railway deploy token. | Must | BR-17, SRC-01, BR-16 | Inspection |
+| CIC-001 | Code shall be deployed to the staging environment only through the Netlify and Railway GitHub integrations watching `main`, and to production only by an approved manual run of `deploy-production.yml`; no other workflow shall hold a Netlify or Railway deploy token (D-99). | Must | BR-17, SRC-01, BR-16, D-99 | Inspection |
 | CIC-002 | Workflow files shall be: `.github/workflows/ci.yml`, `e2e.yml`, `deploy-staging.yml`, `deploy-production.yml`, `uptime.yml`; no other workflow shall be added without a TRD change. | Must | SRC-17 Phase 14A | Inspection |
 | CIC-003 | Database migrations shall never be executed by a GitHub Actions workflow against production; they run only as the Railway pre-deploy command (TRD 15 DEP-040, DEP-060). | Must | BR-16, TRD 15 | Inspection |
 
 ### 4.2 Workflow `ci.yml`
 
-Triggers: `pull_request` (all branches), `push` to `main` and `staging`, `workflow_dispatch`.
+Triggers: `pull_request` (all PRs; they target `main`), `push` to `main`, `workflow_dispatch`.
 Concurrency: group `ci-${{ github.ref }}`, `cancel-in-progress: true` for pull requests only.
 Permissions: `contents: read` (default for all jobs).
 
@@ -120,7 +132,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, staging]
+    branches: [main]
   workflow_dispatch:
 concurrency:
   group: ci-${{ github.ref }}
@@ -258,6 +270,7 @@ jobs:
       - run: npm run format:check   # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
       - run: npm run test:coverage  # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
       - run: npm run build
+      - run: npm run check:bundle  # initial JS per dashboard route ≤ 300 KB gzip (TRD 03 NFR-012, TRD 13 TST-191)
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
   security-audit:
@@ -306,7 +319,7 @@ jobs:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-010 | `ci.yml` shall run on every pull request, on every push to `main` and `staging`, and on manual dispatch. | Must | SRC-01 CI/CD | Inspection |
+| CIC-010 | `ci.yml` shall run on every pull request, on every push to `main`, and on manual dispatch. | Must | SRC-01 CI/CD | Inspection |
 | CIC-011 | `backend-lint` shall fail on any `ruff check` finding, any `ruff format --check` difference, or any `mypy` error (strict mode for `analytics/`, TRD 18). | Must | TRD 18 | Test |
 | CIC-012 | `backend-test` shall run against a `postgres:16-alpine` service container, never against SQLite, so integration tests exercise PostgreSQL-specific behaviour (jsonb, triggers, roles). | Must | contract §3, TRD 13 | Inspection |
 | CIC-013 | `backend-test` shall run the unit, integration and validation suites (`tests/unit`, `tests/integration`, `tests/validation`) in one pytest invocation and fail if any test fails or errors. | Must | SRC-01, BR-15 | Test |
@@ -327,18 +340,18 @@ jobs:
 
 ### 4.3 Workflow `e2e.yml`
 
-Triggers: `pull_request` to `main` and `staging` (every PR; job `playwright` is a required check, CIC-070); `push` to
-`main` and `staging`; `schedule` daily at `0 8 * * *` (08:00 UTC, 03:00 America/Chicago during CDT, after the nightly run
+Triggers: `pull_request` to `main` (every PR; job `playwright` is a required check, CIC-070); `push` to
+`main`; `schedule` daily at `0 8 * * *` (08:00 UTC, 03:00 America/Chicago during CDT, after the nightly run
 window); `workflow_dispatch`. On pull requests and pushes the suite runs in Chromium (including `a11y.spec.ts`, TRD 13
 TST-110); on the schedule it runs in Chromium, Firefox and WebKit (TRD 13 TST-100, TST-151), and the schedule also runs the jobs `performance` and `nightly-validation` (CIC-035, CIC-037).
 
 ```yaml
 name: E2E
 on:
-  push: { branches: [main, staging] }
+  push: { branches: [main] }
   schedule: [{ cron: "0 8 * * *" }]
   workflow_dispatch:
-  pull_request: { branches: [main, staging] }
+  pull_request: { branches: [main] }
 permissions: { contents: read }
 jobs:
   playwright:
@@ -409,20 +422,21 @@ jobs:
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | CIC-030 | `e2e.yml` shall run Playwright (Chromium) against the Docker Compose `demo` profile stack (db, backend, frontend-prod on :3001) seeded with `seed test_v0_1` (roster, SRC-05 and pipeline run, TRD 24 D-68) and loaded with the DS-10 ground truth (for E2E-20); every scenario except those tagged `@isolated` runs on that database (TRD 24 D-73): the Playwright `globalSetup` (`frontend/tests/e2e/global-setup.ts`) resets and re-seeds it with `seed test_v0_1 --reset` and the DS-10 loader at the start of each browser project (one Playwright invocation per project and group), the read-only scenarios run first, and the scenarios tagged `@mutating` (every scenario that saves a review, a note or a snooze) run afterwards as the `@mutating` group of TRD 24 D-73 (`frontend/tests/e2e/mutating.spec.ts`, serial, in this order: E2E-18; E2E-09, implemented by TRD 04 FE-187; the FE-193 snooze step on R10), so every read-only assertion sees the pristine seed. After the reset `globalSetup` restarts the backend container (`docker compose restart backend`, waiting for `/api/v1/health`), so the connection pool and the in-memory login limiter start empty, and then logs in once per role and stores the sessions in `frontend/tests/e2e/.auth/` (TRD 24 D-74); only the login scenarios perform form logins. Both runs use RATE_LIMIT_LOGIN=`60/minute` (D-74, TRD 21 ENV-054). The `@isolated` scenarios E2E-15, TST-187 and E2E-19 (TRD 13 §8) shall run afterwards, serially in Chromium, against a second database `echowell_demo` in the same Postgres service, provisioned the same way (`provision_login_roles.sql` as superuser: extensions and roles, TRD 24 D-72), migrated by the backend start command, seeded with `seed test_v0_1 --master-only` and `import-master-data --dir tests/fixtures/seeds/demo_overlay`, with the backend restarted on that database with PIPELINE_AS_OF empty (as-of = current time); this run uses `frontend/playwright.isolated.config.ts`, whose `globalSetup` `frontend/tests/e2e/isolated-setup.ts` does not reset or seed but logs in once per role against the `echowell_demo` backend and writes `frontend/tests/e2e/.auth/isolated-<role>.json` (TRD 24 D-74). The workflow invokes Playwright only through the `frontend/package.json` scripts `test:e2e:readonly`, `test:e2e:mutating` and `test:e2e:isolated` (D-73). | Must | contract §3, TRD 13, TRD 15 DEP-017 | Test |
-| CIC-031 | `e2e.yml` shall run on every pull request to `main` and `staging`, on every push to those branches, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
+| CIC-031 | `e2e.yml` shall run on every pull request to `main`, on every push to `main`, nightly at 08:00 UTC and on manual dispatch; its `playwright` job (Chromium E2E including the accessibility suite of TRD 13 TST-110) shall be a required check for pull requests (CIC-070, TRD 13 TST-150). | Must | TRD 13 | Inspection |
 | CIC-032 | The E2E suite shall at minimum assert: login; overview tiles 2 / 7 / 1 / 19; default sort "Alarms first" order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06; nav shows "Alerts (2)"; R09 detail shows "Alarm on", the alarm line labelled "alarm line 5.0" and the 7 measurement cards; R08 shows "Baseline forming"; `/alerts` shows alarm cards R09 (open 9 days, tally 26.8) and R10 (open 6 days, tally 13.4) and data alerts R08, R05, R03, D02 and, in the `@mutating` group after all read-only assertions (D-73), a review can be saved for R09 (badge becomes "Reviewed", tally unchanged); `/analytics` (researcher) shows "281 of 300 expected" and "267 of 300 expected" and the alarm timing table; `/analytics` is not accessible to a clinician; the New admissions page shows the "Future / experimental study arm" banner. | Must | BR-12, BR-13, BR-14, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Test |
 | CIC-033 | A failing scheduled or `main` `e2e.yml` run shall open (or comment on) a GitHub issue labelled `ci-failure` (the single label for nightly and CI failures, TRD 13 TST-151) via the `gh` CLI using the default `GITHUB_TOKEN` with `issues: write` permission scoped to that step's job. | Should | TRD 17 | Demo |
-| CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s. | Must | contract R8, TRD 03, TRD 13 | Test |
+| CIC-035 | `e2e.yml` shall contain a second job `performance`, run only on the nightly schedule and manual dispatch, that generates dataset DS-08 with `python tests/performance/make_load_dataset.py` (100 residents, 10,800 records) and runs `pytest tests/performance -m performance` against a `postgres:16-alpine` service, failing if any budget of contract R8 is exceeded: read endpoints p95 ≤ 500 ms (100 residents); `POST /api/v1/sessions` p95 ≤ 1,000 ms including the synchronous per-resident pipeline; batch ingest of the test CSV returns 202 ≤ 2 s and finishes processing ≤ 30 s; analytics pipeline on the test input ≤ 5 s; full rebuild of DS-08 ≤ 120 s; and the sustained ingest of 10 records/s for 60 s without errors (TRD 03 NFR-151, TRD 13 TST-190). | Must | contract R8, TRD 03, TRD 13 | Test |
 | CIC-037 | `e2e.yml` shall contain a job `nightly-validation`, run only on the nightly schedule and manual dispatch, with the PostgreSQL service and setup of `ci.yml` `backend-test`, that runs the pytest suites in random order (`pytest -p randomly`, pytest-randomly 3.x; seed printed in the log; TRD 13 TST-005) and the multi-seed robustness check `tests/validation/robustness.py` (TRD 14 TDV-080..TDV-083, TRD 13 TST-084) as an informational step (`continue-on-error: true`); it is not a required check (CIC-070), and a failure opens or comments on the `ci-failure` issue like the other nightly jobs (CIC-033). `backend-test` runs with `-p no:randomly` so pull-request order stays fixed. | Should | TRD 13 TST-005, TST-084, TST-151 | Inspection |
 | CIC-036 | The `backend-test` job shall additionally assert the single budget that is cheap enough for every PR: the analytics pipeline on the SRC-05 test input completes in ≤ 5 s (pytest marker `budget`). | Should | contract R8 | Test |
 | CIC-034 | The E2E credentials (SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD, SEED_INGEST_API_KEY) shall be generated per job, masked with `::add-mask::` before use, passed to the stack through `.env` and to Playwright through `$GITHUB_ENV`, and shall never be valid on staging or production; Playwright logs in as the seeded admin, clinician and researcher users (TRD 06 DB-057, TRD 24 D-71). | Must | BR-16 | Inspection |
 | CIC-114 | `repo-hygiene` shall fail when "Edge4Care" appears in any tracked file outside `specs/` and `docs/reports/` (TRD 00 VIS-008), when the words "diagnoses" or "severity" appear in UI copy under `frontend/app`, `frontend/components` or `frontend/lib/wording.ts` (TRD 03 NFR-067), or when an LLM SDK listed in TRD 12 SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json` (TRD 00 VIS-004, TRD 03 NFR-115). | Must | BR-18, RSK-10 | Test |
 | CIC-115 | `security-audit` shall run `gitleaks detect` 8.x over the full history (TRD 12 SEC-052, TRD 13 TST-136; the only allow-list entries are the `local-dev-only-*` and `ci-only-*` placeholder values in `.env.development.example`, `docker-compose.yml` and `ci.yml`, TRD 06 DB-057, TRD 21 ENV-041) and Bandit on `backend/` and `analytics/` failing on medium or higher severity (TRD 12 SEC-153); `backend-lint` shall run import-linter with contracts that forbid `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random` (TRD 01 ARC-041, AC-ARC-01). | Must | BR-16, BR-15 | Test |
-| CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` and `staging` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.14.x, the version of TRD 13 §4, desktop preset) on `/residents` of the seeded Compose `demo` stack after a scripted login (`frontend/tests/lighthouse/login.js`) and fails below Performance 80 or above LCP 2.5 s (TRD 13 TST-125). | Should | TRD 13, TRD 03 | Test |
+| CIC-116 | `e2e.yml` shall contain a job `lighthouse`, run on pull requests to `main` (not a required check), that runs Lighthouse CI (`@lhci/cli` 0.14.x, the version of TRD 13 §4, desktop preset) on `/residents`, `/residents/R09`, `/alerts` and `/analytics` of the seeded Compose `demo` stack after a scripted admin login (`frontend/tests/lighthouse/login.js`) and fails when any page is below Performance 80 or above LCP 2.5 s (TRD 13 TST-125, TRD 03 NFR-010). | Should | TRD 13, TRD 03 | Test |
 
 ### 4.4 Workflow `deploy-staging.yml`
 
-Triggers: `push` to `staging`; `workflow_dispatch` with input `reseed` (boolean).
+Triggers: `push` to `main` (every merge deploys staging, D-99); `workflow_dispatch` with input `reseed` (boolean).
+Concurrency: group `deploy-staging`, runs queued in order (`cancel-in-progress: false`).
 
 Steps:
 1. Checkout; set `EXPECTED_SHA=${{ github.sha }}`.
@@ -437,25 +451,41 @@ Steps:
 | CIC-040 | `deploy-staging.yml` shall fail if the staging backend does not report the pushed commit SHA in `/api/v1/health` `version` within 15 minutes. | Must | TRD 15 DEP-080, DEP-082 | Test |
 | CIC-041 | `deploy-staging.yml` shall re-seed staging with `seed test_v0_1 --reset` when the push modifies `backend/alembic/**` or `analytics/**`, or when dispatched with `reseed: true`. | Should | TRD 15 DEP-074 | Demo |
 | CIC-042 | `deploy-staging.yml` shall run the staging smoke tests (TRD 15 DEP-080) and fail on any failure. | Must | TRD 15 | Test |
-| CIC-043 | `deploy-staging.yml` shall run in GitHub environment `staging`, whose secrets are available only to workflows running on the `staging` branch (environment deployment branch rule). | Must | BR-16 | Inspection |
+| CIC-043 | `deploy-staging.yml` shall run in GitHub environment `staging`, whose secrets are available only to workflows running on `main` (environment deployment branch rule `main`). | Must | BR-16, D-99 | Inspection |
 
 ### 4.5 Workflow `deploy-production.yml`
 
-Triggers: `push` to `main`; `workflow_dispatch` (re-run smoke tests only).
-Environment: GitHub environment `production` (deployment branch rule: `main` only; no secrets except none needed).
-Permissions: `contents: write`.
+Triggers: `workflow_dispatch` only (manual release, D-99), inputs `sha` (a commit on `main`, required), `version`
+(`vX.Y.Z`, required unless `smoke_only`) and `smoke_only` (boolean, default false: re-run the production smoke tests of
+the deployed version without deploying or tagging). A push or merge never triggers it.
+Environment: GitHub environment `production` (deployment branch rule `main`; required reviewer from `team2-devops` or
+the algorithm lead, self-review prevented), holding the deploy secrets of §4.9.
+Permissions: `contents: write`. Concurrency: group `deploy-production`, `cancel-in-progress: false`.
 
 Steps:
-1. Wait for backend `version` = SHA at `${{ vars.PRODUCTION_API_BASE_URL }}/health` (15 min timeout).
-2. Wait for frontend build meta = SHA at `${{ vars.PRODUCTION_FRONTEND_URL }}/login` (15 min timeout; skipped-build rule as in 4.4).
-3. Run `pytest tests/smoke -m "smoke and not authenticated"` with `SMOKE_ENV=production` (TRD 15 DEP-081).
-4. If the head commit message starts with `release: v` followed by a SemVer (`release: v0.3.0`), create tag `v0.3.0` and a GitHub Release with generated notes (`gh release create v0.3.0 --generate-notes --target $SHA`).
+1. Checkout `inputs.sha` with full history; fail unless it is an ancestor of `origin/main`
+   (`git merge-base --is-ancestor`), `version` matches `^v\d+\.\d+\.\d+$` and the tag does not exist yet.
+2. "Wait for CI": fail unless every required check of CIC-070 on that SHA concluded `success`
+   (`gh api repos/{owner}/{repo}/commits/{sha}/check-runs`) and the `deploy-staging.yml` run for that SHA succeeded
+   (`gh run list --workflow deploy-staging.yml --commit {sha}`) (CIC-053, TRD 15 DEP-062).
+3. Backend: with `RAILWAY_TOKEN` = `secrets.RAILWAY_PRODUCTION_TOKEN`, run
+   `railway variables --set "GIT_SHA=$SHA" --service backend --environment production --skip-deploys` (same for `nightly`),
+   then `railway up --ci --service backend --environment production` and `railway up --ci --service nightly --environment production`
+   (Railway CLI 4.x); the pre-deploy command `alembic upgrade head` and the healthcheck run as for every Railway deploy (TRD 15 DEP-040, DEP-041).
+4. Frontend: in `frontend/`, with `NETLIFY_AUTH_TOKEN` and `GIT_SHA=$SHA`, run
+   `npx netlify-cli@17 deploy --build --prod --site "${{ vars.NETLIFY_PRODUCTION_SITE_ID }}"` (the site's environment variables
+   apply; `NEXT_PUBLIC_GIT_SHA` comes from `GIT_SHA`, TRD 21 ENV-033).
+5. Wait for backend `version` = SHA at `${{ vars.PRODUCTION_API_BASE_URL }}/health` and frontend build meta = SHA at
+   `${{ vars.PRODUCTION_FRONTEND_URL }}/login` (15 min timeout each).
+6. Run `pytest tests/smoke -m "smoke and not authenticated"` with `SMOKE_ENV=production` (TRD 15 DEP-081).
+7. Create tag `vX.Y.Z` on SHA and a GitHub Release with generated notes (`gh release create vX.Y.Z --generate-notes --target $SHA`).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-050 | `deploy-production.yml` shall use no repository or environment secret; it shall access production only through public HTTPS endpoints. | Must | BR-16, TRD 15 DEP-033 | Inspection |
-| CIC-051 | `deploy-production.yml` shall fail if production does not report the merged SHA within 15 minutes or if any production smoke test fails; failure shall trigger the rollback decision in TRD 15 §4.12. | Must | TRD 15 DEP-081 | Test |
-| CIC-052 | A Git tag `vX.Y.Z` and GitHub Release shall be created only after production smoke tests pass, and only for merge commits whose message starts with `release: vX.Y.Z`. | Must | TRD 18 versioning | Demo |
+| CIC-050 | `deploy-production.yml` shall use only the two deploy secrets of the `production` environment (`RAILWAY_PRODUCTION_TOKEN`, `NETLIFY_AUTH_TOKEN`); it shall never hold or read a production database URL, JWT secret or application credential, and it shall verify production only through public HTTPS endpoints. | Must | BR-16, TRD 15 DEP-033, D-99 | Inspection |
+| CIC-051 | `deploy-production.yml` shall fail if production does not report the released SHA within 15 minutes or if any production smoke test fails; failure shall trigger the rollback decision in TRD 15 §4.12. | Must | TRD 15 DEP-081 | Test |
+| CIC-052 | A Git tag `vX.Y.Z` and GitHub Release shall be created only by `deploy-production.yml`, only for the released SHA and only after the production smoke tests pass. | Must | TRD 18 versioning, D-99 | Demo |
+| CIC-053 | `deploy-production.yml` shall run only on manual dispatch, only after approval by a required reviewer of the GitHub environment `production`, and shall deploy nothing unless the chosen SHA is on `main`, every required check of CIC-070 on it succeeded and its `deploy-staging.yml` run succeeded. | Must | BR-17, D-99, TRD 15 DEP-062 | Test |
 
 ### 4.6 Workflow `uptime.yml`
 
@@ -472,7 +502,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-070 | Branch protection on `main` and `staging` shall require these checks to pass: `repo-hygiene` (incl. forbidden-term and LLM-dependency checks), `backend-lint` (incl. import-linter), `backend-test` (incl. the PR-scope performance budget, CIC-036), `openapi-contract`, `frontend`, `security-audit` (incl. gitleaks and Bandit), `docker-build`, `playwright` (E2E Chromium and accessibility). This list implements TRD 13 TST-150. The `e2e.yml` jobs `performance`, `lighthouse` and `nightly-validation` (CIC-035, CIC-116, CIC-037) are not required checks. | Must | contract §13, TRD 18 | Inspection |
+| CIC-070 | Branch protection on `main` (the only long-lived branch, D-99) shall require these checks to pass: `repo-hygiene` (incl. forbidden-term and LLM-dependency checks), `backend-lint` (incl. import-linter), `backend-test` (incl. the PR-scope performance budget, CIC-036), `openapi-contract`, `frontend`, `security-audit` (incl. gitleaks and Bandit), `docker-build`, `playwright` (E2E Chromium and accessibility). This list implements TRD 13 TST-150. The `e2e.yml` jobs `performance`, `lighthouse` and `nightly-validation` (CIC-035, CIC-116, CIC-037) are not required checks. | Must | contract §13, TRD 18 | Inspection |
 | CIC-071 | Required checks shall be evaluated on the PR head merged with the latest base ("Require branches to be up to date before merging"). | Must | TRD 18 | Inspection |
 | CIC-072 | A newly disclosed vulnerability that makes `security-audit` fail on an unchanged dependency may be waived for at most 7 days by an `ignore` entry (`pip-audit --ignore-vuln <ID>` or an `npm audit` override documented in the PR) that references a tracking issue. | May | BR-16 | Inspection |
 
@@ -489,17 +519,20 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 
 | Name | Kind | Scope | Used by | Content |
 |---|---|---|---|---|
-| `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` branch direct URL of role `echowell_migrator` |
+| `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` database branch direct URL of role `echowell_migrator` |
 | `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` | secret | environment `staging` | deploy-staging.yml (re-seed step 4 as SEED_*; smoke step 5 uses the researcher password) | credentials of the seeded staging users and API key (TRD 21 SEED_*) |
 | `STAGING_API_BASE_URL` | variable | repository | deploy-staging.yml, uptime.yml | e.g. `https://echowell-backend-staging.up.railway.app/api/v1` |
-| `STAGING_FRONTEND_URL` | variable | repository | deploy-staging.yml | e.g. `https://staging--echowell-und.netlify.app` |
+| `STAGING_FRONTEND_URL` | variable | repository | deploy-staging.yml | e.g. `https://echowell-und-staging.netlify.app` |
 | `PRODUCTION_API_BASE_URL` | variable | repository | deploy-production.yml, uptime.yml | e.g. `https://echowell-backend-production.up.railway.app/api/v1` |
 | `PRODUCTION_FRONTEND_URL` | variable | repository | deploy-production.yml, uptime.yml | e.g. `https://echowell-und.netlify.app` |
+| `RAILWAY_PRODUCTION_TOKEN` | secret | environment `production` | deploy-production.yml (step 3) | Railway project token scoped to the `production` environment of project `echowell` |
+| `NETLIFY_AUTH_TOKEN` | secret | environment `production` | deploy-production.yml (step 4) | Netlify personal access token of the team-owned deploy account |
+| `NETLIFY_PRODUCTION_SITE_ID` | variable | environment `production` | deploy-production.yml (step 4) | site ID of the Netlify production site `echowell-und` |
 | `GITHUB_TOKEN` | automatic | per job | releases, issues | least permissions per job |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| CIC-090 | The only GitHub Actions secrets shall be the five `staging` environment secrets listed above (`STAGING_DATABASE_URL` and the four `STAGING_SEED_*`); no production credential of any kind shall be stored in GitHub. | Must | BR-16, TRD 12 | Inspection |
+| CIC-090 | The only GitHub Actions secrets shall be the five `staging` environment secrets listed above (`STAGING_DATABASE_URL` and the four `STAGING_SEED_*`) and the two deploy tokens of the `production` environment (`RAILWAY_PRODUCTION_TOKEN`, `NETLIFY_AUTH_TOKEN`), which are released only to an approved `deploy-production.yml` job; no production database URL, JWT secret, API key or user credential shall be stored in GitHub. | Must | BR-16, TRD 12, D-99 | Inspection |
 | CIC-091 | Workflows triggered by `pull_request` from forks shall not have access to any secret (GitHub default) and `pull_request_target` shall not be used. | Must | BR-16 | Inspection |
 | CIC-092 | Secret values shall never be echoed; steps that use secrets shall pass them via `env:` and not via command-line arguments. | Must | BR-16, TRD 17 | Inspection |
 
@@ -517,7 +550,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | CIC-100 | The validation suite shall write `docs/reports/ALGORITHM_VALIDATION_REPORT.md` and the machine-readable `docs/reports/validation_results.json` (sections: Test Results, Passed Cases, Failed Cases, Root Cause Analysis, Recommended Fixes — SRC-17 Phase 12) on every run, and CI shall upload it even when tests fail. | Must | SRC-17 Phase 12, BR-15 | Inspection |
-| CIC-101 | Test outputs (coverage, junit, Playwright output) shall be written to `build/` (gitignored); `docs/reports/` is tracked and its files are committed only by the phase PRs that SRC-17 asks to produce them (CI regenerates and uploads them but never commits). Artifacts shall contain only synthetic test data and never database dumps or production data. | Must | contract R6, BR-16, TRD 18 | Inspection |
+| CIC-101 | Test outputs (coverage, junit, Playwright output) shall be written to `build/` (gitignored); `docs/reports/` is tracked and its files are committed only by the PR #3 checkpoints (and PR #4) that SRC-17 asks to produce them (CI regenerates and uploads them but never commits). Artifacts shall contain only synthetic test data and never database dumps or production data. | Must | contract R6, BR-16, TRD 18 | Inspection |
 | CIC-102 | On pull requests, the job summary (`$GITHUB_STEP_SUMMARY`) shall show the R01–R10 pass/fail table and the coverage percentages for `analytics/` and `backend/`. | Should | BR-15 | Demo |
 
 ### 4.11 Timing budget
@@ -534,7 +567,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - ASM-08 Small team and dataset: one validation dataset (SRC-05) and one PostgreSQL service fit the budget.
 - The repository is public, so GitHub-hosted runner minutes are free (TRD 22); if the repository becomes private the
   2,000 free minutes per month of GitHub Free organizations apply and CIC-031's nightly E2E should become weekly.
-- Railway "Wait for CI" and Netlify GitHub integration remain available on the plans in TRD 22.
+- Railway "Wait for CI", the Netlify GitHub integration, the Railway CLI (`railway up`) and the Netlify CLI remain available on the plans in TRD 22.
 
 ## 6. Dependencies
 
@@ -544,7 +577,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - `backend.cli export-openapi` and `seed` commands (TRD 15 §4.8); `docs/api_reference/openapi.json` (TRD 19).
 - pytest plugin option `--validation-report` implemented in `tests/validation/conftest.py` (TRD 14); it also writes `validation_results.json` next to the Markdown report.
 - `tests/performance/make_load_dataset.py` and `tests/performance/` suite (TRD 13/TRD 14).
-- Railway "Wait for CI" and Netlify integration configured (TRD 15).
+- Railway "Wait for CI" and the Netlify staging-site integration configured; production services and site set to deploy only through `deploy-production.yml` (TRD 15 §4.5, §4.6).
 
 ## 7. Acceptance Criteria
 
@@ -554,8 +587,8 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 - AC-CIC-04 A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes.
 - AC-CIC-05 `ci.yml` on `main` completes all required checks in under 15 minutes (CIC-110) and uploads `backend-reports` containing `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `docs/reports/validation_results.json`.
 - AC-CIC-10 The nightly `performance` job passes all contract R8 budgets and uploads `performance-report`.
-- AC-CIC-06 `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (and `GITHUB_TOKEN`).
-- AC-CIC-07 A merge to `main` yields a green `deploy-production.yml` run whose log shows the health `version` equal to the merge SHA.
+- AC-CIC-06 `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (in `deploy-staging.yml`), `RAILWAY_PRODUCTION_TOKEN`, `NETLIFY_AUTH_TOKEN` (in `deploy-production.yml` only) and `GITHUB_TOKEN`.
+- AC-CIC-07 A merge to `main` yields a green `deploy-staging.yml` run whose log shows the staging health `version` equal to the merge SHA and leaves production unchanged; an approved manual `deploy-production.yml` run for that SHA shows the production health `version` equal to it and creates the tag.
 - AC-CIC-08 Branch protection settings for `main` list exactly the eight required checks of CIC-070.
 - AC-CIC-09 The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before the demo freeze (15 Nov 2026).
 
@@ -567,7 +600,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
   connect lazily in the lifespan handler, which `export-openapi` does not run.
 - `--validation-report` is a custom pytest option; register it in `tests/validation/conftest.py` with `pytest_addoption` and write the report in `pytest_sessionfinish`.
 - `docker compose up --wait` requires healthchecks on every waited service; give `backend` a healthcheck (`python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"`) and `frontend-prod` one on `/login`.
-- When Netlify skips a build (ignore command), the old build meta SHA remains; the verification step must compare against the latest commit that touched `frontend/` or `netlify.toml` (`git log -1 --format=%H -- frontend netlify.toml`).
+- When the Netlify staging site skips a build (ignore command), the old build meta SHA remains; the verification step must compare against the latest commit that touched `frontend/` or `netlify.toml` (`git log -1 --format=%H -- frontend netlify.toml`).
 - `npm audit --omit=dev` excludes dev tooling to avoid blocking on advisories in build-only packages; Dependabot (TRD 18) still raises those.
 - Use `ubuntu-24.04` explicitly rather than `ubuntu-latest` to avoid silent runner image changes before the demo.
 
@@ -590,3 +623,5 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02, R6-03, R6-07) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-01, R7-02, R7-05) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-03) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (frontend job check:bundle (TST-191); CIC-035 sustained ingest (TST-190); CIC-116 four pages (D-98)) | — |
+| 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

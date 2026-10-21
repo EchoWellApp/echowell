@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -62,9 +62,9 @@ procedures Phase 14B must execute.
 ```mermaid
 flowchart LR
   subgraph GH[GitHub EchoWellApp/echowell]
+    PR[short-lived feature branches / PRs]
     M[main branch]
-    S[staging branch]
-    PR[feature branches / PRs]
+    REL[deploy-production.yml<br/>manual release vX.Y.Z]
   end
   subgraph Local[Local - docker compose]
     LDB[(postgres:16-alpine :5432)]
@@ -73,31 +73,33 @@ flowchart LR
     LFE --> LBE --> LDB
   end
   subgraph Staging
-    NS[Netlify branch deploy staging--echowell-und.netlify.app]
+    NS[Netlify site echowell-und-staging.netlify.app]
     RS[Railway env staging / service backend]
-    DS[(Neon branch staging)]
+    DS[(Neon database branch staging)]
     NS --> RS --> DS
   end
   subgraph Production
     NP[Netlify production echowell-und.netlify.app]
     RP[Railway env production / service backend]
-    DP[(Neon branch main)]
+    DP[(Neon database branch main)]
     NP --> RP --> DP
   end
   PR -- deploy preview --> NS
-  S -- auto deploy --> NS
-  S -- auto deploy after CI --> RS
-  M -- auto deploy --> NP
-  M -- auto deploy after CI --> RP
+  PR -- reviewed PR merged --> M
+  M -- auto deploy on every merge --> NS
+  M -- auto deploy after CI --> RS
+  M -- chosen commit, approved run --> REL
+  REL -- Netlify CLI publish --> NP
+  REL -- railway up --> RP
   Device[Team 1 device / CSV upload] -- HTTPS X-API-Key --> RP
 ```
 
 | Aspect | local | staging | production |
 |---|---|---|---|
-| Git source | working tree | `staging` branch | `main` branch |
-| Frontend | `next dev` on :3000 (container) | Netlify branch deploy of `staging` + deploy previews of PRs | Netlify production deploy of `main` |
-| Backend | uvicorn :8000 with `--reload` (container) | Railway project `echowell`, environment `staging`, service `backend` | Railway project `echowell`, environment `production`, service `backend` |
-| Database | `postgres:16-alpine` container, volume `pgdata` | Neon project `echowell`, branch `staging` | Neon project `echowell`, branch `main` |
+| Git source | working tree | `main` (every merge, automatic) | a `main` commit chosen for a release (`deploy-production.yml`, manual, approved, tagged `vX.Y.Z`) |
+| Frontend | `next dev` on :3000 (container) | Netlify site `echowell-und-staging` (production branch `main`, auto-publish) + deploy previews of PRs | Netlify site `echowell-und` (builds stopped; published only by `deploy-production.yml`) |
+| Backend | uvicorn :8000 with `--reload` (container) | Railway project `echowell`, environment `staging`, service `backend` (source branch `main`, Wait for CI) | Railway project `echowell`, environment `production`, service `backend` (automatic deploys disabled; deployed only by `deploy-production.yml`) |
+| Database | `postgres:16-alpine` container, volume `pgdata` | Neon project `echowell`, database branch `staging` | Neon project `echowell`, database branch `main` |
 | APP_ENV | `local` | `staging` | `production` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `production` |
 | Seed data | `test_v0_1` allowed | `test_v0_1` allowed | never |
@@ -106,10 +108,10 @@ flowchart LR
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DEP-001 | The system shall be deployable to exactly three named environments: `local`, `staging`, `production`, identified at runtime by APP_ENV. | Must | BR-17, SRC-01, TRD 21 | Inspection |
-| DEP-002 | The production frontend shall be deployed from the `main` branch to Netlify by the Netlify GitHub integration. | Must | BR-17, SRC-01 | Demo |
-| DEP-003 | The production backend (FastAPI with the `analytics/` package) shall be deployed from the `main` branch to the Railway `production` environment by the Railway GitHub integration. | Must | BR-17, SRC-01 | Demo |
-| DEP-004 | The staging frontend and backend shall be deployed from the `staging` branch to the Netlify branch deploy and the Railway `staging` environment respectively. | Must | BR-17, contract §13 | Demo |
-| DEP-005 | Production shall use the Neon project `echowell` default branch `main`; staging shall use the Neon child branch `staging` of the same project; no environment shall share a database with another. | Must | BR-16, SRC-01 | Inspection |
+| DEP-002 | The production frontend shall be published to the Netlify production site `echowell-und` only by a manual run of the release workflow `deploy-production.yml` (§4.10, TRD 16 §4.5) for a chosen `main` commit; the production site's builds are stopped, so no push or merge builds or publishes it (TRD 24 D-99). | Must | BR-17, SRC-01, D-99 | Demo |
+| DEP-003 | The production backend (FastAPI with the `analytics/` package) and its `nightly` service shall be deployed to the Railway `production` environment only by `deploy-production.yml` (`railway up` of the released `main` commit); automatic GitHub deploys are disabled for the production services (D-99). | Must | BR-17, SRC-01, D-99 | Demo |
+| DEP-004 | Every merge to `main` shall deploy staging automatically: the Netlify staging site `echowell-und-staging` (production branch `main`) and the Railway `staging` environment (source branch `main`, "Wait for CI") through the platform GitHub integrations. There is no `staging` Git branch; the repository has only `main` and short-lived feature branches (TRD 18 §4.2, D-99). | Must | BR-17, contract §13, D-99 | Demo |
+| DEP-005 | Production shall use the Neon project `echowell` default database branch `main`; staging shall use the Neon child database branch `staging` of the same project (Neon database branches, not Git branches); no environment shall share a database with another. | Must | BR-16, SRC-01 | Inspection |
 | DEP-006 | Each environment shall have its own JWT_SECRET, its own API keys and its own user accounts; a credential issued in one environment shall be rejected in every other environment. | Must | BR-16, TRD 12 | Test |
 | DEP-007 | Production shall contain no synthetic seed data from `test_v0_1`; staging and local shall contain only synthetic data and shall never contain study data. | Must | BR-16, SRC-03 | Inspection |
 | DEP-008 | No real resident data shall ever be ingested into or stored on the interim Netlify/Railway/Neon stack (local, staging or interim production); only synthetic data and test check-ins recorded by team members under demo study IDs (prefix `T`, e.g. `T01`) are allowed. | Must | BR-16, D-OWNER-3, D-OWNER-4, RSK-14 | Inspection |
@@ -131,7 +133,7 @@ flowchart LR
 | DEP-017 | A `demo` Compose profile shall add the service `frontend-prod`, built from `frontend/Dockerfile` (`next build` then `next start`), on port 3001, for E2E tests (TRD 16) and the demo fallback (DEP-090). | Must | RSK-12, SRC-17 | Test |
 | DEP-018 | The Compose file shall not contain any secret other than local-only placeholder passwords matching `local-dev-only-*` (the Postgres superuser password `local-dev-only-postgres` and the login-role passwords `local-dev-only-migrator`, `local-dev-only-app`, `local-dev-only-readonly`, the last three also in the `.env.development.example` URLs; TRD 06 DB-057 exception, TRD 21 ENV-041); staging and production secrets shall never be referenced. | Must | BR-16, TRD 12 | Inspection |
 
-Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `DEPLOYMENT_CONFIGURATION_GUIDE.md`):
+Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`):
 
 1. Install Docker Desktop 4.x (or Docker Engine 24+ with Compose v2), Git, and optionally Node.js 20 LTS and Python 3.12 for running tools outside containers.
 2. `git clone https://github.com/EchoWellApp/echowell.git && cd echowell`
@@ -226,9 +228,9 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 
 1. Sign in to Neon with the team-owned account (TRD 22, TPS ownership rules).
 2. Create project `echowell`, PostgreSQL version **16**, region **AWS US East 1 (N. Virginia)** (`aws-us-east-1`), database name `echowell`.
-3. The default branch is renamed or confirmed as `main` (production).
+3. The default database branch is renamed or confirmed as `main` (production). Neon branches are database branches, unrelated to Git branches.
 4. As the Neon project owner role (SQL editor, once per branch-tree before any migration), run `CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS btree_gist; ALTER DATABASE echowell SET timezone = 'UTC';` (TRD 20 §4.2, PGS-001, D-72; migration 0001 only checks the extensions; on AWS RDS the master user and on Railway PostgreSQL the `postgres` superuser run the same statements). Then create roles: `echowell_migrator` (owns the schema; used through DATABASE_MIGRATION_URL only by the closed list of TRD 20 §4.3), `echowell_app` (runtime DML) and `echowell_readonly` (SELECT for researchers/exports). Grants for `echowell_app` are created by the Alembic migration defined in TRD 20 (SELECT/INSERT on `raw_sessions` and `audit_logs`; no UPDATE/DELETE).
-5. Create child branch `staging` from `main` immediately after step 4 (empty schema).
+5. Create child database branch `staging` from `main` immediately after step 4 (empty schema).
 6. Copy the connection strings from the Neon console: for each branch, the **pooled** string for `echowell_app` (host contains `-pooler`) and the **direct** string for `echowell_migrator`. Also copy, per branch, the pooled string for `echowell_readonly` (DATABASE_READONLY_URL; required for staging, never set for production). Store them only in Railway variables (DEP-033).
 7. Set compute autosuspend to the plan default (5 min) for `staging`; for `main` keep the default as well (cost, TRD 22) and accept cold starts (RSK-07).
 
@@ -247,21 +249,21 @@ Procedure:
 
 1. In Railway (team-owned account, TRD 22) create project `echowell` with two environments: `production` (default) and `staging`.
 2. Add service `backend` from GitHub repo `EchoWellApp/echowell`. Settings per environment:
-   - Source branch: `main` (production) / `staging` (staging).
+   - Source branch: `main` in the `staging` environment (automatic deploy on every merge). In the `production` environment automatic deploys are disabled (no GitHub trigger); the service is deployed only by `deploy-production.yml` with `railway up` (§4.10, D-99).
    - Root directory: repository root (`/`); config-as-code file: `/railway.toml`.
    - Builder: Dockerfile, path `backend/Dockerfile`.
    - Pre-deploy command (from `railway.toml`): `alembic upgrade head` (runs in its own container before the new deployment starts; a failure aborts the deployment, DEP-065).
    - Start command (from `railway.toml`): `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`.
    - Healthcheck path `/api/v1/health`, timeout 120 s.
    - Watch paths: `backend/**`, `analytics/**`, `alembic.ini`, `railway.toml` (other changes do not redeploy the backend).
-   - "Wait for CI" enabled (deploy only after GitHub checks of the commit pass, TRD 16).
+   - "Wait for CI" enabled in `staging` (deploy only after GitHub checks of the commit pass, TRD 16); for `production` the release workflow verifies the same checks before it deploys (TRD 16 CIC-053).
    - Replicas: 1. Serverless / app sleeping: allowed (cold start accepted, RSK-07); disable it for the demo day (DEP-042).
    - Region: US East (Virginia).
    - Restart policy: on failure, max 3 retries.
 3. Generate a Railway public domain per environment (`echowell-backend-production.up.railway.app`, `echowell-backend-staging.up.railway.app`; if taken, the generated name is recorded in `docs/deployment.md` and in GitHub Actions variables `PRODUCTION_API_BASE_URL` / `STAGING_API_BASE_URL`).
-4. Set variables per TRD 21 §4.7 matrix. `GIT_SHA` is set to the Railway reference `${{RAILWAY_GIT_COMMIT_SHA}}`. `PORT` is injected by Railway.
+4. Set variables per TRD 21 §4.7 matrix. In `staging`, `GIT_SHA` is set to the Railway reference `${{RAILWAY_GIT_COMMIT_SHA}}`; in `production`, `deploy-production.yml` sets `GIT_SHA` to the released commit SHA before each deploy (TRD 21). `PORT` is injected by Railway.
 5. Deploy; verify `GET https://<backend-domain>/api/v1/health` returns 200 and `version` equals the deployed commit SHA.
-6. Add a second service `nightly` (Railway Cron Job) in each environment from the same repository and branch: config file `/railway.nightly.toml`, builder Dockerfile `backend/Dockerfile`, start command `python -m backend.jobs.nightly_run`, cron schedule `0 7,8 * * *` (UTC), no public domain, no healthcheck, restart policy never, only these variables: DATABASE_URL (app role), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF (non-production only), FACILITY_NAME, FACILITY_TZ, NIGHTLY_RUN_HOUR_LOCAL, LOG_LEVEL, LOG_FORMAT, GIT_SHA and SENTRY_DSN (optional) — never DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET or CORS settings (TRD 12 SEC-111, TRD 21 ENV-053). The job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe), otherwise it exits 0 after the missing-run check of TRD 17 LOG-111.
+6. Add a second service `nightly` (Railway Cron Job) in each environment from the same repository, deployed like `backend` (staging: from `main` automatically; production: by `deploy-production.yml`): config file `/railway.nightly.toml`, builder Dockerfile `backend/Dockerfile`, start command `python -m backend.jobs.nightly_run`, cron schedule `0 7,8 * * *` (UTC), no public domain, no healthcheck, restart policy never, only these variables: DATABASE_URL (app role), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF (non-production only), FACILITY_NAME, FACILITY_TZ, NIGHTLY_RUN_HOUR_LOCAL, LOG_LEVEL, LOG_FORMAT, GIT_SHA and SENTRY_DSN (optional) — never DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET or CORS settings (TRD 12 SEC-111, TRD 21 ENV-053). The job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe), otherwise it exits 0 after the missing-run check of TRD 17 LOG-111.
 
 `railway.nightly.toml` outline:
 
@@ -301,9 +303,9 @@ numReplicas = 1
 | DEP-041 | The Railway healthcheck path shall be `/api/v1/health`; a deployment whose healthcheck does not return 200 within 120 s shall not receive traffic (Railway keeps the previous deployment active). | Must | TRD 17 | Demo |
 | DEP-042 | The backend service shall run exactly 1 replica in staging and production; app sleeping may be enabled to save cost, except on demo days when it shall be disabled. | Must | RSK-07 | Inspection |
 | DEP-046 | The nightly full pipeline run shall be executed by a separate Railway Cron Job service `nightly` running `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` UTC; there shall be no in-process scheduler in the backend. | Must | contract R18, contract §7 trigger | Inspection |
-| DEP-047 | `backend.jobs.nightly_run` shall start a run (trigger `nightly`, scope all) only when the current facility-local time (FACILITY_TZ) is between 02:00 and 02:59 and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` exists for that facility-local date; otherwise it shall exit 0 without running. | Must | contract R18 | Test |
+| DEP-047 | `backend.jobs.nightly_run` shall start a run (trigger `nightly`, scope all) only when the current facility-local hour (FACILITY_TZ) equals `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. between 02:00 and 02:59) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` exists for that facility-local date; otherwise it shall exit 0 without running. | Must | contract R18 | Test |
 | DEP-048 | The `nightly` service shall never run `alembic upgrade`; it shall exit non-zero if the database schema revision differs from the revision bundled in its image. | Must | DEP-060 | Test |
-| DEP-043 | Railway "Wait for CI" shall be enabled so that a commit is deployed only after its required GitHub checks (TRD 16) pass. | Must | BR-17, TRD 16 | Demo |
+| DEP-043 | Railway "Wait for CI" shall be enabled in the `staging` environment so that a commit is deployed only after its required GitHub checks (TRD 16) pass; a production release deploys only a commit whose required checks passed and whose staging deploy run succeeded (TRD 16 CIC-053). | Must | BR-17, TRD 16 | Demo |
 | DEP-044 | The Railway configuration shall be stored as code in `/railway.toml`; dashboard-only settings (branch, variables, domain, region, sleeping, cron service) shall be listed; the `nightly` service configuration shall be stored in `/railway.nightly.toml` and its other settings listed in `docs/deployment.md`. | Must | SRC-17 Phase 14A | Inspection |
 | DEP-045 | The backend shall serve only HTTPS through the Railway edge; HTTP requests shall be redirected by the platform, and the backend shall send `Strict-Transport-Security: max-age=31536000; includeSubDomains` in staging and production (TRD 12 SEC-062). | Must | BR-16, TRD 12 | Test |
 
@@ -311,12 +313,14 @@ numReplicas = 1
 
 Procedure:
 
-1. In Netlify (team-owned team, TRD 22) "Add new site → Import from Git" → `EchoWellApp/echowell`.
-2. Site name `echowell-und` (if taken, record the actual name in `docs/deployment.md`).
-3. Build settings (also in `/netlify.toml`): base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), publish directory `.next`, Node version 20, plugin `@netlify/plugin-nextjs`.
-4. Production branch `main`. Branch deploys: `staging` only. Deploy previews: on for pull requests.
-5. Environment variables per deploy context (TRD 21 §4.7): `NEXT_PUBLIC_API_BASE_URL` (production → production backend; branch-deploy `staging` and deploy-preview → staging backend), `NEXT_PUBLIC_APP_ENV` (`production` / `staging` / `staging`).
-6. Trigger a deploy, open the site, confirm the login page renders and the browser network tab shows calls only to the backend domain of the matching environment.
+Two Netlify sites are built from the same repository, one per environment (D-99):
+
+1. In Netlify (team-owned team, TRD 22) "Add new site → Import from Git" → `EchoWellApp/echowell` twice: the staging site `echowell-und-staging` and the production site `echowell-und` (if a name is taken, record the actual name in `docs/deployment.md` and in the GitHub variables of TRD 16 §4.9).
+2. Build settings of both sites (also in `/netlify.toml`): base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), publish directory `.next`, Node version 20, plugin `@netlify/plugin-nextjs`.
+3. Staging site: production branch `main` with auto publishing on (every merge to `main` deploys staging); branch deploys off; deploy previews on for pull requests.
+4. Production site: builds stopped ("Stop builds"), branch deploys and deploy previews off, so no Git event builds or publishes it; it is published only by `deploy-production.yml` with the Netlify CLI (`netlify deploy --build --prod`) from the checked-out release commit (§4.10). Record its site ID in the GitHub variable `NETLIFY_PRODUCTION_SITE_ID`.
+5. Site environment variables (TRD 21 §4.7), set per site for all deploy contexts: staging site `NEXT_PUBLIC_API_BASE_URL` = staging backend origin and `NEXT_PUBLIC_APP_ENV` = `staging` (deploy previews use the same values); production site `NEXT_PUBLIC_API_BASE_URL` = production backend origin and `NEXT_PUBLIC_APP_ENV` = `production`.
+6. Merge a commit to `main`, open the staging site, confirm the login page renders and the browser network tab shows calls only to the staging backend; the production site is checked after the first release (§4.10).
 
 `netlify.toml` outline (repository root):
 
@@ -334,12 +338,8 @@ Procedure:
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[context.production.environment]
-  NEXT_PUBLIC_APP_ENV = "production"
-[context.branch-deploy.environment]
-  NEXT_PUBLIC_APP_ENV = "staging"
-[context.deploy-preview.environment]
-  NEXT_PUBLIC_APP_ENV = "staging"
+# NEXT_PUBLIC_API_BASE_URL and NEXT_PUBLIC_APP_ENV are site environment variables (one value per site, §4.6 step 5),
+# not deploy-context blocks: both sites build `main`, so a context cannot tell staging from production (D-99).
 
 # Copied verbatim from TRD 12 §4.9 (the only owner of this header set; do not edit here).
 [[headers]]
@@ -355,9 +355,9 @@ Procedure:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-050 | The Netlify site shall use base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), Node 20 and the `@netlify/plugin-nextjs` plugin. | Must | SRC-01, contract task | Inspection |
-| DEP-051 | NEXT_PUBLIC_API_BASE_URL shall be set per Netlify deploy context so that production builds call only the production backend and branch/preview builds call only the staging backend. | Must | BR-16, TRD 21 | Test |
-| DEP-052 | Netlify shall skip a build when no file under `frontend/` and no `netlify.toml` changed between commits (ignore command), to conserve build minutes. | Should | RSK-07, TRD 22 | Demo |
+| DEP-050 | Both Netlify sites shall use base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build` (TRD 12 SEC-070), Node 20 and the `@netlify/plugin-nextjs` plugin. | Must | SRC-01, contract task | Inspection |
+| DEP-051 | NEXT_PUBLIC_API_BASE_URL shall be set per Netlify site so that the production site calls only the production backend and the staging site, including its deploy previews, calls only the staging backend. | Must | BR-16, TRD 21, D-99 | Test |
+| DEP-052 | The Netlify staging site shall skip a build when no file under `frontend/` and no `netlify.toml` changed between commits (ignore command), to conserve build minutes; the production site builds only in release runs. | Should | RSK-07, TRD 22 | Demo |
 | DEP-053 | The frontend shall send the security headers of TRD 12 §4.9 (copied verbatim into the `netlify.toml` outline) on every response. | Must | BR-16, TRD 12 | Test |
 | DEP-054 | Netlify deploy previews shall never be configured with the production backend URL. | Must | BR-16 | Inspection |
 
@@ -365,10 +365,10 @@ Procedure:
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-060 | Database schema changes shall be applied only by Alembic (`alembic upgrade head`) as the Railway pre-deploy command (DEP-040; on AWS a one-off migration task, DEP-117); no manual DDL shall be run against staging or production. The single exception is the D-71 staging test-database reset (`reset-test-db`: `alembic downgrade base` then `alembic upgrade head`), run only from the deploy-staging GitHub Actions re-seed step (TRD 16 §4.4) with PIPELINE_PROFILE=`test_v0_1`, never in production (TRD 06 DB-029, TRD 24 D-71). | Must | TRD 06, TRD 20, D-71 | Inspection |
+| DEP-060 | Database schema changes shall be applied only by Alembic (`alembic upgrade head`) as the Railway pre-deploy command (DEP-040; on AWS a one-off migration task, DEP-117); no manual DDL shall be run against staging or production. The single exception is the D-71 staging test-database reset (`reset-test-db`: `alembic downgrade base` then `alembic upgrade head`), run only from the re-seed step of the `deploy-staging.yml` workflow that runs after merges to `main` (TRD 16 §4.4), only against the staging database and only with PIPELINE_PROFILE=`test_v0_1`, never in production (TRD 06 DB-029, TRD 24 D-71). | Must | TRD 06, TRD 20, D-71 | Inspection |
 | DEP-061 | Every migration merged to `main` shall be backward compatible with the previous release (expand/contract: add columns/tables first, remove in a later release), so that the previous backend deployment keeps working if the new deployment fails its healthcheck. | Must | DEP-041 | Inspection (PR review) |
-| DEP-062 | Every migration shall be applied to the Neon `staging` branch (via a `staging` deploy) and pass the staging smoke tests before the same migration is merged to `main`. | Must | BR-17 | Inspection |
-| DEP-063 | Before a release that contains a migration is merged to `main`, the DevOps owner shall create a Neon branch `pre-<short-sha>` from `main` as a restore point and delete it after 7 days if unused. | Must | BR-02 | Inspection |
+| DEP-062 | Every migration shall be applied to the Neon `staging` database branch by the staging deploy that follows its merge to `main`, and pass the staging smoke tests, before a release containing it is deployed to production; `deploy-production.yml` refuses a commit whose `deploy-staging.yml` run did not succeed (TRD 16 CIC-053). | Must | BR-17, D-99 | Inspection |
+| DEP-063 | Before a release that contains a migration is deployed to production, the DevOps owner shall create a Neon branch `pre-<short-sha>` from `main` as a restore point and delete it after 7 days if unused. | Must | BR-02 | Inspection |
 | DEP-064 | Alembic shall use a PostgreSQL advisory lock (key `0x45434857`, "ECHW") during upgrade so two concurrent starts cannot apply migrations twice. | Should | TRD 06 | Test |
 | DEP-065 | If `alembic upgrade head` fails, the process shall exit non-zero so the Railway deployment fails and the previous deployment stays live. | Must | DEP-041 | Test |
 
@@ -378,17 +378,17 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 
 | Command | Effect | Allowed APP_ENV |
 |---|---|---|
-| `bootstrap` | Idempotent: creates the facility row from FACILITY_NAME and FACILITY_TZ if missing; inserts missing `config_parameters` rows for profiles `production` and `test_v0_1` from `analytics/config.py` defaults (never overwrites existing rows). | all |
-| `create-user --email E --role R` | Creates a user; password read from an interactive prompt (`getpass`) or from stdin with `--password-stdin`. | all |
-| `create-api-key --name N [--device D] [--scope S]…` | Creates an API key with one or more scopes (`--scope` optional and repeatable, default `ingest:write`; syntax defined by TRD 12 SEC-020, scopes by SEC-022); prints the key once. | all |
-| `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024). | all |
+| `bootstrap` | Idempotent: creates the facility row from FACILITY_NAME and FACILITY_TZ if missing; verifies that `config_parameters` holds the rows of both profiles `production` and `test_v0_1` seeded by migration `0002_seed_config_parameters` (TRD 20 PGS-024) and exits with code 2 naming any missing row; it never inserts or overwrites `config_parameters` rows (TRD 24 D-85). | all |
+| `create-user --email E --display-name N --role R` | Creates a user (`users.display_name` is NOT NULL, TRD 20; syntax as TRD 05 §8); password read from an interactive prompt (`getpass`) or from stdin with `--password-stdin`; refuses an invalid or already used e-mail, an unknown role or a password that violates the policy with exit code 2 and no change (TRD 24 D-86). | all |
+| `create-api-key --name N [--device D] [--scope S]…` | Creates an API key with one or more scopes (`--scope` optional and repeatable, default `ingest:write`; syntax defined by TRD 12 SEC-020, scopes by SEC-022); prints the key once; refuses an unknown scope or device with exit code 2 and no change (TRD 24 D-86). | all |
+| `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024); refuses an unknown name with exit code 2 and no change (TRD 24 D-86). | all |
 | `import-master-data --dir D` | Idempotent upsert of the facility, residents, devices and device assignments from CSV files `facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format TRD 06 DB-060; the test roster is `database/seeds/test_v0_1/`, TRD 20 §4.12); master data has no API endpoints in the MVP (contract R4). | all |
 | `withdraw-resident <resident_code> --on <YYYY-MM-DD>` | Sets resident status `withdrawn` and `withdrawn_on` (audited `resident.withdrawn`; TRD 06 DB-062, TRD 23 DME-009). | all |
 | `seed test_v0_1 [--master-only] [--reset]` | Runs the `import-master-data` step on `database/seeds/test_v0_1/` (facility "Edgewood"), upserts the test users and the API key `test-ingest` from SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY without printing them (TRD 06 DB-056/DB-057, idempotent), then ingests SRC-05 (`tests/fixtures/pipeline_input/`) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`, giving a fully populated test system (TRD 06 DB-058; TRD 24 D-68); `--master-only` stops after the roster, users and API key; refused in production (DEP-070); `--reset`: see `reset-test-db` (TRD 24 D-71). It does not load `evaluation_ground_truth`; run `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` afterwards (refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`; `backend/cli.py` never references that table). | local, staging, test |
 | `set-config --profile P --key K --value '<json>' --reason "<text>"` | Admin/operator only; runs as `echowell_migrator` (DATABASE_MIGRATION_URL). Validates the JSON value against the key's schema (TRD 07 ANL-029, TRD 10 ING-017); refuses unknown keys and invalid values with exit code 2 and no change; otherwise updates the `config_parameters` row and writes one `audit_logs` row `config.changed` (`details`: profile, key, old, new, reason) in the same transaction. For an algorithm key (TRD 07 §4.7) it prints "Algorithm key changed: run python -m backend.cli rebuild --profile P --confirm REBUILD"; until that rebuild runs, ingest and nightly runs end `failed` with `config_changed_requires_rebuild` (ANL-032). Operational keys take effect at the next run or request (TRD 24 D-56, D-69). | all |
 | `run-pipeline --scope all [--profile P]` | Runs the full pipeline and records a `pipeline_runs` row with trigger `manual`. | all |
 | `rebuild --profile P --confirm REBUILD` | After an algorithm-key change only: connects with DATABASE_MIGRATION_URL (`echowell_migrator`), runs the full pipeline (trigger `manual`) with `rebuild=True`, which deletes and recomputes each resident's `baselines` inside that resident's transaction; audited `pipeline.rebuild` (TRD 07 ANL-032, TRD 24 D-56). Run from an operator workstation (`railway run`), never by the web service. | all |
-| `export-openapi` | Prints the OpenAPI JSON (used by CI, TRD 16). | all |
+| `export-openapi` | Prints the OpenAPI JSON to stdout and writes no file; CI redirects the output and diffs it with the committed `docs/api_reference/openapi.json` (TRD 16 CIC-018), and a developer regenerates the committed file with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` (TRD 24 D-89). | all |
 | `reset-test-db` | As `echowell_migrator`: `alembic downgrade base` then `alembic upgrade head` (empty schema with triggers, grants and `config_parameters` seed; no TRUNCATE, no purge path); refused unless APP_ENV ∈ {local, test, staging} and PIPELINE_PROFILE = `test_v0_1`; on staging it runs only from the deploy-staging re-seed step (DEP-060 exception, TRD 06 DB-024, DB-029, TRD 24 D-71); the downgrade never drops the extensions (D-72) and the reset writes its `seed.reset` audit row after the upgrade. `seed test_v0_1 --reset` = `reset-test-db` + `seed test_v0_1`. | local, test, staging (re-seed step only) |
 | `purge-resident <code> --confirm <code>` | IRB-directed deletion of a withdrawn resident's data (TRD 06 DB-064, OQ-11). | all |
 | `resolve-data-alert --id <uuid> --reason "<text>"` | Admin/operator only; runs with DATABASE_URL (role `echowell_app`, which may update `data_alerts`, TRD 20 PGS-021). Sets the open `review_flagged_data_problem` data alert `<uuid>` to `resolved` with `resolved_at` = now and writes one `audit_logs` row `data_alert.resolved` (`details`: alert_id, kind, reason, operator) in the same transaction; refuses with exit code 2 and no change for an unknown id, a data alert of any other kind or one that is not open (TRD 02 FR-297, TRD 23, TRD 13 TST-189). | all |
@@ -400,24 +400,26 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | DEP-072 | `bootstrap` shall be idempotent: running it twice shall leave the database identical to running it once. | Must | TRD 06 | Test |
 | DEP-073 | Production shall contain only the facility row, `config_parameters`, users, API keys and data received from devices or CSV upload of study data; no row with `ingest_batches.source = seed` shall exist in production. | Must | DEP-007 | Test (SQL check in smoke test) |
 | DEP-074 | Staging shall be re-seeded with `seed test_v0_1 --reset` after every deploy that contains a migration or a change under `analytics/`, so that staging always reflects the answer key. | Should | BR-15 | Demo |
-| DEP-075 | The first production admin user shall be created with `railway run --environment production python -m backend.cli create-user --email <admin email> --role admin` from a team member's workstation; the password shall be entered interactively and never written to a file, shell history or chat. | Must | BR-16, TRD 12 | Inspection |
+| DEP-075 | The first production admin user shall be created with `railway run --environment production python -m backend.cli create-user --email <admin email> --display-name <name> --role admin` from a team member's workstation; the password shall be entered interactively and never written to a file, shell history or chat. | Must | BR-16, TRD 12 | Inspection |
 
-### 4.9 Step-by-step: staging release
+### 4.9 Step-by-step: staging deploy (automatic on every merge to `main`)
 
-1. Open a PR from `feat/...` (or `fix/...`) to `staging`; CI (TRD 16) must be green; Netlify posts a deploy preview pointing to the staging backend.
-2. Merge the PR into `staging`.
+1. Open a PR from a short-lived `feat/...`, `fix/...`, `docs/...` or `chore/...` branch directly to `main` (TRD 18 GIT-012); CI (TRD 16) must be green and the PR approved; Netlify posts a deploy preview of the staging site pointing to the staging backend.
+2. Merge the PR into `main`.
 3. Railway `staging` waits for CI, builds `backend/Dockerfile`, runs the pre-deploy command `alembic upgrade head`, starts uvicorn, passes the healthcheck.
-4. Netlify builds the `staging` branch deploy.
-5. GitHub Actions `deploy-staging.yml` (TRD 16) waits until `GET /api/v1/health` reports `version` = merged SHA, re-seeds if DEP-074 applies, and runs the staging smoke tests (DEP-080).
-6. Algorithm lead reviews the staging dashboard (tiles 2 / 7 / 1 / 19, R09 detail with alarm) before a `staging → main` PR is opened.
+4. Netlify builds and publishes the staging site `echowell-und-staging` from `main`.
+5. GitHub Actions `deploy-staging.yml` (TRD 16 §4.4, triggered by the push to `main`) waits until `GET /api/v1/health` reports `version` = merged SHA, re-seeds the staging database if DEP-074 applies, and runs the staging smoke tests (DEP-080).
+6. The algorithm lead reviews the staging dashboard (tiles 2 / 7 / 1 / 19, R09 detail with alarm) before that commit is chosen for a production release.
 
-### 4.10 Step-by-step: production release
+Production is not touched by any of these steps.
 
-1. Open a PR `staging → main` titled `release: vX.Y.Z` (TRD 18 versioning). CI must be green; 1 approval required.
-2. If the release contains a migration, create Neon restore branch `pre-<short-sha>` from `main` (DEP-063).
-3. Merge. Netlify publishes `main`; Railway `production` waits for CI, migrates, starts, passes healthcheck.
-4. `deploy-production.yml` waits for `version` = merged SHA, runs production smoke tests (DEP-081), then creates the Git tag `vX.Y.Z` and a GitHub Release.
-5. If smoke tests fail, follow the rollback procedure (4.12) within 30 minutes.
+### 4.10 Step-by-step: production release (manual, deliberate)
+
+1. Choose a `main` commit whose required checks passed and whose `deploy-staging.yml` run succeeded (step 4.9.5), and the version `vX.Y.Z` (TRD 18 §4.7).
+2. If the release contains a migration, create Neon restore database branch `pre-<short-sha>` from `main` (DEP-063) and take the DEP-096 dump.
+3. Run the GitHub Actions workflow `deploy-production.yml` manually (`workflow_dispatch`, inputs `sha` and `version`; TRD 16 §4.5). The job uses the GitHub environment `production`, so it waits until a required reviewer approves the run.
+4. After approval the workflow verifies the commit is on `main`, its required checks passed and its staging deploy succeeded ("Wait for CI" semantics, TRD 16 CIC-053); sets `GIT_SHA` and deploys the Railway `production` services with `railway up` (pre-deploy `alembic upgrade head`, healthcheck); publishes the Netlify production site with `netlify deploy --build --prod` from the same commit; waits for `version` = released SHA; runs the production smoke tests (DEP-081); then creates the Git tag `vX.Y.Z` and a GitHub Release.
+5. If smoke tests fail, follow the rollback procedure (4.12) within 30 minutes; no tag is created.
 
 ### 4.11 Post-deploy smoke tests
 
@@ -425,8 +427,8 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-080 | Staging smoke tests shall verify: (a) health 200 with `database: "ok"` and `version` = expected SHA; (b) frontend `/login` returns 200; (c) login with the staging smoke user (the seeded `researcher@example.com`, password from the GitHub secret `STAGING_SEED_RESEARCHER_PASSWORD`, TRD 16 §4.4; D-71) succeeds; (d) `GET /api/v1/residents` summary tiles equal 2 / 7 / 1 / 19; (e) `GET /api/v1/residents/R09` reports `alarm_on` with alarm since Oct 21; (f) `GET /api/v1/alerts` lists open alarms R09 and R10 and `GET /api/v1/data-alerts` lists exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; (g) `GET /api/v1/analytics` reports 281 of 300 received and 267 of 300 used; (h) a CORS preflight from the staging frontend origin is allowed and one from `https://example.org` is refused. | Must | BR-12, BR-15, TRD 12 | Test |
-| DEP-081 | Production smoke tests shall be unauthenticated and read-only: (a) health 200, `database: "ok"`, `version` = expected SHA; (b) frontend `/login` returns 200 over HTTPS; (c) `GET /api/v1/residents` without token returns 401 with an RFC 7807 body; (d) `POST /api/v1/sessions` without API key returns 401; (e) HSTS header present on both origins; (f) `GET /api/v1/audio` returns 404. | Must | BR-16, TRD 12, TRD 17 | Test |
+| DEP-080 | Staging smoke tests shall verify: (a) health 200 with `database: "ok"` and `version` = expected SHA; (b) frontend `/login` returns 200; (c) login with the staging smoke user (the seeded `researcher@example.com`, password from the GitHub secret `STAGING_SEED_RESEARCHER_PASSWORD`, TRD 16 §4.4; D-71) succeeds; (d) `GET /api/v1/residents` summary tiles equal 2 / 7 / 1 / 19; (e) `GET /api/v1/residents/R09` reports `alarm_on` with alarm since Oct 21; (f) `GET /api/v1/alerts` lists open alarms R09 and R10 and `GET /api/v1/data-alerts` lists exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; (g) `GET /api/v1/analytics` reports 281 of 300 received and 267 of 300 used; (h) a CORS preflight from the staging frontend origin is allowed and one from `https://example.org` is refused; (i) `Strict-Transport-Security` is present on API responses and an `http://` request is redirected to `https://` (TRD 13 TST-135); (j) the TLS check of TRD 12 SEC-066 (TLS 1.1 refused, TLS 1.2 accepted) passes on both origins. | Must | BR-12, BR-15, TRD 12 | Test |
+| DEP-081 | Production smoke tests shall be unauthenticated and read-only: (a) health 200, `database: "ok"`, `version` = expected SHA; (b) frontend `/login` returns 200 over HTTPS; (c) `GET /api/v1/residents` without token returns 401 with an RFC 7807 body; (d) `POST /api/v1/sessions` without API key returns 401; (e) HSTS header present on both origins and an `http://` request redirected to `https://` (TRD 13 TST-135); (f) `GET /api/v1/audio` returns 404; (g) the TLS check of TRD 12 SEC-066 (TLS 1.1 refused, TLS 1.2 accepted) passes on both origins. | Must | BR-16, TRD 12, TRD 17 | Test |
 | DEP-082 | A smoke test run shall finish within 5 minutes, including the wait for the new version (polling every 15 s, timeout 15 min counted separately). | Should | TRD 16 | Test |
 | DEP-083 | After a production deploy, a team member shall complete a manual authenticated check (log in, open Residents, open one resident, sign out) and record the result in the GitHub Release notes. | Should | BR-12 | Demo |
 
@@ -451,8 +453,8 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | DEP-095 | Interim production data shall be protected by Neon point-in-time restore for the history window of the Neon plan in use (TRD 22) plus the weekly dump of DEP-096, under the interim waiver of TRD 03 NFR-024 (TRD 24 D-60); the window in force shall be recorded in `docs/deployment.md`. | Must | BR-02, TRD 22 | Inspection |
-| DEP-096 | A logical backup `pg_dump --format=custom --no-owner` of the production database shall be taken weekly (Mondays) and before every release containing a migration, by the data steward from a UND-managed workstation, encrypted at rest, and stored only on storage approved for the study's research data (OQ-01). On AWS, RDS automated backups and manual snapshots (KMS-encrypted) replace this procedure. | Must | BR-02, BR-16, OQ-01, D-OWNER-3 | Inspection |
-| DEP-097 | A restore drill (restore the latest dump into a new Neon branch `restore-drill`, run `run-pipeline --scope all`, compare row counts of `raw_sessions` and `alerts`) shall be performed at the cadence of TRD 03 NFR-025: once before 15 Nov 2026 on the interim stack; on AWS before go-live and every 6 months. | Should | BR-02 | Demo |
+| DEP-096 | A logical backup `pg_dump --format=custom --no-owner` of the production database shall be taken weekly (Mondays) and before every release containing a migration, by the data steward from a UND-managed workstation, encrypted at rest, and stored only on storage approved for the study's research data (OQ-01; interim: the UND-managed storage designated by the PI, TRD 24 OQ-01). On AWS, RDS automated backups and manual snapshots (KMS-encrypted) replace this procedure. | Must | BR-02, BR-16, OQ-01, D-OWNER-3 | Inspection |
+| DEP-097 | A restore drill (the single definition, to which TRD 06 DB-051 and TRD 12 SEC-162 refer; TRD 24 D-77: restore the latest dump or a chosen point in time into a new Neon branch `restore-drill` (on AWS a new RDS instance), run the schema diff test of TRD 20 PGS-016 against it, point a temporary backend at it and check `GET /api/v1/health`, run `run-pipeline --scope all`, compare row counts of `raw_sessions`, `audit_logs` and `alerts` with the source at that time, run `pytest tests/validation -q` on the deployed commit, and record the result in `docs/deployment.md`) shall be performed at the cadence of TRD 03 NFR-025: once before 15 Nov 2026 on the interim stack; on AWS before go-live and every 6 months. | Should | BR-02 | Demo |
 | DEP-098 | Backups and dumps shall never be committed to the repository or uploaded as GitHub Actions artifacts. | Must | BR-16, TRD 18 | Inspection |
 
 PITR restore procedure: Neon console → project `echowell` → branch `main` → "Restore" → choose timestamp (UTC) → restore creates a backup branch of the pre-restore state automatically → verify with `SELECT max(received_at) FROM raw_sessions` → redeploy the backend version that matches the restored schema → `run-pipeline --scope all`.
@@ -497,7 +499,7 @@ Target configuration (region `us-east-1`, AWS account owned by UND per OQ-07):
 | Component | Setting |
 |---|---|
 | Account | UND-owned AWS account (or UND-managed organization member account); AWS BAA accepted in AWS Artifact before any live data; root account MFA; IAM Identity Center users for team members; CloudTrail enabled in all regions with log bucket encrypted (SSE-KMS). |
-| Frontend | AWS Amplify Hosting app connected to `EchoWellApp/echowell`, app root `frontend`, build `npm ci && npm run build`, Node 20; branches `main` → production, `staging` → staging; environment variables NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_APP_ENV. |
+| Frontend | AWS Amplify Hosting app connected to `EchoWellApp/echowell`, app root `frontend`, build `npm ci && npm run build`, Node 20; staging app auto-builds branch `main`; production app with auto-build off, deployed only by the release workflow for the chosen `main` commit (D-99); environment variables NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_APP_ENV. |
 | Backend | Amazon ECR repository `echowell-backend` (scan on push, KMS encryption); App Runner service `echowell-backend-production` from the same `backend/Dockerfile` image, port 8000, health check HTTP `/api/v1/health`, 1 vCPU / 2 GB, min 1 / max 1 instance, VPC connector to the private subnets of the RDS VPC. |
 | Database | Amazon RDS for PostgreSQL 16, `db.t4g.micro` (staging) / `db.t4g.small` (production), storage encrypted with KMS customer-managed key `alias/echowell-rds`, not publicly accessible, private subnets in 2 AZs, parameter `rds.force_ssl = 1`, automated backups 14 days, deletion protection on. |
 | Secrets | AWS Secrets Manager secrets `echowell/production/DATABASE_URL`, `echowell/production/DATABASE_MIGRATION_URL`, `echowell/production/JWT_SECRET`, `echowell/production/SENTRY_DSN` (KMS key `alias/echowell-secrets`), injected into App Runner as environment variables with the same names (TRD 21), except `DATABASE_MIGRATION_URL`, which is injected only into the one-off migration task (an ECS task from the same image running `alembic upgrade head` before the App Runner deployment), so the web service never holds it on AWS. |
@@ -549,8 +551,8 @@ Mapping from the current interim stack:
 
 - AC-DEP-01 On a laptop with 8 GB RAM and Docker already installed, steps 2–8 of the local procedure produce a dashboard with tiles 2 / 7 / 1 / 19 and R09 "Alarm on" in under 10 minutes (TRD 03 NFR-087).
 - AC-DEP-02 `docker compose exec backend python -m backend.cli seed test_v0_1` with APP_ENV=production exits with code 2 and leaves `raw_sessions` row count unchanged.
-- AC-DEP-03 A merge to `staging` results, without manual steps, in a Railway staging deployment whose health `version` equals the merge SHA and a Netlify branch deploy, followed by a green `deploy-staging.yml` run.
-- AC-DEP-04 A merge to `main` results in production health `version` equal to the merge SHA and a green `deploy-production.yml` run that created tag `vX.Y.Z`.
+- AC-DEP-03 A merge to `main` results, without manual steps, in a Railway staging deployment whose health `version` equals the merge SHA and a Netlify staging-site deploy, followed by a green `deploy-staging.yml` run; production is unchanged.
+- AC-DEP-04 An approved manual `deploy-production.yml` run for a `main` commit results in production health `version` equal to that SHA, a green run and tag `vX.Y.Z`; a merge to `main` alone never changes production.
 - AC-DEP-05 Production `raw_sessions` contains zero rows linked to `ingest_batches.source = 'seed'`.
 - AC-DEP-06 A deliberately failing healthcheck deployment on staging leaves the previous deployment serving requests (verified by `version`).
 - AC-DEP-07 Rollback rehearsal: previous frontend and backend restored within 10 minutes (DEP-085).
@@ -561,7 +563,7 @@ Mapping from the current interim stack:
 
 ## 8. Implementation Notes
 
-- Paths to create in Phase 14A: `/netlify.toml`, `/railway.toml`, `/backend/Dockerfile`, `/frontend/Dockerfile`, `/.dockerignore`, `/docker-compose.yml` (replace the current stub `version: "3"`; the top-level `version` key is obsolete in Compose v2 and must be removed), `/alembic.ini`, `/backend/cli.py`, `/tests/smoke/`, `/.env.example`, `/.env.development.example`, `/.env.production.example`, `/docs/deployment.md`, `/DEPLOYMENT_CONFIGURATION_GUIDE.md`.
+- Paths to create in Phase 14A: `/netlify.toml`, `/railway.toml`, `/backend/Dockerfile`, `/frontend/Dockerfile`, `/.dockerignore`, `/docker-compose.yml` (replace the current stub `version: "3"`; the top-level `version` key is obsolete in Compose v2 and must be removed), `/alembic.ini` (created in Phase 3 and kept, TRD 24 D-90), `/backend/cli.py`, `/tests/smoke/`, `/.env.example`, `/.env.development.example`, `/.env.production.example`, `/docs/deployment.md`, `/docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md` (reports folder of TRD 24 D-21).
 - The backend must be started from the repository root (module path `backend.main:app`, and `analytics` imported as a top-level package). In the Dockerfile set `WORKDIR /app` and copy `backend/` to `/app/backend`, `analytics/` to `/app/analytics`; add `ENV PYTHONPATH=/app`.
 - psycopg 3 server-side prepared statements are disabled in every environment by the one engine factory of TRD 05 API-125 (`connect_args={"prepare_threshold": None}`): required behind the Neon pooler (PgBouncer transaction mode) and after a schema reset under a running backend (D-71, D-73).
 - Normalize `postgres://` and `postgresql://` URLs to `postgresql+psycopg://` in settings (TRD 21) because Neon and Railway hand out the former.
@@ -591,3 +593,5 @@ Mapping from the current interim stack:
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-10, R5-11) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-02) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (§4.8 bootstrap (D-85), create-user/create-api-key/revoke-api-key refusals (D-86), export-openapi (D-89); DEP-047 NIGHTLY_RUN_HOUR_LOCAL; DEP-075 syntax; DEP-080/DEP-081 redirect and TLS checks; DEP-096 OQ-01 interim; DEP-097 single drill (D-77); guide path; alembic.ini Phase 3 (D-90)) | — |
+| 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

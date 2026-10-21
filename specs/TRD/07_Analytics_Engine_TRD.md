@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -24,7 +24,7 @@ In scope:
 - Determinism and full-rebuild guarantees, late-arrival handling (ASM-07, OQ-10).
 - Configuration profiles `production` and `test_v0_1` (`analytics/config.py::PipelineConfig`).
 - The backend persistence service that loads inputs, calls the engine and writes derived tables.
-- Triggers (after ingest, nightly 02:xx facility local time via the Railway Cron Job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
+- Triggers (after ingest, nightly in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 02:xx) via the Railway Cron Job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
 - Data-alert generation (stage 11, rules in TRD 09 section 4.9) and Analytics page aggregates (stage 12: KPIs, daily
   series, funnel, by-resident shares), and the "Leaning most" computation for the Alert review page (SRC-18, SRC-19).
 - Extension points: morning offset estimation (OQ-09), EWMA display (OQ-18), facility norms (BR-14, OQ-08).
@@ -80,7 +80,7 @@ Out of scope:
 | `robust_stats.py` | median, MAD, scaled spread with floor | `robust(values: Sequence[float], floor: float, mad_scale: float) -> RobustStats` | TRD 08 |
 | `duplicate_detection.py` | arrival-order duplicate marking | `mark_duplicates(records: Sequence[RawRecord]) -> list[ScreenedRecord]` (records ordered by `arrival_seq`; returns duplicate rows and non-duplicate rows awaiting the gate) | TRD 10 |
 | `quality_screening.py` | quality gate (set aside, all reasons) | `apply_quality_gate(rows: Sequence[ScreenedRecord], config) -> list[ScreenedRecord]` | TRD 10 |
-| `epoch_detection.py` | epoch numbering per resident | `assign_epochs(rows: Sequence[ScreenedRecord]) -> list[EpochedRecord]` | TRD 08 |
+| `epoch_detection.py` | epoch numbering per resident | `assign_epochs(rows: Sequence[ScreenedRecord], late: Collection[ScreenedRecord] = ()) -> list[EpochedRecord]` (`late` = the late-arrival set of §4.5 step 5, keyword with an empty default) | TRD 08 |
 | `speaker_screen.py` | possible-other-speaker quarantine | `screen_speakers(rows: Sequence[EpochedRecord], config) -> list[EpochedRecord]` | TRD 08 |
 | `morning_offset.py` | local time, morning flag, adjusted values | `adjust(rows: Sequence[EpochedRecord], config) -> list[AdjustedRecord]` | TRD 08 |
 | `baseline_builder.py` | baseline membership, per-feature and composite baseline, freeze | `build_baselines(rows: Sequence[AdjustedRecord], config) -> tuple[list[Baseline], dict[EpochKey, BaselineMembership]]` | TRD 08 |
@@ -363,14 +363,14 @@ sequenceDiagram
 |---|---|---|---|---|
 | ANL-043 | After a successful single-record ingest (`POST /api/v1/sessions`) the backend shall run the pipeline synchronously for that record's resident (scope = that resident plus device-sharing residents for the ledger) with `trigger = ingest` and `as_of` per ANL-046 precedence (request time in production), before returning the response; if that run fails, the record stays stored and the response carries `status_after_processing = "pending"` (contract §21 R23), and the next ingest or nightly run processes it. | Must | contract §7, §21 R21, R23, TRD 10 ING-002 | Test |
 | ANL-044 | After a batch ingest (`POST /api/v1/ingest`) the backend shall enqueue one background run (FastAPI `BackgroundTasks`) scoped as TRD 05 API-053 defines (all residents that received a first-arrival record in the batch plus the residents co-assigned to their devices, ANL-016), with `trigger = ingest`. | Must | contract §7 | Test |
-| ANL-045 | The nightly full run (scope `all`, `trigger = nightly`) shall be started by a separate Railway Cron Job service executing `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` (UTC); the job shall proceed only when the facility-local time (`FACILITY_TZ`) is 02:xx and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047) (DST-safe), and shall otherwise exit 0; there is no in-process scheduler. On AWS the same command runs from EventBridge Scheduler, or the scheduler calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, which records the run as `trigger = nightly` and applies the same dedupe (TRD 05 API-065, TRD 24 D-70). | Must | contract §21 R18, TRD 15 | Test |
+| ANL-045 | The nightly full run (scope `all`, `trigger = nightly`) shall be started by a separate Railway Cron Job service executing `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` (UTC); the job shall proceed only when the facility-local hour (`FACILITY_TZ`) is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047) (DST-safe), and shall otherwise exit 0; there is no in-process scheduler. On AWS the same command runs from EventBridge Scheduler, or the scheduler calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, which records the run as `trigger = nightly` and applies the same dedupe (TRD 05 API-065, TRD 24 D-70). | Must | contract §21 R18, TRD 15 | Test |
 | ANL-046 | `POST /api/v1/pipeline/run {scope, profile?, as_of?}` shall accept an admin JWT or an API key with scope `pipeline:run`. The run's `as_of` shall be chosen by precedence: explicit `as_of` in the request → env `PIPELINE_AS_OF` (refused, run not started, when `APP_ENV = production`) → current time; ingest and nightly runs use `PIPELINE_AS_OF` if set (non-production only), else the current time. Tests use 2026-10-30T15:00:00-05:00; in-process tests freeze the clock (time-machine). Read endpoints shall use the `as_of` of the latest succeeded run. The `test` trigger value is used only by the automated validation suite. | Must | TRD 05 API-065, §21 R18, R21 | Test |
 
 ### 4.10 Performance
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ANL-047 | `run_pipeline` on SRC-05 (283 arrivals, 10 residents) including data alerts and aggregates shall complete in ≤ 5 s on a CI runner (GitHub-hosted ubuntu-latest). | Must | TRD 03, §20 R8 | Test |
+| ANL-047 | `run_pipeline` on SRC-05 (283 arrivals, 10 residents) including data alerts and aggregates shall complete in ≤ 5 s on a CI runner (GitHub-hosted `ubuntu-24.04`, TRD 16 CIC-027). | Must | TRD 03, §20 R8 | Test |
 | ANL-048 | A full rebuild of the scale dataset DS-08 (100 residents, 10,800 records, generated by `tests/performance/make_load_dataset.py`) shall complete end-to-end (load + compute + write) in ≤ 120 s, and batch processing of the SRC-05 CSV in ≤ 30 s. | Must | ASM-08, TRD 03, TRD 13, §20 R8 | Test (benchmark) |
 | ANL-049 | `POST /api/v1/sessions` including the synchronous single-resident run shall respond in ≤ 1,000 ms (p95) for a resident with ≤ 400 records. | Must | TRD 03, §20 R8 | Test |
 | ANL-050 | Robust statistics shall be computed on numpy arrays; per-record Python loops are permitted, but no stage shall have worse than O(n log n) complexity per resident except late-arrival detection, which runs stages 1–8 once per out-of-order record. | Should | TRD 03 | Inspection |
@@ -381,7 +381,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | ANL-051 | `analytics/` shall define exactly two exception classes, `ContractError` (invalid inputs) and `ConfigError` (invalid configuration), both subclasses of `AnalyticsError(Exception)`; no other exception types shall be raised intentionally. | Must | TRD 17 | Inspection |
 | ANL-052 | Data-quality findings that are not errors shall be returned as `RunWarning` objects with these codes: `after_as_of`, `late_arrival` (including detail "epoch renumbering blocked"), `zero_spread` (TRD 08), `baseline_mismatch`, `config_default_used`, `config_mismatch` (FACILITY_TZ differs from the profile's `facility_tz`, TRD 21 ENV-022), `no_device_assignment` (a missing ledger day of a resident without a covering assignment; one warning per resident per run), `alert_first_crossing_changed` (TRD 09), `device_assignment_mismatch` (TRD 05 API-055); the runner adds `exception` (ANL-041) and `run_abandoned` (TRD 05 API-068); `config_changed_requires_rebuild` (ANL-032) and `pipeline_config_invalid` (ANL-031) are failure codes. All warning codes are lower-case and every warning is stored as `{code, resident_code, session_id, detail}` (TRD 23 §4.2.10). | Must | TRD 17 LOG-064 | Test |
-| ANL-053 | `analytics/` shall not log; the backend runner shall emit structured JSON log events (`LOG_FORMAT=json`) `pipeline_run_started` and `pipeline_run_finished` with fields `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`, `duration_ms`, `counts`, `warning_count`, and one event `pipeline_warning` per warning at level WARNING (ERROR for `baseline_mismatch` and `epoch_key_changed`). | Must | TRD 17 | Test |
+| ANL-053 | `analytics/` shall not log; the backend runner shall emit structured JSON log events (`LOG_FORMAT=json`) `pipeline_run_started` and, at the end, exactly one of `pipeline_run_succeeded` (INFO, TRD 17 LOG-065) or `pipeline_run_failed` (ERROR, TRD 17 LOG-062), with fields `pipeline_run_id`, `trigger`, `scope`, `profile`, `config_hash`, `duration_ms`, `counts`, `warning_count`, and one event `pipeline_warning` per warning at level WARNING (ERROR for `baseline_mismatch`); there is no `pipeline_run_finished` event (TRD 24 D-80). | Must | TRD 17 | Test |
 | ANL-054 | Logs shall not contain feature values, payloads or any field other than study IDs (resident_code, device_code, session_id) and run metadata. | Must | BR-16 | Inspection |
 
 ### 4.12 Extensibility
@@ -389,8 +389,8 @@ sequenceDiagram
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ANL-055 | Morning offsets shall be read only from `PipelineConfig.morning_offsets`; a future estimator (OQ-09) shall be added as a separate pure function `morning_offset.estimate_offsets(rows, config) -> Mapping[str, float]` whose output is written to `config_parameters` with `python -m backend.cli set-config` and applied with `python -m backend.cli rebuild` (ANL-032, TRD 24 D-69); the estimator shall not run inside `run_pipeline` in v0.1. | Should | OQ-09, BR-07 | Inspection |
-| ANL-056 | A future EWMA trend (OQ-18) shall be implemented as an additional output field on `ScoreRow` computed after step 10 and shall not alter `cusum_tally` or `alarm_state`; it is not implemented in v0.1. | May | OQ-18, SRC-02 | Inspection |
-| ANL-057 | Facility reference ranges for the new-admission arm (BR-14, OQ-08) shall be computed by a separate pure function outside `run_pipeline` (planned module `analytics/facility_norms.py`, created only when OQ-08 is resolved) that reads adjusted values of usable sessions and writes `facility_reference_ranges`; it shall never influence any resident's own baseline, score or alarm. | May | BR-14, OQ-08 | Inspection |
+| ANL-056 | A future EWMA trend (OQ-18) shall be implemented as an additional output field on `ScoreRow` computed after step 10 of the §4.5 algorithm (`run_cusum`; stage 8 in the ANL-006 numbering), stored through a new `scores` column (TRD 20) and a new TRD 19 `ScoreRow` field added with OQ-18, and shall not alter `cusum_tally` or `alarm_state`; it is not implemented in v0.1. | May | OQ-18, SRC-02 | Inspection |
+| ANL-057 | Facility reference ranges for the new-admission arm (BR-14, OQ-08) shall be computed by a separate pure function outside `run_pipeline` (planned module `analytics/facility_norms.py`, created only when OQ-08 is resolved) that reads adjusted values of usable sessions and writes `facility_reference_ranges`; the pipeline service shall call it after `run_pipeline` within a full (`scope = all`) run and stamp each range row with that run's `pipeline_run_id` (TRD 20 NOT NULL; TRD 24 D-76); it shall never influence any resident's own baseline, score or alarm. | May | BR-14, OQ-08 | Inspection |
 | ANL-058 | Adding a feature to the composite or changing a sign shall require only a change of the built-in `FEATURES` / `PipelineConfig.features` in `analytics/config.py` (it is not a `config_parameters` key, so `set-config` cannot change it), reviewed as a code change under TRD 18 GIT-032, deployed, and then applied with `python -m backend.cli rebuild` (ANL-032); no stage function shall need to change. | Should | OQ-03, RSK-02 | Test |
 
 ### 4.13 Data alerts and analytics aggregates (stages 11–12)
@@ -500,3 +500,4 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-03, R2-06, R2-10, R2-11, R2-12, R2-15, R2-17, R2-25) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-05) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (assign_epochs signature; ANL-045 NIGHTLY_RUN_HOUR_LOCAL; ANL-047 ubuntu-24.04; ANL-053 log events (D-80); ANL-056 step reference; ANL-057 run ownership (D-76)) | — |

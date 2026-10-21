@@ -262,13 +262,15 @@ Generate:
 TRD_Implementation_Audit.md
 
 with pass/fail status for every requirement.
+```
 
 ---
 
-## Sprint 7: Deployment
+## Sprint 7: Backlog
 
 ### Prompt
 
+```text
 Generate:
 
 Project_Backlog.md
@@ -280,5 +282,6 @@ containing:
 - User Story
 - Priority
 - Dependencies
+```
 
 **Action:** Do not commit changes.

@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -140,7 +140,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | ING-029 | Every accepted arrival, including duplicates, shall be inserted into `raw_sessions` with `arrival_seq` (bigserial), `received_at` (server UTC time), `ingest_batch_id`, `payload` (the record as received: the JSON object, or for CSV an object of header → cell text, before mapping and conversion), typed copies of all §5 fields and the 19 canonical feature columns, and `ingest_warnings`. | Must | BR-02, SRC-02, contract §9 | Test |
 | ING-030 | `raw_sessions` shall be insert-only: a database trigger shall raise on UPDATE and DELETE, and the application role `echowell_app` (used via `DATABASE_URL`) shall have no UPDATE/DELETE grant on it (trigger `raw_sessions_no_update_delete`, TRD 20 PGS-018); `ingest_rejections` is append-only through grants only (`echowell_app`: SELECT, INSERT; TRD 20 PGS-021), without a trigger. | Must | BR-02, SRC-02, contract §12, §21 R20 | Test |
 | ING-031 | A CSV upload shall be UTF-8 (optional BOM), comma-separated, RFC 4180 quoting, LF or CRLF line endings; its header row, after feature-name mapping, shall consist of exactly the 30 fields of contract section 5 in any order (no missing, no extra columns), else the request is rejected with 422 `CSV_HEADER_MISMATCH` whose `errors` list the missing and extra column names, and nothing is stored. | Must | SRC-05, TRD 05 §4.7 | Test |
-| ING-032 | Within a batch, records shall be inserted in input order (JSON array order or CSV row order) so that `arrival_seq` increases in that order; `ingest_rejections.raw_body` shall hold the rejected record as received and `errors` the violation list, plus `row_number` (1-based data row, header excluded) for CSV. | Must | BR-03 | Test |
+| ING-032 | Within a batch, records shall be inserted in input order (JSON array order or CSV row order) so that `arrival_seq` increases in that order; `ingest_rejections.raw_body` shall hold the rejected record as received and `errors` the violation list, plus `row_number` = the 1-based position of the record in the batch (CSV: data row, header excluded; JSON: array position); `row_number` is NULL only for a rejection of a single-record `POST /api/v1/sessions`, which has no batch (TRD 19 `IngestRejection`; TRD 24 D-84). | Must | BR-03 | Test |
 | ING-033 | Rejected records shall never enter `raw_sessions` and shall never be processed by the pipeline; a corrected record re-sent later is treated as a new arrival. | Must | contract §7 step 1 | Test |
 
 ### 4.7 Duplicates and idempotency (`analytics/duplicate_detection.py`)
@@ -150,7 +150,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | ING-034 | The duplicate key shall be `session_id` (exact string). Processing all non-rejected arrivals in ascending `arrival_seq`, the first arrival of a `session_id` shall be kept and every later arrival shall get status `duplicate` with reason "session_id already received". | Must | BR-03, SRC-03 Parameters, SRC-04 | Test |
 | ING-035 | Duplicate detection shall run before the quality gate and before any sorting by timestamp; duplicates shall not be gated, screened, given an epoch, counted toward any baseline, scored or counted as a record for the day ledger. | Must | SRC-04, contract §7 | Test |
 | ING-036 | Duplicates shall be logged (processed_sessions row with status `duplicate`, counted in pipeline run counts) but never shown in the resident UI ("Duplicate records are removed quietly and not shown"). | Must | SRC-09, contract §8 | Test |
-| ING-037 | A later arrival with the same `session_id` but different field values shall still be a duplicate (first arrival wins) and shall carry warning `duplicate_payload_differs`. | Must | BR-03 | Test |
+| ING-037 | A later arrival with the same `session_id` but different field values shall still be a duplicate (first arrival wins) and shall carry the ingest warning `duplicate_payload_differs` (ING-023, stored in `raw_sessions.ingest_warnings` by the ingest service; it is not a pipeline `RunWarning` of TRD 07 ANL-052). | Must | BR-03 | Test |
 | ING-038 | The ingest service shall take the session advisory lock of TRD 06 DB-021 (b) before checking `raw_sessions` for the `session_id` and inserting, so that the duplicate verdict returned to the caller agrees with the arrival-order rule under concurrent requests. | Must | BR-03 | Test |
 | ING-039 | Re-sending a record or re-uploading a file shall be safe: the repeated arrivals are stored as duplicates, change no derived result and return status `duplicate`; no `Idempotency-Key` header is required. | Must | BR-03, SRC-03 R04 | Test |
 
@@ -317,3 +317,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-04, F-21, F-22, F-35, F-43, F-44) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-08) | — |
+| 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (ING-032 row_number for JSON batches (D-84); ING-037 ingest warning, not RunWarning) | — |

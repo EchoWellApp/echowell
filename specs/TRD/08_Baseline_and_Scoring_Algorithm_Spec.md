@@ -1,6 +1,6 @@
 # 08 Baseline and Scoring Algorithm Spec
 
-Document ID: ECHOWELL-TRD-08 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-08 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -120,8 +120,8 @@ screen_speakers(rows, config):
                 r.screen_detail = f"F0 z={z_F0:.2f}; composite features with |z|>=3: {n3}"
                 if |z_F0| >= screen_f0_z and n3 >= screen_other_count:
                     r.status = "quarantined"
-                    r.reasons = ("possible other speaker",)
                     r.reason_text = "possible other speaker (" + r.screen_detail + ")"
+                    r.reasons = (r.reason_text,)   # full text as the single reason (TRD 07 §4.3, TRD 20 PGS-012)
                     continue
             r.status = "usable"; prior.append(r)
 ```
@@ -336,3 +336,4 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (§4.4 pseudocode stores the full quarantine reason (BSC-016, PGS-012)) | — |

@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -213,7 +213,7 @@ stateDiagram-v2
 | LOG-060 | Every pipeline run (trigger `ingest`, `nightly`, `manual`, `test`) shall insert a `pipeline_runs` row with status `running`, `config_profile`, `config_snapshot`, `code_version` (GIT_SHA) and `started_at` before the first stage executes, in its own committed transaction. | Must | contract §9, TRD 07 | Test |
 | LOG-061 | The derived-table writes of a run shall be committed in one transaction per resident (TRD 06 DB-013, TRD 07 ANL-041); if processing of a resident raises, only that resident's transaction shall be rolled back, so its derived tables keep their previous consistent state, and the run continues with the next resident and ends `failed`. | Must | BR-02, SRC-02 | Test |
 | LOG-062 | On failure the run row shall be updated as TRD 07 ANL-041 specifies (status `failed`, `finished_at`, non-empty `error_message`, and per failed resident a warning `{"code": "exception", "resident_code": "<code or null>", "session_id": null, "detail": "<stage name>: <exception type>: <sanitised message>"}`, the warning shape of TRD 23 §4.2.10 `pipeline_runs.warnings`); one ERROR `pipeline_run_failed` log shall be written with `pipeline_run_id`. | Must | TRD 07 | Test |
-| LOG-063 | Stage names in warnings and logs shall be exactly: `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`. | Must | contract §7 | Inspection |
+| LOG-063 | Stage names in warnings and logs shall be exactly: `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`, `data_alerts`, `aggregates` (stages 11 and 12 of TRD 07 ANL-006; TRD 24 D-80). | Must | contract §7 | Inspection |
 | LOG-064 | Non-fatal conditions shall be recorded in `pipeline_runs.warnings` without failing the run, each as `{"code": ..., "resident_code": ..., "session_id": ..., "detail": ...}`, with codes at least `late_arrival` (ASM-07), `config_mismatch`, and `no_device_assignment`. | Must | ASM-07, OQ-10 | Test |
 | LOG-065 | On success the run row shall be updated to status `succeeded` with `finished_at` and `counts` with the keys of TRD 23 §4.2.10 `pipeline_runs.counts` and one INFO `pipeline_run_succeeded` log with the same counts and `duration_ms`. | Must | contract §9, BR-15 | Test |
 | LOG-066 | A `pipeline_runs` row left in status `running` for more than 30 minutes (process crash) shall be marked `failed` with warning code `run_abandoned` by the next run or at startup (TRD 05 API-068 is the owning row). | Must | — | Test |
@@ -231,7 +231,7 @@ stateDiagram-v2
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| LOG-080 | The frontend shall define `app/error.tsx` (route-segment error boundary) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
+| LOG-080 | The frontend shall define `app/(protected)/error.tsx` (route-segment error boundary at the path of TRD 04 §4.2 and FE-145) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
 | LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
 | LOG-082 | The frontend shall not send telemetry, logs or errors to any third-party service; browser console logging in production builds shall be limited to `console.error` for caught errors without response bodies. | Must | BR-16, TRD 22 | Inspection |
 | LOG-083 | Data panels (residents table, chart, check-in log, device panel, alert queues and review panel on `/alerts`, KPI tiles and charts on `/analytics`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
@@ -332,7 +332,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 - AC-LOG-02 A login request with password `Secret-123!` and a subsequent authorised request produce logs in which neither `Secret-123!`, the JWT, nor the e-mail address appears (grep over captured logs returns 0 matches).
 - AC-LOG-03 An ingest POST with an API key produces logs in which neither the key nor any feature value appears; a malformed record yields one `ingest_record_rejected` WARNING and one `ingest_rejections` row.
 - AC-LOG-04 A request with `X-Request-ID: abcd1234-test` returns the same header; a request with `X-Request-ID: bad id!` returns a generated UUID; a 422 body's `request_id` equals the header.
-- AC-LOG-05 Injecting an exception into the `cusum` stage (test double) leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run to `failed` with a warning whose `stage` is `cusum`, and the ingest that triggered it still returns 201.
+- AC-LOG-05 Injecting an exception into the `cusum` stage (test double) leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run to `failed` with an `exception` warning whose `detail` starts with `cusum:` (the stage-name prefix of LOG-062), and the ingest that triggered it still returns 201.
 - AC-LOG-06 A `pipeline_runs` row artificially left `running` with `started_at` 31 minutes ago is marked `failed` with `run_abandoned` on the next run.
 - AC-LOG-07 With no nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs `nightly_run_missing` and `/admin` shows the banner.
 - AC-LOG-08 A forced 500 returns `application/problem+json` with `type` `urn:echowell:error:INTERNAL_ERROR`, no stack trace and a `request_id`.
@@ -365,3 +365,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-04, F-05, F-18, F-39, F-41) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-07) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
+| 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (LOG-080 error boundary path; LOG-063 stage names and AC-LOG-05 (D-80)) | — |

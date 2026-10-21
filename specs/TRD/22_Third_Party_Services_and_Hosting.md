@@ -1,6 +1,6 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.2 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -71,7 +71,7 @@ the services that are explicitly excluded.
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Build and host the Next.js frontend from `frontend/` with `@netlify/plugin-nextjs` (TRD 15 §4.6); deploy previews for PRs; TLS certificates |
+| Purpose | Build and host the Next.js frontend from `frontend/` with `@netlify/plugin-nextjs` (TRD 15 §4.6) as two sites: `echowell-und-staging` (auto-deploys `main`, deploy previews for PRs) and `echowell-und` (production; builds stopped, published only by the release workflow with the Netlify CLI, D-99); TLS certificates |
 | Plan | Free (Starter) |
 | Relevant limits | Monthly build-minute / credit allowance and bandwidth allowance of the Free plan; 1 concurrent build; serverless function execution limits for SSR routes. EchoWell's usage (< 25 users, ASM-08) is far below these; the ignore command (TRD 15 DEP-052) saves build minutes. |
 | Data stored | Built frontend assets, build logs, NEXT_PUBLIC_* variables (public values only). No resident data, no secrets. |
@@ -88,7 +88,7 @@ the services that are explicitly excluded.
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine, plus the Cron Job service `nightly`; environments `staging` and `production`; GitHub integration with "Wait for CI"; TLS edge |
+| Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine, plus the Cron Job service `nightly`; environments `staging` (GitHub integration on `main` with "Wait for CI") and `production` (no GitHub trigger; deployed only by the release workflow with the Railway CLI, D-99); TLS edge |
 | Plan | Hobby (monthly subscription that includes a usage credit; usage-based above it). Trial credit only for the first days. |
 | Relevant limits | Usage billed by vCPU, memory and egress; one always-on small service per environment is expected to stay near the included credit (about USD 5 per environment per month, TRD 15 DEP-100). The nightly run is a separate Railway Cron Job service (`nightly`, TRD 15 DEP-046) billed only while it runs; the backend may use app sleeping to reduce usage (cold start on the first request), except on demo days (TRD 15 DEP-042). Log retention on Hobby is short (about 7 days, TRD 17 §4.10). Team (shared workspace) features may require the Pro plan. |
 | Data stored | Container images, environment variables (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17). Synthetic/test data only passes through (D-OWNER-4). |
@@ -105,7 +105,7 @@ the services that are explicitly excluded.
 
 | Aspect | Neon (preferred) | Railway PostgreSQL (alternative) |
 |---|---|---|
-| Purpose | Managed PostgreSQL 16 for staging (branch `staging`) and interim production (branch `main`) | Same, if Neon becomes unavailable to the team |
+| Purpose | Managed PostgreSQL 16 for staging (database branch `staging`) and interim production (database branch `main`); Neon branches are database branches, not Git branches | Same, if Neon becomes unavailable to the team |
 | Plan | Free | Included in Railway Hobby usage |
 | Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days), accepted for the interim synthetic/test-data stack under the waiver of TRD 03 NFR-024 (TRD 24 D-60); live data requires the AWS target (RDS automated backups, ≥ 7 days) | Volume-backed single instance; backups depend on plan; no branching; database runs as a service with continuous usage |
 | Data stored | All EchoWell tables (synthetic/test data only on the interim stack, D-OWNER-4) | Same |
@@ -117,7 +117,7 @@ the services that are explicitly excluded.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TPS-030 | Neon shall be the interim database provider; Railway PostgreSQL shall be used only if Neon is unavailable, by changing DATABASE_URL and DATABASE_MIGRATION_URL (TRD 15 DEP-035). | Must | SRC-01 | Inspection |
-| TPS-031 | The Neon project shall run PostgreSQL 16 in `aws-us-east-1` with branches `main` and `staging` only, plus temporary `pre-<sha>` and `restore-drill` branches deleted within 7 days (TRD 15 DEP-063, DEP-097). | Must | TRD 15 | Inspection |
+| TPS-031 | The Neon project shall run PostgreSQL 16 in `aws-us-east-1` with the database branches `main` and `staging` only, plus temporary `pre-<sha>` and `restore-drill` branches deleted within 7 days (TRD 15 DEP-063, DEP-097). | Must | TRD 15 | Inspection |
 | TPS-032 | No Neon-specific features (Neon serverless driver, Neon Auth, Data API) shall be used; access is plain PostgreSQL over psycopg 3. | Must | DEP-110 | Inspection |
 
 ### 4.5 GitHub and GitHub Actions
@@ -127,7 +127,7 @@ the services that are explicitly excluded.
 | Purpose | Monorepo `EchoWellApp/echowell` (public), pull requests, branch protection, Actions CI/CD (TRD 16), Dependabot, secret scanning, issues |
 | Plan | GitHub Free organisation |
 | Relevant limits | Standard GitHub-hosted runners are free for public repositories; artifact and log retention as configured (TRD 16 §4.10); scheduled workflows in public repositories are disabled after 60 days without repository activity (re-enable `uptime.yml` and `e2e.yml` if this happens) |
-| Data stored | Code, synthetic test data, TRDs, CI logs and artifacts (synthetic only), three staging secrets (TRD 16 §4.9) |
+| Data stored | Code, synthetic test data, TRDs, CI logs and artifacts (synthetic only), the five `staging` environment secrets and the two production deploy tokens of the `production` environment (TRD 16 §4.9) |
 | Region | GitHub-managed (US) |
 | Ownership | Organisation `EchoWellApp`; ≥ 2 owners with 2FA required for all members |
 | Exit path | Repository is portable (git); workflows map to AWS CodeBuild/CodePipeline if ever required, but GitHub Actions remains the CI/CD platform on the AWS target (SRC-01) |
@@ -174,7 +174,7 @@ the services that are explicitly excluded.
 | Service | Purpose | Configuration (TRD 15 §4.16) | Data stored |
 |---|---|---|---|
 | AWS account + AWS Artifact | Account under UND ownership; BAA acceptance | BAA accepted before any live data; root MFA; IAM Identity Center | — |
-| AWS Amplify Hosting | Frontend hosting (Next.js SSR) | app root `frontend`, branches `main`/`staging` | build artifacts, public variables |
+| AWS Amplify Hosting | Frontend hosting (Next.js SSR) | app root `frontend`; staging app auto-builds branch `main`, production app deployed only by the release workflow (D-99) | build artifacts, public variables |
 | Amazon ECR | Backend image registry | repository `echowell-backend`, scan on push, KMS | images (no data) |
 | AWS App Runner | Backend runtime | 1 vCPU / 2 GB, 1 instance, VPC connector, health `/api/v1/health` | none persistent |
 | Amazon RDS for PostgreSQL 16 | Database | KMS CMK `alias/echowell-rds`, private subnets, `rds.force_ssl=1`, backups 14 days, deletion protection | all EchoWell data incl. live feature data |
@@ -254,3 +254,4 @@ the services that are explicitly excluded.
 | 0.1 | 18 Oct 2026 | Initial generation from TRD_Generation_Prompt.md | — |
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-14, F-23, F-45) | — |
+| 0.3 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
