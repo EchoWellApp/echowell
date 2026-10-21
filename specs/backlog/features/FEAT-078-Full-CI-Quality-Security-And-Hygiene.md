@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Complete `.github/workflows/ci.yml` so that every pull request and every push to `main` and `staging` runs all required quality, security and hygiene gates: repository hygiene (no audio, no `.env`, file size, forbidden terms, LLM dependencies, Conventional Commit titles), backend lint with import-linter, the full pytest run including the R01–R10 validation suite with coverage gates, the OpenAPI drift check, the frontend job, the security audit (pip-audit, npm audit, gitleaks, Bandit) and the image build check; then configure branch protection and Dependabot so nothing merges without these checks. This turns the TRD rules on answer-key reproduction, no audio, no LLM and no secrets into automatic merge blockers.
+Complete `.github/workflows/ci.yml` so that every pull request and every push to `main` runs all required quality, security and hygiene gates: repository hygiene (no audio, no `.env`, file size, forbidden terms, LLM dependencies, Conventional Commit titles), backend lint with import-linter, the full pytest run including the R01–R10 validation suite with coverage gates, the OpenAPI drift check, the frontend job, the security audit (pip-audit, npm audit, gitleaks, Bandit) and the image build check; then configure branch protection and Dependabot so nothing merges without these checks. This turns the TRD rules on answer-key reproduction, no audio, no LLM and no secrets into automatic merge blockers.
 
 ## Business Context
 
@@ -33,12 +33,12 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 
 ## Scope
 
-- Replace the Phase 3 `ci.yml` (FEAT-007: `backend-lint`, `backend-test`, `frontend`) with the full TRD 16 §4.2 outline: jobs `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`; triggers `pull_request`, `push` to `main` and `staging`, `workflow_dispatch`; concurrency `ci-${{ github.ref }}` cancelling only on pull requests; `permissions: contents: read`; `runs-on: ubuntu-24.04`; `timeout-minutes` ≤ 20 per job.
+- Replace the Phase 3 `ci.yml` (FEAT-007: `backend-lint`, `backend-test`, `frontend`) with the full TRD 16 §4.2 outline: jobs `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`; triggers `pull_request`, `push` to `main`, `workflow_dispatch`; concurrency `ci-${{ github.ref }}` cancelling only on pull requests; `permissions: contents: read`; `runs-on: ubuntu-24.04`; `timeout-minutes` ≤ 20 per job.
 - `backend-test`: provisioning with `database/roles/provision_login_roles.sql` as superuser, `alembic upgrade head`, `alembic downgrade base && alembic upgrade head`, one pytest invocation over `tests/unit tests/integration tests/contract tests/security tests/validation` with `-p no:randomly`, coverage XML/HTML, junit and `--validation-report=docs/reports/ALGORITHM_VALIDATION_REPORT.md`, then the coverage gates for `analytics/` (95) and `backend/` (85); artifact `backend-reports` (30 days); job summary with the R01–R10 table and coverage percentages.
 - `pyproject.toml` `[tool.importlinter]` contracts forbidding `analytics` from importing `backend`, `sqlalchemy`, `psycopg`, `fastapi`, `httpx`, `requests` and `random`; coverage exclusions limited to TST-144.
 - `.gitleaks.toml` allow-list limited to the `local-dev-only-*` and `ci-only-*` placeholders in `.env.development.example`, `docker-compose.yml` and `ci.yml`.
-- `.github/dependabot.yml` exactly as TRD 18 §4.12 (pip `/backend`, npm `/frontend` weekly; github-actions `/` and docker `/backend` monthly; target `staging`).
-- Branch protection (rulesets) on `main` and `staging` per GIT-010 with the eight required checks of CIC-070 (`repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`) and "branch up to date before merging"; secret scanning with push protection where available.
+- `.github/dependabot.yml` exactly as TRD 18 §4.12 (pip `/backend`, npm `/frontend` weekly; github-actions `/` and docker `/backend` monthly; target `main`).
+- Branch protection (ruleset) on `main`, the only long-lived branch (D-99), per GIT-010 with the eight required checks of CIC-070 (`repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`) and "branch up to date before merging"; secret scanning with push protection where available.
 - `SECURITY_EXCEPTIONS.md` format for time-boxed waivers (TST-136, CIC-072).
 
 ## Out of Scope
@@ -52,7 +52,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-078-FR-01 | `ci.yml` shall run on every pull request, every push to `main` and `staging`, and on manual dispatch, with default `permissions: contents: read` and no repository secret; the test JWT_SECRET shall be generated per run with `openssl rand -hex 32`. | CIC-010, CIC-024, CIC-026 |
+| FEAT-078-FR-01 | `ci.yml` shall run on every pull request, every push to `main`, and on manual dispatch, with default `permissions: contents: read` and no repository secret; the test JWT_SECRET shall be generated per run with `openssl rand -hex 32`. | CIC-010, CIC-024, CIC-026 |
 | FEAT-078-FR-02 | `repo-hygiene` shall fail on any tracked file with an audio extension (wav, mp3, flac, m4a, ogg, opus, aac, wma, aif, aiff, amr, webm, caf, pcm), any tracked `.env` or `.env.*` other than `*.example`, any tracked file above 10 MB, and (pull requests only) a title that is not a Conventional Commit header of types feat, fix, docs, chore, refactor, test, ci, build, perf, release. | CIC-020, CIC-021, CIC-022 |
 | FEAT-078-FR-03 | `repo-hygiene` shall fail when "Edge4Care" appears in a tracked file outside `specs/` and `docs/reports/`, when "diagnoses" or "severity" appears as a word in `frontend/app`, `frontend/components` or `frontend/lib/wording.ts`, or when an LLM SDK of SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json`. | CIC-114, SEC-128, AGT-004, AGT-019 |
 | FEAT-078-FR-04 | `backend-lint` shall fail on any `ruff check` finding, any `ruff format --check` difference, any `mypy` error (strict for `analytics/`) or any import-linter contract violation. | CIC-011, CIC-115, ARC-041 |
@@ -66,9 +66,9 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 | FEAT-078-FR-12 | pip and npm downloads shall be cached keyed on `backend/requirements*.txt` and `frontend/package-lock.json`; `npm ci` shall always be used. | CIC-080, CIC-081, CIC-083 |
 | FEAT-078-FR-13 | Every job shall set `timeout-minutes` ≤ 20; runners shall be GitHub-hosted `ubuntu-24.04`. | CIC-111, CIC-027 |
 | FEAT-078-FR-14 | `backend-test` shall upload `backend-reports` (coverage, junit, `ALGORITHM_VALIDATION_REPORT.md`, `validation_results.json`) even on failure, write outputs to `build/`, never commit them, and print the R01–R10 table and coverage percentages to the job summary. | CIC-100, CIC-101, CIC-102 |
-| FEAT-078-FR-15 | Branch protection on `main` and `staging` shall require the eight checks of CIC-070, evaluated on the up-to-date merge, plus the GIT-010 rules (1 approval, stale-approval dismissal, CODEOWNERS, conversation resolution, no force push, no deletion, no admin bypass). | CIC-070, CIC-071, GIT-010, TST-150 |
+| FEAT-078-FR-15 | Branch protection on `main` shall require the eight checks of CIC-070, evaluated on the up-to-date merge, plus the GIT-010 rules (1 approval, stale-approval dismissal, CODEOWNERS, conversation resolution, no force push, no deletion, no admin bypass). | CIC-070, CIC-071, GIT-010, TST-150 |
 | FEAT-078-FR-16 | Third-party actions shall be pinned per CIC-025 (major tags only for `actions/*`, `docker/*`, `microsoft/playwright`; full commit SHA otherwise). | CIC-025, SEC-154 |
-| FEAT-078-FR-17 | `.github/dependabot.yml` shall match TRD 18 §4.12, target `staging`, and Dependabot security updates and alerts shall be enabled; dependency PRs merge only with all required checks green. | GIT-110, GIT-113, SEC-150 |
+| FEAT-078-FR-17 | `.github/dependabot.yml` shall match TRD 18 §4.12, target `main`, and Dependabot security updates and alerts shall be enabled; dependency PRs merge only with all required checks green. | GIT-110, GIT-113, SEC-150 |
 | FEAT-078-FR-18 | A security-audit failure on an unchanged dependency may be waived for at most 7 days with an ignore entry that references a tracking issue and is recorded in `SECURITY_EXCEPTIONS.md` with an expiry date. | CIC-072, TST-136 |
 | FEAT-078-FR-19 | A merge shall be blocked when any test was skipped without a `reason=` naming a requirement or OQ ID (conftest hook). | TST-153 |
 | FEAT-078-FR-20 | The CI dependency scan shall fail when an LLM SDK or a machine-learning model dependency appears in the processing path (`backend/`, `analytics/`, `frontend/`). | ARC-104, AGT-004, AGT-005 |
@@ -81,7 +81,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 ## Outputs
 
 - `.github/workflows/ci.yml` (full), `.github/dependabot.yml`, `.gitleaks.toml`, `pyproject.toml` `[tool.importlinter]` and `[tool.coverage]` sections, `SECURITY_EXCEPTIONS.md` (empty table with header).
-- Repository settings: branch protection rulesets on `main` and `staging` (screenshot in the Phase 9 PR, AC-GIT-01).
+- Repository settings: branch protection ruleset on `main` (screenshot in PR #3 at the Phase 9 checkpoint, AC-GIT-01).
 - Per-run artifacts `backend-reports` and `frontend-coverage`.
 
 ## Data Flow
@@ -137,7 +137,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 
 ## Testing Requirements
 
-- CI dry run on the Phase 9 PR (TRD 25 §4.6 Phase 9 Required tests).
+- CI dry run on PR #3 at the Phase 9 checkpoint (TRD 25 §4.6 Phase 9 Required tests).
 - Negative tests per AC-CIC-01..AC-CIC-04 executed on throwaway branches: composite sign change, `tests/fixtures/sample.wav`, endpoint without contract update, PR title "Updated stuff".
 - Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite.
 
@@ -151,7 +151,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 | FEAT-078-AC-04 | A PR titled "Updated stuff" fails `repo-hygiene`; "feat(api): add device panel endpoint" passes. Verified by: Test (composite sign change, `tests/fixtures/sample.wav`, endpoint without contract update, PR title "Updated stuff"). | AC-CIC-04, CIC-022 |
 | FEAT-078-AC-05 | `ci.yml` on `main` completes all required checks in under 15 minutes and uploads `backend-reports` containing `ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `validation_results.json`. Verified by: Analysis (the analysis method of CIC-110, applied to the condition stated in the criterion). | AC-CIC-05, CIC-110 |
 | FEAT-078-AC-06 | `grep -r "secrets\." .github/workflows/ci.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-026, AC-CIC-06 |
-| FEAT-078-AC-07 | Branch protection for `main` and `staging` lists exactly the eight required checks of CIC-070. Verified by: Inspection (review of `main` against the cited requirements). | AC-CIC-08, AC-GIT-01 |
+| FEAT-078-AC-07 | Branch protection for `main` lists exactly the eight required checks of CIC-070. Verified by: Inspection (review of `main` against the cited requirements). | AC-CIC-08, AC-GIT-01 |
 | FEAT-078-AC-08 | A PR adding `openai` to `backend/requirements.txt`, or the string "Edge4Care" to a file under `backend/`, fails `repo-hygiene`. Verified by: Test (Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite). | CIC-114, AC-AGT-03 |
 | FEAT-078-AC-09 | Coverage below 95 % for `analytics/`, 85 % for `backend/` or 80 % for `frontend/` fails the respective job. Verified by: Test (the test method of CIC-016, applied to the condition stated in the criterion). | CIC-016, CIC-017, AC-TST-06 |
 | FEAT-078-AC-10 | A committed fake key matching a gitleaks rule (outside the allow-list) fails `security-audit`; a Bandit medium finding in `backend/` fails it too. Verified by: Test (the test method of CIC-115, applied to the condition stated in the criterion). | CIC-115, SEC-052 |
@@ -161,7 +161,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 - All FEAT-078 acceptance criteria pass.
 - All FEAT-078 acceptance criteria demonstrated (negative cases on throwaway branches, then closed).
 - Every job has `timeout-minutes` ≤ 20 and runs on `ubuntu-24.04`.
-- Branch protection screenshot attached to the Phase 9 PR (AC-GIT-01); `CONFIGURATION_VALIDATION_REPORT.md` (FEAT-087) records the check list.
+- Branch protection screenshot attached to PR #3 at the Phase 9 checkpoint (AC-GIT-01); `CONFIGURATION_VALIDATION_REPORT.md` (FEAT-087) records the check list.
 - Batch report entry (AGT-022).
 
 ## Implementation Notes

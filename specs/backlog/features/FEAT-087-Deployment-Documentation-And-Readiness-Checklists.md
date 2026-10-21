@@ -34,7 +34,7 @@ Write the documents that let a team member deploy, verify, operate and contain i
 
 - `specs/backlog/DEPLOYMENT_CHECKLIST.md`: one checkbox row per deployment acceptance item with its source ID and the evidence to attach: AC-DEP-01..AC-DEP-11, AC-CIC-01..AC-CIC-10, DEP-080/DEP-081 smoke results, AC-ENV-01..AC-ENV-09, the Phase 10 definition of done (TRD 25 §4.6), and the go-live item "hosting approved for PHI-derived data (AWS)" signed by the PI and UND IT (SEC-005), marked as not applicable to the interim deployment.
 - `specs/backlog/MVP_READINESS_CHECKLIST.md`: MVP-01..MVP-15 (TST-170 Table 4.17-A) and AC-TST-01..AC-TST-13, each with the test or report that evidences it.
-- `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`: the local procedure (TRD 15 §4.2 steps 1–9 verbatim), Neon, Railway and Netlify procedures, environment-variable matrix (every TRD 21 variable), staging and production release steps, smoke tests, rollback table, backup and restore, demo fallback.
+- `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`: the local procedure (TRD 15 §4.2 steps 1–9 verbatim), Neon, Railway and Netlify procedures, environment-variable matrix (every TRD 21 variable), staging deploy (automatic from `main`) and manual production release steps (D-99), smoke tests, rollback table, backup and restore, demo fallback.
 - `docs/reports/CONFIGURATION_VALIDATION_REPORT.md`: pass/fail table comparing each Phase 9 artefact (`netlify.toml`, `railway.toml`, `railway.nightly.toml`, Dockerfiles, `docker-compose.yml`, `.env*.example`, workflows) with SRC-01, TRD 15, TRD 16, TRD 21 and TRD 22, including regions (D-54), `sslmode=require` on both database URLs, production templates (`PIPELINE_PROFILE=production`, no `PIPELINE_AS_OF`), and the OpenAPI drift check.
 - `docs/deployment.md` sections: incident containment (revoke API keys, deactivate users, rotate JWT_SECRET, rotate database role passwords, scale to zero), incident reporting (PI and Team 2 lead within 24 h; PI decides on UND IT security and IRB reporting), investigation with `audit_logs` correlated by `request_id`, post-incident note kept in the team's private space; research-data governance (UND Speech Study data owned by the PI, IRB protocol, no retention deletion job, exports only via `echowell_readonly` from AWS once live data exists, public datasets only under licence and never with live data, third-party documents by link only); service ownership records.
 
@@ -50,7 +50,7 @@ Write the documents that let a team member deploy, verify, operate and contain i
 |---|---|---|
 | FEAT-087-FR-01 | `specs/backlog/DEPLOYMENT_CHECKLIST.md` and `specs/backlog/MVP_READINESS_CHECKLIST.md` shall be written from the TRD 13 and TRD 15 acceptance criteria if absent, each item citing its source ID and evidence. | TRD 25 §4.6 Phase 9 Outputs, AGT-032, D-21 |
 | FEAT-087-FR-02 | The MVP readiness checklist shall list MVP-01..MVP-15 with the evidence named in Table 4.17-A, and state that the MVP is accepted only when all pass on the release candidate commit. | TST-170 |
-| FEAT-087-FR-03 | `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md` shall reproduce the TRD 15 §4.2 local setup procedure verbatim and the staging and production release steps of TRD 15 §4.9 and §4.10. | TRD 15 §4.2, §4.9, §4.10 |
+| FEAT-087-FR-03 | `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md` shall reproduce the TRD 15 §4.2 local setup procedure verbatim and the staging deploy and manual production release steps of TRD 15 §4.9 and §4.10 (D-99). | TRD 15 §4.2, §4.9, §4.10 |
 | FEAT-087-FR-04 | Every environment variable of TRD 21 shall be documented with its per-environment value source; deviations from the TRD 21 §4.7 matrix shall be recorded in `docs/deployment.md` with a reason. | TRD 25 §4.6 Phase 9 DoD, ENV-050 |
 | FEAT-087-FR-05 | `docs/reports/CONFIGURATION_VALIDATION_REPORT.md` shall record pass/fail of each Phase 9 configuration item against SRC-01 and TRD 22, including Neon `aws-us-east-1` and Railway US East, `sslmode=require` on DATABASE_URL and DATABASE_MIGRATION_URL, production templates with `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`, and the OpenAPI drift check in CI, and shall state that no deployment was performed. | TRD 25 §4.6 Phase 9 DoD, D-54, D-51 |
 | FEAT-087-FR-06 | `docs/deployment.md` shall document containment actions executable within 1 hour: revoke API keys (CLI), deactivate users (`PATCH /api/v1/users/{id}`), rotate JWT_SECRET, rotate database role passwords and scale the Railway or App Runner service to zero. | SEC-170 |
@@ -131,7 +131,7 @@ None at runtime. The batch report lists documents created and validation results
 ## Definition of Done
 
 - All FEAT-087 acceptance criteria pass; Phase 9 definition of done (TRD 25 §4.6) met in full (AGT-033).
-- Phase 9 PR approved by the algorithm lead (AGT-013).
+- Phase 9 checkpoint of PR #3 approved by the algorithm lead (AGT-013).
 
 ## Implementation Notes
 

@@ -170,7 +170,7 @@ None: reviews and snoozes are human state outside the engine; the pipeline never
 
 - All FEAT-031 acceptance criteria pass.
 - Three endpoints implemented; no acknowledge route; all writes transactional with audit rows.
-- TST-056..TST-059, TST-065, TST-066 pass in Phase 5; TST-067 passes in the Phase 6 PR that merges FEAT-053 (AC-TST-12).
+- TST-056..TST-059, TST-065, TST-066 pass in Phase 5; TST-067 passes in the Phase 6 checkpoint of PR #3 that delivers FEAT-053 (AC-TST-12).
 - Requirement markers (TST-013); coverage ≥ 85 %; OpenAPI drift check passes.
 
 ## Implementation Notes

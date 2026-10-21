@@ -59,7 +59,7 @@ Implement the ten resident validation cases VC-R01..VC-R10 (including the invari
 | FEAT-059-FR-12 | `tests/validation/report.py` shall write `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with the header fields (Generated, Git SHA, Profile, Config snapshot SHA-256, input and workbook SHA-256, tolerance, Overall) and sections 1–7 of TRD 14 §4.10, and `docs/reports/validation_results.json` with the §4.10 schema. | TST-082, TDV-070, CIC-100 |
 | FEAT-059-FR-13 | "Overall: PASS" shall be written only when all 22 cases pass in both tiers and VC-R04-INV and VC-R10-FRZ pass; `checks` shall equal the number of value comparisons and a case with 0 checks shall be FAIL. | TDV-070, TDV-071 |
 | FEAT-059-FR-14 | The report shall list up to 50 mismatches per failed case with stage attribution and leave sections 4 (root cause analysis) and 5 (recommended fixes) for the engineer to complete in the PR. | TDV-070, TDV-072 |
-| FEAT-059-FR-15 | CI shall upload both report files as artifacts even when tests fail and show the R01–R10 pass/fail table in the job summary; the committed copies in `docs/reports/` shall be refreshed in each batch PR that touches `analytics/`. | CIC-100, CIC-102, TDV-073 |
+| FEAT-059-FR-15 | CI shall upload both report files as artifacts even when tests fail and show the R01–R10 pass/fail table in the job summary; the committed copies in `docs/reports/` shall be refreshed in each PR #3 review checkpoint (and any later PR) that touches `analytics/`. | CIC-100, CIC-102, TDV-073 |
 | FEAT-059-FR-16 | Test function names shall include the case ID (e.g. `test_vc_r09_first_alarm`). | TST-012 |
 
 ## Inputs
@@ -139,7 +139,7 @@ None in production code. Each case targets one pitfall of TRD 25 §4.8 (AGT-040 
 
 - All FEAT-059 acceptance criteria pass.
 - All R01–R10 tests and the totals test pass; numeric comparisons within 1e-6 and strings exact; R04 output identical without the two copies (TRD 25 Phase 7 DoD).
-- Report and JSON committed in the Phase 7 PR (TDV-073); Phase 8 may start (AGT-023).
+- Report and JSON committed in the Phase 7 checkpoint of PR #3 (TDV-073); Phase 8 may start (AGT-023).
 - Batch report lists IDs, commands and results (AGT-022).
 
 ## Implementation Notes

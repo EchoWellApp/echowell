@@ -62,7 +62,7 @@ Execute and record the end-of-semester demo acceptance: demo step 4 ("pipeline p
 | FEAT-090-FR-08 | The fallback laptop shall serve the dashboard at `http://localhost:3001` and accept device posts at `http://<laptop LAN IP>:8000/api/v1/sessions`, binding the backend port to the LAN interface only for the demo. | DEP-091 |
 | FEAT-090-FR-09 | The fallback shall be rehearsed end to end (device or `curl` post → pipeline → dashboard) at least once before 15 Nov 2026, with the steps written in `docs/deployment.md`. | DEP-092, AC-DEP-09 |
 | FEAT-090-FR-10 | The demo shall show the device-to-cloud path against production (single demo check-in, baseline forming) and the full dashboard behaviour (R01–R10, R09 alarm) against staging. | DEP-093 |
-| FEAT-090-FR-11 | The MVP shall be recorded as accepted only when every MVP-01..MVP-15 criterion passes on the release candidate commit with evidence attached to the release PR. | TST-170, AC-TST-10 |
+| FEAT-090-FR-11 | The MVP shall be recorded as accepted only when every MVP-01..MVP-15 criterion passes on the release candidate commit with evidence attached to PR #4 and to the GitHub Release of that commit. | TST-170, AC-TST-10 |
 
 ## Inputs
 
@@ -145,7 +145,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-091.
 ## Definition of Done
 
 - All FEAT-090 acceptance criteria pass, or the report states which failed and why (then Phase 11 records NOT READY FOR DEMO).
-- Phase 10 PR approved by the algorithm lead (AGT-013).
+- PR #4 (Phase 10) approved by the algorithm lead (AGT-013).
 
 ## Implementation Notes
 

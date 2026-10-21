@@ -132,12 +132,12 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 | FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-03 |
 | FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 Outputs |
 | FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
-| FEAT-091-AC-07 | `git diff --stat` of the Phase 11 PR shows changes only under `docs/reports/` and `specs/backlog/`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 11 Pitfalls |
+| FEAT-091-AC-07 | `git diff --stat` of the Phase 11 checkpoint commits of PR #3 shows changes only under `docs/reports/` and `specs/backlog/`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 11 Pitfalls |
 | FEAT-091-AC-08 | `UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` has a row for every wireframe element listed in TRD 11 §4.16 (and the SRC-18 and SRC-19 elements of §4.17 and §4.18) with feature, component, endpoint and test columns filled. Verified by: Inspection (the inspection method of NFR-111, applied to the condition stated in the criterion). | Generate_Documentation_Audit_Prompt.md; NFR-111 |
 
 ## Definition of Done
 
-- All FEAT-091 acceptance criteria pass; Phase 11 PR approved by the algorithm lead (AGT-013, AC-AGT-01).
+- All FEAT-091 acceptance criteria pass; Phase 11 checkpoint of PR #3 approved by the algorithm lead (AGT-013, AC-AGT-01); the deployment-dependent items recorded as pending PR #4 are re-checked and the verdict updated at the end of PR #4 (D-100).
 - Completion tracking in BACKLOG.md reflects the audit results (TRD 25 §4.6 Phase 12 DoD).
 
 ## Implementation Notes

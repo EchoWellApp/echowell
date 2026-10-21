@@ -133,7 +133,7 @@ None beyond the standard request logs and the audit rows of login and the after-
 ## Definition of Done
 
 - All FEAT-060 acceptance criteria pass; `pytest tests/integration -q -k ui_fixture` and `pytest tests/validation -q` green.
-- The Phase 7 PR passes `pytest tests/validation -q`, after which Phase 8 may start (AGT-023).
+- The Phase 7 checkpoint of PR #3 passes `pytest tests/validation -q`, after which Phase 8 may start (AGT-023).
 - Batch report lists IDs (AGT-022).
 
 ## Implementation Notes

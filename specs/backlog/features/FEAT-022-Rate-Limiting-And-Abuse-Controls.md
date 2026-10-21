@@ -133,7 +133,7 @@ None.
 ## Definition of Done
 
 - All FEAT-022 acceptance criteria pass; TST-131 passes with the autouse reset fixture.
-- Delivered in the Phase 5 PR.
+- Delivered in the Phase 5 checkpoint of PR #3.
 
 ## Implementation Notes
 

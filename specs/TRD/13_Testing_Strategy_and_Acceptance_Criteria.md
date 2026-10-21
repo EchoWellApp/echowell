@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -466,7 +466,7 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-150 | On every pull request to `main` or `staging`, the following shall run and all shall pass before merge: lint and type checks (ruff, mypy, eslint, tsc), analytics and backend unit tests, integration tests, contract tests, validation suite (Tier A and Tier B), security tests, frontend unit/component/page tests, E2E (Chromium), accessibility, PR-scope performance tests, coverage gates. Job names and wiring are defined in TRD 16; each item shall be a required status check under branch protection (TRD 16 CIC-070: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`). | Must | BR-17, contract §13 | Inspection |
+| TST-150 | On every pull request to `main` (the only target branch, TRD 18 GIT-012), the following shall run and all shall pass before merge: lint and type checks (ruff, mypy, eslint, tsc), analytics and backend unit tests, integration tests, contract tests, validation suite (Tier A and Tier B), security tests, frontend unit/component/page tests, E2E (Chromium), accessibility, PR-scope performance tests, coverage gates. Job names and wiring are defined in TRD 16; each item shall be a required status check under branch protection (TRD 16 CIC-070: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`). | Must | BR-17, contract §13 | Inspection |
 | TST-151 | Nightly (08:00 UTC, `e2e.yml` schedule per TRD 16) on `main`: full E2E in Chromium, Firefox and WebKit; full performance budgets; random-order pytest run and multi-seed reproduction and false-alarm robustness (TRD 14 §4.11) in the job `nightly-validation` (TRD 16 CIC-037). Failures open a GitHub issue labelled `ci-failure` (TRD 16 CIC-033). | Should | TRD 16 | Inspection |
 | TST-152 | After each deploy, a smoke suite shall run: on staging (TRD 15 DEP-080) `GET /api/v1/health` = 200 with database "ok", login with the staging smoke user, `GET /api/v1/residents` = 200, frontend `/login` renders, and HSTS (TST-135); on production only the unauthenticated, read-only checks of TRD 15 DEP-081 (no login: the smoke user never exists in production, TRD 21). A failed production smoke shall trigger the rollback procedure of TRD 15. | Must | TRD 15, SRC-17 Phase 14B | Test |
 | TST-153 | Merges shall be blocked if any test was skipped without a `reason=` that names a requirement or OQ ID. | Must | Quality | Test (conftest hook) |
@@ -490,7 +490,7 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-170 | The MVP shall be accepted only when every criterion in Table 4.17-A passes on the release candidate commit, with evidence attached to the release PR. | Must | BR-01..BR-18 | Demo, Test |
+| TST-170 | The MVP shall be accepted only when every criterion in Table 4.17-A passes on the release candidate commit, with evidence attached to PR #4 and to the GitHub Release of that commit (TRD 15 §4.10, D-99). | Must | BR-01..BR-18 | Demo, Test |
 
 Table 4.17-A MVP acceptance criteria.
 
@@ -596,3 +596,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-01, R7-02, R7-05) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-04, R8-05, R8-06) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (TST-002 postgres:16-alpine; TST-052 NIGHTLY_RUN_HOUR_LOCAL; TST-120 ubuntu-24.04; TST-125, TST-126 and new TST-190..TST-195 (D-98); E2E-01 clinician nav; E2E-16 widths (D-78)) | — |
+| 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

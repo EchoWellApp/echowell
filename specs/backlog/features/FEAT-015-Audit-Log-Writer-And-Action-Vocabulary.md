@@ -142,7 +142,7 @@ None.
 ## Definition of Done
 
 - All FEAT-015 acceptance criteria pass; the vocabulary in code equals TRD 12 §4.12 exactly (a unit test compares the enum to the TRD list).
-- Docstrings cite SEC-100..SEC-109; delivered in the Phase 4 PR.
+- Docstrings cite SEC-100..SEC-109; delivered in the Phase 4 checkpoint of PR #3.
 
 ## Implementation Notes
 

@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -50,7 +50,7 @@ the AWS target.
 | ENV-002 | Settings validation shall run before the application accepts traffic and before Alembic migrations run; on any validation failure the process shall exit with code 1 and log one CRITICAL `startup_config_invalid` record listing the invalid variable names and the rule violated, never their values (TRD 17 LOG-072). Exit code 1 is the single code for every settings-validation failure, in the backend, the nightly job and every CLI command; exit code 2 is reserved for the command-specific refusals of operator CLI commands (TRD 15 DEP-070 and the §4.8 table, TRD 06 DB-024 and DB-057), which are checked before settings validation. | Must | TRD 17 | Test |
 | ENV-003 | Variable names shall be upper-case and exactly as listed in this TRD; unknown variables beginning with `ECHOWELL_` shall be rejected (typo protection) and other unknown variables ignored. | Should | contract §13 | Test |
 | ENV-004 | Secret variables (marked "secret" in §4.2) shall be typed `pydantic.SecretStr` so they are masked in `repr()`, logs and error messages. | Must | BR-16, TRD 17 LOG-020 | Test |
-| ENV-005 | Secrets shall be stored only in: local `.env` (gitignored, local values only), Railway service variables (interim staging/production), GitHub Actions `staging` environment secrets (TRD 16 §4.9), and AWS Secrets Manager (AWS target). They shall never be set in `netlify.toml`, `railway.toml`, Dockerfiles, `docker-compose.yml` or any committed file. | Must | BR-16, contract §12 | Inspection |
+| ENV-005 | Secrets shall be stored only in: local `.env` (gitignored, local values only), Railway service variables (interim staging/production), GitHub Actions `staging` environment secrets and the two deploy tokens of the `production` environment (TRD 16 §4.9), and AWS Secrets Manager (AWS target). They shall never be set in `netlify.toml`, `railway.toml`, Dockerfiles, `docker-compose.yml` or any committed file. | Must | BR-16, contract §12 | Inspection |
 | ENV-006 | A `.env` file shall be loaded only when APP_ENV is `local` or `test`; in `staging` and `production` the backend shall read only real process environment variables. | Must | BR-16 | Test |
 
 ### 4.2 Backend variables (contract §13)
@@ -71,7 +71,7 @@ the AWS target.
 | `SENTRY_DSN` | Sentry project DSN; empty disables Sentry | No | empty | `https://****@o0.ingest.us.sentry.io/0` | staging, production | Yes | empty or https URL |
 | `RATE_LIMIT_LOGIN` | Login rate limit per client IP | No | `5/minute` | `5/minute` (E2E stack `60/minute`, D-74) | all | No | `<int>/<second\|minute\|hour\|day>`; must be `5/minute` when APP_ENV is `staging` or `production` (ENV-054) |
 | `RATE_LIMIT_INGEST` | Ingest rate limit per API key | No | `600/minute` | `600/minute` | all | No | same format |
-| `GIT_SHA` | Deployed commit SHA, reported as `version` by health | No | `unknown` | `3f9c2ab…` (40 hex) | all | No | `unknown` or 7–40 hex chars; set by platform (Railway: `${{RAILWAY_GIT_COMMIT_SHA}}`; Compose: `git rev-parse HEAD` via `.env`; App Runner: image build arg) |
+| `GIT_SHA` | Deployed commit SHA, reported as `version` by health | No | `unknown` | `3f9c2ab…` (40 hex) | all | No | `unknown` or 7–40 hex chars; set by platform (Railway staging: `${{RAILWAY_GIT_COMMIT_SHA}}`; Railway production: set to the released SHA by `deploy-production.yml`, TRD 16 §4.5; Compose: `git rev-parse HEAD` via `.env`; App Runner: image build arg) |
 | `DATA_SOURCE_LABEL` | Text shown in header "Showing <label> as of …" | No | `pipeline test data v0.1` | `demo data (synthetic)` | all | No | 1–60 chars |
 
 ### 4.3 Additional backend variables defined by this TRD
@@ -80,7 +80,7 @@ the AWS target.
 |---|---|---|---|---|---|---|---|
 | `DATABASE_MIGRATION_URL` | Connection used only by the closed list of TRD 20 §4.3: Alembic (Railway pre-deploy command) and the listed operator commands (role `echowell_migrator`, direct non-pooled endpoint); set on the Railway `backend` service only, never on `nightly`; on AWS only on the one-off migration task (TRD 15 DEP-040); application code never reads it | No | value of DATABASE_URL | `postgresql+psycopg://echowell_migrator:****@ep-xyz.us-east-1.aws.neon.tech/echowell?sslmode=require` | staging, production, AWS | Yes | same rules as DATABASE_URL |
 | `DATABASE_READONLY_URL` | Read-only connection (login role `echowell_readonly`) used only by `backend/services/analytics_summary.py` to read `evaluation_ground_truth` for the test-profile "Alarm timing check" panel | Yes where PIPELINE_PROFILE=`test_v0_1` (local, staging, test); not set in production and on AWS (TRD 12 SEC-116; the panel shows review outcomes instead) | — | `postgresql+psycopg://echowell_readonly:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | same scheme rules as DATABASE_URL; `sslmode=require` (or `verify-full`) outside `local`/`test`; missing when PIPELINE_PROFILE=`test_v0_1` → startup fails |
-| `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews | No | empty | `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
+| `CORS_ORIGIN_REGEX` | Additional allowed-origin regex for Netlify deploy previews of the staging site | No | empty | `^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$` | staging only | No | must compile; must start with `^https://` and end with `$`; refused (non-empty) when APP_ENV=`production` |
 | `PIPELINE_AS_OF` | Fixed "now" for pipeline as-of, day ledger, 30-day windows and header time; empty = current time | No | empty | `2026-10-30T15:00:00-05:00` | local, staging, test | No | ISO 8601 with offset; refused (non-empty) when APP_ENV=`production` |
 | `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` | Deterministic credentials of the seeded test users `admin@example.com`, `clinician@example.com`, `researcher@example.com` and the API key `test-ingest` (scopes `ingest:write`, `pipeline:run`), read only by `backend.cli seed test_v0_1` (TRD 06 DB-057, TRD 24 D-71) and by the E2E and staging smoke tests | Yes for `seed` (missing → exit 2) | — | local: the `local-dev-only-change-me` placeholders of `.env.development.example` (ENV-041); CI: generated per job and masked (TRD 16 `e2e.yml`); staging: GitHub environment secrets `STAGING_SEED_*` | local, test, staging only | Yes | passwords meet the TRD 12 password policy; API key ≥ 32 characters; never printed or logged; the backend and every CLI command refuse to start with exit 1 (settings validation, ENV-002) when any is non-empty and APP_ENV=`production` |
 | `PORT` | Listening port | No | `8000` | `8000` | all | No | integer 1–65535; injected by Railway/App Runner |
@@ -124,14 +124,14 @@ Frontend variables are inlined at build time by Next.js and are therefore **publ
 |---|---|---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | Backend origin only (scheme, host and optional port; no path); the frontend appends `/api/v1<path>` (TRD 04 FE-070) and the CSP `connect-src` uses this origin (TRD 12 SEC-070) | Yes | — | `https://echowell-backend-production.up.railway.app` | all | No | absolute `http(s)` origin with no path and no trailing slash (must not contain `/api/v1`); `https://` required unless host is `localhost` |
 | `NEXT_PUBLIC_APP_ENV` | Environment label (shows a "STAGING" / "LOCAL" ribbon when not `production`) | Yes | — | `production` | all | No | `local`, `staging`, `production` |
-| `NEXT_PUBLIC_GIT_SHA` | Build commit, rendered as `<meta name="echowell-build">` (TRD 16 §4.4) | No (derived) | `process.env.COMMIT_REF` (Netlify) or `process.env.GIT_SHA` or `unknown`, computed in `next.config.js` | `3f9c2ab…` | all | No | never set manually |
+| `NEXT_PUBLIC_GIT_SHA` | Build commit, rendered as `<meta name="echowell-build">` (TRD 16 §4.4) | No (derived) | `process.env.COMMIT_REF` (Netlify Git builds of the staging site) or `process.env.GIT_SHA` (set by `deploy-production.yml` for the production site's CLI build) or `unknown`, computed in `next.config.js` | `3f9c2ab…` | all | No | never set manually |
 | `NEXT_TELEMETRY_DISABLED` | Disable Next.js telemetry | No | `1` | `1` | all | No | — |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Compose `db` / CI service container init (superuser; used only to run `database/roles/provision_login_roles.sql`) | Compose, CI | `echowell` / `local-dev-only-postgres` (CI `ci-only-postgres`) / `echowell` (CI DB `echowell_test`) | — | local, CI | local/CI-only placeholders (ENV-041) | — |
 | `ECHOWELL_MIGRATOR_DB_PASSWORD`, `ECHOWELL_APP_DB_PASSWORD`, `ECHOWELL_READONLY_DB_PASSWORD` | Passwords of the login roles created by `database/roles/provision_login_roles.sql` (read via psql `\getenv`; TRD 15 §4.2, TRD 16 CIC-015, TRD 20 §4.3) | Compose, CI | — | `local-dev-only-app` | local, CI | local/CI-only placeholders `local-dev-only-*` / `ci-only-*` (ENV-041) | never set in staging or production |
 | `SMOKE_API_BASE_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_EXPECTED_SHA`, `SMOKE_ENV` | Smoke test targets (TRD 15 §4.11) | smoke runs | — | `https://…/api/v1` | CI | No | `SMOKE_ENV` ∈ `staging`, `production` |
 | `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` | Staging smoke user = the seeded `researcher@example.com` with `secrets.STAGING_SEED_RESEARCHER_PASSWORD` (TRD 16 §4.4) | staging smoke | — | `researcher@example.com` | CI (staging) | Yes | never set for production |
 | `E2E_BASE_URL` | Playwright target (TRD 16 §4.3); Playwright logs in as the seeded users `admin@example.com`, `clinician@example.com`, `researcher@example.com` with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD (the `E2E_USER_*` pair is retired) | E2E runs | `http://localhost:3001` | — | CI, local | No | — |
-| `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (secrets); `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` (variables); `PYTHON_VERSION`, `NODE_VERSION` (workflow env) | GitHub Actions secrets/variables; defined in TRD 16 §4.9 and mapped by the workflows onto `DATABASE_URL`, `SMOKE_*` above | CI workflows | — | — | CI | secrets: Yes | never read by application code |
+| `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY`, `RAILWAY_PRODUCTION_TOKEN`, `NETLIFY_AUTH_TOKEN` (secrets); `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL`, `NETLIFY_PRODUCTION_SITE_ID` (variables); `PYTHON_VERSION`, `NODE_VERSION` (workflow env) | GitHub Actions secrets/variables; defined in TRD 16 §4.9 and mapped by the workflows onto `DATABASE_URL`, `SMOKE_*` above | CI workflows | — | — | CI | secrets: Yes | never read by application code |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -194,8 +194,8 @@ DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_migr
 DATABASE_READONLY_URL=             # secret: Neon pooled URL, role echowell_readonly, sslmode=require; staging only (test_v0_1); must be empty in production (TRD 12 SEC-116)
 JWT_SECRET=                        # secret: openssl rand -hex 32 (different per environment)
 JWT_EXPIRES_MINUTES=60
-CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://staging--echowell-und.netlify.app)
-CORS_ORIGIN_REGEX=                 # staging only: ^https://deploy-preview-\d+--echowell-und\.netlify\.app$ ; empty in production
+CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://echowell-und-staging.netlify.app)
+CORS_ORIGIN_REGEX=                 # staging only: ^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$ ; empty in production
 FACILITY_NAME=Edgewood
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=production        # staging: test_v0_1 ; production: production (test_v0_1 refused)
@@ -207,9 +207,9 @@ LOG_FORMAT=json
 SENTRY_DSN=                        # optional secret; empty disables Sentry
 RATE_LIMIT_LOGIN=5/minute
 RATE_LIMIT_INGEST=600/minute
-GIT_SHA=${{RAILWAY_GIT_COMMIT_SHA}} # Railway reference variable
+GIT_SHA=${{RAILWAY_GIT_COMMIT_SHA}} # staging: Railway reference variable; production: set to the released SHA by deploy-production.yml
 DATA_SOURCE_LABEL=demo data (synthetic)
-# --- Frontend (Netlify environment variables, per deploy context) ---
+# --- Frontend (Netlify site environment variables, one value per site: staging site and production site) ---
 NEXT_PUBLIC_API_BASE_URL=          # production: https://echowell-backend-production.up.railway.app (origin only, no /api/v1)
 NEXT_PUBLIC_APP_ENV=production
 ```
@@ -221,14 +221,14 @@ NEXT_PUBLIC_APP_ENV=production
 
 ### 4.7 Per-environment matrix
 
-| Variable | local (Compose) | test (CI) | staging (Railway/Netlify) | production — current interim (Railway/Netlify) | production — AWS target |
+| Variable | local (Compose) | test (CI) | staging (Railway/Netlify; deployed from `main` on every merge) | production — current interim (Railway/Netlify; deployed only by the release workflow, D-99) | production — AWS target |
 |---|---|---|---|---|---|
 | APP_ENV | `local` | `test` | `staging` | `production` | `production` |
 | DATABASE_URL | Compose `db`, `echowell_app_login` | CI service `localhost:5432/echowell_test`, `echowell_app_login` | Neon `staging` pooled, app role | Neon `main` pooled, app role | RDS endpoint, app role, `sslmode=require` (Secrets Manager) |
 | DATABASE_READONLY_URL | Compose `db`, `echowell_readonly_login` | CI service, `echowell_readonly_login` | Neon `staging` pooled, readonly role | not set (SEC-116) | not set (SEC-116) |
 | DATABASE_MIGRATION_URL | Compose `db`, `echowell_migrator_login` | CI service, `echowell_migrator_login` | Neon `staging` direct, migrator role | Neon `main` direct, migrator role | RDS, migrator role (Secrets Manager) |
 | JWT_SECRET | local-dev-only value | generated per run | unique secret | unique secret | unique secret (Secrets Manager) |
-| CORS_ORIGINS | `http://localhost:3000,http://localhost:3001` | `http://localhost:3000` | `https://staging--echowell-und.netlify.app` | `https://echowell-und.netlify.app` | Amplify production domain |
+| CORS_ORIGINS | `http://localhost:3000,http://localhost:3001` | `http://localhost:3000` | `https://echowell-und-staging.netlify.app` | `https://echowell-und.netlify.app` | Amplify production domain |
 | CORS_ORIGIN_REGEX | empty | empty | deploy-preview regex | empty | empty |
 | FACILITY_NAME | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` |
 | FACILITY_TZ | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` |
@@ -237,7 +237,7 @@ NEXT_PUBLIC_APP_ENV=production
 | PIPELINE_AS_OF | `2026-10-30T15:00:00-05:00` | set per test | `2026-10-30T15:00:00-05:00` | empty | empty |
 | LOG_FORMAT / LOG_LEVEL | `console` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` |
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
-| GIT_SHA | `unknown` | `${{ github.sha }}` | Railway reference | Railway reference | image build arg |
+| GIT_SHA | `unknown` | `${{ github.sha }}` | Railway reference | released SHA, set by `deploy-production.yml` | image build arg |
 | DATA_SOURCE_LABEL | `pipeline test data v0.1` | `pipeline test data v0.1` | `pipeline test data v0.1` | `demo data (synthetic)` | `Edgewood check-ins` |
 | NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000` | `http://localhost:8000` | `https://echowell-backend-staging.up.railway.app` | `https://echowell-backend-production.up.railway.app` | App Runner origin |
 | NEXT_PUBLIC_APP_ENV | `local` | `local` | `staging` | `production` | `production` |
@@ -307,3 +307,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-01, R6-02) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02, R7-03) | — |
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (ENV-021 and config ownership: migration 0002 seeds, bootstrap verifies (D-85)) | — |
+| 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

@@ -155,7 +155,7 @@ The TRDs fix exit code 1 for settings-validation failures (ENV-002) and exit cod
 ## Definition of Done
 
 - All FEAT-016 acceptance criteria pass; TST-032 hashing and key tests exist and pass.
-- CLI help text documents each command; delivered in the Phase 4 PR.
+- CLI help text documents each command; delivered in the Phase 4 checkpoint of PR #3.
 
 ## Implementation Notes
 

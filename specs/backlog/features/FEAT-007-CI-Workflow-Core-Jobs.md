@@ -30,7 +30,7 @@ Create the first working `.github/workflows/ci.yml` so that every pull request f
 
 ## Scope
 
-- `.github/workflows/ci.yml` with name `CI`, triggers `pull_request` (all branches), `push` to `main` and `staging`, `workflow_dispatch`; concurrency group `ci-${{ github.ref }}` cancelling in-progress runs for pull requests only; top-level `permissions: contents: read`; env `PYTHON_VERSION: "3.12"`, `NODE_VERSION: "20"`.
+- `.github/workflows/ci.yml` with name `CI`, triggers `pull_request` (all branches), `push` to `main`, `workflow_dispatch`; concurrency group `ci-${{ github.ref }}` cancelling in-progress runs for pull requests only; top-level `permissions: contents: read`; env `PYTHON_VERSION: "3.12"`, `NODE_VERSION: "20"`.
 - Job `backend-lint`: checkout, setup-python 3.12 with pip cache, install `backend/requirements.txt` and `backend/requirements-dev.txt`, `ruff check .`, `ruff format --check .`, `mypy analytics backend`, `lint-imports`.
 - Job `backend-test`: `postgres:16-alpine` service (`POSTGRES_USER: echowell`, `POSTGRES_PASSWORD: ci-only-postgres`, `POSTGRES_DB: echowell_test`, health command `pg_isready`), env `APP_ENV: test` and the `ci-only-*` database URLs and settings of the TRD 16 outline, `JWT_SECRET` generated per run with `openssl rand -hex 32`, then one pytest invocation over `tests/unit tests/integration tests/validation` (and `tests/contract tests/security` as soon as they contain tests) with `-p no:randomly`, writing `build/junit.xml`; upload `build/` as artifact `backend-reports`.
 - Job `frontend`: working directory `frontend`, setup-node 20 with npm cache on `frontend/package-lock.json`, `npm ci`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run test:coverage`, `npm run build`; upload `frontend/coverage/` as `frontend-coverage`.
@@ -38,14 +38,14 @@ Create the first working `.github/workflows/ci.yml` so that every pull request f
 ## Out of Scope
 
 - Jobs `repo-hygiene`, `openapi-contract`, `security-audit`, `docker-build`, the coverage-gate steps (CIC-016), the `--validation-report` option, branch protection (CIC-070) and E2E/performance workflows (FEAT-078, FEAT-080).
-- The migration round-trip step of `backend-test` (CIC-015): it is added when FEAT-008 delivers the migrations (Phase 4 PR updates `ci.yml`; the full form is audited in FEAT-078). The provisioning step can run from Phase 3, because FEAT-006 delivers `database/roles/provision_login_roles.sql` and `alembic.ini` in Phase 3 (TRD 24 D-90); this job set is the Phase 3 state of `ci.yml` fixed by D-94.
+- The migration round-trip step of `backend-test` (CIC-015): it is added when FEAT-008 delivers the migrations (Phase 4 checkpoint of PR #3 updates `ci.yml`; the full form is audited in FEAT-078). The provisioning step can run from Phase 3, because FEAT-006 delivers `database/roles/provision_login_roles.sql` and `alembic.ini` in Phase 3 (TRD 24 D-90); this job set is the Phase 3 state of `ci.yml` fixed by D-94.
 - Deploy workflows (FEAT-086).
 
 ## Functional Requirements
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-007-FR-01 | `ci.yml` shall run on every pull request, on every push to `main` and `staging`, and on manual dispatch. | CIC-010 |
+| FEAT-007-FR-01 | `ci.yml` shall run on every pull request, on every push to `main`, and on manual dispatch. | CIC-010 |
 | FEAT-007-FR-02 | `backend-lint` shall fail on any `ruff check` finding, `ruff format --check` difference, `mypy` error (strict for `analytics/`) or import-linter contract violation. | CIC-011, AC-ARC-01 |
 | FEAT-007-FR-03 | `backend-test` shall use a `postgres:16-alpine` service container and never SQLite; the test suite receives the database through `DATABASE_URL` with `APP_ENV=test`. | CIC-012, TST-002 |
 | FEAT-007-FR-04 | `backend-test` shall run the unit, integration and validation suites in one pytest invocation and fail if any test fails or errors. | CIC-013 |

@@ -156,7 +156,7 @@ None from the tables; `audit_logs` is itself the audit store written by FEAT-015
 ## Definition of Done
 
 - All FEAT-012 acceptance criteria pass; the TRD 25 Phase 4 DoD items for `data_alerts`, `alert_reviews`, `evaluation_ground_truth`, `alerts.snoozed_until`/`snoozed_by` and alert uniqueness on `(epoch_id, session_id)` are met.
-- `database/schema.sql` regenerated; `alembic check` clean; delivered in the Phase 4 PR.
+- `database/schema.sql` regenerated; `alembic check` clean; delivered in the Phase 4 checkpoint of PR #3.
 
 ## Implementation Notes
 

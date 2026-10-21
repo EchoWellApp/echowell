@@ -126,7 +126,7 @@ None.
 
 - Unit (`tests/unit/backend/api/test_require_roles.py`): role allowed/denied using a database role that differs from the token's `role` claim (role change takes effect immediately).
 - Integration (`tests/integration/test_auth_coverage.py`): SEC-042 route enumeration.
-- Integration (`tests/integration/api/test_role_checks.py`): for the endpoints present in this Phase 5 PR, each matrix row's cells (anonymous, admin, clinician, researcher, `ingest:write` key, `pipeline:run` key) return the TRD 12 §4.6 status; 403 writes one `access.denied` row; 401 writes none. TRD 25 §4.6 Phase 5 required role tests: review (clinician, admin) and analytics (researcher, admin; clinician 403) are added by FEAT-031 and FEAT-035 using this mechanism.
+- Integration (`tests/integration/api/test_role_checks.py`): for the endpoints present in this Phase 5 checkpoint of PR #3, each matrix row's cells (anonymous, admin, clinician, researcher, `ingest:write` key, `pipeline:run` key) return the TRD 12 §4.6 status; 403 writes one `access.denied` row; 401 writes none. TRD 25 §4.6 Phase 5 required role tests: review (clinician, admin) and analytics (researcher, admin; clinician 403) are added by FEAT-031 and FEAT-035 using this mechanism.
 - TST-130 (full matrix) is delivered by FEAT-039.
 
 ## Acceptance Criteria
@@ -142,8 +142,8 @@ None.
 
 ## Definition of Done
 
-- All FEAT-021 acceptance criteria pass (AC-05 and AC-06 once the corresponding routers exist in the same Phase 5 PR).
-- The permission table is the single source used by routers; delivered in the Phase 5 PR.
+- All FEAT-021 acceptance criteria pass (AC-05 and AC-06 once the corresponding routers exist in the same Phase 5 checkpoint of PR #3).
+- The permission table is the single source used by routers; delivered in the Phase 5 checkpoint of PR #3.
 
 ## Implementation Notes
 

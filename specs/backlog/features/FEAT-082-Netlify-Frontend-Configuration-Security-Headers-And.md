@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `frontend/`, the CSP-checking build command, the ignore rule that skips builds when nothing under `frontend/` changed, per-context `NEXT_PUBLIC_APP_ENV`, and the exact TRD 12 §4.9 header set (CSP with `connect-src` limited to the two Railway API origins, HSTS, `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options` and a `Permissions-Policy` denying microphone and camera). The per-context `NEXT_PUBLIC_API_BASE_URL` values are documented so production builds call only the production backend and deploy previews never do.
+Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `frontend/`, the CSP-checking build command, the ignore rule that skips builds when nothing under `frontend/` changed, no deploy-context environment blocks (both Netlify sites build `main`, so `NEXT_PUBLIC_APP_ENV` is a per-site variable, D-99), and the exact TRD 12 §4.9 header set (CSP with `connect-src` limited to the two Railway API origins, HSTS, `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options` and a `Permissions-Policy` denying microphone and camera). The per-site `NEXT_PUBLIC_API_BASE_URL` values are documented so the production site calls only the production backend and the staging site and its deploy previews never do.
 
 ## Business Context
 
@@ -32,10 +32,10 @@ Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `fr
 
 ## Scope
 
-- `/netlify.toml` per the TRD 15 §4.6 outline: `[build]` base `frontend`, command `node scripts/check-csp.mjs && npm run build`, publish `.next`, ignore `git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml`; `[build.environment]` `NODE_VERSION = "20"`, `NEXT_TELEMETRY_DISABLED = "1"`; plugin `@netlify/plugin-nextjs`; `[context.production.environment] NEXT_PUBLIC_APP_ENV = "production"`, `[context.branch-deploy.environment]` and `[context.deploy-preview.environment] NEXT_PUBLIC_APP_ENV = "staging"`; `[[headers]] for = "/*"` copied verbatim from TRD 12 §4.9.
+- `/netlify.toml` per the TRD 15 §4.6 outline: `[build]` base `frontend`, command `node scripts/check-csp.mjs && npm run build`, publish `.next`, ignore `git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml`; `[build.environment]` `NODE_VERSION = "20"`, `NEXT_TELEMETRY_DISABLED = "1"`; plugin `@netlify/plugin-nextjs`; no `[context.*]` environment blocks; `[[headers]] for = "/*"` copied verbatim from TRD 12 §4.9.
 - `frontend/scripts/check-csp.mjs`: fails the build when the origin in `NEXT_PUBLIC_API_BASE_URL` is not listed in `connect-src` of `netlify.toml`.
 - The build-SHA meta tag `<meta name="echowell-build" content="<NEXT_PUBLIC_GIT_SHA>">` on `/login` if not already present (needed by FEAT-086 verification).
-- Runbook section in `docs/deployment.md`: site `echowell-und` (or recorded name), production branch `main`, branch deploys `staging` only, deploy previews on; per-context `NEXT_PUBLIC_API_BASE_URL` set in the Netlify UI (production → `https://echowell-backend-production.up.railway.app`; branch-deploy `staging` and deploy-preview → `https://echowell-backend-staging.up.railway.app`), origin only.
+- Runbook section in `docs/deployment.md`: two sites (or recorded names): staging site `echowell-und-staging` (production branch `main`, auto publishing on, branch deploys off, deploy previews on) and production site `echowell-und` (builds stopped, published only by `deploy-production.yml` with the Netlify CLI); per-site variables set in the Netlify UI (staging site `NEXT_PUBLIC_API_BASE_URL` = `https://echowell-backend-staging.up.railway.app`, `NEXT_PUBLIC_APP_ENV` = `staging`; production site `https://echowell-backend-production.up.railway.app`, `production`), origin only.
 
 ## Out of Scope
 
@@ -49,7 +49,7 @@ Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `fr
 | ID | Requirement | Trace |
 |---|---|---|
 | FEAT-082-FR-01 | The Netlify site shall use base directory `frontend/`, build command `node scripts/check-csp.mjs && npm run build`, Node 20 and plugin `@netlify/plugin-nextjs`. | DEP-050, SEC-070 |
-| FEAT-082-FR-02 | `NEXT_PUBLIC_API_BASE_URL` shall be set per deploy context so production builds call only the production backend and branch and preview builds only the staging backend; the value is an origin without `/api/v1`. | DEP-051, D-65 |
+| FEAT-082-FR-02 | `NEXT_PUBLIC_API_BASE_URL` shall be set per Netlify site so the production site calls only the production backend and the staging site and its deploy previews only the staging backend; the value is an origin without `/api/v1`. | DEP-051, D-65 |
 | FEAT-082-FR-03 | Deploy previews shall never be configured with the production backend URL, and `netlify.toml` shall not contain the production `NEXT_PUBLIC_API_BASE_URL`. | DEP-054, TRD 15 §8 |
 | FEAT-082-FR-04 | Netlify shall skip a build when no file under `frontend/` and no `netlify.toml` changed (ignore command evaluated inside the base directory). | DEP-052 |
 | FEAT-082-FR-05 | Every response shall carry exactly the TRD 12 §4.9 headers: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()` and the Content-Security-Policy of the excerpt. | DEP-053, SEC-062, SEC-071, FE-061 |
@@ -58,7 +58,7 @@ Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `fr
 | FEAT-082-FR-08 | Netlify environment variables shall contain only `NEXT_PUBLIC_*` values, `NODE_VERSION` and `NEXT_TELEMETRY_DISABLED`; no `NEXT_PUBLIC_*` variable holds a secret. | TPS-011, SEC-054 |
 | FEAT-082-FR-09 | Netlify shall host only the frontend; no Netlify Functions, Forms, Identity, Blobs, Analytics or Edge Functions beyond what `@netlify/plugin-nextjs` generates. | TPS-010 |
 | FEAT-082-FR-10 | The frontend shall load fonts only through `next/font` self-hosting and no third-party scripts, styles, fonts or trackers. | SEC-072, SEC-073, TPS-050, TPS-081, TPS-085 |
-| FEAT-082-FR-11 | The production frontend shall be deployed from `main` and the staging frontend from the `staging` branch deploy, through the Netlify GitHub integration only. | DEP-002, DEP-004, CIC-001 |
+| FEAT-082-FR-11 | The staging frontend shall be deployed from `main` on every merge through the Netlify GitHub integration of the staging site; the production frontend shall be published only by an approved `deploy-production.yml` run for a chosen `main` commit (production site builds stopped). | DEP-002, DEP-004, CIC-001 |
 
 ## Inputs
 
@@ -73,7 +73,7 @@ Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `fr
 
 ## Data Flow
 
-Push to `main`/`staging` or PR → Netlify GitHub integration → ignore command decides whether to build → `check-csp.mjs` validates the API origin against `connect-src` → `npm run build` with context variables → published with the header set → browser loads pages from Netlify and calls only the backend origin in `NEXT_PUBLIC_API_BASE_URL`, enforced by CSP.
+Merge to `main` or PR → Netlify GitHub integration of the staging site (production site: `netlify deploy --build --prod` in an approved release run) → ignore command decides whether to build → `check-csp.mjs` validates the API origin against `connect-src` → `npm run build` with the site variables → published with the header set → browser loads pages from Netlify and calls only the backend origin in `NEXT_PUBLIC_API_BASE_URL`, enforced by CSP.
 
 ## Dependencies
 

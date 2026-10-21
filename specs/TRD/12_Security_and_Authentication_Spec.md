@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -229,7 +229,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 The `connect-src` origins are the Railway public domains of the staging and production API services, which
 shall be configured as `echowell-backend-staging.up.railway.app` and `echowell-backend-production.up.railway.app`
 (TRD 15 §4.5 step 3; Railway service settings → Networking → generate domain with these names). They are exactly the
-values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) in the Netlify deploy contexts; if Railway assigns other names,
+values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) of the two Netlify sites; if Railway assigns other names,
 the recorded names replace both entries here and in TRD 15 in the same change. Local development (`next dev` on :3000 against
 :8000) is not served through Netlify and therefore not subject to this header. When the API moves to AWS, the
 AWS API origin replaces these entries in the same change that switches NEXT_PUBLIC_API_BASE_URL.
@@ -433,7 +433,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 - Failed-login rows are written in their own short transaction because the login request itself does not commit other changes.
 - For tests, create users with a reduced argon2 memory cost only via a test-only settings override; never weaken production parameters.
 - Pitfall: Railway's edge sets `X-Forwarded-For`; without `--proxy-headers` every client appears as the proxy and the login limit would lock everyone out together.
-- Pitfall: the only permitted `allow_origin_regex` is CORS_ORIGIN_REGEX of TRD 21, set in staging only to the anchored Netlify deploy-preview pattern `^https://deploy-preview-\d+--echowell-und\.netlify\.app$` (deploy previews call the staging API, TRD 15 DEP-054); it is refused in production (TRD 21 ENV-012). Every other allowed origin is an exact entry of CORS_ORIGINS.
+- Pitfall: the only permitted `allow_origin_regex` is CORS_ORIGIN_REGEX of TRD 21, set in staging only to the anchored Netlify deploy-preview pattern `^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$` of the staging site (deploy previews call the staging API, TRD 15 DEP-054); it is refused in production (TRD 21 ENV-012). Every other allowed origin is an exact entry of CORS_ORIGINS.
 
 ## 9. Open Questions
 
@@ -460,3 +460,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (SEC-017 create-user syntax; SEC-055 openssl rand -hex 32; SEC-101 refused-request audit rows (D-87); SEC-110 provisioning step; SEC-154 per CIC-025; SEC-162 refers to DEP-097 (D-77)) | — |
+| 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

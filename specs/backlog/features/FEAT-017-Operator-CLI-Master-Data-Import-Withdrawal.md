@@ -165,7 +165,7 @@ None. `bootstrap` only checks that the migration-0002 parameter rows exist (D-85
 ## Definition of Done
 
 - All FEAT-017 acceptance criteria pass; CLI help documents each command, its allowed `APP_ENV` and exit codes.
-- Roster CSVs committed with study IDs only (AGT-017); delivered in the Phase 4 PR.
+- Roster CSVs committed with study IDs only (AGT-017); delivered in the Phase 4 checkpoint of PR #3.
 
 ## Implementation Notes
 

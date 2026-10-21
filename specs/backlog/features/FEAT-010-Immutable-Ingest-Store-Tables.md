@@ -149,7 +149,7 @@ None from the tables. Ingest log events and audit rows for batches are produced 
 ## Definition of Done
 
 - All FEAT-010 acceptance criteria pass; `database/schema.sql` regenerated (PGS-017); `alembic check` clean.
-- Repository docstrings cite DB-001..DB-005; delivered in the Phase 4 PR (AGT-013).
+- Repository docstrings cite DB-001..DB-005; delivered in the Phase 4 checkpoint of PR #3 (AGT-013).
 
 ## Implementation Notes
 

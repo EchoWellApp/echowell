@@ -166,7 +166,7 @@ None.
 ## Definition of Done
 
 - All FEAT-020 acceptance criteria pass; TST-032, TST-069 and TST-132 pass.
-- E-02..E-04 appear in the OpenAPI document with the TRD 19 schemas; delivered in the Phase 5 PR.
+- E-02..E-04 appear in the OpenAPI document with the TRD 19 schemas; delivered in the Phase 5 checkpoint of PR #3.
 
 ## Implementation Notes
 

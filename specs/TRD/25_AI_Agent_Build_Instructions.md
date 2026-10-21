@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.13 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -12,7 +12,7 @@ In scope:
 - TRD index and requirement-ID conventions.
 - Golden rules for agents (AGT requirements).
 - Build sequence from TRD validation to backlog, aligned with the existing prompt files, with inputs, outputs, definition of done, required tests, commands and pitfalls per phase.
-- Review and commit workflow (one PR per batch, reviewed by the algorithm lead).
+- Review and commit workflow (the team PR plan PR #1–PR #5 of SRC-20, with one review checkpoint per prompt inside PR #3, reviewed by the algorithm lead; D-100).
 
 Out of scope:
 - The requirements themselves (they live in TRDs 00–23).
@@ -31,7 +31,8 @@ Out of scope:
 | SRC-09 / 10 / 11 | specs/UI-wireframe/Main.dc.html, Resident.dc.html, Admission.dc.html |
 | SRC-18 / 19 | specs/UI-wireframe/Alerts.dc.html (Alert review), Analytics.dc.html (Analytics) |
 | SRC-12 | specs/prompts/TRD_Generation_Prompt.md |
-| SRC-17 | specs/prompts/Implement_Feature_Batches.md, TRD_Implementation_Audit_Checklist.md (TRD audit, PR #1), Implementation_Audit_Checklist.md (build and implementation audit, PR #3), Generate_Backlog.md, Generate_Documentation_Audit_Prompt.md |
+| SRC-17 | specs/prompts/Implement_Feature_Batches.md (PR #3 checkpoints and PR #4), TRD_Implementation_Audit_Checklist.md (TRD audit, PR #1), Implementation_Audit_Checklist.md (build and implementation audit, PR #3; its steps duplicate Implement_Feature_Batches.md phases and are not run separately), Generate_Backlog.md and Generate_Documentation_Audit_Prompt.md (PR #2), Test_Case_Generation_Prompt.md (PR #5) |
+| SRC-20 | Team 2 Prompt Instructions (PR plan PR #1–PR #5), shared Teams folder, provided 19 Oct 2026; not stored in the repository (TRD 24 §3) |
 
 Related TRDs: all of 00–24. TRD 24 holds every OQ, ASM, RSK, DSC and D identifier cited here.
 
@@ -101,8 +102,8 @@ Rules: IDs are never renumbered or reused. Code, tests and PR descriptions cite 
 | AGT-009 | When a TRD or source does not settle a question, the agent shall stop work on the unsettled part, add an OQ row to TRD 24 (next free number) with owner, status Open, raised date and proposed interim decision, and report it, instead of guessing. | Must | RAQ-014 | Inspection |
 | AGT-010 | Agents shall keep existing skeleton file names and fill them in; the known skeleton gaps (DSC-13) are closed by D-53 (driver, Phase 3) and D-55 (legacy compose and CI stubs, Phase 9) (e.g. `backend/api/alarms.py` serves `/api/v1/alerts`; `backend/models/alarm.py` holds the Alert model); missing modules may be added but existing files shall not be renamed, moved or deleted. | Must | D-24 | Inspection |
 | AGT-011 | Agents shall use `specs/TRD/` for the TRDs; any `specs/TRDS/` in an older copy of a prompt means `specs/TRD/`. | Must | D-22; OQ-22 | Inspection |
-| AGT-012 | Agents shall not commit changes; after each batch the agent shall stop, report, and wait for human review. Commits and the PR are made only after review (consistent with "Action: Do not commit changes" in TRD_Implementation_Audit_Checklist.md). | Must | SRC-17; TRD 18 | Inspection |
-| AGT-013 | Each build batch (phase in 4.5) shall be delivered as exactly one pull request reviewed and approved by the algorithm lead before the next batch starts. | Must | TRD 18; contract team workflow | Inspection (PR history) |
+| AGT-012 | Agents shall not commit changes; after each prompt (one review checkpoint) the agent shall stop, report, and wait for human review. Nothing is automated: a human starts each prompt, one at a time. Commits are made only after review and pushed to the PR of that checkpoint (consistent with "Action: Do not commit changes" in TRD_Implementation_Audit_Checklist.md). | Must | SRC-17; SRC-20; TRD 18 | Inspection |
+| AGT-013 | Build phases shall be delivered as the team PR plan (SRC-20, TRD 24 D-100): TRD 25 Phases 2–9 and 11 as consecutive review checkpoints of the single PR #3 (one prompt of `Implement_Feature_Batches.md` per checkpoint: Phases 7, 8, 9, 10, 11, 12, 13, 14A, 15), Phase 10 as PR #4 and the test cases as PR #5; each checkpoint is reviewed and approved by the algorithm lead on the PR before the next prompt runs. | Must | TRD 18 GIT-030; SRC-20; D-100 | Inspection (PR history and review comments) |
 | AGT-014 | HARD RULE: Agents shall never load, upload, seed, migrate or connect real patient or resident data to the interim Netlify / Railway / Neon stack, in any environment; the interim stack holds synthetic and test data only. Agents shall not take any go-live step (real residents, real devices, real data) until AWS is approved. | Must | D-28 (owner decision D-OWNER-4); OQ-23 (answered); RSK-14 | Inspection (seed and upload scripts reference only specs/data-samples or tests/fixtures) |
 | AGT-015 | Agents shall never configure or use the `test_v0_1` profile in production; the backend shall refuse to start when `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1`, and shall refuse `PIPELINE_AS_OF` when `APP_ENV=production`. | Must | D-01; D-50 | Test |
 | AGT-016 | Agents shall not commit secrets, `.env` files, or third-party-licensed documents; SRC-07 is cited only by its link in specs/business-requirements/REFERENCES.md and the removed PDF path shall never be referenced. | Must | D-29; TRD 12; TRD 18 | Inspection |
@@ -139,24 +140,39 @@ Always read first: TRD 25 (this), TRD 00, TRD 24. Then:
 
 ```mermaid
 flowchart LR
-  P1[1 TRD validation] --> P2[2 Design docs] --> P3[3 Skeleton] --> P4[4 Database]
-  P4 --> P5[5 Backend API] --> P6[6 Analytics] --> P7[7 R01-R10 validation]
-  P7 -->|all pass| P8[8 Frontend] --> P9[9 Deployment config] --> P10[10 Deploy]
-  P10 --> P11[11 Audits] --> P12[12 Backlog]
+  subgraph PR1["PR #1 TRD generation"]
+    P1[1 TRD validation]
+  end
+  subgraph PR2["PR #2 Feature backlog"]
+    P12[12 Backlog]
+  end
+  subgraph PR3["PR #3 Implement features: one review checkpoint per prompt"]
+    P2[2 Design docs] --> P3[3 Skeleton] --> P4[4 Database] --> P5[5 Backend API]
+    P5 --> P6[6 Analytics] --> P7[7 R01-R10 validation]
+    P7 -->|all pass| P8[8 Frontend] --> P9[9 Deployment config] --> P11[11 Final audit]
+  end
+  subgraph PR4["PR #4 Deployment"]
+    P10[10 Deploy]
+  end
+  subgraph PR5["PR #5 Test cases"]
+    TC[Test case generation]
+  end
+  P1 --> P12 --> P2
+  P11 --> P10 --> TC
 ```
 
-Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat/<phase-name>` (or `docs/<phase-name>` for document-only phases) → runs the phase commands → writes the phase report → stops without committing → human reviews the working tree → changes committed (Conventional Commits) and PR opened → algorithm lead reviews and approves → CI green → merge to `staging` (TRD 18 GIT-012; `main` receives only `release:` PRs from `staging`) → next phase.
+The phases follow the team PR plan (SRC-20, TRD 24 D-100). Nothing is automated: each prompt is run manually, one at a time, and reviewed before the next. PR #3 uses one feature branch (`feat/implement-features`) for all of its checkpoints. Workflow per checkpoint: a human runs the next prompt of `Implement_Feature_Batches.md` → the agent runs the phase commands → writes the phase report → stops without committing → human reviews the working tree → changes committed (Conventional Commits) and pushed to the PR → algorithm lead reviews the checkpoint's commits and report on the PR and approves it → CI green on the PR head → next prompt. PR #3 is merged into `main` after its last checkpoint (Phase 11, the Phase 15 prompt) is approved; PR #4 and PR #5 are separate PRs to `main`, each started after the previous PR is merged (TRD 18 GIT-012, GIT-030, GIT-031). A merge to `main` deploys only the staging environment; production changes only through the manual release workflow (TRD 15 §4.10, D-99).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| AGT-030 | Phases shall run in the order 1 to 12 of this section; a phase shall start only after the previous phase's PR is merged. | Must | SRC-17 | Inspection |
+| AGT-030 | Phases shall run in the order of the PR plan: Phase 1 (PR #1), Phase 12 (PR #2, AGT-031), Phases 2, 3, 4, 5, 6, 7, 8, 9 and 11 (PR #3 checkpoints, in this order), Phase 10 (PR #4), then test case generation (PR #5); a phase shall start only after the previous checkpoint is approved or, at a PR boundary, after the previous PR is merged. | Must | SRC-17, SRC-20, D-100 | Inspection |
 | AGT-031 | Where a prompt lists `specs/backlog/` as input and it does not yet exist, the agent shall proceed from the TRDs and state this in its report. Phase 12 may be run earlier (before Phase 2) without changing any other phase. | Must | DSC-14 | Inspection |
 | AGT-032 | Reports named by the prompts shall be written to `docs/reports/`; backlog artefacts and the deployment and MVP readiness checklists to `specs/backlog/`. | Must | D-21 | Inspection |
-| AGT-033 | Each phase's definition of done (4.6) shall be met in full before the PR is opened. | Must | SRC-17 | Inspection |
+| AGT-033 | Each phase's definition of done (4.6) shall be met in full before its review checkpoint is approved (for PR #4, before the PR is opened for review). | Must | SRC-17, D-100 | Inspection |
 
 ### 4.6 Phase details
 
-#### Phase 1 — TRD validation (TRD_Implementation_Audit_Checklist.md Steps 1–3)
+#### Phase 1 — TRD validation (PR #1: TRD_Implementation_Audit_Checklist.md Steps 1–3)
 
 | Item | Content |
 |---|---|
@@ -167,7 +183,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `grep -rhoE "(OQ\|ASM\|RSK\|DSC\|D)-[0-9]{2}" specs/TRD \| sort -u`; `grep -rnE "T[B]D\|T[O]DO\|l[o]rem" specs/TRD` (must return nothing) |
 | Pitfalls | Do not "fix" TRDs in this phase; findings only. The prompts use `specs/TRD`. |
 
-#### Phase 2 — Design documents (Implement_Feature_Batches.md Phase 7; Implementation_Audit_Checklist.md Phase 2)
+#### Phase 2 — Design documents (PR #3 checkpoint 1: Implement_Feature_Batches.md Phase 7; the duplicate Implementation_Audit_Checklist.md Phase 2 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -178,7 +194,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `grep -rnE "T[B]D\|T[O]DO" docs/design` (must return nothing) |
 | Pitfalls | Pages are exactly `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/login`, `/admin` (D-23). Do not add an EWMA chart (OQ-18). |
 
-#### Phase 3 — Project skeleton (Implement_Feature_Batches.md Phase 8; Implementation_Audit_Checklist.md Phase 3)
+#### Phase 3 — Project skeleton (PR #3 checkpoint 2: Implement_Feature_Batches.md Phase 8; the duplicate Implementation_Audit_Checklist.md Phase 3 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -189,7 +205,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `docker compose up -d`; `pytest -q`; `cd frontend && npm ci && npm run lint && npm run build && npm run test` |
 | Pitfalls | Do not delete the empty skeleton files; `.env` files must be gitignored; no secrets in compose files beyond local-only defaults. |
 
-#### Phase 4 — Database layer (Implement_Feature_Batches.md Phase 9; Implementation_Audit_Checklist.md Sprint 1)
+#### Phase 4 — Database layer (PR #3 checkpoint 3: Implement_Feature_Batches.md Phase 9; the duplicate Implementation_Audit_Checklist.md Sprint 1 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -200,7 +216,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `alembic upgrade head && alembic downgrade base && alembic upgrade head` from the repository root (`alembic.ini` is at the root, TRD 15 DEP-024; Alembic connects with `DATABASE_MIGRATION_URL` as `echowell_migrator`); `pytest tests/unit tests/integration -q -k "db or model or repository"` |
 | Pitfalls | The roles `echowell_migrator`, `echowell_app`, `echowell_readonly` exist from the Phase 3 provisioning script (D-72, D-90); the migrations grant the privileges of D-49: the app role has no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes` and no SELECT on `evaluation_ground_truth`; the app never connects as the migrator. All timestamps `timestamptz` in UTC; local dates are derived, not stored as text. Seed data uses study IDs only. Do not implement APIs. |
 
-#### Phase 5 — Backend API (Implement_Feature_Batches.md Phase 10; Implementation_Audit_Checklist.md Sprint 2)
+#### Phase 5 — Backend API (PR #3 checkpoint 4: Implement_Feature_Batches.md Phase 10; the duplicate Implementation_Audit_Checklist.md Sprint 2 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -211,7 +227,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/integration -q`; `python -m backend.cli export-openapi > /tmp/openapi.json && diff -u docs/api_reference/openapi.json /tmp/openapi.json` (the CI form, TRD 16 CIC-018; D-89); `curl -fsS http://localhost:8000/api/v1/health` |
 | Pitfalls | Residents are addressed by `resident_code`, not UUID (DSC-11). Saving a review or snoozing never resets the tally or closes the alarm (D-03, D-35, D-37). Never log request bodies containing feature values at INFO level with resident context beyond study IDs. |
 
-#### Phase 6 — Analytics engine (Implement_Feature_Batches.md Phase 11; Implementation_Audit_Checklist.md Sprint 3)
+#### Phase 6 — Analytics engine (PR #3 checkpoint 5: Implement_Feature_Batches.md Phase 11; the duplicate Implementation_Audit_Checklist.md Sprint 3 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -222,7 +238,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/unit -q`; `pytest tests/integration -q -k pipeline`; `python -m backend.jobs.nightly_run` (exits without running outside the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL`, 02:xx by default, or when that night already ran) |
 | Pitfalls | See 4.8 — all of them apply here. |
 
-#### Phase 7 — R01–R10 validation (Implement_Feature_Batches.md Phase 12; Implementation_Audit_Checklist.md Sprint 4)
+#### Phase 7 — R01–R10 validation (PR #3 checkpoint 6: Implement_Feature_Batches.md Phase 12; the duplicate Implementation_Audit_Checklist.md Sprint 4 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -233,7 +249,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `pytest tests/validation -q` |
 | Pitfalls | The workbook is read only by tests and the `evaluation_ground_truth` loader (AGT-007, AGT-057); comparison happens after the run. Do not edit expected values (AGT-008). Read the CSV in file row order (arrival order). |
 
-#### Phase 8 — Frontend (Implement_Feature_Batches.md Phase 13; Implementation_Audit_Checklist.md Sprint 5)
+#### Phase 8 — Frontend (PR #3 checkpoint 7: Implement_Feature_Batches.md Phase 13; the duplicate Implementation_Audit_Checklist.md Sprint 5 is not run separately)
 
 | Item | Content |
 |---|---|
@@ -244,7 +260,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `cd frontend && npm run lint && npm run build && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium` (the `@isolated` scenarios run in CI via `npm run test:e2e:isolated`, TRD 16 `e2e.yml`, TRD 24 D-73) |
 | Pitfalls | Natural sort of resident codes; never display duplicates; dates shown in facility local time; footer "No audio is stored or played here — only extracted voice measurements." |
 
-#### Phase 9 — Deployment configuration (Implement_Feature_Batches.md Phase 14A)
+#### Phase 9 — Deployment configuration (PR #3 checkpoint 8: Implement_Feature_Batches.md Phase 14A)
 
 | Item | Content |
 |---|---|
@@ -255,7 +271,7 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | `docker compose config`; `docker compose up -d && pytest -q` |
 | Pitfalls | Do not configure real data sources or real-device API keys (AGT-014 hard rule). Secrets only as platform or GitHub Actions secrets. |
 
-#### Phase 10 — Deploy (Implement_Feature_Batches.md Phase 14B)
+#### Phase 10 — Deploy (PR #4: Implement_Feature_Batches.md Phase 14B plus the manual Netlify, Railway and Neon setup of `specs/backlog/DEPLOYMENT_CHECKLIST.md`; runs after PR #3 is merged)
 
 | Item | Content |
 |---|---|
@@ -266,24 +282,24 @@ Each phase = one batch = one PR. Workflow per batch: agent works on branch `feat
 | Commands | migrations run only as the Railway pre-deploy command `alembic upgrade head` (from the repository root, TRD 15 DEP-040, D-58; on AWS the one-off migration task), never by hand against the target; `curl -fsS "$BACKEND_URL/api/v1/health"`; `curl -fsSI "$FRONTEND_URL/residents"` |
 | Pitfalls | Do not change requirements or application logic during deployment except to fix a deployment-specific defect, and report any such change. Never set `PIPELINE_PROFILE=test_v0_1` on production (AGT-015); the seeded R01–R10 demo data uses staging. If cloud is not ready by 5 Nov 2026, the demo uses the local docker-compose server (RSK-12). |
 
-#### Phase 11 — Audits (Implement_Feature_Batches.md Phase 15; Implementation_Audit_Checklist.md Sprint 6; Generate_Documentation_Audit_Prompt.md)
+#### Phase 11 — Audits (PR #3 checkpoint 9, the last: Implement_Feature_Batches.md Phase 15; the duplicate Implementation_Audit_Checklist.md Sprint 6 is not run separately, and the documentation-audit checks of Generate_Documentation_Audit_Prompt.md (run in PR #2) are refreshed within this checkpoint through FEAT-091)
 
 | Item | Content |
 |---|---|
 | Inputs | specs/TRD/, specs/backlog/, docs/design/, source code, test results, deployment configuration |
 | Outputs | `docs/reports/FINAL_IMPLEMENTATION_AUDIT.md` (ends "READY FOR DEMO" or "NOT READY FOR DEMO" with justification), `docs/reports/TRD_Implementation_Audit.md` (pass/fail per requirement), `docs/reports/DOCUMENTATION_COMPLETENESS_AUDIT.md`, `docs/reports/UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` |
-| Definition of done | Every TRD requirement has pass/fail with evidence; every AC has a linked test; grep checks of AGT-004, AGT-007, AGT-018, AGT-019 recorded; open OQs listed with interim decisions |
+| Definition of done | Every TRD requirement has pass/fail with evidence; every AC has a linked test; grep checks of AGT-004, AGT-007, AGT-018, AGT-019 recorded; open OQs listed with interim decisions. Because this phase runs in PR #3 before deployment (PR #4, D-100), checks that need a deployment (for example "Deployment is operational", the DEP-080/DEP-081 smoke tests, HTTPS, HSTS and TLS on the hosted origins) are recorded as "pending PR #4", not as failures, and are re-checked and the audit verdict updated at the end of PR #4 |
 | Required tests | Full suite: `pytest -q`; frontend tests and E2E |
 | Commands | `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium`; grep commands from 4.3 |
 | Pitfalls | An audit does not modify code; it records findings. |
 
-#### Phase 12 — Backlog (Generate_Backlog.md Prompts 1–3; Implementation_Audit_Checklist.md Sprint 7)
+#### Phase 12 — Backlog (PR #2: Generate_Backlog.md Prompts 1–3, then Generate_Documentation_Audit_Prompt.md; Implementation_Audit_Checklist.md Sprint 7 is the same work and is not run separately)
 
 | Item | Content |
 |---|---|
 | Inputs | specs/TRD/, specs/business-requirements/, specs/data-samples/, specs/algorithm/, specs/architecture/, audit reports |
 | Outputs | `specs/backlog/BACKLOG.md` (satisfies the checklist's `Project_Backlog.md`), `specs/backlog/features/FEAT-NNN-<Name>.md`, `specs/backlog/IMPLEMENTATION_ROADMAP.md`; reconciled `DEPLOYMENT_CHECKLIST.md` and `MVP_READINESS_CHECKLIST.md` |
-| Definition of done | Every FR in TRD 02 maps to at least one FEAT; post-MVP and future-research features include the open items of TRD 24 (EWMA OQ-18, facility norm OQ-08, offset estimation OQ-09, speaker verification OQ-14, AWS migration OQ-07); completion status reflects audit results: the completion tracking of `BACKLOG.md` is refreshed at the end of each implementation PR (Phases 2–11, in that PR) and reconciled with the Phase 11 audit reports when Phase 12 is re-run after Phase 11 (D-95) |
+| Definition of done | Every FR in TRD 02 maps to at least one FEAT; post-MVP and future-research features include the open items of TRD 24 (EWMA OQ-18, facility norm OQ-08, offset estimation OQ-09, speaker verification OQ-14, AWS migration OQ-07); completion status reflects audit results: the completion tracking of `BACKLOG.md` is refreshed at the end of each PR #3 checkpoint (Phases 2–9 and 11), reconciled with the Phase 11 audit reports at the end of PR #3, and refreshed again at the end of PR #4 and PR #5, inside those PRs (D-95, D-100) |
 | Required tests | None |
 | Commands | `grep -rnE "T[B]D\|T[O]DO\|\[p[l]aceholder\]" specs/backlog` (must return nothing) |
 | Pitfalls | Do not invent requirements that contradict the TRDs; new questions go to TRD 24. |
@@ -327,7 +343,7 @@ ASM-01 (America/Chicago), ASM-04 (baseline profiles; production 30, test 16 for 
 ## 6. Dependencies
 
 - TRDs 00–24 completed and validated (Phase 1).
-- Algorithm lead available to review each batch PR.
+- Algorithm lead available to review each PR #3 checkpoint and each PR of the PR plan (D-100).
 - GitHub Actions, Netlify, Railway and Neon accounts for Phases 9–10 (interim stack, synthetic and test data only; go-live waits for AWS approval, D-28).
 - Answers to OQs affect only the parts named in TRD 24; no phase is blocked by an open OQ because each has an interim decision.
 
@@ -335,17 +351,17 @@ ASM-01 (America/Chicago), ASM-04 (baseline profiles; production 30, test 16 for 
 
 | ID | Criterion |
 |---|---|
-| AC-AGT-01 | Each of Phases 1–11 has exactly one merged PR approved by the algorithm lead, in the TRD 25 §4.5 order; Phase 12 runs before Phase 2 (AGT-031, PR #2) and is re-run after Phase 11 (D-95) as one further approved PR on branch `docs/backlog-reconcile`. |
+| AC-AGT-01 | PR #1 (Phase 1) and PR #2 (Phase 12) are merged; PR #3 shows one review checkpoint per prompt of `Implement_Feature_Batches.md` Phases 7, 8, 9, 10, 11, 12, 13, 14A and 15 (TRD 25 Phases 2–9 and 11), in that order, each approved by the algorithm lead before the next prompt ran; PR #4 (Phase 10) and PR #5 (test cases) follow, each approved; no other build PR and no prompt outside `specs/prompts/` and SRC-20 was used (D-100). |
 | AC-AGT-02 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns no matches, and `grep -rn "evaluation_ground_truth" analytics` returns no matches. |
 | AC-AGT-03 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches. |
-| AC-AGT-04 | `pytest tests/validation -q` passes with zero failures on `staging` (where phase PRs merge, GIT-012) before Phase 8 starts and after Phase 10. |
+| AC-AGT-04 | `pytest tests/validation -q` passes with zero failures on the PR #3 branch head before the Phase 8 checkpoint starts, and on the `main` commit deployed in PR #4 (Phase 10). |
 | AC-AGT-05 | Backend started with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1`, or with `APP_ENV=production` and `PIPELINE_AS_OF` set, exits with a non-zero status and a logged error. |
 | AC-AGT-06 | All existing skeleton files listed in TRD 01 still exist at their original paths after Phase 6. |
 | AC-AGT-07 | Every report named in section 4.6 exists at its stated path. |
 | AC-AGT-08 | Every new OQ or D introduced during the build appears in TRD 24 with all required cells. |
 | AC-AGT-09 | No file in the repository references the removed preprint PDF path. |
 | AC-AGT-10 | Seed scripts, upload jobs and deploy workflows for staging and production reference only synthetic or test data (specs/data-samples/EchoWell_pipeline_test_input_v0_1.csv, tests/fixtures/), and DEPLOYMENT_REPORT.md states no real resident data was loaded. |
-| AC-AGT-11 | `grep -n "psycopg2" backend/requirements.txt` returns no matches and the output of `python -m backend.cli export-openapi` equals `docs/api_reference/openapi.json` on `staging` (D-89). |
+| AC-AGT-11 | `grep -n "psycopg2" backend/requirements.txt` returns no matches and the output of `python -m backend.cli export-openapi` equals `docs/api_reference/openapi.json` on `main` (D-89). |
 
 ## 8. Implementation Notes
 
@@ -376,3 +392,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.10 | 19 Oct 2026 | Audit checklist split into TRD audit (PR #1) and Implementation_Audit_Checklist.md (PR #3); prompts corrected to specs/TRD (OQ-22) | — |
 | 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (Phase 3 outputs (D-90, D-94); Phase 4 seed scope (D-93) and non-local (D-88); Phase 5 export-openapi (D-89), aggregates and leaning_most (D-92), interim executor (D-91); Phase 6 outputs; Phase 9 ci.yml; Phase 12 tracking (D-95); AGT-059, AGT-061, AC-AGT-11) | — |
 | 0.12 | 20 Oct 2026 | Documentation audit fixes (DA-09: AC-AGT-01 allows Phase 12 before Phase 2 and its re-run after Phase 11; DA-11: Phase 5 router list adds `config.py`) | — |
+| 0.13 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

@@ -150,12 +150,12 @@ None at runtime. The Phase 3 batch report lists requirement IDs, commands and re
 
 - All FEAT-002 acceptance criteria pass locally.
 - No business logic is present in any created module (TRD 25 §4.6 Phase 3 DoD).
-- Batch report lists IDs implemented and command results (AGT-022); the PR is delivered together with the other Phase 3 features (FEAT-003..FEAT-007) as one PR (AGT-013).
+- Batch report lists IDs implemented and command results (AGT-022); delivered together with the other Phase 3 features (FEAT-003..FEAT-007) as one review checkpoint of PR #3 (AGT-013).
 
 ## Implementation Notes
 
 - SQLAlchemy URLs use the `postgresql+psycopg://` scheme (TRD 01 §8).
 - Do not create `pytest.ini`; pytest configuration lives only in `pyproject.toml` (TST-006, delivered by FEAT-005).
 - Give each new module a docstring naming the TRD that owns it (NFR-085) so later agents know where to look.
-- Keep the PR under about 1,500 changed lines excluding generated files (GIT-034); lockfiles do not count.
+- Keep the checkpoint under about 1,500 changed lines excluding generated files (GIT-034); lockfiles do not count.
 - The current `.gitignore` (`__pycache__/`, `.env`, `node_modules/`) is replaced, not appended to.

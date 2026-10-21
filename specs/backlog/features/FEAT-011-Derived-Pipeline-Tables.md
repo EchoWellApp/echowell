@@ -155,7 +155,7 @@ None from the tables. Run lifecycle logs (`pipeline_run_started`, `pipeline_run_
 ## Definition of Done
 
 - All FEAT-011 acceptance criteria pass; `database/schema.sql` regenerated; `alembic check` clean; migration round-trip passes (TST-040).
-- JSON shape models live in `backend/schemas/` and are reused by FEAT-053; delivered in the Phase 4 PR.
+- JSON shape models live in `backend/schemas/` and are reused by FEAT-053; delivered in the Phase 4 checkpoint of PR #3.
 
 ## Implementation Notes
 

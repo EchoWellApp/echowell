@@ -159,7 +159,7 @@ None computed here. The config snapshot handed to the executor is the input of `
 ## Definition of Done
 
 - All FEAT-024 acceptance criteria pass; E-20, E-21, E-31 appear in the OpenAPI document with the TRD 19 schemas.
-- No other module creates `pipeline_runs` rows (grep check); delivered in the Phase 5 PR, satisfying TRD 25 §4.6 Phase 5 "pipeline invocation goes through one service interface that Phase 6 fills".
+- No other module creates `pipeline_runs` rows (grep check); delivered in the Phase 5 checkpoint of PR #3, satisfying TRD 25 §4.6 Phase 5 "pipeline invocation goes through one service interface that Phase 6 fills".
 
 ## Implementation Notes
 

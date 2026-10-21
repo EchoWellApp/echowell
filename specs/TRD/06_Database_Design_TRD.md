@@ -1,6 +1,6 @@
 # 06 Database Design TRD
 
-Document ID: ECHOWELL-TRD-06 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-06 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -472,7 +472,7 @@ sequenceDiagram
 | DB-026 | Alembic migrations under `backend/alembic/versions/` shall be the only mechanism that changes the schema of staging and production; `database/schema.sql` shall be a generated reference (TRD 20 PGS-016, PGS-017). | Must | SRC-01, contract §3 | Inspection; Test |
 | DB-027 | Migration files shall be named `NNNN_<snake_case_summary>.py` with a four-digit sequential revision id (`0001`, `0002`, …) and a linear history (exactly one head). | Must | TRD 18 | Test (`alembic heads` returns one revision) |
 | DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall use `DATABASE_MIGRATION_URL`, which TRD 21 sets in every environment; locally and in CI it is `echowell_migrator_login` created by `database/roles/provision_login_roles.sql`), before the new backend version receives traffic (Railway pre-deploy command `alembic upgrade head`, never the web start command; TRD 15 DEP-040), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
-| DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments, with one exception: on staging the D-71 `reset-test-db` (`alembic downgrade base` then `alembic upgrade head`) may run, only from the deploy-staging GitHub Actions re-seed step (TRD 16 §4.4) and only with PIPELINE_PROFILE=`test_v0_1`; it is never executed in production (TRD 24 D-71). No downgrade drops the extensions (TRD 24 D-72). Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
+| DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments, with one exception: on staging the D-71 `reset-test-db` (`alembic downgrade base` then `alembic upgrade head`) may run, only from the re-seed step of the `deploy-staging.yml` GitHub Actions workflow that runs after merges to `main` (TRD 16 §4.4), only against the staging database and only with PIPELINE_PROFILE=`test_v0_1`; it is never executed in production (TRD 24 D-71). No downgrade drops the extensions (TRD 24 D-72). Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
 | DB-030 | No migration shall UPDATE or DELETE rows of `raw_sessions` or `audit_logs`; a schema change to `raw_sessions` shall be additive (new nullable column or new CHECK validated `NOT VALID` then `VALIDATE`). | Must | BR-02, SRC-02 | Inspection; Test (migration test greps for UPDATE/DELETE on those tables) |
 | DB-031 | Before every production migration the deploy job shall create a Neon branch named `pre-migration-<git sha>` (on AWS RDS: a manual snapshot with the same name). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
 
@@ -694,3 +694,4 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-11) | — |
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-04) | — |
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (DB-016 baseline_mismatch; DB-051 refers to DEP-097 (D-77); DB-053 non-local (D-88); DB-066 in_use_since (D-82)) | — |
+| 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |

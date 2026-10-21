@@ -154,7 +154,7 @@ None directly; writes to these tables are audited by the CLI and endpoint featur
 
 - All FEAT-009 acceptance criteria pass; migrations upgrade and downgrade cleanly (TST-040).
 - `database/schema.sql` regenerated (PGS-017); models and repositories have docstrings citing TRD IDs (NFR-085).
-- Delivered in the Phase 4 PR (AGT-013).
+- Delivered in the Phase 4 checkpoint of PR #3 (AGT-013).
 
 ## Implementation Notes
 
