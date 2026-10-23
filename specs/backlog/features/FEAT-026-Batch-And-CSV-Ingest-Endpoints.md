@@ -101,7 +101,7 @@ Give Team 1 devices (API key) and study admins (dashboard upload) a way to submi
 4. The service updates the batch counts, writes the `ingest.batch.received` audit row and `api_keys.last_used_at`, determines the scope (residents with a first arrival plus residents co-assigned to their devices on the record's local date) and, when the scope is not empty, creates the `pipeline_runs` row through the FEAT-024 interface; the transaction commits.
 5. The router registers `services.pipeline_runner.run(scope, trigger="ingest", ...)` with `BackgroundTasks`, returns 202, and logs `ingest_batch_completed`.
 6. The background task runs the pipeline after the response; its results become visible through the read endpoints once the run is `succeeded` (`meta.as_of`).
-7. `GET /ingest/batches/{id}` loads the batch, its rejections and the linked run id through the ingestion repository and maps them to `IngestBatch`.
+7. `GET /ingest/batches/{id}` loads the batch, its rejections and the linked run id through `backend/repositories/ingest_repository.py` (docs/design/Database_ERD.md §5) and maps them to `IngestBatch`.
 
 ## Dependencies
 

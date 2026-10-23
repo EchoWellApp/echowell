@@ -131,7 +131,7 @@ None at runtime. The batch report lists documents created and validation results
 ## Definition of Done
 
 - All FEAT-087 acceptance criteria pass; Phase 9 definition of done (TRD 25 §4.6) met in full (AGT-033).
-- Phase 9 checkpoint of PR #3 approved by the algorithm lead (AGT-013).
+- Phase 9 checkpoint PR of Block 3 approved by the algorithm lead (AGT-013).
 
 ## Implementation Notes
 

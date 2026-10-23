@@ -1,6 +1,6 @@
 # EchoWell Repository Structure
 
-Document: docs/design/Repository_Structure.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Repository_Structure.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
@@ -17,6 +17,7 @@ echowell/                       single GitHub monorepo EchoWellApp/echowell (ARC
 ├── frontend/                   Next.js 14.2 App Router (TRD 04 §4.2)
 ├── backend/                    FastAPI application (TRD 05 §4.1)
 ├── analytics/                  pure Python engine (TRD 07 §4.2)
+├── scripts/                    run_engine.py (ANL-007), dump_schema.sh (PGS-017)
 ├── database/                   schema.sql (generated), seeds/, roles/provision_login_roles.sql
 ├── tests/                      unit/, integration/, contract/, security/, validation/, performance/, smoke/, fixtures/
 ├── docs/                       architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
@@ -27,7 +28,7 @@ echowell/                       single GitHub monorepo EchoWellApp/echowell (ARC
 └── .editorconfig  .gitignore  .gitattributes  README.md  LICENSE
 ```
 
-New top-level directories require a change to TRD 18 and TRD 01 in the same PR (GIT-002). TRD 07 ANL-007 (`scripts/run_engine.py`) and TRD 20 PGS-017 (`scripts/dump_schema.sh`) name a root `scripts/` directory that the TRD 18 §4.1 and TRD 01 §4.6 layouts do not list; this design records the conflict as reviewer question Q-4 and does not decide it (AGT-009).
+New top-level directories require a change to TRD 18 and TRD 01 in the same PR (GIT-002). The root `scripts/` directory of TRD 07 ANL-007 (`scripts/run_engine.py`) and TRD 20 PGS-017 (`scripts/dump_schema.sh`) is now listed in the TRD 18 §4.1 and TRD 01 §4.6 layouts (Q-4 resolved in PR #3 review).
 
 ## 3. Backend (`backend/`)
 
@@ -57,11 +58,11 @@ backend/
 ├── services/
 │   ├── ingestion.py, validation.py, baseline.py, cusum.py, morning_adjustment.py,
 │   │   scoring.py, speaker_screen.py                                                           [skeletons, kept]
-│   └── pipeline_runner.py, config_service.py, resident_service.py, checkin_service.py, feature_service.py,
+│   └── pipeline_runner.py, health_service.py, config_service.py, resident_service.py, checkin_service.py, feature_service.py,
 │       export_service.py, alert_service.py, review_service.py, data_alert_service.py, note_service.py,
 │       device_service.py, analytics_service.py, analytics_summary.py, admission_service.py,
 │       auth_service.py, user_service.py, audit_service.py
-├── repositories/               one module per aggregate (docs/design/Database_ERD.md §5)
+├── repositories/               one module per aggregate; names fixed by docs/design/Database_ERD.md §5
 ├── models/
 │   ├── __init__.py             declarative Base, 15 Python enums (DME-003)
 │   ├── alarm.py (Alert, AlertReview, DataAlert), baseline.py, resident.py, score.py (Score, CusumState),
@@ -82,7 +83,7 @@ analytics/
     aggregates.py, pipeline.py                                                                   [created, TRD 07 §8]
 ```
 
-Exactly these modules; no others (ANL-004). The engine command line `scripts/run_engine.py` sits outside the package (ANL-007, see Q-4).
+Exactly these modules; no others (ANL-004). The engine command line `scripts/run_engine.py` sits outside the package, in the root `scripts/` directory (ANL-007, GIT-002).
 
 ## 5. Frontend (`frontend/`)
 
@@ -182,7 +183,7 @@ flowchart TB
 | Services never import `fastapi` | import-linter | API-004 |
 | `analytics/` imports nothing from `backend/`, `tests/`, database, HTTP, clock or random libraries | `tests/unit/backend/test_import_boundary.py`, AC-ARC-01, AC-ANL-04 | ARC-041, ANL-002 |
 | Only `pipeline_runner.py` calls `run_pipeline`; read services call only `build_analytics_summary` and `leaning_most` | inspection | API-006, ANL-033 |
-| No module in `analytics/` or `backend/` reads the answer-key workbook; only `analytics_summary.py` references `evaluation_ground_truth` | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`, `grep -rn "evaluation_ground_truth" analytics` return nothing | AGT-007, AGT-057, AC-AGT-02 |
+| No module in `analytics/` or `backend/` reads the answer-key workbook; only `analytics_summary.py` references `evaluation_ground_truth`, through its own read-only engine (the one exception to the repositories-only rule, API-005, API-136) | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`, `grep -rn "evaluation_ground_truth" analytics` return nothing | AGT-007, AGT-057, AC-AGT-02 |
 | Only `backend/core/db.py` builds engines; only the migrator path reads `DATABASE_MIGRATION_URL` | `tests/unit/backend/core/test_migration_url_boundary.py` | API-125, D-58 |
 | The frontend reaches the backend only through `services/api.ts` and HTTP | ESLint and inspection | FE-011, ARC-014 |
 | Frontend types are generated from the committed contract | CI diff | FE-012, OAS-014 |
@@ -198,6 +199,6 @@ flowchart TB
 
 ## 10. Reviewer questions raised by this document
 
-| ID | Question |
+| ID | Question and resolution |
 |---|---|
-| Q-4 | Should root `scripts/` (named by ANL-007 and PGS-017) be added to the TRD 18 §4.1 and TRD 01 §4.6 layouts (GIT-002), or should the two scripts live elsewhere? This design lists them where the TRDs place them. |
+| Q-4 | Should root `scripts/` (named by ANL-007 and PGS-017) be added to the TRD 18 §4.1 and TRD 01 §4.6 layouts (GIT-002)? Resolved (PR #3 review, 23 Oct 2026): yes; both layouts and §2 above list `scripts/`. |

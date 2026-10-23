@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -317,7 +317,7 @@ Semantics: the tally is the one-sided upper CUSUM of the composite score of each
 | UX-124 | "Save note" shall be disabled while the note is empty (after trimming) or longer than 2000 characters; when the user attempts to save an empty note the message "Write a short note before saving." shall appear under the textarea and be associated via `aria-describedby`. | Must | contract §9 | T |
 | UX-125 | The open-question note (13px, secondary) shall read "Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are." | Must | SRC-10, OQ-05 | T |
 | UX-126 | After a review is saved, the status badge, chart and alarm wording shall remain as returned by the API (alarm unchanged in v0.1). | Must | OQ-05 | T |
-| UX-127 | When the change alarm has at least one saved review, a line under the heading shall read "Reviewed by <display name>, <Mon D, h:mm AM/PM> · <outcome label>. The alarm stays on (open question OQ-05)." using the latest review. | Must | BR-13, OQ-05, contract §19 | T |
+| UX-127 | (Withdrawn from Resident detail by TRD 24 D-102: the approved wireframe SRC-10 shows no latest-review line; the reviewer name and outcome of an alarm's reviews are shown in "Previous reviews" on `/alerts`, UX-320.) The "Staff review" section shall not show a "Reviewed by <display name> … <outcome label>" line, and Resident detail shall not request `GET /api/v1/alerts/{id}/reviews`. | Must | SRC-10, D-102 | T |
 | UX-128 | The note text shall be stored and shown exactly as typed (plain text, line breaks preserved); no formatting or links shall be rendered from it. | Must | BR-16 | T |
 | UX-129 | The UI shall not offer editing or deleting of saved notes (notes are append-only). | Must | contract §9 | I |
 | UX-130 | After a successful "Save note", a polite status message shall read "Note saved."; the textarea shall be cleared and the note type kept. | Must | BR-13 | T |
@@ -851,7 +851,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | ID | Effect on the UI |
 |---|---|
 | OQ-03 | Feature names are placeholders; caption UX-108 stays until closed. |
-| OQ-05 | Review does not reset the tally or alarm in v0.1; note UX-125 and UX-127 stay until closed. |
+| OQ-05 | Review does not reset the tally or alarm in v0.1; note UX-125 stays until closed (UX-127 withdrawn, D-102). |
 | OQ-06 | No notification UI beyond the dashboard. |
 | OQ-08 | Facility norm definition, minimum check-ins and N days for the admissions arm; banner line 2 (UX-181) stays until closed. |
 | OQ-12 | Final clinical wording; marker UX-073 stays until closed. |
@@ -872,3 +872,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", sh
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (UX-018 count fallback (D-97); UX-212 profile select and UX-219 nightly banner (D-96); UX-373 false alarm (D-81); device_silent titles; (was) rule; AC-UX-09 widths (D-78)) | — |
 | 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-10: UX-186, UX-192 and §8 note count usable check-ins, not days) | — |
+| 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-6): UX-127 latest-review line withdrawn from Resident detail, which follows the SRC-10 wireframe (D-102); §9 OQ-05 note | — |

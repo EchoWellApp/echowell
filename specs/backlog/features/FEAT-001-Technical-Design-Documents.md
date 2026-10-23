@@ -42,7 +42,7 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 ## Out of Scope
 
 - Any code, configuration, migration or test (Phase 3 onward; FEAT-002 and later).
-- Changes to any TRD (TRDs are the source of truth, AGT-001; questions go to TRD 24 under AGT-009).
+- Changes to any TRD by the Phase 7 prompt run (TRDs are the source of truth, AGT-001; questions go to TRD 24 under AGT-009). Corrections that the reviewer requests in the checkpoint review are applied in the same checkpoint PR (PR #3 review round 1, Q-9).
 - An EWMA chart or any page beyond the seven routes of D-23 (OQ-18 deferred; FEAT-096 is the Future research item).
 - The backlog artefacts under `specs/backlog/` (Phase 12).
 
@@ -76,7 +76,7 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 
 ## Data Flow
 
-TRDs and wireframes → author reads them in the §4.4 order → mapping tables (endpoint → router → service; table → writer/reader; route → endpoints) and Mermaid diagrams are written into `docs/design/` → `grep` hygiene command run → reviewer checks the mappings against TRD 19 §4.3, TRD 20 §4.6 and TRD 04 §4.3 → merged as the Phase 2 checkpoint of PR #3. Later phases read `docs/design/` as an input (TRD 25 §4.6 Phase 3 Inputs).
+TRDs and wireframes → author reads them in the §4.4 order → mapping tables (endpoint → router → service; table → writer/reader; route → endpoints) and Mermaid diagrams are written into `docs/design/` → `grep` hygiene command run → reviewer checks the mappings against TRD 19 §4.3, TRD 20 §4.6 and TRD 04 §4.3 → merged as the Phase 2 checkpoint PR of Block 3. Later phases read `docs/design/` as an input (TRD 25 §4.6 Phase 3 Inputs).
 
 ## Dependencies
 
@@ -132,13 +132,13 @@ None at runtime. The batch report records commands run and their results (AGT-02
 | FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. Verified by: Test (the test method of FE-020, applied to the condition stated in the criterion). | FE-020; D-23; OQ-18 |
 | FEAT-001-AC-05 | Mermaid diagrams exist for the ERD, the request flow, the pipeline stages and the page hierarchy, and `Repository_Structure.md` contains the repository dependency diagram. Verified by: Inspection (review of `Repository_Structure.md` against the cited requirements). | TRD 25 §4.6 Phase 2 Outputs and DoD |
 | FEAT-001-AC-06 | `grep -rnE "T[B]D\|T[O]DO" docs/design` exits with status 1 (no match). Verified by: Inspection (run the command in the criterion and check its output). | TRD 25 §4.6 Phase 2 Commands |
-| FEAT-001-AC-07 | No file outside `docs/design/` (and the batch report) is changed by this checkpoint of PR #3, and no TRD file is modified. Verified by: Inspection (the inspection method of AGT-001, applied to the condition stated in the criterion). | AGT-001; TRD 25 §4.6 Phase 2 |
+| FEAT-001-AC-07 | The Phase 7 prompt run changes no file outside `docs/design/` (and the batch report) and modifies no TRD file; TRD, backlog and TRD 24 corrections requested in the checkpoint review are made in the same checkpoint PR (GitHub PR #3, review round 1; D-101). Verified by: Inspection (the inspection method of AGT-001, applied to the condition stated in the criterion). | AGT-001; TRD 25 §4.6 Phase 2 |
 
 ## Definition of Done
 
 - All FEAT-001 acceptance criteria pass.
 - Every document cites TRD IDs and contradicts none (GIT-054); any open question is registered in TRD 24 (AGT-009).
-- Batch report written listing IDs elaborated, commands and results (AGT-022); checkpoint reviewed and approved on PR #3 by the algorithm lead (AGT-013) before the Phase 3 prompt runs (AGT-030).
+- Batch report written listing IDs elaborated, commands and results (AGT-022); checkpoint reviewed and approved on its own PR (GitHub PR #3) by the algorithm lead (AGT-013), and that PR merged to `main`, before the Phase 3 prompt runs (AGT-030, D-101).
 
 ## Implementation Notes
 

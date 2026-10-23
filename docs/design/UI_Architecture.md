@@ -1,6 +1,6 @@
 # EchoWell UI Architecture
 
-Document: docs/design/UI_Architecture.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7 "UI Design Requirements", TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/UI_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7 "UI Design Requirements", TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
@@ -24,7 +24,7 @@ Pages are exactly `/residents` (with `#devices`), `/residents/[residentCode]`, `
 | SRC-09 navigation "Residents · New admissions · Devices" | "Residents", "Alerts (<n>)", "Analytics" (admin, researcher), "New admissions", plus "Admin" for admins; no "Devices" link, the panel stays at `/residents#devices` | UX-013, UX-014, UX-016, FE-026, FE-028 |
 | SRC-09 subline "[Facility name]" | `meta.facility_name` (`facilities.name`) | UX-011, UX-012 |
 | SRC-09 row order R05 before R03, R02 | API "Alarms first" rule gives R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 | TRD 11 §4.13.2, API-071 |
-| SRC-10 staff review shows only a note box and "Mark as reviewed" | adds note type select, "Save note", character counter, previous notes; "Mark as reviewed" opens the alarm review dialog | UX-121..UX-138, D-35 |
+| SRC-10 staff review shows only a note box and "Mark as reviewed" | adds note type select, "Save note", character counter, previous notes; "Mark as reviewed" opens the alarm review dialog; no "Reviewed by" line, as in the wireframe (the wireframe wins here, UX-127 withdrawn) | UX-121..UX-138, D-35, D-102 |
 | SRC-10 chart caption "Bar heights drawn from the test answer key" | bars come from `GET /api/v1/scores`; caption "Set-aside, quarantined and missed days leave the tally unchanged." | UX-081, UX-088, AGT-007 |
 | SRC-11 "[n] of [N] days" | "<n> of <N> usable check-ins" | UX-186 |
 | SRC-18 subline "test data v0.1" | `<data source label>` from `meta` ("pipeline test data v0.1") | UX-017 |
@@ -405,12 +405,11 @@ Seven `FeatureCard`s in contract order with plain labels ("Quieter (loudness)", 
 |---|---|---|---|
 | Note form | "Type of note" (Observation, Action taken, Follow-up); textarea "Note (what staff saw or did)"; counter "<n> / 2000"; "Save note" disabled when empty or > 2000; "Write a short note before saving." | E-16 | UX-121..UX-124, FE-130, FE-132 |
 | Mark as reviewed | primary button, only with an alarm in the current epoch; opens `ReviewDialog` "Review alarm · <R> · alarm since <Mon D>" with the `/alerts` form | E-32, E-14 | UX-136..UX-138, FE-131 |
-| Latest review line | "Reviewed by <name>, <Mon D, h:mm AM/PM> · <outcome label>. The alarm stays on (open question OQ-05)." | E-28 (latest item) | UX-127 |
 | Open-question note | "Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are." | — | UX-125 |
 | Previous notes | newest first, "<Mon D, h:mm AM/PM> · <Type> · <display name>" and the text as typed; max 10 then "Show all notes (<count>)"; no edit or delete | E-15 | UX-128, UX-129, UX-134, UX-135 |
 | Check-in log | newest date first; same-date order alarm_on, watching_started, baseline_complete, baseline_restarted, quarantined, set_aside, device_silent, missed; line texts of TRD 11 §4.5.6; last 30 days then "Show earlier entries" (E-10 `from`/`to`); legend line; no usable or duplicate lines; quarantine shows only "possible other speaker" | E-10 | UX-140..UX-150, FE-101 |
 
-TRD 04 §4.16 lists no `GET /alerts/{id}/reviews` call for `StaffReviewForm`, but the UX-127 line needs the reviewer name and outcome, which only E-28 returns (FEAT-071 also uses E-28); recorded as reviewer question Q-6 in docs/reports/CHECKPOINT_1_DESIGN_DOCS.md.
+The page follows the SRC-10 wireframe (`specs/UI-wireframe/Resident.dc.html`): "Staff review" has the note form, "Mark as reviewed" and "Previous notes" but no "Reviewed by <name> … <outcome>" line, so Resident detail makes no E-28 call, as TRD 04 §4.6.2 and §4.16 list (Q-6 resolved in PR #3 review; UX-127 withdrawn, D-102). Reviewer names and outcomes are shown in "Previous reviews" on `/alerts` (E-28, UX-320, FEAT-070).
 
 ## 8. Screen design: New admissions (`/admissions`, SRC-11)
 
@@ -488,7 +487,7 @@ Every component of TRD 04 §4.8 (plus the lib-level `AuthGuard` and `AuthProvide
 | `FeatureCard` | detail | E-11 | `scored_features[]` (`label`, `feature_key`, `composite_sign`, `points[].z`) | processed_sessions, raw_sessions, baselines, scores | UX-100..UX-105 |
 | `Sparkline` | detail | E-11 | `points[].z` × `composite_sign` | scores | UX-102, UX-103, FE-098 |
 | `OtherMeasurementsCard` | detail | E-11 | `stored_feature_keys` (12) | raw_sessions (stored columns), processed_sessions | UX-106, UX-107 |
-| `StaffReviewForm` | detail | E-16 POST notes; E-09 `open_alert_id`; E-13 `resident_code`; E-28 (latest review line) | `StaffNoteCreate`; `AlertReview` latest | staff_notes, alerts, alert_reviews, users, audit_logs | UX-120..UX-133, FE-130..FE-135 |
+| `StaffReviewForm` | detail | E-16 POST notes; E-09 `open_alert_id`; E-13 `resident_code` (no E-28, D-102) | `StaffNoteCreate` | staff_notes, alerts, alert_reviews, users, audit_logs | UX-120..UX-133, FE-130..FE-135 |
 | `NotesList` | detail | E-15 | `StaffNote` items | staff_notes, users | UX-134, UX-135 |
 | `ReviewDialog` | detail | E-32, E-14 | `UiConfig`, `AlertReviewCreate`, `AlertReview` | config_parameters, alert_reviews, alerts, data_alerts, audit_logs | UX-136..UX-138, FE-131 |
 | `CheckinLog` | detail | E-10 | `CheckinEvent` items (`event_type`, `detail`, `restart_cause`, `from_value`, `to_value`) | processed_sessions, day_ledger, epochs, baselines, alerts, scores | UX-140..UX-150, FE-101 |

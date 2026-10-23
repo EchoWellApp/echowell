@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Provide the single audit writer, `backend/services/audit.py` (`audit_service`), that every endpoint and CLI command calls to record a security- or research-relevant action: exactly one `audit_logs` row, written in the same transaction as the change, with actor, action from the fixed TRD 12 §4.12 vocabulary, entity, sanitised details, client IP and request ID, plus one paired INFO `audit_event` log line. Centralising it guarantees the vocabulary, the no-secrets rule and the transactional guarantee are enforced in one place.
+Provide the single audit writer, `backend/services/audit_service.py` (`audit_service`), that every endpoint and CLI command calls to record a security- or research-relevant action: exactly one `audit_logs` row, written in the same transaction as the change, with actor, action from the fixed TRD 12 §4.12 vocabulary, entity, sanitised details, client IP and request ID, plus one paired INFO `audit_event` log line. Centralising it guarantees the vocabulary, the no-secrets rule and the transactional guarantee are enforced in one place.
 
 ## Business Context
 
@@ -31,9 +31,9 @@ Provide the single audit writer, `backend/services/audit.py` (`audit_service`), 
 
 ## Scope
 
-- `backend/services/audit.py` with:
+- `backend/services/audit_service.py` with:
   - `AuditAction` — a closed enumeration of exactly the 24 actions of TRD 12 §4.12: `auth.login.succeeded`, `auth.login.failed`, `auth.logout`, `ingest.batch.received`, `note.created`, `alert.reviewed`, `alert.snoozed`, `export.csv`, `pipeline.run.started`, `pipeline.run.finished`, `config.changed`, `user.created`, `user.updated`, `api_key.created`, `api_key.revoked`, `access.denied`, `alert.closed`, `data_alert.resolved`, `resident.cohort_changed`, `resident.withdrawn`, `resident.purged`, `roster.loaded`, `seed.reset`, `pipeline.rebuild`.
-  - `record(session, *, action, actor_type, actor_id, entity_type, entity_id, details, ip=None, request_id=None)` inserting one row through the audit repository (FEAT-012) without committing, so it joins the caller's transaction.
+  - `record(session, *, action, actor_type, actor_id, entity_type, entity_id, details, ip=None, request_id=None)` inserting one row through the audit repository `audit_repository.py` (FEAT-012; module names per docs/design/Database_ERD.md §5) without committing, so it joins the caller's transaction.
   - A details sanitiser that rejects (raises) any key or value that is a password, password hash, token, API key, database URL, ingest request body or feature value, and permits only the documented detail keys per action.
   - A helper building the CLI actor: `actor_type='system'`, `details.operator` = OS user name running the CLI.
   - After a successful insert, one INFO log record `audit_event` with `action`, `entity_type`, `entity_id` (no `details`).
@@ -137,12 +137,12 @@ None.
 | FEAT-015-AC-04 | `record` with details `{"password": "x"}` or `{"loudness_dbfs": -30.1}` raises and writes nothing. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | SEC-104 |
 | FEAT-015-AC-05 | A CLI-originated call stores `actor_type = 'system'` and `details.operator` equal to the OS user name. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | SEC-103 |
 | FEAT-015-AC-06 | Each successful call emits exactly one INFO record with message/event `audit_event` and fields `action`, `entity_type`, `entity_id`, and no `details` field. Verified by: Unit (`tests/unit/backend/services/test_audit.py`). | LOG-092 |
-| FEAT-015-AC-07 | `grep -rn "audit_logs" backend --include=*.py` shows writes only in the audit repository and `backend/services/audit.py`, and no UPDATE/DELETE statement on `audit_logs`. Verified by: Inspection (run the command in the criterion and check its output). | SEC-102, FR-252 |
+| FEAT-015-AC-07 | `grep -rn "audit_logs" backend --include=*.py` shows writes only in `backend/repositories/audit_repository.py` and `backend/services/audit_service.py`, and no UPDATE/DELETE statement on `audit_logs`. Verified by: Inspection (run the command in the criterion and check its output). | SEC-102, FR-252 |
 
 ## Definition of Done
 
 - All FEAT-015 acceptance criteria pass; the vocabulary in code equals TRD 12 §4.12 exactly (a unit test compares the enum to the TRD list).
-- Docstrings cite SEC-100..SEC-109; delivered in the Phase 4 checkpoint of PR #3.
+- Docstrings cite SEC-100..SEC-109; delivered in the Phase 4 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

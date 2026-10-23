@@ -156,7 +156,7 @@ None. Read paths are covered by the `request_completed` access log (FEAT-018). N
 ## Definition of Done
 
 - All FEAT-014 acceptance criteria pass (FEAT-014-AC-01 to FEAT-014-AC-07 against the seed as soon as FEAT-055 provides it; fixture-based equivalents pass in Phase 4).
-- No HTTP code in the module (TRD 25 §4.6 Phase 4 Pitfalls "Do not implement APIs"); docstrings cite DB/DME IDs; delivered in the Phase 4 checkpoint of PR #3.
+- No HTTP code in the module (TRD 25 §4.6 Phase 4 Pitfalls "Do not implement APIs"); docstrings cite DB/DME IDs; delivered in the Phase 4 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

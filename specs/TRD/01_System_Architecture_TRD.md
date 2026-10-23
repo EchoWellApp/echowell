@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.7 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -263,13 +263,16 @@ echowell/
 │   └── tests/                Vitest + React Testing Library; e2e/ Playwright
 ├── backend/
 │   ├── main.py               FastAPI app factory, middleware (request ID, CORS, errors), router mounting
-│   ├── api/                  routers: health, auth (login, logout, me), sessions, ingest, residents, scores,
-│   │                         alarms (alerts, reviews, snooze), data_alerts, notes, devices, analytics,
-│   │                         pipeline (run, runs list), admissions, facility, users
+│   ├── api/                  routers (exactly the TRD 05 §4.1 list): health, auth (login, logout, me),
+│   │                         config (ui), sessions, ingest (batches), residents (detail, checkins, features,
+│   │                         notes), scores, alarms (alerts, reviews, snooze, data-alerts), devices,
+│   │                         analytics (baselines), pipeline (run, runs list), admissions (comparison,
+│   │                         facility reference ranges), users; deps
 │   ├── schemas/              Pydantic DTOs (request/response)
 │   ├── services/             ingestion, validation, pipeline orchestration, baseline, scoring, cusum,
-│   │                         morning_adjustment, speaker_screen (thin adapters to analytics/), auth, audit
-│   ├── repositories/         SQLAlchemy queries per aggregate
+│   │                         morning_adjustment, speaker_screen (thin adapters to analytics/), health_service,
+│   │                         config_service, auth_service, audit_service, … (full list TRD 05 §4.1)
+│   ├── repositories/         SQLAlchemy queries per aggregate (module names: docs/design/Database_ERD.md §5)
 │   ├── models/               SQLAlchemy ORM models (resident, session, baseline, score, alarm, ...)
 │   ├── core/                 config (env), security (JWT, argon2id, API keys), logging (JSON), errors
 │   └── alembic/              migrations (source of truth for schema)
@@ -278,6 +281,7 @@ echowell/
 │                             morning_offset.py, baseline_builder.py, zscore_calculator.py,
 │                             composite_score.py, cusum_engine.py, alert_generator.py,
 │                             day_ledger.py, data_alerts.py, aggregates.py, pipeline.py
+├── scripts/                  run_engine.py (engine command line, TRD 07 ANL-007), dump_schema.sh (TRD 20 PGS-017)
 ├── database/                 schema.sql (generated reference DDL), seeds/, roles/provision_login_roles.sql (local/CI)
 ├── tests/                    unit/, integration/, validation/ (R01–R10), fixtures/ (SRC-03, SRC-05)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md,
@@ -470,3 +474,4 @@ flowchart LR
 | 0.5 | 19 Oct 2026 | Phase 1 round-4 fixes (R4-08) | — |
 | 0.6 | 20 Oct 2026 | PR #2 backlog consistency fixes (ARC-040 stage order per TRD 07; ARC-061 and nightly diagram use NIGHTLY_RUN_HOUR_LOCAL) | — |
 | 0.7 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.8 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-3, Q-4, Q-5, Q-7): §4.6 router list aligned with TRD 05 §4.1 (data alerts in `alarms`, notes in `residents`, facility reference ranges in `admissions`; `config` added); service names `health_service`, `config_service`, `auth_service`, `audit_service`; repository module names from docs/design/Database_ERD.md §5; root `scripts/` added | — |

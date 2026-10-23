@@ -174,7 +174,7 @@ None computed here; the synchronous run executes the analytics pipeline through 
 ## Definition of Done
 
 - All FEAT-025 acceptance criteria pass; the TRD 25 §4.6 Phase 5 required tests for this endpoint (duplicate 200, withdrawn 422, pending on pipeline failure) pass.
-- E-05 appears in the OpenAPI document with `IngestRecord`/`IngestResult`; delivered in the Phase 5 checkpoint of PR #3.
+- E-05 appears in the OpenAPI document with `IngestRecord`/`IngestResult`; delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

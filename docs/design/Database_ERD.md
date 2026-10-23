@@ -1,6 +1,6 @@
 # EchoWell Database ERD and Data Ownership
 
-Document: docs/design/Database_ERD.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Database_ERD.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
@@ -389,7 +389,7 @@ Endpoints that write `audit_logs` (TRD 12 §4.12 vocabulary): E-02 (`auth.login.
 
 ## 5. Repository layer
 
-TRD 05 §4.1 fixes the rule "one module per aggregate, no business rules" (API-005, ARC-051) but not the file names. The names below are this design's proposal (reviewer question Q-5 in docs/reports/CHECKPOINT_1_DESIGN_DOCS.md); FEAT-010 already names `raw_session_repository` in its tests.
+TRD 05 §4.1 fixes the rule "one module per aggregate, no business rules" (API-005, ARC-051). The module names below are the authoritative repository naming convention (PR #3 review, Q-5); TRD 05 §4.1, TRD 01 §4.6 and the backlog refer to this table (FEAT-010 tests `raw_session_repository`, FEAT-015 writes through `audit_repository`, FEAT-026 reads through `ingest_repository`).
 
 | Module (`backend/repositories/`) | Tables | Key methods (natural keys of ARC-045) |
 |---|---|---|
@@ -414,7 +414,7 @@ TRD 05 §4.1 fixes the rule "one module per aggregate, no business rules" (API-0
 | `audit_repository.py` | audit_logs | insert in the caller's transaction, no commit |
 | `read_models.py` | derived on read (no table) | 30-day window, last check-in, baseline progress, watching since, silent days, restart cause, `in_use_until` (FEAT-014, DME-012, DB-044, DB-065, DB-066) |
 
-No repository on the `DATABASE_URL` engine maps `evaluation_ground_truth`; `analytics_summary.py` reads it through its own read-only engine (TRD 23 §4.6, API-136, PGS-040).
+No repository on the `DATABASE_URL` engine maps `evaluation_ground_truth`. `analytics_summary.py` reads it directly through its own read-only engine built from DATABASE_READONLY_URL (TRD 23 §4.6, API-136, PGS-040): this is the one sanctioned exception to the repositories-only rule of API-005, because the table is test-only and has its own read-only connection (PR #3 review, Q-8).
 
 ## 6. Enumerated types
 

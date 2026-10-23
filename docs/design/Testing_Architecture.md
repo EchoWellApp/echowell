@@ -1,6 +1,6 @@
 # EchoWell Testing Architecture
 
-Document: docs/design/Testing_Architecture.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Testing_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 

@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -550,7 +550,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | CIC-100 | The validation suite shall write `docs/reports/ALGORITHM_VALIDATION_REPORT.md` and the machine-readable `docs/reports/validation_results.json` (sections: Test Results, Passed Cases, Failed Cases, Root Cause Analysis, Recommended Fixes — SRC-17 Phase 12) on every run, and CI shall upload it even when tests fail. | Must | SRC-17 Phase 12, BR-15 | Inspection |
-| CIC-101 | Test outputs (coverage, junit, Playwright output) shall be written to `build/` (gitignored); `docs/reports/` is tracked and its files are committed only by the PR #3 checkpoints (and PR #4) that SRC-17 asks to produce them (CI regenerates and uploads them but never commits). Artifacts shall contain only synthetic test data and never database dumps or production data. | Must | contract R6, BR-16, TRD 18 | Inspection |
+| CIC-101 | Test outputs (coverage, junit, Playwright output) shall be written to `build/` (gitignored); `docs/reports/` is tracked and its files are committed only by the Block 3 checkpoint PRs (and the Block 4 PR) that SRC-17 asks to produce them (D-101) (CI regenerates and uploads them but never commits). Artifacts shall contain only synthetic test data and never database dumps or production data. | Must | contract R6, BR-16, TRD 18 | Inspection |
 | CIC-102 | On pull requests, the job summary (`$GITHUB_STEP_SUMMARY`) shall show the R01–R10 pass/fail table and the coverage percentages for `analytics/` and `backend/`. | Should | BR-15 | Demo |
 
 ### 4.11 Timing budget
@@ -625,3 +625,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-03) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (frontend job check:bundle (TST-191); CIC-035 sustained ingest (TST-190); CIC-116 four pages (D-98)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.12 | 23 Oct 2026 | PR #3 review: CIC-101 reports committed by the Block 3 checkpoint PRs and the Block 4 PR (one PR per checkpoint, D-101) | — |

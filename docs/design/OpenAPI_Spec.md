@@ -1,6 +1,6 @@
 # EchoWell OpenAPI Specification (design)
 
-Document: docs/design/OpenAPI_Spec.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/OpenAPI_Spec.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and authority
 
@@ -108,7 +108,7 @@ Router files are under `backend/api/`; service modules under `backend/services/`
 
 | ID | Method and path (`/api/v1`) | Roles / keys | Router file | Service function (module) | Tables read (R) / written (W) | Backlog features |
 |---|---|---|---|---|---|---|
-| E-01 | GET /health | none | `health.py` | none: inline `SELECT 1` within 2 s through `backend/core/db.py` (TRD 05 §4.12; see §11 Q-1) | R `SELECT 1` | FEAT-003 |
+| E-01 | GET /health | none | `health.py` | `health_service.get_health` (`health_service.py`): `SELECT 1` within 2 s through `backend/core/db.py` (TRD 05 §4.12) | R `SELECT 1` | FEAT-003 |
 | E-02 | POST /auth/login | none | `auth.py` | `auth_service.login` (`auth_service.py`) | R users; W users.last_login_at, audit_logs | FEAT-020, FEAT-022 |
 | E-03 | POST /auth/logout | A C Rs | `auth.py` | `auth_service.logout` (`auth_service.py`) | W audit_logs | FEAT-020 |
 | E-04 | GET /auth/me | A C Rs | `auth.py` | `auth_service.me` (`auth_service.py`) | R users | FEAT-020 |
@@ -347,8 +347,8 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 
 | Item | Status |
 |---|---|
-| Q-1 | TRD 05 §4.12 implements E-01 inline in `health.py` (no service function), while FEAT-001-AC-02 asks for a service module per endpoint and API-003 asks each handler to call one service function. This document follows TRD 05 §4.12 (AGT-001); the reviewer may decide whether a `health` service function is wanted. |
-| Q-2 | E-32 is served by `config_service.ui_config` (TRD 05 §4.12), but the TRD 05 §4.1 service list does not name `config_service.py`; this document plans `backend/services/config_service.py` (also used by FEAT-040 for the `PipelineConfig` loader). |
+| Q-1 | Resolved (PR #3 review, 23 Oct 2026): E-01 has a service function, `health_service.get_health` in `backend/services/health_service.py`, called by the `health.py` handler (API-003); TRD 05 §4.1 and §4.12 updated. |
+| Q-2 | Resolved (PR #3 review, 23 Oct 2026): `config_service.py` (E-32 `config_service.ui_config` and the FEAT-040 `PipelineConfig` loader) is in the TRD 05 §4.1 service list. |
 | OQ-03 | Feature key names are placeholders; renaming changes `FeatureKey` only through a v2 or the feature-name mapping. |
 | OQ-04 | `phrase_id` stays a required field. |
 | OQ-05 | E-14 leaves tally and alarm unchanged. |

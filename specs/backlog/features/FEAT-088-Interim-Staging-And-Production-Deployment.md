@@ -154,7 +154,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 ## Definition of Done
 
 - All FEAT-088 acceptance criteria pass; `specs/backlog/DEPLOYMENT_CHECKLIST.md` evidence columns filled for the Phase 10 items.
-- PR #4 (Phase 10, with FEAT-089, FEAT-090) approved by the algorithm lead (AGT-013).
+- The Block 4 PR (Phase 10, with FEAT-089, FEAT-090) approved by the algorithm lead (AGT-013).
 
 ## Implementation Notes
 

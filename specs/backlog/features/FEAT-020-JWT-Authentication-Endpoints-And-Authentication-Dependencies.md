@@ -37,7 +37,7 @@ Authenticate every caller of the API: dashboard users through `POST /api/v1/auth
   - `get_current_user()` → decode Bearer token; 401 `NOT_AUTHENTICATED` without token, `TOKEN_EXPIRED` when expired, `TOKEN_INVALID` when malformed, wrongly signed, user missing or inactive; every 401 with `WWW-Authenticate: Bearer`; sets the logging actor context (FEAT-018).
   - `get_api_key(scope)` → SHA-256 of `X-API-Key`, load the active row whose `scopes` contain `scope`; 401 `API_KEY_INVALID` when missing, unknown or inactive; 403 `FORBIDDEN` when the scope is missing; update `last_used_at` at most once per minute per key.
   - `get_ingest_principal()` → valid `ingest:write` key or admin JWT user; returns `Principal(actor_type, actor_id, device_id)`.
-- `backend/api/auth.py` and `backend/services/auth.py`:
+- `backend/api/auth.py` (router) and `backend/services/auth_service.py` (service, TRD 05 §4.1, §4.12):
   - `POST /api/v1/auth/login` (E-02): body `LoginRequest`; normalise e-mail; unknown e-mail verified against the dummy hash; wrong password, unknown e-mail and inactive user all 401 `INVALID_CREDENTIALS` with identical body; lockout 429 `ACCOUNT_TEMPORARILY_LOCKED` after 10 `auth.login.failed` rows for the e-mail in 15 minutes, until 15 minutes after the last failure; on success rehash if needed, update `last_login_at`, write `auth.login.succeeded`, return 200 `Token` (`access_token`, `token_type="bearer"`, `expires_in` = `JWT_EXPIRES_MINUTES`×60, `user`).
   - `POST /api/v1/auth/logout` (E-03): valid token required; write `auth.logout`; 204; no server-side revocation.
   - `GET /api/v1/auth/me` (E-04): returns `User`.
@@ -166,7 +166,7 @@ None.
 ## Definition of Done
 
 - All FEAT-020 acceptance criteria pass; TST-032, TST-069 and TST-132 pass.
-- E-02..E-04 appear in the OpenAPI document with the TRD 19 schemas; delivered in the Phase 5 checkpoint of PR #3.
+- E-02..E-04 appear in the OpenAPI document with the TRD 19 schemas; delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

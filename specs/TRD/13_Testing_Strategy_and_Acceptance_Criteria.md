@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -490,7 +490,7 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-170 | The MVP shall be accepted only when every criterion in Table 4.17-A passes on the release candidate commit, with evidence attached to PR #4 and to the GitHub Release of that commit (TRD 15 §4.10, D-99). | Must | BR-01..BR-18 | Demo, Test |
+| TST-170 | The MVP shall be accepted only when every criterion in Table 4.17-A passes on the release candidate commit, with evidence attached to the Block 4 (deployment) PR and to the GitHub Release of that commit (TRD 15 §4.10, D-99, D-101). | Must | BR-01..BR-18 | Demo, Test |
 
 Table 4.17-A MVP acceptance criteria.
 
@@ -597,3 +597,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-02, R8-04, R8-05, R8-06) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (TST-002 postgres:16-alpine; TST-052 NIGHTLY_RUN_HOUR_LOCAL; TST-120 ubuntu-24.04; TST-125, TST-126 and new TST-190..TST-195 (D-98); E2E-01 clinician nav; E2E-16 widths (D-78)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.12 | 23 Oct 2026 | PR #3 review: TST-170 evidence goes to the Block 4 PR (SRC-20 units named Block 1–Block 5, D-101) | — |

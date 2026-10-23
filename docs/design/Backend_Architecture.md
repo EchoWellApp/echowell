@@ -1,6 +1,6 @@
 # EchoWell Backend Architecture
 
-Document: docs/design/Backend_Architecture.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Backend_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
@@ -55,7 +55,7 @@ flowchart LR
 
 | Process | Entry point | Connection strings | Responsibility | Source |
 |---|---|---|---|---|
-| Web service | image default `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` (DEP-022); Railway start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` (DEP-040); API-001 and API-103 add `--proxy-headers --forwarded-allow-ips="*"` on Railway only, which the DEP-040 command does not show (reviewer question Q-10 in docs/reports/CHECKPOINT_1_DESIGN_DOCS.md) | `DATABASE_URL`; `DATABASE_READONLY_URL` only in `analytics_summary.py` | REST API, ingest, synchronous and background pipeline runs | API-001, API-103, DEP-022, DEP-040, ARC-015 |
+| Web service | image default `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"` (DEP-022); Railway start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040); the image default carries the same flags, so the client IP is the left-most `X-Forwarded-For` address behind the hosting edge (API-001, API-103; Q-10 resolved in PR #3 review); the local Compose command omits them | `DATABASE_URL`; `DATABASE_READONLY_URL` only in `analytics_summary.py` | REST API, ingest, synchronous and background pipeline runs | API-001, API-103, DEP-022, DEP-040, ARC-015 |
 | Pre-deploy migration | `alembic upgrade head` (repository root) | `DATABASE_MIGRATION_URL` | schema changes before traffic | ARC-082, DEP-040, D-58 |
 | Nightly job | `python -m backend.jobs.nightly_run` (Railway Cron Job service `nightly`, `0 7,8 * * *` UTC) | `DATABASE_URL` | runs only in facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` once per night; scope `all`, trigger `nightly` | ARC-061, API-060..API-062, DEP-046, DEP-047, AGT-059 |
 | Operator CLI | `python -m backend.cli <command>` | `DATABASE_URL`, or `DATABASE_MIGRATION_URL` for the closed list | users, API keys, master data, seed, set-config, rebuild, export-openapi | TRD 15 §4.8, ARC-067 |
@@ -74,7 +74,7 @@ backend/
                           alarms, devices, analytics, pipeline, admissions, users; deps.py
   schemas/                Pydantic v2 DTOs, names = TRD 19 component names
   services/               orchestration and rules, no fastapi import
-  repositories/           SQLAlchemy 2.0 queries, one module per aggregate
+  repositories/           SQLAlchemy 2.0 queries, one module per aggregate (names: Database_ERD.md §5)
   models/                 ORM models (TRD 23 §4.6), enums in __init__.py
   core/                   config.py, db.py, security.py, errors.py, logging.py, middleware.py, rate_limit.py
   alembic/                env.py, script.py.mako, versions/
@@ -82,7 +82,7 @@ backend/
 
 Existing skeleton files are kept and filled in: `backend/api/{alarms,analytics,health,residents,sessions}.py`, `backend/models/{alarm,baseline,resident,score,session}.py`, `backend/services/{baseline,cusum,ingestion,morning_adjustment,scoring,speaker_screen,validation}.py` (ARC-050, API-008, AGT-010, D-24). The stage-named services (`baseline.py`, `cusum.py`, `morning_adjustment.py`, `scoring.py`, `speaker_screen.py`) are thin read adapters over persisted results and contain no statistical logic (ARC-052, TRD 07 §8).
 
-Router-file conflict note (AGT-001): TRD 01 §4.6 lists `data_alerts`, `notes` and `facility` among router names, while TRD 05 §4.1 (the more specific backend TRD, also used by TRD 25 Phase 5 outputs) places `/data-alerts` in `alarms.py`, `/residents/{code}/notes` in `residents.py` and `/facility/reference-ranges` in `admissions.py`. This design follows TRD 05 §4.1.
+Router files (Q-7 resolved in PR #3 review): TRD 05 §4.1 is the source of truth for router organisation: `/data-alerts` is served by `alarms.py`, `/residents/{code}/notes` by `residents.py` and `/facility/reference-ranges` by `admissions.py`; TRD 01 §4.6 now lists the same routers.
 
 ## 5. Layering and dependency direction
 
@@ -106,7 +106,7 @@ flowchart TB
 |---|---|---|
 | Routers contain no SQL and no business rules; each handler calls one service function and returns a DTO | import-linter contract in `backend-lint` | API-003, ARC-051 |
 | Services never import `fastapi`; they raise `AppError` subclasses | import-linter | API-004 |
-| Repositories are the only modules building SQLAlchemy queries; they never call services | import-linter | API-005, ARC-051 |
+| Repositories are the only modules building SQLAlchemy queries; they never call services. One sanctioned exception: `analytics_summary.py` reads the test-only table `evaluation_ground_truth` through its own read-only engine (DATABASE_READONLY_URL) | import-linter (with that one module allowed) | API-005, API-136, ARC-051 |
 | Only `analytics.pipeline.run_pipeline`, `analytics.aggregates.build_analytics_summary` and `analytics.alert_generator.leaning_most` are called from services | inspection | API-006, D-79 |
 | `analytics/` imports nothing from `backend/` and does no I/O, clock or randomness | `tests/unit/backend/test_import_boundary.py`, AC-ARC-01 | ARC-041, ANL-002, AGT-021 |
 | Synchronous SQLAlchemy with `postgresql+psycopg://`; handlers are `def` (thread pool) except health and middleware | inspection | API-007, ENV-014 |
@@ -190,7 +190,7 @@ Full table with roles, tables and features: docs/design/OpenAPI_Spec.md §5. Sum
 
 | Router file | Endpoints | Service module(s) |
 |---|---|---|
-| `health.py` | E-01 | none (inline database probe through `backend/core/db.py`, TRD 05 §4.12) |
+| `health.py` | E-01 | `health_service.py` (`get_health`: database probe through `backend/core/db.py`, TRD 05 §4.12) |
 | `auth.py` | E-02, E-03, E-04 | `auth_service.py` |
 | `config.py` | E-32 | `config_service.py` |
 | `sessions.py` | E-05 | `ingestion.py`, `pipeline_runner.py` |
@@ -211,6 +211,7 @@ Full table with roles, tables and features: docs/design/OpenAPI_Spec.md §5. Sum
 | `ingestion.py` (skeleton) | feature-name mapping, single and batch ingest, duplicate check under the session lock, rejection storage, batch counts, audit `ingest.batch.received` for batches | raw_session, ingest, resident, device, audit | none | E-05, E-06, E-07; `cli seed` | FEAT-023, FEAT-025, FEAT-026 |
 | `validation.py` (skeleton) | `VALIDATORS = {"0.1": ...}` schema-version registry; reject rules collected per field | config | none | `ingestion.py` | FEAT-023 |
 | `pipeline_runner.py` | the only caller of `run_pipeline`; run row, config snapshot, as-of resolution, per-resident transactions with advisory locks, natural-key upserts, warnings, audit `pipeline.run.started`/`finished`; interim executor records `failed` "pipeline not available until Phase 6" until FEAT-053 lands | pipeline_run, raw_session, resident, device, baseline, epoch, processed_session, day_ledger, score, alert, data_alert, config, audit | `analytics.pipeline.run_pipeline` | E-05, E-06, E-20, E-21, E-31; nightly job; CLI `run-pipeline`, `rebuild`, `seed` | FEAT-024, FEAT-053, FEAT-054 |
+| `health_service.py` | `get_health()`: `SELECT 1` within 2 s, `Health` with `status`, `database`, `version` (`GIT_SHA`), `time`; 503 shape on failure; no audit row | none (engine probe through `backend/core/db.py`) | none | E-01 | FEAT-003 |
 | `config_service.py` | load profile rows into `PipelineConfig` (defaults with `config_default_used`); `UiConfig` | config, facility | `analytics.config.PipelineConfig.from_mapping` | E-32; `pipeline_runner.py`; `get_meta()` | FEAT-030, FEAT-040 |
 | `resident_service.py` | overview rows, summary tiles, sorts (natural sort), detail with explanation facts | resident, device, read_models, alert, score | none | E-08, E-09 | FEAT-027, FEAT-028 |
 | `checkin_service.py` | check-in events with same-date order and restart cause | read_models, processed_session, day_ledger, epoch, baseline, alert, score | none | E-10 | FEAT-028 |
@@ -230,7 +231,7 @@ Full table with roles, tables and features: docs/design/OpenAPI_Spec.md §5. Sum
 | `audit_service.py` | `record(session, action, entity_type, entity_id, details)` inside the caller's transaction | audit | none | every audited path | FEAT-015 |
 | `baseline.py`, `cusum.py`, `morning_adjustment.py`, `speaker_screen.py` (skeletons) | thin read adapters over persisted baselines, tallies, morning flags and screen details; no algorithm | baseline, score, processed_session | none | used by the read services above | FEAT-028, FEAT-034 |
 
-Naming note: TRD 05 §4.1 and TRD 12 §8 name `auth_service.py` and `audit_service.py`; FEAT-015 and FEAT-020 write `backend/services/audit.py` and `backend/services/auth.py`. This design follows the TRD names (AGT-001); see reviewer question Q-3 in docs/reports/CHECKPOINT_1_DESIGN_DOCS.md.
+Naming (Q-3 resolved in PR #3 review): the service modules are `auth_service.py` and `audit_service.py`, as in TRD 05 §4.1 and TRD 12 §8; FEAT-015, FEAT-020 and the roadmap use the same names.
 
 ## 10. Pipeline triggering, concurrency and transactions
 

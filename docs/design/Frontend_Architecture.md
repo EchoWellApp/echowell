@@ -1,6 +1,6 @@
 # EchoWell Frontend Architecture
 
-Document: docs/design/Frontend_Architecture.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Frontend_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
@@ -84,7 +84,7 @@ Endpoint IDs of TRD 19 §4.3; client functions of TRD 04 §4.6.2. Every route ca
 |---|---|---|---|
 | `/login` | E-02 POST /auth/login; E-04 GET /auth/me | `login`, `getMe` | sign in; then load the user (FE-054) |
 | `/residents` | E-08 GET /residents; E-17 GET /devices; E-13 GET /alerts?status=open (nav count); E-04 GET /auth/me; E-03 POST /auth/logout | `getResidents({sort})`, `getDevices`, `getAlerts({status:"open"})`, `getMe`, `logout` | page load, sort change, 5-minute refresh (FE-081); sign out |
-| `/residents/[residentCode]` | E-09 GET /residents/{code}; E-12 GET /scores?resident_code=&epoch=; E-11 GET /residents/{code}/features; E-10 GET /residents/{code}/checkins; E-15 GET /residents/{code}/notes; E-16 POST /residents/{code}/notes; E-13 GET /alerts?resident_code= (open alarm); E-28 GET /alerts/{id}/reviews (latest review line UX-127); E-32 GET /config/ui and E-14 POST /alerts/{id}/reviews (review dialog) | `getResident`, `getScores`, `getFeatures`, `getCheckins`, `getNotes`, `createNote`, `getAlerts`, `getAlertReviews`, `getUiConfig`, `createAlertReview` | five reads in parallel (FE-087); note save; "Mark as reviewed" dialog |
+| `/residents/[residentCode]` | E-09 GET /residents/{code}; E-12 GET /scores?resident_code=&epoch=; E-11 GET /residents/{code}/features; E-10 GET /residents/{code}/checkins; E-15 GET /residents/{code}/notes; E-16 POST /residents/{code}/notes; E-13 GET /alerts?resident_code= (open alarm); E-32 GET /config/ui and E-14 POST /alerts/{id}/reviews (review dialog); no E-28 call (no latest-review line, SRC-10 wireframe, D-102) | `getResident`, `getScores`, `getFeatures`, `getCheckins`, `getNotes`, `createNote`, `getAlerts`, `getUiConfig`, `createAlertReview` | five reads in parallel (FE-087); note save; "Mark as reviewed" dialog |
 | `/admissions` | E-22 GET /admissions; E-23 GET /admissions/{code}/comparison; E-24 GET /facility/reference-ranges | `getAdmissions`, `getAdmissionComparison`, `getReferenceRanges` | page load; row selection |
 | `/alerts` | E-13 GET /alerts; E-30 GET /data-alerts; E-12 GET /scores?resident_code= (mini chart); E-28 GET /alerts/{id}/reviews; E-14 POST /alerts/{id}/reviews; E-29 POST /alerts/{id}/snooze; E-32 GET /config/ui; E-04, E-03 (header) | `getAlerts`, `getDataAlerts`, `getScores`, `getAlertReviews`, `createAlertReview`, `snoozeAlert`, `getUiConfig`, `getMe`, `logout` | page load; card selection (`?alert=<id>`); save review; remind me |
 | `/analytics` | E-18 GET /analytics; E-12 GET /scores (`Accept: text/csv`); E-19 GET /analytics/baselines (`Accept: text/csv`); E-13 (nav count); E-04, E-03 | `getAnalytics`, `downloadScoresCsv`, `downloadBaselinesCsv`, `getAlerts`, `getMe`, `logout` | page load; Downloads row |

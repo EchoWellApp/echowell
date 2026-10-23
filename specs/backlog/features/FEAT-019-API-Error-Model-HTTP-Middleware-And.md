@@ -165,7 +165,7 @@ This feature is the error handling layer. Mapping summary: validation → 422 `V
 ## Definition of Done
 
 - All FEAT-019 acceptance criteria pass; TST-034 passes.
-- The error catalogue in code equals TRD 05 §4.7 (a unit test compares codes, statuses and titles); delivered in the Phase 5 checkpoint of PR #3.
+- The error catalogue in code equals TRD 05 §4.7 (a unit test compares codes, statuses and titles); delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

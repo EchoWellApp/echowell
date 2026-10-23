@@ -1,10 +1,10 @@
 # EchoWell Deployment Architecture
 
-Document: docs/design/Deployment_Architecture.md · Checkpoint 1 of PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026
+Document: docs/design/Deployment_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
 
 ## 1. Purpose and sources
 
-This document describes environments, hosting, branching and release, CI/CD workflows, configuration, security boundaries, backups, rollback and the AWS target that the deployment-configuration checkpoint (Phase 9, FEAT-077..FEAT-087) and the deployment PR #4 (Phase 10, FEAT-088..FEAT-090) implement. Normative content: TRD 01 §4.9–§4.10 (ARC-080..ARC-095), TRD 15 (DEP), TRD 16 (CIC), TRD 18 §4.2 (GIT), TRD 21 (ENV), TRD 22 (TPS), TRD 12 (SEC) and the decision log of TRD 24. No deployment is performed in this checkpoint (TRD 25 Phase 9 definition of done).
+This document describes environments, hosting, branching and release, CI/CD workflows, configuration, security boundaries, backups, rollback and the AWS target that the deployment-configuration checkpoint (Block 3 checkpoint 8, Phase 9, FEAT-077..FEAT-087) and the Block 4 deployment PR (Phase 10, FEAT-088..FEAT-090) implement. Normative content: TRD 01 §4.9–§4.10 (ARC-080..ARC-095), TRD 15 (DEP), TRD 16 (CIC), TRD 18 §4.2 (GIT), TRD 21 (ENV), TRD 22 (TPS), TRD 12 (SEC) and the decision log of TRD 24. No deployment is performed in this checkpoint (TRD 25 Phase 9 definition of done).
 
 ## 2. Owner decisions that shape the deployment
 
@@ -15,7 +15,7 @@ This document describes environments, hosting, branching and release, CI/CD work
 | D-OWNER-2 (D-01) | production `baseline_n` = 30; profile `test_v0_1` (16) for build and test only | production runs `PIPELINE_PROFILE=production`; the backend refuses `test_v0_1` or `PIPELINE_AS_OF` when `APP_ENV=production` | ARC-056, API-058, ENV-010, ENV-012, AGT-015 |
 | D-OWNER-1 (D-29) | third-party-licensed documents are linked, not committed | no licensed document in any image or artefact | AGT-016 |
 | D-99 | branching: only `main` and feature branches; staging from `main` on every merge; production only by a manual, reviewer-approved release workflow; no `staging` branch | §4 below | GIT-010..GIT-012, DEP-002..DEP-004, CIC-001, CIC-053 |
-| D-100 | PR plan: PR #3 (this branch `feat/implement-features`, nine review checkpoints), PR #4 deployment, PR #5 test cases | deployment happens in PR #4 after PR #3 merges | AGT-013, AGT-030 |
+| D-100, D-101 | team plan Block 1–Block 5 (SRC-20): Block 3 has nine checkpoints, each its own PR to `main` on its own branch created from the latest `main` (checkpoint 1: this branch `feat/implement-features`, GitHub PR #3), each merged before the next prompt runs; Block 4 deployment and Block 5 test cases are one PR each | deployment happens in Block 4, after the checkpoint 9 PR is merged | AGT-013, AGT-030, GIT-030, GIT-031 |
 
 ## 3. Environments and topology
 
@@ -76,16 +76,24 @@ gitGraph
   commit id: "main"
   branch feat/implement-features
   commit id: "checkpoint 1 design docs"
-  commit id: "checkpoints 2-9"
   checkout main
+  merge feat/implement-features
+  branch feat/cp2-project-skeleton
+  commit id: "checkpoint 2 skeleton"
+  checkout main
+  merge feat/cp2-project-skeleton
   branch fix/example
   commit id: "fix"
   checkout main
   merge fix/example
-  checkout feat/implement-features
-  commit id: "final audit"
+  branch feat/cp9-final-audit
+  commit id: "checkpoint 9 final audit"
   checkout main
-  merge feat/implement-features tag: "v0.1.0"
+  merge feat/cp9-final-audit
+  branch feat/deployment
+  commit id: "Block 4 deploy"
+  checkout main
+  merge feat/deployment tag: "v0.1.0"
 ```
 
 ```mermaid
@@ -118,6 +126,7 @@ sequenceDiagram
 | Rule | Source |
 |---|---|
 | The repository has only `main` (protected: PR, 1 approving review, CODEOWNERS, required checks, up to date, no force push, no deletion) and short-lived `feat/`, `fix/`, `docs/`, `chore/` branches; every PR targets `main` directly | GIT-010..GIT-012, D-99 |
+| Each Block 3 checkpoint is its own branch and PR from the latest `main` (checkpoints 3–8 are left out of the diagram; branch names in `specs/backlog/IMPLEMENTATION_ROADMAP.md` §2.1); the next checkpoint starts only after the previous checkpoint PR is approved and merged | GIT-030, GIT-031, D-101 |
 | There is no `staging` branch and no promotion merge; "staging" names only the staging environment, deployed from `main` on every merge | DEP-004, TRD 18 §4.2, D-99 |
 | Production changes only through the manual, reviewer-approved `deploy-production.yml` run for a chosen `main` commit; automatic deploys of the production services are disabled and the production Netlify site's builds are stopped | DEP-002, DEP-003, CIC-053, D-99 |
 | The only production secrets in GitHub are `RAILWAY_PRODUCTION_TOKEN` and `NETLIFY_AUTH_TOKEN`; the workflow never holds a production database URL | CIC-050, CIC-090 |
@@ -129,8 +138,8 @@ sequenceDiagram
 
 | Unit | Build | Runtime | Source |
 |---|---|---|---|
-| Backend image | `backend/Dockerfile` from `python:3.12-slim`, repository root as context; copies `backend/`, `analytics/`, `alembic.ini`; installs `backend/requirements.txt` (`psycopg[binary]` 3.x, pinned) and `tzdata`; non-root UID 10001; no `.env`, tests, `specs/` or `frontend/` (root `.dockerignore`) | `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"`; no migration step in the image command | DEP-020..DEP-022, ARC-090, D-53, CIC-023 |
-| Railway `backend` service | same image | pre-deploy `alembic upgrade head` (repository root, `DATABASE_MIGRATION_URL`); healthcheck `/api/v1/health` within 120 s; 1 replica | DEP-040, DEP-041, DEP-042, D-58 |
+| Backend image | `backend/Dockerfile` from `python:3.12-slim`, repository root as context; copies `backend/`, `analytics/`, `alembic.ini`; installs `backend/requirements.txt` (`psycopg[binary]` 3.x, pinned) and `tzdata`; non-root UID 10001; no `.env`, tests, `specs/` or `frontend/` (root `.dockerignore`) | `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"`; no migration step in the image command | DEP-020..DEP-022, ARC-090, D-53, CIC-023 |
+| Railway `backend` service | same image | pre-deploy `alembic upgrade head` (repository root, `DATABASE_MIGRATION_URL`); start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040, API-103); healthcheck `/api/v1/health` within 120 s; 1 replica | DEP-040, DEP-041, DEP-042, D-58 |
 | Railway `nightly` service | same image | `python -m backend.jobs.nightly_run`, cron `0 7,8 * * *` UTC; never runs Alembic; exits non-zero on schema revision mismatch; has no `DATABASE_MIGRATION_URL` | DEP-046..DEP-048, D-58 |
 | Frontend | `frontend/Dockerfile` multi-stage `node:20-alpine` for Compose; Netlify builds with base `frontend/`, `node scripts/check-csp.mjs && npm run build`, `@netlify/plugin-nextjs` | server-capable Next.js; security headers and CSP from `netlify.toml` | DEP-023, DEP-050, DEP-053, FE-041 |
 | Configuration as code | `netlify.toml`, `railway.toml`, `docker-compose.yml`, `.env.example`, `.env.development.example`, `.env.production.example` at the repository root | dashboard-only settings listed in `railway.toml` comments | DEP-044, ENV-040 |

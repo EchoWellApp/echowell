@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -70,7 +70,7 @@ backend/
   cli.py                     admin CLI: create-user, create-api-key, revoke-api-key, export-openapi, seed, … (full list TRD 15 §4.8)
   jobs/nightly_run.py        nightly pipeline entry point (Railway cron service)
   api/                       routers (thin: parse, authorise, call one service, map DTO)
-    health.py                GET /health
+    health.py                GET /health (calls health_service.get_health)
     auth.py                  /auth/login, /auth/logout, /auth/me
     config.py                GET /config/ui (operational UI configuration; API-137)
     sessions.py              POST /sessions
@@ -89,9 +89,11 @@ backend/
     ingestion.py, validation.py, pipeline_runner.py, resident_service.py, checkin_service.py,
     feature_service.py, scoring.py, alert_service.py, review_service.py, data_alert_service.py, export_service.py, note_service.py, device_service.py,
     analytics_service.py, analytics_summary.py, admission_service.py, auth_service.py, user_service.py, audit_service.py,
+    health_service.py, config_service.py,
     baseline.py, cusum.py, morning_adjustment.py, speaker_screen.py  (existing skeletons: thin adapters
     that call the matching analytics/ module; they contain no algorithm logic)
-  repositories/              SQLAlchemy 2.0 queries, one module per aggregate (no business rules)
+  repositories/              SQLAlchemy 2.0 queries, one module per aggregate (no business rules); module names as
+                             docs/design/Database_ERD.md §5 (authoritative)
   models/                    SQLAlchemy ORM models for the contract §9 tables
   core/
     config.py                Settings (pydantic-settings) reading the contract §13 env vars
@@ -106,11 +108,11 @@ backend/
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| API-001 | The backend shall be a single FastAPI 0.115.x application created by `backend.main:create_app()` and served by uvicorn with `--proxy-headers`. | Must | BR-17, SRC-01 | Inspection |
+| API-001 | The backend shall be a single FastAPI 0.115.x application created by `backend.main:create_app()` and served by uvicorn with `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands (TRD 15 DEP-022, DEP-040). | Must | BR-17, SRC-01 | Inspection |
 | API-002 | Every endpoint shall be mounted under the base path `/api/v1`; no endpoint shall exist outside it. | Must | SRC-17, contract §10 | Test |
 | API-003 | Routers in `backend/api/` shall contain no SQL and no business rules; each handler shall call exactly one service function and return a Pydantic DTO from `backend/schemas/`. | Must | BR-17 | Inspection |
 | API-004 | Services in `backend/services/` shall not import `fastapi`; they shall raise `AppError` subclasses from `backend/core/errors.py` for all expected failures. | Must | BR-17 | Inspection |
-| API-005 | Repositories in `backend/repositories/` shall be the only modules that build SQLAlchemy queries. | Must | BR-17 | Inspection |
+| API-005 | Repositories in `backend/repositories/` shall be the only modules that build SQLAlchemy queries, with one sanctioned exception: `backend/services/analytics_summary.py` reads the test-only table `evaluation_ground_truth` directly through its own read-only engine built from DATABASE_READONLY_URL (API-136, TRD 23 §4.6); no repository maps that table. Repository module names are those of docs/design/Database_ERD.md §5. | Must | BR-17; PR #3 review (checkpoint 1 Q-5, Q-8) | Inspection |
 | API-006 | Analytics computations shall be performed only by calling pure functions of the `analytics` package: `analytics.pipeline.run_pipeline` for every run, and on read the pure helpers `analytics.aggregates.build_analytics_summary` (Analytics page, API-087) and `analytics.alert_generator.leaning_most` (alerts list, API-080) (TRD 24 D-79); the backend shall not re-implement any algorithm stage. | Must | BR-15, TRD 07 | Inspection |
 | API-007 | The backend shall use synchronous SQLAlchemy 2.0.x with the psycopg 3 driver (`postgresql+psycopg://`) and declare route handlers with `def` (FastAPI thread pool), not `async def`, except the health and middleware code which may be async. | Must | contract §3 | Inspection |
 | API-008 | The existing skeleton files `backend/api/{alarms,analytics,health,residents,sessions}.py` and `backend/services/{baseline,cusum,ingestion,morning_adjustment,scoring,speaker_screen,validation}.py` shall be kept and filled in, not renamed. | Must | contract §3 | Inspection |
@@ -345,7 +347,7 @@ Error code catalogue (complete; no other codes may be emitted):
 | API-100 | Every list endpoint (`/residents`, `/checkins`, `/scores`, `/alerts`, `/alerts/{id}/reviews`, `/data-alerts`, `/notes`, `/devices`, `/analytics/baselines`, `/pipeline/runs`, `/admissions`, `/facility/reference-ranges`, `/users`) shall return `{"meta": {...}, "items": [...], "total": n, "limit": l, "offset": o}` plus any endpoint-specific top-level fields defined in TRD 19. | Must | contract §10, §20 R3 | Test |
 | API-101 | CORS shall be implemented with Starlette `CORSMiddleware` using `allow_origins` = the comma-separated CORS_ORIGINS list (exact origins, no wildcard) and, only when CORS_ORIGIN_REGEX is non-empty (staging; refused in production, TRD 21 ENV-012), `allow_origin_regex` = CORS_ORIGIN_REGEX for Netlify deploy previews, `allow_credentials=False`, `allow_methods=["GET","POST","PATCH","OPTIONS"]`, `allow_headers=["Authorization","Content-Type","X-Request-ID"]`, `expose_headers=["X-Request-ID","Retry-After","X-EchoWell-Experimental"]`, `max_age=600`. | Must | contract §12, TRD 12 | Test |
 | API-102 | Rate limiting shall use slowapi with in-memory storage: `POST /auth/login` limited to RATE_LIMIT_LOGIN per client IP (default 5/minute; always 5/minute in staging and production, 60/minute only on the E2E stack, TRD 21 ENV-054, TRD 24 D-74); `POST /sessions` and `POST /ingest` limited to RATE_LIMIT_INGEST per API key hash or per admin user id (default 600/minute); all other authenticated endpoints limited to 300/minute per user id. | Must | contract §12, §13 | Test |
-| API-103 | The client IP for rate limiting and audit shall be the left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` on Railway only); locally it is the socket peer. | Must | TRD 12 | Inspection |
+| API-103 | The client IP for rate limiting and audit shall be the left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040); locally the Compose command (DEP-012) omits these flags and it is the socket peer. | Must | TRD 12 | Inspection |
 | API-104 | A request-size middleware shall reject bodies larger than 64 KB on all endpoints except `POST /ingest` (limit 5 MB) with 413 `PAYLOAD_TOO_LARGE`, checking `Content-Length` and the streamed byte count. | Must | TRD 12 | Test |
 | API-105 | A request-ID middleware shall reuse an incoming `X-Request-ID` matching `^[A-Za-z0-9-]{8,64}$`, otherwise generate a UUID4, store it in a context variable used by logging and audit, and set `X-Request-ID` on every response including errors and 429s. | Must | contract §10, TRD 17 | Test |
 | API-106 | A security-header middleware shall add `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store` to every response, and `Strict-Transport-Security: max-age=31536000; includeSubDomains` when APP_ENV is `staging` or `production`. | Must | TRD 12 | Test |
@@ -417,7 +419,7 @@ the BR IDs shown here.
 
 | Method & path | Auth | Router file | Service | Tables read (R) / written (W) | BR | UI consumer |
 |---|---|---|---|---|---|---|
-| GET /health | none | health.py | (inline) | R: `SELECT 1` | BR-17 | deploy smoke test, CI |
+| GET /health | none | health.py | health_service.get_health | R: `SELECT 1` | BR-17 | deploy smoke test, CI |
 | POST /auth/login | none | auth.py | auth_service.login | R users; W users.last_login_at, audit_logs | BR-16 | `/login` |
 | POST /auth/logout | user | auth.py | auth_service.logout | W audit_logs | BR-16 | header "Sign out" |
 | GET /auth/me | user | auth.py | auth_service.me | R users | BR-16 | app shell (role-based nav) |
@@ -561,3 +563,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (API-006 and API-087 read-side analytics (D-79); API-085 supersede refusal (D-83); API-092 defensive check; §8 export-openapi prints (D-89)) | — |
 | 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-05: API-077 same-date event order of TRD 11 UX-141) | — |
+| 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-1, Q-2, Q-5, Q-8, Q-10): `health_service.get_health` for GET /health (§4.1, §4.12); `health_service.py` and `config_service.py` added to the §4.1 service list; repository names from docs/design/Database_ERD.md §5; API-005 names the `analytics_summary.py` read of `evaluation_ground_truth` as its one exception; API-001 and API-103 use the uvicorn flags of TRD 15 DEP-022 and DEP-040 | — |

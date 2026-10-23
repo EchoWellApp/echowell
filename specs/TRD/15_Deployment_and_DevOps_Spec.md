@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -218,7 +218,7 @@ volumes:
 |---|---|---|---|---|
 | DEP-020 | `backend/Dockerfile` shall build from `python:3.12-slim` with the repository root as build context, copy `backend/`, `analytics/` and `alembic.ini`, and install only `backend/requirements.txt` (runtime pins). | Must | SRC-01, TRD 01 | Inspection |
 | DEP-021 | The backend image shall run as a non-root user (UID 10001) and shall not contain `.env` files, tests, `specs/` or `frontend/` (enforced by a root `.dockerignore`). | Must | BR-16, TRD 12 | Test (CI inspects image) |
-| DEP-022 | The backend image default command shall be `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"` (no migration step) so the same image runs on Railway, Docker Compose and AWS App Runner; migrations run as a separate step before the new version serves traffic (DEP-040, DEP-060). | Must | SRC-01 Future AWS | Test |
+| DEP-022 | The backend image default command shall be `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"` (no migration step; the same uvicorn flags as the DEP-040 start command, TRD 05 API-001, API-103) so the same image runs on Railway, Docker Compose and AWS App Runner; migrations run as a separate step before the new version serves traffic (DEP-040, DEP-060). | Must | SRC-01 Future AWS | Test |
 | DEP-023 | `frontend/Dockerfile` shall be a multi-stage `node:20-alpine` build (`npm ci`, `npm run build`, `next start -p 3000`) that takes NEXT_PUBLIC_API_BASE_URL and NEXT_PUBLIC_APP_ENV as build arguments; it is used for local demo and E2E only, never for Netlify. | Must | SRC-17 Phase 14A, RSK-12 | Test |
 | DEP-024 | `alembic.ini` shall live at the repository root with `script_location = backend/alembic`, so `alembic upgrade head` works from the repository root in every environment. | Must | contract §3, TRD 06 | Test |
 
@@ -253,7 +253,7 @@ Procedure:
    - Root directory: repository root (`/`); config-as-code file: `/railway.toml`.
    - Builder: Dockerfile, path `backend/Dockerfile`.
    - Pre-deploy command (from `railway.toml`): `alembic upgrade head` (runs in its own container before the new deployment starts; a failure aborts the deployment, DEP-065).
-   - Start command (from `railway.toml`): `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`.
+   - Start command (from `railway.toml`): `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (client IP from `X-Forwarded-For`, TRD 05 API-103).
    - Healthcheck path `/api/v1/health`, timeout 120 s.
    - Watch paths: `backend/**`, `analytics/**`, `alembic.ini`, `railway.toml` (other changes do not redeploy the backend).
    - "Wait for CI" enabled in `staging` (deploy only after GitHub checks of the commit pass, TRD 16); for `production` the release workflow verifies the same checks before it deploys (TRD 16 CIC-053).
@@ -289,7 +289,7 @@ watchPatterns = ["backend/**", "analytics/**", "alembic.ini", "railway.toml"]
 
 [deploy]
 preDeployCommand = ["alembic upgrade head"]   # DEP-040: migrations never run in the web start command
-startCommand = "sh -c 'uvicorn backend.main:app --host 0.0.0.0 --port $PORT'"
+startCommand = "sh -c 'uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips=\"*\"'"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
@@ -299,7 +299,7 @@ numReplicas = 1
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-040 | The Railway `backend` service shall run migrations only as its pre-deploy command `alembic upgrade head`, and its start command shall be `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` (no migration step). Because Railway runs the pre-deploy command with the service's variables, DATABASE_MIGRATION_URL is a variable of the `backend` service only (never of `nightly`); application code (request handling, pipeline, jobs) shall never read it: only `backend/alembic/env.py` and the closed list of TRD 20 §4.3 (`seed`, `reset-test-db`, `purge-resident`, `rebuild`, `set-config` and `database/seeds/load_evaluation_ground_truth.py`) may, enforced by an import-boundary test (TRD 06, TRD 24 D-58, RSK-15). | Must | contract task, TRD 06, TRD 12 SEC-111 | Inspection; Test |
+| DEP-040 | The Railway `backend` service shall run migrations only as its pre-deploy command `alembic upgrade head`, and its start command shall be `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (no migration step; the proxy flags make the left-most `X-Forwarded-For` address the client IP, TRD 05 API-001, API-103). Because Railway runs the pre-deploy command with the service's variables, DATABASE_MIGRATION_URL is a variable of the `backend` service only (never of `nightly`); application code (request handling, pipeline, jobs) shall never read it: only `backend/alembic/env.py` and the closed list of TRD 20 §4.3 (`seed`, `reset-test-db`, `purge-resident`, `rebuild`, `set-config` and `database/seeds/load_evaluation_ground_truth.py`) may, enforced by an import-boundary test (TRD 06, TRD 24 D-58, RSK-15). | Must | contract task, TRD 06, TRD 12 SEC-111 | Inspection; Test |
 | DEP-041 | The Railway healthcheck path shall be `/api/v1/health`; a deployment whose healthcheck does not return 200 within 120 s shall not receive traffic (Railway keeps the previous deployment active). | Must | TRD 17 | Demo |
 | DEP-042 | The backend service shall run exactly 1 replica in staging and production; app sleeping may be enabled to save cost, except on demo days when it shall be disabled. | Must | RSK-07 | Inspection |
 | DEP-046 | The nightly full pipeline run shall be executed by a separate Railway Cron Job service `nightly` running `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` UTC; there shall be no in-process scheduler in the backend. | Must | contract R18, contract §7 trigger | Inspection |
@@ -595,3 +595,4 @@ Mapping from the current interim stack:
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (§4.8 bootstrap (D-85), create-user/create-api-key/revoke-api-key refusals (D-86), export-openapi (D-89); DEP-047 NIGHTLY_RUN_HOUR_LOCAL; DEP-075 syntax; DEP-080/DEP-081 redirect and TLS checks; DEP-096 OQ-01 interim; DEP-097 single drill (D-77); guide path; alembic.ini Phase 3 (D-90)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-10): one uvicorn command with `--proxy-headers --forwarded-allow-ips="*"` in DEP-022 (image default), DEP-040 (Railway start command), §4.5 step 2 and the `railway.toml` outline, matching TRD 05 API-001 and API-103 | — |

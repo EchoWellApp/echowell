@@ -81,7 +81,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 ## Outputs
 
 - `.github/workflows/ci.yml` (full), `.github/dependabot.yml`, `.gitleaks.toml`, `pyproject.toml` `[tool.importlinter]` and `[tool.coverage]` sections, `SECURITY_EXCEPTIONS.md` (empty table with header).
-- Repository settings: branch protection ruleset on `main` (screenshot in PR #3 at the Phase 9 checkpoint, AC-GIT-01).
+- Repository settings: branch protection ruleset on `main` (screenshot in the Phase 9 checkpoint PR of Block 3, AC-GIT-01).
 - Per-run artifacts `backend-reports` and `frontend-coverage`.
 
 ## Data Flow
@@ -137,7 +137,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 
 ## Testing Requirements
 
-- CI dry run on PR #3 at the Phase 9 checkpoint (TRD 25 §4.6 Phase 9 Required tests).
+- CI dry run on the Phase 9 checkpoint PR of Block 3 (TRD 25 §4.6 Phase 9 Required tests).
 - Negative tests per AC-CIC-01..AC-CIC-04 executed on throwaway branches: composite sign change, `tests/fixtures/sample.wav`, endpoint without contract update, PR title "Updated stuff".
 - Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite.
 
@@ -161,7 +161,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 - All FEAT-078 acceptance criteria pass.
 - All FEAT-078 acceptance criteria demonstrated (negative cases on throwaway branches, then closed).
 - Every job has `timeout-minutes` ≤ 20 and runs on `ubuntu-24.04`.
-- Branch protection screenshot attached to PR #3 at the Phase 9 checkpoint (AC-GIT-01); `CONFIGURATION_VALIDATION_REPORT.md` (FEAT-087) records the check list.
+- Branch protection screenshot attached to the Phase 9 checkpoint PR of Block 3 (AC-GIT-01); `CONFIGURATION_VALIDATION_REPORT.md` (FEAT-087) records the check list.
 - Batch report entry (AGT-022).
 
 ## Implementation Notes
