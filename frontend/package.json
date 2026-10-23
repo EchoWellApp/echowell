@@ -1,1 +1,55 @@
-{}
+{
+  "name": "echowell-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e:readonly": "playwright test --grep-invert \"@isolated|@mutating\"",
+    "test:e2e:mutating": "playwright test --grep @mutating --workers=1",
+    "test:e2e:isolated": "playwright test -c playwright.isolated.config.ts --project=chromium --workers=1",
+    "gen:api": "openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.59.20",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "2.13.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.55.1",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.0.1",
+    "@testing-library/user-event": "14.5.2",
+    "@types/node": "20.17.58",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
+    "@vitejs/plugin-react": "4.3.4",
+    "@vitest/coverage-v8": "2.1.9",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.35",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "jsdom": "25.0.1",
+    "msw": "2.6.9",
+    "openapi-typescript": "7.4.4",
+    "prettier": "3.3.3",
+    "typescript": "5.6.3",
+    "vitest": "2.1.9"
+  }
+}
