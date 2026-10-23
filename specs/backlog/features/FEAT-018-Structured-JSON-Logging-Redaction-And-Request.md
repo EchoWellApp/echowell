@@ -155,8 +155,8 @@ None; `analytics/` stays free of logging handlers (LOG-006).
 
 ## Definition of Done
 
-- All FEAT-018 acceptance criteria pass (AC-06 when FEAT-020 is present in the same Phase 5 checkpoint of PR #3).
-- `create_app()`, the nightly job entry point and the CLI all call `configure_logging` once; delivered in the Phase 5 checkpoint of PR #3.
+- All FEAT-018 acceptance criteria pass (AC-06 when FEAT-020 is present in the same Phase 5 checkpoint PR of Block 3).
+- `create_app()`, the nightly job entry point and the CLI all call `configure_logging` once; delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

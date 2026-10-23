@@ -32,7 +32,7 @@ Bound the request rate of every authenticated caller so that password guessing, 
 ## Scope
 
 - `backend/core/rate_limit.py`: one slowapi `Limiter` with in-memory storage, created in `create_app()`.
-- Key functions: client IP = left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` on Railway only), socket peer locally; API key identity = SHA-256 of `X-API-Key`; user identity = user id from the authenticated principal.
+- Key functions: client IP = left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040), socket peer locally (the Compose command omits the flags); API key identity = SHA-256 of `X-API-Key`; user identity = user id from the authenticated principal.
 - Limits: `POST /api/v1/auth/login` = `RATE_LIMIT_LOGIN` per client IP (default `5/minute`); `POST /api/v1/sessions` and `POST /api/v1/ingest` = `RATE_LIMIT_INGEST` (default `600/minute`) per API key hash or per admin user id; all other authenticated endpoints = `300/minute` per user id; `GET /api/v1/health` exempt.
 - 429 handler producing Problem `RATE_LIMITED` with `Retry-After` (seconds) through the FEAT-019 error model.
 - On a login request rejected by the limiter, an `auth.login.failed` audit row with `reason = rate_limited`; no audit row for other 429s.
@@ -101,7 +101,7 @@ None.
 
 - Login brute-force protection per IP (SEC-091) in addition to per-e-mail lockout (SEC-015).
 - Ingest flood protection per key (SEC-090).
-- The IP is taken from the trusted platform header only on Railway (`--forwarded-allow-ips="*"` there only; API-103).
+- The IP is taken from the trusted platform header only behind the hosting edge (`--forwarded-allow-ips="*"` only in the deployed start commands; API-103).
 
 ## Error Handling
 
@@ -133,11 +133,11 @@ None.
 ## Definition of Done
 
 - All FEAT-022 acceptance criteria pass; TST-131 passes with the autouse reset fixture.
-- Delivered in the Phase 5 checkpoint of PR #3.
+- Delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 
-- Set uvicorn `--forwarded-allow-ips="*"` only in the Railway start command; locally the socket peer is the key (API-103).
+- Set uvicorn `--proxy-headers --forwarded-allow-ips="*"` only in the deployed start commands (DEP-022 image default, DEP-040 Railway start command), never in the local Compose command; locally the socket peer is the key (API-103).
 - slowapi decorators need the `Request` parameter on handlers; keep handlers `def` (API-007).
 - Use the SHA-256 of the key (not the plaintext) as the limit key so no plaintext key is held in limiter memory beyond the request.
 - Because `get_db()` rolls back on exceptions, write the `rate_limited` audit row in its own committed transaction (same pattern as FEAT-020's failed-login row).

@@ -138,7 +138,7 @@ None beyond standard error propagation; connection failures surface through the 
 ## Definition of Done
 
 - All FEAT-013 acceptance criteria pass; `alembic check` clean; `database/schema.sql` regenerated.
-- `get_db()` from FEAT-003 uses `SessionLocal` from this feature; delivered in the Phase 4 checkpoint of PR #3.
+- `get_db()` from FEAT-003 uses `SessionLocal` from this feature; delivered in the Phase 4 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

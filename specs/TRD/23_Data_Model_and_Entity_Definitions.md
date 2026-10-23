@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -743,7 +743,9 @@ Cross-cutting schemas: `common.py` : `PageMeta` (`items`, `total`, `limit`, `off
 
 `backend/models/evaluation.py` is an additional model file (not in the original list) holding `EvaluationGroundTruth`; it is read
 only by `backend/services/analytics_summary.py` through a separate engine bound to `DATABASE_READONLY_URL` (TRD 20
-PGS-040, contract R27); no repository on the `DATABASE_URL` engine maps it.
+PGS-040, contract R27); no repository on the `DATABASE_URL` engine maps it. This direct read is the one sanctioned exception
+to the rule that only repositories build queries (TRD 05 API-005): `evaluation_ground_truth` is a test-only table with its own
+read-only connection, and no other service may query a table outside `backend/repositories/` (PR #3 review, checkpoint 1 Q-8).
 
 ### 4.7 Source column ↔ database column mapping
 
@@ -920,3 +922,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-03) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (resident_code pattern per TRD 20; ingest_rejections.row_number (D-84); in use since/until (D-82)) | — |
+| 0.9 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-8): §4.6 states that the `analytics_summary.py` read of `evaluation_ground_truth` through the read-only engine is the one exception to TRD 05 API-005 | — |

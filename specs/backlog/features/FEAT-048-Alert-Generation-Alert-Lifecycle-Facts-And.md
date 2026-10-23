@@ -139,7 +139,7 @@ None in `analytics/` (LOG-006); the runner logs alert counts (`alerts_opened`) a
 - All FEAT-048 acceptance criteria pass.
 - `generate_alerts` and `leaning_most` implemented with the binding signatures; AL-01..AL-03 and AN-08 pass (TST-020); test file exists (TST-011).
 - `GET /alerts` returns computed `leaning_most`; OAS-027 passes on DS-07.
-- AL-04 and AC-CUS-07 pass with FEAT-053 in the same Phase 6 checkpoint of PR #3.
+- AL-04 and AC-CUS-07 pass with FEAT-053 in the same Phase 6 checkpoint PR of Block 3.
 - The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
 
 ## Implementation Notes

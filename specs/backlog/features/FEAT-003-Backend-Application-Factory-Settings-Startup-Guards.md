@@ -37,9 +37,9 @@ Give the backend its single entry point and configuration backbone: `backend.mai
 - Startup validation executed before the app accepts traffic: exit code 1 and one CRITICAL `startup_config_invalid` record naming invalid variables and the rule, never their values.
 - Guards: `APP_ENV=production` refuses `PIPELINE_PROFILE=test_v0_1`, non-empty `PIPELINE_AS_OF`, non-empty `CORS_ORIGIN_REGEX`, `LOG_FORMAT=console` and `http://` CORS origins; `APP_ENV` in {staging, production} refuses database URLs without `sslmode=require`/`verify-full` and `RATE_LIMIT_LOGIN` other than `5/minute`; `JWT_SECRET` < 32 bytes refused everywhere; `FACILITY_NAME` containing `Edge4Care` refused; `DATABASE_URL` scheme normalised to `postgresql+psycopg://`.
 - The guard function is reusable by `backend/jobs/nightly_run.py` and by `backend/cli.py` (operator commands validate only the ENV-053 subset).
-- `backend/main.py`: `create_app()` mounting routers under `/api/v1`, served by uvicorn with `--proxy-headers`.
+- `backend/main.py`: `create_app()` mounting routers under `/api/v1`, served by uvicorn with `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands (API-001; TRD 15 DEP-022, DEP-040).
 - `backend/api/deps.py`: `get_db()` (per-request session, commit/rollback/close), `get_pagination()` (limit 1..500 default 50, offset ≥ 0 default 0), override-friendly for tests.
-- `backend/api/health.py` (existing skeleton file): `GET /api/v1/health`.
+- `backend/api/health.py` (existing skeleton file): `GET /api/v1/health`, whose handler calls the one service function `backend/services/health_service.py` `get_health()` (API-003; TRD 05 §4.1, §4.12).
 
 ## Out of Scope
 
@@ -92,7 +92,7 @@ Give the backend its single entry point and configuration backbone: `backend.mai
 
 ## Data Flow
 
-Process start → `Settings()` reads environment (plus `.env` in local/test) → validators and guards run → on failure: CRITICAL log, `sys.exit(1)` → on success: `create_app()` builds the app, mounts routers under `/api/v1` → uvicorn serves. Health request → `health` handler → `SELECT 1` with 2 s timeout through the engine → 200 ok or 503 degraded with `version` = `GIT_SHA` and `time` = UTC now.
+Process start → `Settings()` reads environment (plus `.env` in local/test) → validators and guards run → on failure: CRITICAL log, `sys.exit(1)` → on success: `create_app()` builds the app, mounts routers under `/api/v1` → uvicorn serves. Health request → `health` handler → `health_service.get_health()` → `SELECT 1` with 2 s timeout through the engine → 200 ok or 503 degraded with `version` = `GIT_SHA` and `time` = UTC now.
 
 ## Dependencies
 

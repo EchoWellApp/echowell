@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.13 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -32,8 +32,8 @@ public repository.
 | SRC-07 | Preprint (linked only: https://preprints.jmir.org/preprint/113062, DOI 10.2196/preprints.113062; see `specs/business-requirements/REFERENCES.md`) |
 | SRC-12 | TRD Generation Prompt — "Do not create additional TRD files", traceability, no placeholders |
 | SRC-17 | Implement_Feature_Batches.md — batch phases 7–15 |
-| SRC-20 | Team 2 Prompt Instructions (PR plan), shared Teams folder, provided 19 Oct 2026; not stored in the repository (TRD 24 §3, D-100) |
-| D-99 / D-100 | TRD 24 decisions from the PR #2 review: `main` plus feature branches only; PR plan PR #1–PR #5 with review checkpoints in PR #3 |
+| SRC-20 | Team 2 Prompt Instructions (team plan Block 1–Block 5, formerly named "PR #1"–"PR #5"), shared Teams folder, provided 19 Oct 2026; not stored in the repository (TRD 24 §3, D-100, D-101) |
+| D-99 / D-100 / D-101 | TRD 24 decisions from the PR #2 and PR #3 reviews: `main` plus feature branches only; team plan Block 1–Block 5, with each of the nine Block 3 checkpoints a separate PR to `main` |
 | D-OWNER-1 | Owner decision 18 Oct 2026: preprint PDF removed for licence reasons; third-party-licensed documents are linked, not committed |
 | TRD 12 | Security and Authentication |
 | TRD 15 | Deployment and DevOps |
@@ -56,6 +56,7 @@ echowell/
 ├── backend/                  FastAPI app: main.py, cli.py, api/, models/, schemas/, services/, repositories/, core/, alembic/,
 │                             Dockerfile, requirements.txt, requirements-dev.txt
 ├── analytics/                pure-Python engine (contract §3 module list)
+├── scripts/                  run_engine.py (engine command line, TRD 07 ANL-007), dump_schema.sh (TRD 20 PGS-017)
 ├── database/                 schema.sql (generated reference DDL), seeds/, roles/provision_login_roles.sql (local/CI)
 ├── tests/                    unit/, integration/, contract/, security/, validation/, performance/, smoke/, fixtures/ (TRD 13 §4.2)
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
@@ -79,23 +80,33 @@ echowell/
 gitGraph
   commit id: "main"
   branch feat/implement-features
-  commit id: "Phase 7 design docs"
-  commit id: "Phase 8 skeleton"
+  commit id: "cp1 Phase 7 design docs"
   checkout main
+  merge feat/implement-features
+  branch feat/cp2-project-skeleton
+  commit id: "cp2 Phase 8 skeleton"
+  checkout main
+  merge feat/cp2-project-skeleton
   branch fix/cusum-reset
   commit id: "fix(analytics): ..."
   checkout main
   merge fix/cusum-reset
-  checkout feat/implement-features
-  commit id: "Phases 9-15"
+  branch feat/cp9-final-audit
+  commit id: "cp9 Phase 15 final audit"
   checkout main
-  merge feat/implement-features tag: "v0.1.0"
+  merge feat/cp9-final-audit
+  branch feat/deployment
+  commit id: "Block 4 deploy"
+  checkout main
+  merge feat/deployment tag: "v0.1.0"
 ```
+
+Each Block 3 checkpoint is its own branch and PR, created from the latest `main` and merged before the next checkpoint starts (checkpoints 3–8 are left out of the diagram; branch names in `specs/backlog/IMPLEMENTATION_ROADMAP.md` §2.1; TRD 24 D-101).
 
 | Branch | Purpose | Deploys to | Protection |
 |---|---|---|---|
-| `main` | The only long-lived branch; every PR targets it; always releasable | staging, automatically on every merge; production only through a manual, approved release run of `deploy-production.yml` for a chosen `main` commit (TRD 15 §4.9–4.10) | PR required, 1 approving review (CODEOWNERS where applicable), required checks (TRD 16 CIC-070), up-to-date before merge, no force push, no deletion, conversation resolution required; no linear-history rule (merge commits of the PR plan PRs, GIT-014) |
-| `feat/<short-kebab>` | New feature, or one PR of the PR plan (e.g. `feat/implement-features` for PR #3, GIT-030) | Netlify deploy preview of the staging site only | none |
+| `main` | The only long-lived branch; every PR targets it; always releasable | staging, automatically on every merge; production only through a manual, approved release run of `deploy-production.yml` for a chosen `main` commit (TRD 15 §4.9–4.10) | PR required, 1 approving review (CODEOWNERS where applicable), required checks (TRD 16 CIC-070), up-to-date before merge, no force push, no deletion, conversation resolution required; no linear-history rule (merge commits of the Block 3–5 PRs, GIT-014) |
+| `feat/<short-kebab>` | New feature, or one PR of the team plan (e.g. `feat/implement-features` for Block 3 checkpoint 1 (GitHub PR #3), `feat/cp2-project-skeleton` for checkpoint 2, GIT-030) | Netlify deploy preview of the staging site only | none |
 | `fix/<short-kebab>` | Bug fix, including an urgent production fix (merged to `main`, then released) | deploy preview | none |
 | `docs/<short-kebab>` | Documentation / TRD changes | deploy preview | none |
 | `chore/<short-kebab>` | Tooling, dependencies, CI | deploy preview | none |
@@ -105,18 +116,18 @@ environment (TRD 15), which deploys from `main` (TRD 24 D-99).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-010 | `main` shall be protected with: pull request required, at least 1 approving review, dismissal of stale approvals on new commits, CODEOWNERS review required, required status checks of TRD 16 CIC-070, branch up to date, conversation resolution, no force pushes and no deletion; administrators shall not bypass. "Require linear history" is not enabled, because the PR plan PRs are merged with merge commits (GIT-014). | Must | contract §13, TRD 16, D-99 | Inspection |
+| GIT-010 | `main` shall be protected with: pull request required, at least 1 approving review, dismissal of stale approvals on new commits, CODEOWNERS review required, required status checks of TRD 16 CIC-070, branch up to date, conversation resolution, no force pushes and no deletion; administrators shall not bypass. "Require linear history" is not enabled, because the Block 3–5 PRs are merged with merge commits (GIT-014). | Must | contract §13, TRD 16, D-99 | Inspection |
 | GIT-011 | Working branches shall be named `feat/`, `fix/`, `docs/` or `chore/` followed by a lowercase kebab-case description of at most 40 characters. | Must | contract §13, D-99 | Inspection |
-| GIT-012 | Every working branch shall be a feature branch created from `main` (short-lived; the PR #3 branch lives for the duration of its review checkpoints, GIT-030) and shall be merged back only by a pull request that targets `main` directly; there shall be no `staging` branch and no promotion merge between long-lived branches. An urgent production fix is a `fix/` PR to `main` followed by a release run (TRD 15 §4.10). | Must | TRD 15 §4.9–4.10, D-99 | Inspection |
+| GIT-012 | Every working branch shall be a feature branch created from the latest `main` (short-lived; each Block 3 checkpoint has its own branch, which lives until its checkpoint PR is merged, GIT-030) and shall be merged back only by a pull request that targets `main` directly; there shall be no `staging` branch and no promotion merge between long-lived branches. An urgent production fix is a `fix/` PR to `main` followed by a release run (TRD 15 §4.10). | Must | TRD 15 §4.9–4.10, D-99 | Inspection |
 | GIT-013 | A merge to `main` shall change only the staging environment (automatic deploy, TRD 15 DEP-004); production shall change only through an approved manual run of `deploy-production.yml` for a chosen `main` commit (TRD 15 DEP-002, DEP-003; TRD 16 CIC-053). This replaces the former back-merge rule (D-99). | Must | TRD 15, D-99 | Inspection |
-| GIT-014 | The PR plan PRs (PR #3–PR #5, GIT-030) shall be merged with "Create a merge commit", so the commits of each review checkpoint stay visible on `main`; all other PRs with "Squash and merge"; `main` history reads as Conventional Commits; "Rebase and merge" shall be disabled. | Should | GIT-020, D-100 | Inspection |
+| GIT-014 | The team plan PRs (the nine Block 3 checkpoint PRs and the Block 4 and Block 5 PRs, GIT-030) shall be merged with "Create a merge commit", so the reviewed commits of each checkpoint stay visible on `main`; all other PRs with "Squash and merge"; `main` history reads as Conventional Commits; "Rebase and merge" shall be disabled. | Should | GIT-020, D-100 | Inspection |
 | GIT-015 | Merged working branches shall be deleted automatically ("Automatically delete head branches" enabled). | Should | — | Inspection |
 
 ### 4.3 Commits
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-020 | Commit messages that land on `main` (squash titles, merge titles and the checkpoint commits of the PR plan PRs) shall follow Conventional Commits 1.0.0: `<type>(<optional scope>)!: <description>` with type in `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `build`, `perf`, `release`. | Must | contract §13, TRD 16 CIC-022 | Test |
+| GIT-020 | Commit messages that land on `main` (squash titles, merge titles and the checkpoint commits of the team plan PRs) shall follow Conventional Commits 1.0.0: `<type>(<optional scope>)!: <description>` with type in `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `build`, `perf`, `release`. | Must | contract §13, TRD 16 CIC-022 | Test |
 | GIT-021 | Scopes shall be one of `frontend`, `api`, `analytics`, `db`, `ingest`, `auth`, `ci`, `deploy`, `trd`, `deps`, `tests`, `docs`. | Should | — | Inspection |
 | GIT-022 | A breaking change to the API contract (TRD 19) or the database schema that requires a non-additive migration shall be marked with `!` and a `BREAKING CHANGE:` footer. | Must | TRD 15 DEP-061 | Inspection |
 | GIT-023 | Commits created with AI assistance shall carry the attribution trailers required by the tool used (e.g. `Co-Authored-By:`), and the PR template shall record which prompts (review checkpoints) produced the change. | Should | SRC-17 | Inspection |
@@ -126,11 +137,11 @@ environment (TRD 15), which deploys from `main` (TRD 24 D-99).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-030 | Work shall follow the team PR plan (SRC-20, TRD 24 D-100): PR #1 TRD generation; PR #2 feature backlog; PR #3 implement features — every prompt of SRC-17 `Implement_Feature_Batches.md` Phases 7–13, 14A and 15, run one at a time on one feature branch (`feat/implement-features`), each prompt being one review checkpoint of that PR; PR #4 deployment (Phase 14B plus the manual Netlify, Railway and Neon setup); PR #5 test cases (`Test_Case_Generation_Prompt.md`). Other changes are separate short-lived `fix/`, `docs/` or `chore/` PRs. | Must | contract §13, SRC-17, SRC-20, D-100 | Inspection |
-| GIT-031 | Within PR #3 the next prompt shall not start until the commits of the previous checkpoint are pushed to the PR and reviewed by the algorithm lead (review comment approving the checkpoint); PR #3 is merged into `main` after its last checkpoint (Phase 15) is approved; PR #4 starts after PR #3 is merged, and PR #5 after PR #4. | Must | contract §13, D-100 | Inspection |
+| GIT-030 | Work shall follow the team plan (SRC-20, TRD 24 D-100, D-101): Block 1 TRD generation (merged as PR #1); Block 2 feature backlog (merged as PR #2); Block 3 implement features — every prompt of SRC-17 `Implement_Feature_Batches.md` Phases 7–13, 14A and 15, run one at a time, each prompt being one review checkpoint with its own PR to `main` on its own feature branch created from the latest `main` (checkpoint 1: `feat/implement-features`, GitHub PR #3); Block 4 deployment (Phase 14B plus the manual Netlify, Railway and Neon setup), one PR; Block 5 test cases (`Test_Case_Generation_Prompt.md`), one PR. Other changes are separate short-lived `fix/`, `docs/` or `chore/` PRs. | Must | contract §13, SRC-17, SRC-20, D-100, D-101 | Inspection |
+| GIT-031 | Within Block 3 the next checkpoint prompt shall not start until the previous checkpoint's PR is approved by the algorithm lead (an approving review) and merged to `main`; the next checkpoint branch is then created from the updated `main`. Block 4 starts after the checkpoint 9 (Phase 15) PR is merged, and Block 5 after the Block 4 PR is merged. | Must | contract §13, D-100, D-101 | Inspection |
 | GIT-032 | Any PR that changes `analytics/`, `tests/validation/`, `database/seeds/`, `backend/alembic/` or `specs/TRD/0[7-9]_*`/`14_*` shall be approved by the algorithm lead (enforced by CODEOWNERS). | Must | BR-15, BR-18 | Inspection |
 | GIT-033 | PR descriptions shall follow `.github/pull_request_template.md` (below); a PR with an empty "Requirements implemented" or "Testing" section shall not be approved. | Must | SRC-12 | Inspection |
-| GIT-034 | A PR outside the PR plan, and each review checkpoint of PR #3, should change at most 1,500 lines excluding generated files (`docs/api_reference/openapi.json`, lockfiles, migrations autogenerate output); a larger checkpoint shall be split into sub-batches (successive reviewed commits in the same PR) with a stated order. | Should | D-100 | Inspection |
+| GIT-034 | Every PR, including each Block 3 checkpoint PR, should change at most 1,500 lines excluding generated files (`docs/api_reference/openapi.json`, lockfiles, migrations autogenerate output); a larger checkpoint shall be split into sub-batches (successive reviewed commits in the same checkpoint PR) with a stated order. | Should | D-100, D-101 | Inspection |
 | GIT-035 | Draft PRs shall be used for incomplete work; CI runs on drafts but review is requested only when ready. | Should | — | Inspection |
 | GIT-036 | Reviewers shall respond within 1 working day during the build block (19 Oct–15 Nov 2026). | Should | RSK-12 | Inspection |
 
@@ -141,7 +152,7 @@ PR template (`.github/pull_request_template.md`):
 <!-- What changes and why, in 2-5 sentences -->
 
 ## Prompt batch
-<!-- PR plan PR and checkpoints, e.g. "PR #3, checkpoints Phase 7 to Phase 15"; or "n/a (manual change)" -->
+<!-- Team plan block and checkpoint, e.g. "Block 3 checkpoint 2 (Implement_Feature_Batches.md Phase 8)"; or "n/a (manual change)" -->
 
 ## Requirements implemented
 <!-- TRD requirement IDs, e.g. ANL-010, BSC-004; BR-xx where relevant -->
@@ -403,7 +414,7 @@ updates:
 
 ## 7. Acceptance Criteria
 
-- AC-GIT-01 Repository settings show branch protection on `main` matching GIT-010, no `staging` branch, and the GitHub environment `production` with a required reviewer (screenshot attached to PR #3 at the Phase 14A checkpoint).
+- AC-GIT-01 Repository settings show branch protection on `main` matching GIT-010, no `staging` branch, and the GitHub environment `production` with a required reviewer (screenshot attached to the Block 3 checkpoint 8 (Phase 14A) PR).
 - AC-GIT-02 `git ls-files | grep -Ei '\.(wav|mp3|flac|m4a|ogg|opus|aac|webm)$'` returns nothing; `git ls-files | grep -E '(^|/)\.env' | grep -v example` returns nothing.
 - AC-GIT-03 `git ls-files specs/business-requirements` lists no preprint or other third-party-licensed document; `REFERENCES.md` lists SRC-07 by URL and DOI.
 - AC-GIT-04 `grep -rn "EchoWell_preprint" specs/TRD docs` returns no repository path reference.
@@ -418,7 +429,7 @@ updates:
 - The preprint PDF was removed from the working tree and, on 19 Oct 2026, purged from the git history of `main` and `trd-generation` (history rewritten and force-pushed with the owner's and reviewer's approval; D-29). Any clone made before that date must be re-cloned. Clearing GitHub's cached copies of the old commit IDs requires a request to GitHub Support by the repository owner.
 - `specs/business-requirements/EchoWell_PROSPERO.pdf` is a public registration record and may stay; if its licence is restrictive, apply GIT-093.
 - Keep `docs/api_reference/openapi.json` formatted with `json.dumps(..., indent=2, sort_keys=True)` so diffs are stable (TRD 16 CIC-018).
-- AI agents must read this TRD before opening PRs (TRD 25). Reports named by SRC-17 (e.g. `ALGORITHM_VALIDATION_REPORT.md`, `validation_results.json`, implementation reports) live in `docs/reports/` (contract R6) and are committed only by the PR #3 checkpoint (or PR #4) that produces them; transient test output goes to `build/` (gitignored).
+- AI agents must read this TRD before opening PRs (TRD 25). Reports named by SRC-17 (e.g. `ALGORITHM_VALIDATION_REPORT.md`, `validation_results.json`, implementation reports) live in `docs/reports/` (contract R6) and are committed only by the Block 3 checkpoint PR (or the Block 4 PR) that produces them; transient test output goes to `build/` (gitignored).
 
 ## 9. Open Questions
 
@@ -439,3 +450,4 @@ updates:
 | 0.10 | 19 Oct 2026 | Preprint purged from git history (PR #1 review); OQ-21/D-29 resolved | — |
 | 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (branch table: linear history on staging only (GIT-010); GIT-053 wording avoids the literal marker words so the TRD 25 Phase 1 grep returns nothing) | — |
 | 0.12 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.13 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5 and one PR per Block 3 checkpoint (D-101): §3 references, branch table, §4.2 diagram, GIT-010, GIT-012, GIT-014, GIT-020, GIT-030, GIT-031, GIT-034, PR template, AC-GIT-01, §8; root `scripts/` added to the §4.1 layout (checkpoint 1 Q-4) | — |

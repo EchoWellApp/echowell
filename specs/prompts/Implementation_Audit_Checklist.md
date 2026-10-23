@@ -1,6 +1,6 @@
-# Implementation Audit Checklist (PR #3)
+# Implementation Audit Checklist (Block 3)
 
-These prompts were split out of `TRD_Implementation_Audit_Checklist.md`, which now covers the TRD audit only (PR #1). They build and audit the application, so they run in PR #3 (Implement Features), alongside `Implement_Feature_Batches.md`.
+These prompts were split out of `TRD_Implementation_Audit_Checklist.md`, which now covers the TRD audit only (Block 1). They build and audit the application, so they run in Block 3 (Implement Features, one PR per checkpoint), alongside `Implement_Feature_Batches.md`.
 
 Where a step here and a phase in `Implement_Feature_Batches.md` cover the same work, run it once. TRD 25 maps each step to its build phase.
 

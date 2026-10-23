@@ -160,7 +160,7 @@ None. `analytics/` is bind-mounted into the backend container so edits apply on 
 
 ## Implementation Notes
 
-- Resolved (TRD 24 D-90): this feature authors `database/roles/provision_login_roles.sql` and the root `alembic.ini` in Phase 3, so the `echowell_*_login` roles exist and FEAT-006-AC-02 (health 200 with database "ok") is verifiable in the Phase 3 checkpoint of PR #3; FEAT-008 adds migrations, grants and grant tests on top.
+- Resolved (TRD 24 D-90): this feature authors `database/roles/provision_login_roles.sql` and the root `alembic.ini` in Phase 3, so the `echowell_*_login` roles exist and FEAT-006-AC-02 (health 200 with database "ok") is verifiable in the Phase 3 checkpoint PR of Block 3; FEAT-008 adds migrations, grants and grant tests on top.
 - `alembic upgrade head` with the empty Alembic environment of Phase 3 (TRD 25 §4.6 Phase 3 Outputs list `backend/alembic/`) is a no-op; this feature adds the root `alembic.ini` (DEP-024, D-90) and FEAT-008 the migrations.
 - TRD 15 DEP-010, TRD 16 CIC-012 and TRD 13 TST-002 all name `postgres:16-alpine` (TST-002 aligned in the PR #2 consistency fixes).
 - Initialisation scripts in `/docker-entrypoint-initdb.d` run only on an empty volume; changes to the script require `docker compose down -v`.

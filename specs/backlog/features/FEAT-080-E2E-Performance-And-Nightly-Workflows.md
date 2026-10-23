@@ -125,7 +125,7 @@ None in code. `nightly-validation` runs the validation suite in random order and
 
 ## Testing Requirements
 
-- Dry run of `e2e.yml` on the Phase 9 checkpoint of PR #3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests).
+- Dry run of `e2e.yml` on the Phase 9 checkpoint PR of Block 3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests).
 - Suites executed: E2E-01..E2E-21, FE-185..FE-193, TST-110, TST-187 (FEAT-076); TST-120..TST-125 (FEAT-079); TDV-080..TDV-083 (FEAT-061).
 
 ## Acceptance Criteria
@@ -133,11 +133,11 @@ None in code. `nightly-validation` runs the validation suite in random order and
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-080-AC-01 | On a pull request to `main`, the `playwright` job passes in Chromium, including `a11y.spec.ts` and the isolated run, and reports the status check `playwright`. | CIC-030, CIC-031, AC-TST-07 |
-| FEAT-080-AC-02 | A `workflow_dispatch` run executes `performance` and `nightly-validation`; `performance` uploads `performance-report` and passes all budgets. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 checkpoint of PR #3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | CIC-035, AC-CIC-10 |
+| FEAT-080-AC-02 | A `workflow_dispatch` run executes `performance` and `nightly-validation`; `performance` uploads `performance-report` and passes all budgets. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 checkpoint PR of Block 3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | CIC-035, AC-CIC-10 |
 | FEAT-080-AC-03 | The `nightly-validation` log contains the pytest-randomly seed, and a deliberately failing robustness step does not fail the job; without `tests/validation/robustness.py` the step is skipped and the job still passes. | CIC-037, AC-TDV-09 |
 | FEAT-080-AC-04 | A forced failure on a scheduled run creates or comments on an issue labelled `ci-failure`. Verified by: Demo (the demo method of CIC-033, applied to the condition stated in the criterion). | CIC-033 |
 | FEAT-080-AC-05 | `grep -n "secrets\." .github/workflows/e2e.yml` returns nothing, and every job has `timeout-minutes` ≤ 20. Verified by: Inspection (run the command in the criterion and check its output). | CIC-034, CIC-111 |
-| FEAT-080-AC-06 | The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before 15 Nov 2026. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 checkpoint of PR #3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | AC-CIC-09 |
+| FEAT-080-AC-06 | The nightly `e2e.yml` run passes on `main` for 3 consecutive nights before 15 Nov 2026. Verified by: Test (Dry run of `e2e.yml` on the Phase 9 checkpoint PR of Block 3 (Chromium path) and one `workflow_dispatch` run covering `performance` and `nightly-validation` (TRD 25 §4.6 Phase 9 Required tests)). | AC-CIC-09 |
 | FEAT-080-AC-07 | The `lighthouse` job runs on a pull request and reports Performance ≥ 80 and LCP ≤ 2.5 s for `/residents`. | CIC-116, TST-125 |
 
 ## Definition of Done

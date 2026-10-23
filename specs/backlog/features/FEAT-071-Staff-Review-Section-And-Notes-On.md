@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Implement the "Staff review" section on Resident detail (SRC-10): a note form (type, body 1–2000 characters, identifying-details hint, character counter, draft preserved on failure), the "Previous notes" list newest first showing only the latest versions, a "Mark as reviewed" button that opens the same `AlertReviewForm` as `/alerts` in a modal dialog only when the resident has a change alarm in the current epoch, the latest-review line, the OQ-05 open-question note, and a read-only mode without forms for researchers. Notes never change alert status; reviews are separate records.
+Implement the "Staff review" section on Resident detail (SRC-10): a note form (type, body 1–2000 characters, identifying-details hint, character counter, draft preserved on failure), the "Previous notes" list newest first showing only the latest versions, a "Mark as reviewed" button that opens the same `AlertReviewForm` as `/alerts` in a modal dialog only when the resident has a change alarm in the current epoch, the OQ-05 open-question note, and a read-only mode without forms for researchers. Notes never change alert status; reviews are separate records.
 
 ## Business Context
 
@@ -23,7 +23,7 @@ Implement the "Staff review" section on Resident detail (SRC-10): a note form (t
 ## Referenced TRDs
 
 - TRD 04 FE-085 (invalidations after note), FE-089 (draft preserved), FE-130..FE-135 (save note with `alert_id`, review dialog, disabled rules, confirmation, no UI state change after review, role gating), FE-187 (E2E step), §4.8 `StaffReviewForm`, `NotesList`, `ReviewDialog`.
-- TRD 11 UX-120..UX-138 (layout, controls and order, button styles, note vs review, empty-note message, OQ-05 note, API state after review, latest-review line, plain-text notes, append-only, confirmation, failure text, researcher text, note types, notes list, "Show all notes", review dialog, dialog save, role hiding).
+- TRD 11 UX-120..UX-138 (layout, controls and order, button styles, note vs review, empty-note message, OQ-05 note, API state after review, UX-127 withdrawn (no latest-review line, TRD 24 D-102), plain-text notes, append-only, confirmation, failure text, researcher text, note types, notes list, "Show all notes", review dialog, dialog save, role hiding).
 - TRD 12 SEC-124 (hint "Do not enter names or other identifying details.", 2000-character limit), SEC-043, SEC-076.
 - TRD 19 E-15 `GET /residents/{code}/notes`, E-16 `POST /residents/{code}/notes`, E-13 (open alarm), E-14 (review via dialog).
 - TRD 02 FR-190, FR-191, FR-193, FR-194, FR-195.
@@ -55,14 +55,14 @@ Implement the "Staff review" section on Resident detail (SRC-10): a note form (t
 | FEAT-071-FR-07 | "Previous notes" (h3) shall list notes newest first as "<Mon D, h:mm AM/PM> · <Type> · <display name>" followed by the note text exactly as typed (plain text, line breaks preserved), showing only latest versions (API default excludes superseded notes); "No notes yet." when empty; at most 10 initially with "Show all notes (<count>)". | UX-133, UX-134, UX-135, UX-128, FR-193 |
 | FEAT-071-FR-08 | "Mark as reviewed" shall open a modal native `<dialog>` titled "Review alarm · <R> · alarm since <Mon D>" containing the `/alerts` `AlertReviewForm` and a "Cancel" button; focus moves to its heading; Escape and Cancel close without saving and return focus to "Mark as reviewed". | FE-131, UX-136, FR-191 |
 | FEAT-071-FR-09 | Saving in the dialog shall create an alarm review (`POST /alerts/{id}/reviews`), close the dialog and announce "Review saved." (or the data-problem variant); `POST /alerts/{id}/acknowledge` is never called. | FE-131, UX-137 |
-| FEAT-071-FR-10 | After a review the badge, chart and alarm wording stay as returned by the API; when the alarm has at least one review, a line under the heading reads "Reviewed by <display name>, <Mon D, h:mm AM/PM> · <outcome label>. The alarm stays on (open question OQ-05)." from the latest review. | FE-134, UX-126, UX-127 |
+| FEAT-071-FR-10 | After a review the badge, chart and alarm wording stay as returned by the API; the section shows no "Reviewed by <display name> … <outcome label>" line and Resident detail makes no `GET /api/v1/alerts/{id}/reviews` call (the SRC-10 wireframe has none; reviewer and outcome are shown in "Previous reviews" on `/alerts`, FEAT-070). | FE-134, UX-126, UX-127, D-102 |
 | FEAT-071-FR-11 | The open-question note shall read "Open question (OQ-05): does review reset the tally or turn the alarm off? Not in pipeline v0.1 — a saved review marks the alarm as reviewed only; the alarm and the tally stay as they are." | UX-125, FR-195 |
 | FEAT-071-FR-12 | For researchers (`canWriteNotes` false) the controls shall be replaced by "Only clinicians and admins can add notes." while previous notes remain; "Mark as reviewed" shall not render for roles without `canReviewAlarms`. | FE-135, UX-132, UX-138, FR-194, SEC-043 |
 | FEAT-071-FR-13 | The UI shall offer no editing or deleting of saved notes. | UX-129 |
 
 ## Inputs
 
-- `GET /api/v1/residents/{code}/notes` → `StaffNoteList`; `GET /api/v1/alerts?resident_code=<R>` (open alarm id and alarm date of the current epoch); `GET /api/v1/alerts/{id}/reviews` (latest review line); `UiConfig` (via FEAT-070 form).
+- `GET /api/v1/residents/{code}/notes` → `StaffNoteList`; `GET /api/v1/alerts?resident_code=<R>` (open alarm id and alarm date of the current epoch); `UiConfig` (via FEAT-070 form). No `GET /api/v1/alerts/{id}/reviews` call (D-102).
 - User input: note type and body; role from `useAuth()`.
 
 ## Outputs
@@ -89,7 +89,7 @@ None directly; the backend inserts `staff_notes` rows (append-only) and audit `n
 
 ## API Impact
 
-Endpoints consumed: `GET /api/v1/residents/{resident_code}/notes` (E-15), `POST /api/v1/residents/{resident_code}/notes` (E-16), `GET /api/v1/alerts` (E-13), `GET /api/v1/alerts/{id}/reviews` (E-28), `POST /api/v1/alerts/{id}/reviews` (E-14), `GET /api/v1/config/ui` (E-32). None exposed.
+Endpoints consumed: `GET /api/v1/residents/{resident_code}/notes` (E-15), `POST /api/v1/residents/{resident_code}/notes` (E-16), `GET /api/v1/alerts` (E-13), `POST /api/v1/alerts/{id}/reviews` (E-14), `GET /api/v1/config/ui` (E-32). None exposed.
 
 ## Frontend Impact
 
@@ -116,7 +116,7 @@ None in the frontend; the backend writes `note.created` and `alert.reviewed` aud
 
 ## Testing Requirements
 
-- Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`, TST-090): controls and order, disabled rules (empty, > 2000), empty-note message, success message and cleared body with type kept, failure keeps draft, researcher replacement, "Mark as reviewed" only with an alarm; `NotesList` formatting, "No notes yet.", "Show all notes (n)"; `ReviewDialog` focus handling (Escape, Cancel, focus return).
+- Component (`components/StaffReviewForm/StaffReviewForm.test.tsx`, TST-090): controls and order, disabled rules (empty, > 2000), empty-note message, success message and cleared body with type kept, failure keeps draft, researcher replacement, "Mark as reviewed" only with an alarm, no "Reviewed by" line after a review (D-102); `NotesList` formatting, "No notes yet.", "Show all notes (n)"; `ReviewDialog` focus handling (Escape, Cancel, focus return).
 - E2E (`@mutating`, `mutating.spec.ts` step 2, FE-187 / E2E-09): add "Observation" note "Resident has a cold; nurse notified." on R09 and see it listed; "Mark as reviewed" → "Cold, cough or sore throat" + "Explained by a known cause" → Save → dialog closes, review in history, `/alerts` R09 "Reviewed", nav "Alerts (1)", badge "▲ Alarm since Oct 21".
 - E2E FE-188 part: researcher sees no note form.
 

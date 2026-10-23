@@ -168,7 +168,7 @@ None directly; callers log `ingest_record_rejected` with identifiers and error l
 ## Definition of Done
 
 - All FEAT-023 acceptance criteria pass; TST-030 passes; TST-031 passes once FEAT-026 and the pipeline exist.
-- The ING-023 code lists in code equal the TRD (unit test compares them); delivered in the Phase 5 checkpoint of PR #3.
+- The ING-023 code lists in code equal the TRD (unit test compares them); delivered in the Phase 5 checkpoint PR of Block 3.
 
 ## Implementation Notes
 

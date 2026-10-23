@@ -150,7 +150,7 @@ None at runtime. The Phase 3 batch report lists requirement IDs, commands and re
 
 - All FEAT-002 acceptance criteria pass locally.
 - No business logic is present in any created module (TRD 25 §4.6 Phase 3 DoD).
-- Batch report lists IDs implemented and command results (AGT-022); delivered together with the other Phase 3 features (FEAT-003..FEAT-007) as one review checkpoint of PR #3 (AGT-013).
+- Batch report lists IDs implemented and command results (AGT-022); delivered together with the other Phase 3 features (FEAT-003..FEAT-007) as one Block 3 review checkpoint with its own PR (AGT-013, D-101).
 
 ## Implementation Notes
 

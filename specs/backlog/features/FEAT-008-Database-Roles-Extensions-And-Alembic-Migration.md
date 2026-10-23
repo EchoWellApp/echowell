@@ -160,7 +160,7 @@ None.
 
 - All FEAT-008 acceptance criteria pass locally and in `backend-test`.
 - `ci.yml` `backend-test` runs the provisioning script, the migration round-trip and then pytest as `echowell_app_login` (CIC-015 steps).
-- `database/schema.sql` regenerated in the same PR; batch report lists IDs and command results (AGT-022); delivered in the single Phase 4 checkpoint of PR #3 with FEAT-009..FEAT-017.
+- `database/schema.sql` regenerated in the same PR; batch report lists IDs and command results (AGT-022); delivered in the single Phase 4 checkpoint PR of Block 3 with FEAT-009..FEAT-017.
 
 ## Implementation Notes
 

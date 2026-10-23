@@ -1,8 +1,8 @@
-# TRD Audit Checklist (PR #1)
+# TRD Audit Checklist (Block 1)
 
-This checklist audits the TRDs only. It runs in PR #1, after the TRDs are generated and reviewed, and before any code is written.
+This checklist audits the TRDs only. It runs in Block 1 (merged as GitHub PR #1), after the TRDs are generated and reviewed, and before any code is written.
 
-The checklist used to also contain the design, skeleton, build-sprint and full-repository audit prompts. Those build the application and belong to PR #3, so they now live in `Implementation_Audit_Checklist.md`.
+The checklist used to also contain the design, skeleton, build-sprint and full-repository audit prompts. Those build the application and belong to Block 3, so they now live in `Implementation_Audit_Checklist.md`.
 
 ## Step 1: TRD Validation
 
@@ -74,4 +74,4 @@ The TRD audit passes when the latest `docs/reports/TRD_VALIDATION_REPORT.md`:
 - shows all five checks passing;
 - meets the TRD 25 Phase 1 definition of done.
 
-Remaining Minor findings may be fixed in the same PR or carried to the PR #3 implementation audit.
+Remaining Minor findings may be fixed in the same PR or carried to the Block 3 implementation audit.
