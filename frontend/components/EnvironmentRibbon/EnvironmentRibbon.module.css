@@ -1,0 +1,8 @@
+.ribbon {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 2px 8px;
+  background: #fff4ce;
+  color: #3d2e00;
+}

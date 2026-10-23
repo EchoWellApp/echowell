@@ -1,3 +1,51 @@
+# Python
 __pycache__/
-.env
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+*.egg-info/
+# Node / Next.js
 node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/tests/e2e/.auth/
+frontend/next-env.d.ts
+.netlify/
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.development.example
+!.env.production.example
+*.pem
+*.key
+# Data that must never be committed
+*.dump
+*.sql.gz
+*.backup
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+*.opus
+*.aac
+*.webm
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# Local tool caches (in addition to TRD 18 §4.11)
+frontend/tsconfig.tsbuildinfo
