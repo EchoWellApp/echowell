@@ -1,6 +1,11 @@
-fastapi
-uvicorn
-sqlalchemy
-alembic
-psycopg2-binary
-pytest
+# Runtime dependencies of the backend and the analytics package, exact pins (TRD 25 §4.7, AGT-024, GIT-112).
+# Driver: psycopg 3 as psycopg[binary] (TRD 24 D-53, AC-AGT-11). Dev tools: requirements-dev.txt.
+fastapi==0.115.12
+uvicorn==0.32.1
+sqlalchemy==2.0.41
+alembic==1.13.3
+pydantic==2.10.6
+pydantic-settings==2.7.1
+python-dotenv==1.2.2
+psycopg[binary]==3.2.4
+numpy==2.1.3

@@ -1,0 +1,14 @@
+*                              @EchoWellApp/team2-maintainers
+/analytics/                    @EchoWellApp/team2-algorithm
+/tests/validation/             @EchoWellApp/team2-algorithm
+/database/seeds/               @EchoWellApp/team2-algorithm
+/backend/alembic/              @EchoWellApp/team2-algorithm @EchoWellApp/team2-maintainers
+/specs/                        @EchoWellApp/team2-maintainers
+/specs/TRD/07_*                @EchoWellApp/team2-algorithm
+/specs/TRD/08_*                @EchoWellApp/team2-algorithm
+/specs/TRD/09_*                @EchoWellApp/team2-algorithm
+/specs/TRD/14_*                @EchoWellApp/team2-algorithm
+/.github/                      @EchoWellApp/team2-devops
+/netlify.toml                  @EchoWellApp/team2-devops
+/railway.toml                  @EchoWellApp/team2-devops
+/docker-compose.yml            @EchoWellApp/team2-devops
