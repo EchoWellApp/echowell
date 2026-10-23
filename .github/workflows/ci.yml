@@ -1,1 +1,97 @@
+# CI core jobs (TRD 16 §4.2, CIC-010..CIC-017, CIC-024..CIC-027; TRD 24 D-94, D-99).
+# Phase 3 state of ci.yml: jobs backend-lint, backend-test and frontend replace the legacy stub.
+# repo-hygiene, openapi-contract, security-audit, docker-build, the migration round trip and the
+# coverage gates are added by FEAT-008 and FEAT-078. No repository secret is used (CIC-026).
 name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+jobs:
+  backend-lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy analytics backend
+      - run: lint-imports # import-linter contracts in pyproject.toml (TRD 01 ARC-041, AC-ARC-01)
+  backend-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: echowell, POSTGRES_PASSWORD: ci-only-postgres, POSTGRES_DB: echowell_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U echowell -d echowell_test"
+          --health-interval 5s --health-retries 10
+    env:
+      APP_ENV: test
+      PGPASSWORD: ci-only-postgres # superuser, used only by the provisioning step
+      ECHOWELL_MIGRATOR_DB_PASSWORD: ci-only-migrator # CI-only throwaway values (ephemeral service container)
+      ECHOWELL_APP_DB_PASSWORD: ci-only-app
+      ECHOWELL_READONLY_DB_PASSWORD: ci-only-readonly
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:ci-only-app@localhost:5432/echowell_test
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
+      FACILITY_NAME: Edgewood
+      FACILITY_TZ: America/Chicago
+      PIPELINE_PROFILE: test_v0_1
+      CORS_ORIGINS: http://localhost:3000
+      LOG_FORMAT: json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql # as superuser: extensions + timezone UTC (D-72), then roles
+      - run: alembic upgrade head # empty environment until FEAT-008 (D-90); proves the migrator login
+      - run: >
+          pytest -p no:randomly tests/unit tests/integration tests/validation
+          --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
+          --junitxml=build/junit.xml
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-reports
+          path: build/
+          retention-days: 30
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults: { run: { working-directory: frontend } }
+    env: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000", NEXT_PUBLIC_APP_ENV: local, NEXT_TELEMETRY_DISABLED: "1" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
+      - run: npm run test:coverage # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
