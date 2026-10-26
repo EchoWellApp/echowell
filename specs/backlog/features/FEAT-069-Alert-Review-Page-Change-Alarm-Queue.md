@@ -19,14 +19,14 @@ Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SR
 - BR-13 (staff record what they checked and decided, from the resident's own chart), BR-11 (an alarm stays on after review in v0.1, OQ-05), BR-16 (only clinicians and admins review; audited server-side).
 - One review model (contract §20 R5): the review form is the only way to mark an alarm reviewed; notes never do.
 - OQ-25 (provisional explanation checklist), OQ-26 (who may review and how soon); D-108, D-110, D-111, D-113 ("Review outcome" becomes "What did you find?").
-- FRs covered (BACKLOG.md): FR-191, FR-194, FR-195, FR-260, FR-264, FR-267, FR-268, FR-269, FR-270, FR-271, FR-272, FR-274, FR-277, FR-280.
+- FRs covered (BACKLOG.md): FR-191, FR-194, FR-264, FR-267, FR-268, FR-269, FR-270, FR-271, FR-272, FR-274, FR-277, FR-280.
 
 ## Referenced TRDs
 
 - TRD 11 (v0.13) — owned by this feature: UX-310 (panel only for a Changed resident, heading), UX-313..UX-318 (checklist and hint, "What did you find?", note, "Save review" and its validation, "Remind me in <h> hours" and the reminder line, post-save state), UX-320 (Previous reviews), UX-321 (open-questions note), UX-322 (researcher replacement), §4.17.3 wording rules, UX-324 (44px label rows), UX-330 and §4.17.5 (reference rendering and badges after a review). Retired, not built: UX-300..UX-305 (queue), UX-311 (mini chart), UX-319 (empty panel), UX-323 (card selection), UX-125 (moved to UX-321), UX-136..UX-138 (review dialog).
 - TRD 04 (v0.11) FE-209 (review panel for `ResidentDetail.open_alert_id` on `/review`, only for a Changed resident), FE-086 (invalidations after review and reminder), FE-134 (UI never changes alarm state), FE-135 (role gating), FE-136..FE-138 (form contents from `getUiConfig`, request body, reminder call), FE-079 (field errors), FE-205 (reminder line with fake timers), FE-187 (E2E-09 review step), FE-193 (E2E `review.spec.ts`), §4.9, §4.8 `AlarmReviewPanel`, `AlertReviewForm`, `ReviewHistory`. Retired: FE-131, FE-139.
 - TRD 19 E-13 `GET /api/v1/alerts`, E-14 `POST /api/v1/alerts/{id}/reviews`, E-28 `GET /api/v1/alerts/{id}/reviews`, E-29 `POST /api/v1/alerts/{id}/snooze`, E-32 `GET /api/v1/config/ui`.
-- TRD 02 FR-191, FR-194, FR-195, FR-260, FR-264, FR-267..FR-272, FR-274, FR-277, FR-280; TRD 24 D-03, D-35, D-37, D-110, D-111, D-113, OQ-05, OQ-25, OQ-26.
+- TRD 02 FR-191, FR-194, FR-264, FR-267..FR-272, FR-274, FR-277, FR-280; TRD 24 D-03, D-35, D-37, D-110, D-111, D-113, OQ-05, OQ-25, OQ-26.
 - TRD 13 E2E-09 (review step), E2E-18, E2E-21, TST-090, TST-111; TRD 14 TDV-076.
 
 ## Scope
@@ -46,7 +46,7 @@ Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SR
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-069-FR-01 | When the resident is Changed, the "Review and notes" section shall start with a panel headed "Review alert: changed since <alarm Mon D>" (h2) that reviews the non-closed alert of the current epoch; for other residents no review panel is rendered (only the staff notes, FEAT-071). | UX-310, FE-209, FR-260, FR-264, FR-280 |
+| FEAT-069-FR-01 | When the resident is Changed, the "Review and notes" section shall start with a panel headed "Review alert: changed since <alarm Mon D>" (h2) that reviews the non-closed alert of the current epoch; for other residents no review panel is rendered (only the staff notes, FEAT-071). | UX-310, FE-209, FR-264, FR-280 |
 | FEAT-069-FR-02 | A fieldset with legend "Anything that could explain it?" (weight 700, 1px `--rule` border, radius 6px, padding 12px 14px) shall list one checkbox per `review_explanations` entry of `GET /api/v1/config/ui`, in the returned order (test configuration: "Cold, cough or sore throat", "Dental problem or dentures out", "New or changed medication", "Poor sleep or unusual day", "Room or device moved"), with the hint (13px, `--muted`) "Provisional list — to be confirmed with the clinical team (OQ-25)."; any number may be checked. | UX-313, FE-136, FR-267, OQ-25 |
 | FEAT-069-FR-03 | A fieldset with legend "What did you find?" shall offer exactly one required radio among "Checked on resident, no concern" (`no_concern`), "Explained by a known cause" (`known_cause`), "Referred to nurse or provider" (`referred`), "Looks like a data problem: send to study team" (`data_problem`), none preselected. | UX-314, FE-136, FR-268, D-113 |
 | FEAT-069-FR-04 | A textarea labelled "Note" (3 rows, optional, ≤ 2000 characters, counter "<count> / 2000", placeholder "What you saw or did") shall follow. | UX-315, FR-269 |
@@ -56,7 +56,7 @@ Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SR
 | FEAT-069-FR-08 | 422 responses shall show field errors under the matching control (`explanations`, `outcome`, `note`) and other errors above the buttons; 409 `ALERT_CLOSED` shows the API error message above the buttons; entered values are kept on failure. | FE-079, FR-271, UX-207 |
 | FEAT-069-FR-09 | The secondary button "Remind me in <h> hours" (h = `alert_snooze_hours`, 24) shall call `POST /api/v1/alerts/{id}/snooze` with `{}`, create no review, change no alarm state, announce "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on." and invalidate the queries of FE-086; while `snoozed_until` is in the future the panel shows the line "Reminder set for <Mon D, h:mm AM/PM>." under the buttons. | UX-317, FE-138, FR-274 |
 | FEAT-069-FR-10 | Under the buttons, "Previous reviews" (h3) shall list the alarm's reviews newest first as "<Mon D, h:mm AM/PM> · <display name> · <outcome label>", then "Possible explanations: <labels joined by ', '>" when any and the note text; with none, "Not reviewed yet."; several reviews per alarm are allowed. | UX-320, FR-272, D-111 |
-| FEAT-069-FR-11 | The panel shall end with the note (13px, `--muted`) "Open questions (OQ-05, OQ-26): Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | UX-321, FR-195, FR-277 |
+| FEAT-069-FR-11 | The panel shall end with the note (13px, `--muted`) "Open questions (OQ-05, OQ-26): Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | UX-321, FR-277 |
 | FEAT-069-FR-12 | For role researcher (`canReviewAlarms` false) the checklist, choices, note and both buttons shall be replaced by "Only clinicians and admins can review alarms."; "Previous reviews" stays visible. | UX-322, FE-135, FR-194, SEC-043 |
 | FEAT-069-FR-13 | Explanation and outcome labels shall be shown exactly as listed; labels for codes outside the current configured list use the API-supplied labels. | TRD 11 §4.17.3 |
 | FEAT-069-FR-14 | Checkbox and radio controls shall each have a 44px-high clickable label row; every control is keyboard-operable with visible focus. | UX-324, TST-111 |

@@ -19,7 +19,7 @@ Implement the "Voice trends" section of the resident chart (`/residents/[residen
 - BR-11 (alarm only after a sustained change; persists after first crossing) and BR-13 (staff see how the change built up and which measurements moved): "See what changed" on the Summary leads here.
 - BR-09 (baseline period visible), BR-10 (7 scored measurements, 12 stored), BR-18 (no per-measurement alarm or diagnosis), WCAG 1.1.1 / 1.4.11 (text alternative, non-text contrast; NFR-063).
 - D-30 / contract §20 R1: the binding chart rules; D-111 keeps the baseline slot, the data table and the colouring by `alarm_state`; D-113 renames "Running change tally" to "Change score".
-- FRs covered (BACKLOG.md): FR-165, FR-166, FR-167, FR-168, FR-169, FR-170, FR-171, FR-172, FR-265.
+- FRs covered (BACKLOG.md): FR-165, FR-166, FR-167, FR-168, FR-169, FR-170, FR-171, FR-172.
 
 ## Referenced TRDs
 
@@ -27,7 +27,7 @@ Implement the "Voice trends" section of the resident chart (`/residents/[residen
 - TRD 04 (v0.11) FE-093..FE-099 (Recharts `ComposedChart`, fills, reference line, baseline area, marker and tick, stub, size and scroll container, `role="img"` and table, sparkline, no animation), FE-154 (one decimal, h without trailing zeros), FE-183, FE-184 (component tests), FE-186 (E2E), §4.8 `ChangeScoreChart`, `ChangeScoreTable`, `MeasurementCards`, `FeatureCard`, `Sparkline`, `OtherMeasurementsCard`, §8 notes (baseline slot as category `"__baseline__"`; colour from `alarm_state`).
 - TRD 13 TST-093 (chart assertions), TST-112 (table reachable by screen reader); E2E-08, E2E-10, E2E-11.
 - TRD 19 E-12 `GET /api/v1/scores` (`items`, `baseline_periods`), E-11 `GET /api/v1/residents/{resident_code}/features`.
-- TRD 02 FR-165..FR-172, FR-265; TRD 24 D-03, D-30, D-111, D-113, OQ-03, OQ-28.
+- TRD 02 FR-165..FR-172; TRD 24 D-03, D-30, D-111, D-113, OQ-03, OQ-28.
 
 ## Scope
 

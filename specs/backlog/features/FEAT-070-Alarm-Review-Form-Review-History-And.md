@@ -21,14 +21,14 @@ This feature ID was the v0.1 "Alarm review form, review history and snooze" on t
 - BR-12 (staff can check a resident's device when check-ins are missing), BR-06 (silent days of a shared device are shown, never filled), BR-08 (device replacement and firmware change restart the baseline), BR-01 (no audio leaves the device).
 - OQ-31 (when a device counts as offline and whether that changes the resident's status); interim: the section does not change the status (UX-433).
 - D-110 (Device section), D-114 (`uploaded_on_as_of_date` on `Device`).
-- FRs covered (BACKLOG.md): FR-152, FR-153, FR-155.
+- FRs covered (BACKLOG.md): FR-151, FR-152, FR-153, FR-155.
 
 ## Referenced TRDs
 
 - TRD 11 (v0.13) — owned by this feature: UX-430 (panel and four facts), UX-431 (History list and empty text), UX-432 (caption), UX-433 (no status change until OQ-31), §4.8 "Online / No upload today", Device section values of §4.13.3 (R03, R07, others).
 - TRD 04 §4.8 `DevicePanel` (as updated for wireframe v0.2), FE-087 (per-panel errors).
 - TRD 19 E-17 `GET /api/v1/devices` (`Device`: `uploaded_on_as_of_date`, last upload, firmware, assigned residents, `device_gap_days_last_30`, `in_use_since`, `replaces_device_code`); E-10 check-in events (`baseline_restarted` with `restart_cause` `firmware`, `from_value`, `to_value`).
-- TRD 02 FR-152, FR-153, FR-155; TRD 24 D-110, D-114, OQ-31.
+- TRD 02 FR-151, FR-152, FR-153, FR-155; TRD 24 D-110, D-114, OQ-31.
 - TRD 13 E2E-12 (R03 device), E2E-10 (R07 device), TST-090.
 
 ## Scope

@@ -23,7 +23,7 @@ Let staff sign in and keep every dashboard page behind a valid session. The feat
 ## Referenced TRDs
 
 - TRD 04 FE-050..FE-059 (token storage, no persistent storage, exp parsing and scheduled sign-out, restore rule, `GET /auth/me`, guard redirect, 401 handling, safe `next`, sign-out, role helpers), §4.5.1 decision and sequence, FE-066 (input attributes), FE-188 (E2E `auth.spec.ts`).
-- TRD 11 (v0.13) UX-170..UX-176 (login panel layout, error copy, 429 copy, expiry copy, busy state, data bar on the login page, no self-registration), §4.9 (app bar with the brand only); the primary button style of UX-122 and the data bar of UX-400 are owned by FEAT-062 and FEAT-064 and reused here.
+- TRD 11 (v0.13) — owned by this feature: UX-170..UX-176 (login panel layout, error copy, 429 copy, expiry copy, busy state, data bar on the login page, no self-registration), §4.9 (app bar with the brand only). Uses: the primary button style of UX-122 (FEAT-062) and the data bar of UX-400 (FEAT-064).
 - TRD 12 SEC-037 (memory + sessionStorage only), SEC-038 (redirect and expiry message).
 - TRD 19 E-02 `POST /auth/login`, E-03 `POST /auth/logout`, E-04 `GET /auth/me`.
 - TRD 02 FR-210, FR-211, FR-217.

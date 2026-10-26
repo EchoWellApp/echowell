@@ -19,14 +19,14 @@ Implement two sections of the resident chart as wireframe v0.2 draws them (SRC-2
 - BR-13 (staff see what happened and when), BR-04, BR-05, BR-06, BR-08 (set-aside, held-back, missed days and device changes visible with their reasons), BR-03 (duplicates never shown): "See missed and set-aside check-ins" on the Summary of a Needs-attention resident leads to the log.
 - BR-09 (frozen personal baseline) and BR-08 (restart on device, firmware or software change): the Baseline section states exactly what the resident is compared with.
 - D-67: usable check-ins are not log events; D-113: UI wording "held back", "change score", "Comparing with baseline started" and the derived `checkins_started` event.
-- FRs covered (BACKLOG.md): FR-135, FR-139, FR-162, FR-163, FR-180, FR-181, FR-182, FR-183.
+- FRs covered (BACKLOG.md): FR-135, FR-162, FR-163, FR-180, FR-181, FR-182, FR-183.
 
 ## Referenced TRDs
 
 - TRD 11 (v0.13) — owned by this feature: UX-047, UX-048 (missed days as counted, counts equal the API), §4.3.5 count semantics, UX-140..UX-150 (counts and events panels, ordering, line texts by event type and restart cause, included events, no usable or duplicate lines, held-back text, 30-day window and "Show earlier entries", no colour reliance, caption, empty state, missed days exactly as ledger), §4.5.6 table, UX-066 (baseline dates stable after freeze), UX-420..UX-423 (Baseline panel, text templates §4.5.7.1, meter, explanation), log, counts and Baseline values of §4.13.3. Retired here: UX-064 (replaced by UX-422).
 - TRD 04 FE-101 (render API order as a list with TRD 11 wording), §4.8 `CheckinCounts`, `CheckinLog` (`{ events, h, tz, residentCode }`), `BaselinePanel`, §4.6.2 `getCheckins(code, { from?, to? })`, FE-186 (as updated for wireframe v0.2).
 - TRD 19 E-10 `GET /api/v1/residents/{resident_code}/checkins` (`CheckinEvent`: `local_date`, `event_type` incl. `checkins_started`, `detail`, `restart_cause`, `previous_device_code`, `device_code`, `from_value`, `to_value`; D-114), E-09 (`last_30_days`, baseline fields, epoch).
-- TRD 02 FR-135, FR-139, FR-162, FR-163, FR-180..FR-183; TRD 24 D-67, D-113, D-114.
+- TRD 02 FR-135, FR-162, FR-163, FR-180..FR-183; TRD 24 D-67, D-113, D-114.
 - TRD 13 E2E-08, E2E-10, E2E-11, E2E-12; TST-090.
 
 ## Scope
@@ -55,7 +55,7 @@ Implement two sections of the resident chart as wireframe v0.2 draws them (SRC-2
 | FEAT-068-FR-07 | The log shall include alarms, set-asides, hold-backs, missed days (resident and device-gap), baseline restarts, baseline complete, comparing started and check-ins started; ordinary usable check-ins and duplicates shall never appear. | UX-143, UX-144, FR-181, FR-182, D-67 |
 | FEAT-068-FR-08 | The log shall first show events of the 30 days ending on the as-of date and offer "Show earlier entries", which loads the previous 30 days through `GET /checkins?from=&to=` when earlier events exist. | UX-146, FR-183 |
 | FEAT-068-FR-09 | No line shall rely on colour; each line's text names its type. | UX-147, UX-004 |
-| FEAT-068-FR-10 | Below the events the caption (14px, `--muted`) "Duplicate records are removed quietly and not shown." shall appear; with no events the Events panel reads "Nothing to report yet." followed by the caption. | UX-148, UX-149, UX-204, FR-139 |
+| FEAT-068-FR-10 | Below the events the caption (14px, `--muted`) "Duplicate records are removed quietly and not shown." shall appear; with no events the Events panel reads "Nothing to report yet." followed by the caption. | UX-148, UX-149, UX-204 |
 | FEAT-068-FR-11 | Missed days shall be exactly the ledger's missed days, never filled with a value, a previous check-in or an estimate. | UX-150, UX-047 |
 | FEAT-068-FR-12 | h in the alarm line and N in "Baseline complete" shall come from `meta` and the event, never hard-coded. | FE-077, UX-007 |
 | FEAT-068-FR-13 | The Baseline section shall show a panel headed "Baseline: <R>’s usual" (h2) whose first paragraph uses the §4.5.7.1 templates: frozen with scored sessions "First <N> usable check-ins, <first>–<frozen-after>, then frozen. Compared with it since <first scored date>."; frozen without scored session "… then frozen. Comparing starts with the next usable check-in."; forming "Still forming: <n> of <N> usable check-ins so far." plus, when missed or set-aside check-ins occurred in the current epoch, " <m> missed and <s> set-aside check-ins have slowed it down."; with the restart prefix by cause when the current epoch > 1 ("Restarted <Mon D> when the device was replaced (<old D> to <D>), so readings from the old device are not mixed in. ", firmware and software variants). | UX-420, UX-421, UX-065, FR-162, FR-163 |
