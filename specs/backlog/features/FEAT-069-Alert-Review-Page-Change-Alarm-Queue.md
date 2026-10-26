@@ -34,7 +34,7 @@ Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SR
 - `app/(protected)/residents/[residentCode]/review/page.tsx` (shared with FEAT-071): `AlarmReviewPanel` first, only when the resident's display status is Changed; `StaffNotes` (FEAT-071) after it.
 - `AlarmReviewPanel` (`{ alarm, reviews, uiConfig, canReview, meta }`) for the alert whose id is `ResidentDetail.open_alert_id`, with `AlertReviewForm` (`{ alertId, snoozeHours, explanations, snoozedUntil, onSaved }`) and `ReviewHistory` (`{ reviews, tz }`) from `GET /alerts/{id}/reviews`; open-questions note; researcher replacement text.
 - Mutations `createAlertReview`, `snoozeAlert` with TanStack Query invalidations, so that the Summary review status, the list's "What's happening" text and both badges update from the API.
-- `@mutating` E2E steps E2E-18 and the FE-193 reminder step in `frontend/tests/e2e/mutating.spec.ts` (order per D-73), and the review step of E2E-09.
+- `@mutating` E2E steps E2E-18 and the FE-193 reminder step in `frontend/tests/e2e/mutating.spec.ts` (order per D-73 and D-118), and the review step of E2E-09 (on R10).
 
 ## Out of Scope
 
@@ -54,8 +54,8 @@ Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SR
 | FEAT-069-FR-06 | After success the form shall reset, announce politely "Review saved." (outcome `data_problem`: "Review saved and sent to the study team as a data problem."), and invalidate `["alerts"]`, `["data-alerts"]`, `["resident", code]`, `["residents"]` and `["analytics"]`, so that the Summary review status and the list's "What's happening" text read "Reviewed" and the nav and section badges decrease, as returned by the API. | UX-318, FE-086, FR-270 |
 | FEAT-069-FR-07 | The UI shall not change the alarm state, change score, chart or pill after a save or a reminder; it renders only the API state after refetch (no reset, OQ-05). | UX-318, FE-134, OQ-05 |
 | FEAT-069-FR-08 | 422 responses shall show field errors under the matching control (`explanations`, `outcome`, `note`) and other errors above the buttons; 409 `ALERT_CLOSED` shows the API error message above the buttons; entered values are kept on failure. | FE-079, FR-271, UX-207 |
-| FEAT-069-FR-09 | The secondary button "Remind me in <h> hours" (h = `alert_snooze_hours`, 24) shall call `POST /api/v1/alerts/{id}/snooze` with `{}`, create no review, change no alarm state, announce "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on." and invalidate the queries of FE-086; while `snoozed_until` is in the future the panel shows the line "Reminder set for <Mon D, h:mm AM/PM>." under the buttons. | UX-317, FE-138, FR-274 |
-| FEAT-069-FR-10 | Under the buttons, "Previous reviews" (h3) shall list the alarm's reviews newest first as "<Mon D, h:mm AM/PM> · <display name> · <outcome label>", then "Possible explanations: <labels joined by ', '>" when any and the note text; with none, "Not reviewed yet."; several reviews per alarm are allowed. | UX-320, FR-272, D-111 |
+| FEAT-069-FR-09 | The secondary button "Remind me in <h> hours" (h = `alert_snooze_hours`, 24) shall call `POST /api/v1/alerts/{id}/snooze` with `{}`, create no review, change no alarm state, announce "Reminder set for <Mon D, h:mm AM/PM CT>. The alarm stays on." and invalidate the queries of FE-086; while `snoozed_until` is in the future the panel shows the line "Reminder set for <Mon D, h:mm AM/PM CT>." under the buttons. | UX-317, FE-138, FR-274 |
+| FEAT-069-FR-10 | Under the buttons, "Previous reviews" (h3) shall list the alarm's reviews newest first as "<Mon D, h:mm AM/PM CT> · <display name> · <outcome label>", then "Possible explanations: <labels joined by ', '>" when any and the note text; with none, "Not reviewed yet."; several reviews per alarm are allowed. | UX-320, FR-272, D-111 |
 | FEAT-069-FR-11 | The panel shall end with the note (13px, `--muted`) "Open questions (OQ-05, OQ-26): Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | UX-321, FR-277 |
 | FEAT-069-FR-12 | For role researcher (`canReviewAlarms` false) the checklist, choices, note and both buttons shall be replaced by "Only clinicians and admins can review alarms."; "Previous reviews" stays visible. | UX-322, FE-135, FR-194, SEC-043 |
 | FEAT-069-FR-13 | Explanation and outcome labels shall be shown exactly as listed; labels for codes outside the current configured list use the API-supplied labels. | TRD 11 §4.17.3 |
@@ -123,7 +123,7 @@ None in the frontend. Audit rows `alert.reviewed` and `alert.snoozed` are writte
 - Component (FE-205, fake timers): `AlarmReviewPanel` with `snoozed_until` 1 minute after now shows the reminder line and "Not reviewed"; after the timers pass `snoozed_until` the line is gone without a new API call.
 - E2E read-only (`review.spec.ts`, FE-193): the R09 and R10 panels of §4.17.5 and "Choose what you found.".
 - Keyboard test: checkboxes, radios, "Save review", "Remind me in 24 hours" reachable and operable with visible focus (TST-111, part of FEAT-075's suite).
-- E2E (`@mutating`, `mutating.spec.ts`, D-73 order): E2E-18 (1st: on `/residents/R09/review` save without a choice → "Choose what you found."; then "Checked on resident, no concern" → "Review saved.", R09 Summary "Reviewed", list text "Changed from their usual since Oct 21. Reviewed.", nav badge "1", R09 section badge gone, pill "▲ Changed", change score 26.8 unchanged); E2E-09 review step (2nd: "Cold, cough or sore throat" + "Explained by a known cause" → both reviews in "Previous reviews"); FE-193 reminder step (3rd: "Remind me in 24 hours" on R10 → reminder line).
+- E2E (`@mutating`, `mutating.spec.ts`, D-73 order): E2E-18 (1st: on `/residents/R09/review` save without a choice → "Choose what you found."; then "Checked on resident, no concern" → "Review saved.", R09 Summary "Reviewed", list text "Changed from their usual since Oct 21. Reviewed.", nav badge "1", R09 section badge gone, pill "▲ Changed", change score 26.8 unchanged); FE-193 reminder step (2nd: "Remind me in 24 hours" on R10 → reminder line, R10 still "Not reviewed"); E2E-09 review step (3rd, on R10: "Cold, cough or sore throat" + "Explained by a known cause" → the review in "Previous reviews", R10 "Reviewed"; D-118).
 - E2E-21 researcher part: form replaced by "Only clinicians and admins can review alarms."; a direct `POST /alerts/{id}/reviews` returns 403.
 
 ## Acceptance Criteria
@@ -134,9 +134,9 @@ None in the frontend. Audit rows `alert.reviewed` and `alert.snoozed` are writte
 | FEAT-069-AC-02 | Clicking "Save review" without a choice shows "Choose what you found.", moves focus to the first radio and sends no request. | E2E-18; UX-316 |
 | FEAT-069-AC-03 | Saving R09 with "Checked on resident, no concern" announces "Review saved.", the nav badge reads "1", R09's "Review and notes" badge is gone, R09's Summary shows "Reviewed", the list reads "Changed from their usual since Oct 21. Reviewed.", and the pill still reads "Changed" with change score 26.8. | E2E-18; TDV-076; UX-318; AC-UX-06 |
 | FEAT-069-AC-04 | The request body contains the checked codes (e.g. `["cold_cough_sore_throat"]`) and the chosen `outcome`, and omits a whitespace-only note; with outcome `data_problem` the message reads "Review saved and sent to the study team as a data problem." Verified by: Component (`AlertReviewForm.test.tsx`; TST-090). | FE-137; UX-318 |
-| FEAT-069-AC-05 | "Remind me in 24 hours" on R10 sends `POST /api/v1/alerts/{id}/snooze` with `{}`, creates no review, announces "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on." and shows "Reminder set for <Mon D, h:mm AM/PM>." under the buttons; R10's pill stays "Changed". | FE-193; FE-138; UX-317 |
+| FEAT-069-AC-05 | "Remind me in 24 hours" on R10 sends `POST /api/v1/alerts/{id}/snooze` with `{}`, creates no review, announces "Reminder set for <Mon D, h:mm AM/PM CT>. The alarm stays on." and shows "Reminder set for <Mon D, h:mm AM/PM CT>." under the buttons; R10's pill stays "Changed". | FE-193; FE-138; UX-317 |
 | FEAT-069-AC-06 | As researcher on `/residents/R09/review`, the form is replaced by "Only clinicians and admins can review alarms." while "Previous reviews" remains; a direct review POST returns 403. | E2E-21; UX-322 |
-| FEAT-069-AC-07 | After two reviews on the same alarm, "Previous reviews" lists both newest first with time, reviewer and outcome label, and "Possible explanations: Cold, cough or sore throat" for the one that had a checked explanation. | E2E-09; UX-320; FR-272 |
+| FEAT-069-AC-07 | After two reviews on the same alarm, "Previous reviews" lists both newest first with time, reviewer and outcome label, and "Possible explanations: Cold, cough or sore throat" for the one that had a checked explanation. Verified by: Component test (TST-090) with two fixture reviews (D-118: E2E-09 no longer adds a second review to R09). | UX-320; FR-272 |
 
 ## Definition of Done
 
@@ -146,7 +146,7 @@ None in the frontend. Audit rows `alert.reviewed` and `alert.snoozed` are writte
 
 ## Implementation Notes
 
-- The `@mutating` scenarios run after all read-only ones on a freshly re-seeded database in the D-73 order E2E-18 → E2E-09/FE-187 → FE-193 reminder step; do not add other writes to read-only specs.
+- The `@mutating` scenarios run after all read-only ones on a freshly re-seeded database in the D-73 order E2E-18 → FE-193 reminder step → E2E-09/FE-187 on R10 (D-118); do not add other writes to read-only specs.
 - Use `UiConfig.alert_snooze_hours` only for the button label; send `{}` so the server default applies (FE-138). Show the reminder time from the API's `snoozed_until` in `meta.facility_tz`.
 - The v0.1 queue grouping by reminder state (FE-205) has no place in v0.2; the reminder is shown only as the line under the buttons.
 - Branch on `ApiError.code` (`ALERT_CLOSED`, `VALIDATION_ERROR`), never on message text (FE-079).

@@ -138,7 +138,7 @@ Rules: one module per resident (`test_r01_clean_control.py` … `test_r10_gradua
 | Group | Scenarios | Order and data | Source |
 |---|---|---|---|
 | Read-only | E2E-01..E2E-08, E2E-10..E2E-14, E2E-16, E2E-17, E2E-20, E2E-21, FE-185, FE-186, FE-188..FE-194 | DS-07 on the main E2E database, reset and re-seeded by `global-setup.ts` per browser project; one API login per role reused | TST-100, D-73, D-74 |
-| `@mutating` | E2E-18 (save review), E2E-09 = FE-187 (note and review in the Resident chart's "Review and notes" section), FE-193 snooze step | run serially after all read-only scenarios | D-73 |
+| `@mutating` | E2E-18 (save review on R09), FE-193 snooze step (R10), E2E-09 = FE-187 (note and review in R10's "Review and notes" section) | run serially, in this order, after all read-only scenarios | D-73, D-118 |
 | `@isolated` | E2E-15 (new check-in appears), TST-187, E2E-19 (snooze) | Chromium only, database `echowell_demo` | TST-100, CIC-030 |
 | Accessibility | `a11y.spec.ts` on `/login`, `/residents`, `/residents/R09`, `/residents/R09/review`, `/residents/R09/trends`, `/residents/R08`, `/admissions`, `/study`, `/admin`, light and dark colour schemes | zero serious or critical findings | TST-110, FE-190 |
 | Responsive | `/residents`, `/residents/R09`, `/residents/R09/trends` at 320, 360, 375, 390 px wide | no page-level horizontal scroll | FE-191, D-78 |

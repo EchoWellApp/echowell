@@ -52,7 +52,7 @@ Implement the "Staff notes" panel of the chart's "Review and notes" section (`/r
 | FEAT-071-FR-04 | "Add note" shall be disabled while the trimmed body is empty or longer than 2000 characters and while a request is in flight; an attempt to save an empty note shows "Write a short note before saving." under the textarea, linked via `aria-describedby`. | FE-132, UX-124, FR-190 |
 | FEAT-071-FR-05 | After a successful save the textarea is cleared, the note type kept, "Note saved." announced in an `aria-live="polite"` region, and `["resident", code]`, `["resident", code, "notes"]` and `["residents"]` invalidated. | FE-133, FE-085, UX-130 |
 | FEAT-071-FR-06 | On failure "Could not save the note. Your text is kept — try again." shall appear and the typed text and type remain. | FE-089, UX-131 |
-| FEAT-071-FR-07 | Under the form, "Previous notes" (h3, 16px) shall list the resident's notes newest first as "<Mon D, h:mm AM/PM> · <Type> · <display name>" followed by the note text exactly as typed (plain text, line breaks preserved), showing only latest versions (API default excludes superseded notes); with no notes the panel reads "No notes yet. Add what you saw or did, for example “Resident has a cold; nurse notified.”" (`--muted`) instead of the list; at most 10 notes initially with "Show all notes (<count>)". | UX-128, UX-133, UX-134, UX-135, FR-193 |
+| FEAT-071-FR-07 | Under the form, "Previous notes" (h3, 16px) shall list the resident's notes newest first as "<Mon D, h:mm AM/PM CT> · <Type> · <display name>" followed by the note text exactly as typed (plain text, line breaks preserved), showing only latest versions (API default excludes superseded notes); with no notes the panel reads "No notes yet. Add what you saw or did, for example “Resident has a cold; nurse notified.”" (`--muted`) instead of the list; at most 10 notes initially with "Show all notes (<count>)". | UX-128, UX-133, UX-134, UX-135, FR-193 |
 | FEAT-071-FR-08 | After a note is saved the status pill, change score chart and alarm wording stay as returned by the API. | UX-126 |
 | FEAT-071-FR-09 | For researchers (`canWriteNotes` false) the form controls shall be replaced by "Only clinicians and admins can add notes." while previous notes remain visible. | FE-135, UX-132, FR-194, SEC-043 |
 | FEAT-071-FR-10 | The UI shall offer no editing or deleting of saved notes. | UX-129, FR-192 |
@@ -113,14 +113,14 @@ None in the frontend; the backend writes `note.created` audit rows (TRD 12 §4.1
 ## Testing Requirements
 
 - Component (`components/StaffNotes/StaffNotes.test.tsx`, TST-090): controls and order, accessible name "New note" and placeholder "Add a note", disabled rules (empty, > 2000), empty-note message, success message with cleared text and type kept, failure keeps draft, researcher replacement; `NotesList` formatting, empty text, "Show all notes (n)"; no "Mark as reviewed" control exists.
-- E2E (`@mutating`, `mutating.spec.ts` note step of E2E-09 / FE-187): add "Observation" note "Resident has a cold; nurse notified." on `/residents/R09/review` and see it listed with type, author and time; R09's pill still "Changed".
+- E2E (`@mutating`, `mutating.spec.ts` note step of E2E-09 / FE-187): add "Observation" note "Resident has a cold; nurse notified." on `/residents/R10/review` (D-118) and see it listed with type, author and time; R10's pill still "Changed".
 - E2E FE-188 part: researcher sees no note form.
 
 ## Acceptance Criteria
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-071-AC-01 | As clinician on `/residents/R09/review`, adding an "Observation" note "Resident has a cold; nurse notified." announces "Note saved.", lists the note as "<Mon D, h:mm AM/PM> · Observation · <display name>" with its text, and leaves R09's review status "Not reviewed" and pill "Changed". | E2E-09; FE-187; UX-130; UX-123 |
+| FEAT-071-AC-01 | As clinician on `/residents/R10/review`, adding an "Observation" note "Resident has a cold; nurse notified." announces "Note saved.", lists the note as "<Mon D, h:mm AM/PM CT> · Observation · <display name>" with its text, and leaves R10's review status "Not reviewed" and pill "Changed". | E2E-09; FE-187; UX-130; UX-123; D-118 |
 | FEAT-071-AC-02 | A clinician can save a note of each type and each appears with its type label. Verified by: Component (`StaffNotes.test.tsx`; TST-090). | AC-UX-06; UX-133 |
 | FEAT-071-AC-03 | As researcher the panel shows "Only clinicians and admins can add notes." and the previous notes. | AC-UX-06; FE-188; FR-194 |
 | FEAT-071-AC-04 | On R01 the "Review and notes" section shows only the "Staff notes" panel; with no notes it reads "No notes yet. Add what you saw or did, for example “Resident has a cold; nurse notified.”" Verified by: Component and Page test (TST-090, TST-094). | UX-120; UX-134 |

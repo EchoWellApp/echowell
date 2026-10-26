@@ -212,7 +212,7 @@ All rows run with profile `test_v0_1`, as-of 2026-10-30 15:00 America/Chicago, e
 
 ## Questions
 
-No new questions. Criteria that depend on open questions use the interim decisions of TRD 24 (for example OQ-05: a review never resets the change score; OQ-12: the Summary note and the resident-list note carry the confirmation marker; OQ-31: a device without uploads does not change a resident's status).
+No new questions. Criteria that depend on open questions use the interim decisions of TRD 24 (for example OQ-05: a review never resets the change score; OQ-12: the Summary note and the resident-list note carry the confirmation marker; and the answered OQ-31, D-115: a device without uploads does not change a resident's status).
 
 ## Revision History
 
@@ -222,4 +222,4 @@ No new questions. Criteria that depend on open questions use the interim decisio
 | 0.2 | 20 Oct 2026 | Documentation audit fixes (DA-09: L.01 allows Phase 12 before Phase 2 and its re-run after Phase 11) | — |
 | 0.3 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.4 | 23 Oct 2026 | PR #3 review: Block 1–Block 5 naming and one PR per Block 3 checkpoint (D-101) in the acceptance rule, usage table, F.24 and L.01 | — |
-| 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): page names and criteria A.04, A.06, A.13, B.02, B.03, C.04, C.05, C.13, C.14, D.06, E.03, H.01 (route list in light and dark), I.06, K.02, K.06, K.10 updated to the Resident list, Resident chart and Study team pages; open-question note | — |
+| 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): page names and criteria A.04, A.06, A.13, B.02, B.03, C.04, C.05, C.13, C.14, D.06, E.03, H.01 (route list in light and dark), I.06, K.02, K.06, K.10 updated to the Resident list, Resident chart and Study team pages; open-question note; PR #5 review round 1: OQ-31 answered (D-115) | — |

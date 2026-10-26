@@ -30,7 +30,13 @@ v0.1 put everything on one screen per view. v0.2 follows the layout staff alread
 
 - Does a saved review reset the change score or turn the alarm off? Who may review, and how soon?
 - Can the pipeline rank the 2–3 measurements leaning most, to show on the Summary in plain words?
-- How long can a device be silent before it counts as offline?
 - Final clinical wording for each status (confirm with the PI).
 - Measurement names wait on Team 1's openSMILE output names.
 - New admissions screen waits on the admission group and facility range.
+
+## Decided in the v0.2 review
+
+- A device that stops uploading is a study-team device problem and does not turn the resident yellow (TRD 24 D-115).
+- No room numbers or room sort on the resident list (UX-001; TRD 24 D-116).
+- New admissions use neutral "Out of range" / "In range" pills, because they are compared with the facility range, not with their own usual (TRD 24 D-117).
+- Times show the facility time zone: "Oct 30, 2:28 PM CT" (TRD 24 D-119).

@@ -268,7 +268,7 @@ Test levels and the E2E scenario list are in docs/design/Testing_Architecture.md
 
 ## 12. Privacy and safety rules in the UI
 
-- Residents are study IDs only; no names, photos or rooms (room numbers: OQ-32) (UX-001, FE-068, AGT-017).
+- Residents are study IDs only; no names, photos or rooms (no room numbers, D-116) (UX-001, FE-068, AGT-017).
 - No audio player, waveform or audio link on any page; the data bar on every page states "No audio is stored or played anywhere in EchoWell." (UX-400, UX-006, FE-007, FE-208).
 - Wording says "Changed from their usual" and "a prompt to check in, not a diagnosis"; forbidden stems of UX-161 never appear (AGT-018, UX-160..UX-167).
 - Facility named only from `meta.facility_name`; "Edge4Care" never appears (UX-012, AGT-019).
@@ -286,11 +286,11 @@ Test levels and the E2E scenario list are in docs/design/Testing_Architecture.md
 | OQ-18 | No EWMA display. |
 | OQ-25 | Explanation checklist from E-32. |
 | OQ-28 | Earlier-epoch view: interim "Device period" select above the change score chart (TRD 24 OQ-28 interim decision, FEAT-067). |
-| OQ-31 | Which data problems set `needs_attention` and when a device counts as offline: computed by the API only; the browser maps the flag (FE-207). |
-| OQ-32 | Room numbers on the resident list: none requested or shown until answered. |
+| OQ-31 | Answered (D-115): `baseline_stalled` and `high_set_aside` only, never a silent device; computed by the API only; the browser maps the flag (FE-207). |
+| OQ-32 | Answered (D-116): no room numbers requested or shown. |
 
 ## Revision History
 
 | Version | Date | Change | Author |
 |---|---|---|---|
-| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; routes `/residents` (Resident list), `/residents/[residentCode]` with five section routes, `/study` (replaces `/analytics`), `/alerts` retired; route → endpoint map with D-114 fields and E-32 `meta`; `lib/status.ts`; Source Sans 3 and light/dark tokens; wording, state and open questions updated | — |
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; routes `/residents` (Resident list), `/residents/[residentCode]` with five section routes, `/study` (replaces `/analytics`), `/alerts` retired; route → endpoint map with D-114 fields and E-32 `meta`; `lib/status.ts`; Source Sans 3 and light/dark tokens; wording, state and open questions updated; PR #5 review round 1: OQ-31, OQ-32 answered (D-115, D-116) | — |

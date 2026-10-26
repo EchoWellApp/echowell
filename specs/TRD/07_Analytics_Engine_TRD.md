@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -491,7 +491,7 @@ Oct 12 = 8 used + 2 missed. All values equal the Study team expected rendering o
 - OQ-18 EWMA trend display (extension point ANL-056).
 - OQ-08 Facility norm definition (extension point ANL-057).
 - OQ-24 Data-alert thresholds (provisional defaults reproduce the four test-data data problems of TRD 11 §4.18.8).
-- OQ-31 Which data-alert kinds turn a resident to "Needs attention" (read side only; the engine's rules are unchanged).
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Which data-alert kinds turn a resident to "Needs attention": `baseline_stalled` and `high_set_aside` (read side only; the engine's rules are unchanged).
 
 ## Revision History
 
@@ -505,3 +505,4 @@ Oct 12 = 8 used + 2 missed. All values equal the Study team expected rendering o
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (assign_epochs signature; ANL-045 NIGHTLY_RUN_HOUR_LOCAL; ANL-047 ubuntu-24.04; ANL-053 log events (D-80); ANL-056 step reference; ANL-057 run ownership (D-76)) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 superseded; stage 12 aggregates feed the Study team page and "Leaning most" the chart Summary; `AnalyticsSummary` notes use the v0.2 wording ("neither reviewed yet", "Oct 12: D02 silent", "held back as possible other voice"); ANL-059, ANL-061 to ANL-063 traces; OQ-31 | — |
+| 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |

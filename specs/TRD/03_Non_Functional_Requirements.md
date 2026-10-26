@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -195,7 +195,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-130 | All instants shall be stored as `timestamptz` in UTC and converted to facility local time only with the IANA zone database (Python `zoneinfo`; frontend `Intl.DateTimeFormat` with `timeZone` set to the facility zone). | Must | BR-07, ASM-01 | Inspection, Test |
 | NFR-131 | Local date, local time and morning classification shall be correct across daylight-saving transitions: test vectors 2026-11-01 06:30:00 UTC → 01:30 CDT, and 2026-11-01 07:30:00 UTC → 01:30 CST, both local date 2026-11-01 and morning; 2027-03-14 08:30:00 UTC → 03:30 CDT, morning. | Must | BR-06, BR-07 | Test |
 | NFR-132 | Records with local time just before and after midnight shall be assigned to the correct local date (e.g. 2026-10-02 04:59:59 UTC → 2026-10-01 23:59:59 CDT, local date 2026-10-01). | Must | BR-06 | Test |
-| NFR-133 | The dashboard shall display all dates and times in the facility timezone in the formats of TRD 11 UX-002 and UX-003 (e.g. "Oct 30, 2:28 PM"), independent of the viewer's browser timezone. | Must | BR-12, SRC-21 | Test (Playwright with browser timezone set to Europe/London) |
+| NFR-133 | The dashboard shall display all dates and times in the facility timezone, with its abbreviation on every date-time value, in the formats of TRD 11 UX-002 and UX-003 (e.g. "Oct 30, 2:28 PM CT"), independent of the viewer's browser timezone (TRD 24 D-119). | Must | BR-12, SRC-21, D-119 | Test (Playwright with browser timezone set to Europe/London) |
 | NFR-134 | The nightly run (separate Railway Cron Job service, `0 7,8 * * *` UTC) shall run exactly once per local day, in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx), including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
 
 ### 4.13 Browser and device support
@@ -239,7 +239,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | AC-NFR-07 | Every `ingest_batches` row in staging and production has a synthetic/test source and DATA_SOURCE_LABEL names test or synthetic data (interim stack). |
 | AC-NFR-08 | A log-capture test of ingest, note creation and login finds no feature values, note text, passwords, tokens or API keys in logs. |
 | AC-NFR-09 | DST and midnight test vectors of NFR-131 and NFR-132 pass. |
-| AC-NFR-10 | The main-run Playwright suites pass on Chromium, Firefox and WebKit (the `@isolated` scenarios run in Chromium only, TRD 13 TST-100); a run with browser timezone Europe/London shows facility (America/Chicago) times. |
+| AC-NFR-10 | The main-run Playwright suites pass on Chromium, Firefox and WebKit (the `@isolated` scenarios run in Chromium only, TRD 13 TST-100); a run with browser timezone Europe/London shows facility (America/Chicago) times marked "CT". |
 | AC-NFR-11 | An attempt to UPDATE or DELETE `raw_sessions` or `audit_logs` with the application role fails; invariant checks of NFR-125 pass after every pipeline run in the validation suite. |
 | AC-NFR-12 | The ground-truth isolation test of NFR-127 and the OpenAPI drift check of NFR-088 pass in CI. |
 
@@ -276,3 +276,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-08) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (NFR-001, NFR-010, NFR-012, NFR-151 verification (D-98); NFR-068 widths (D-78); NFR-023, NFR-134 NIGHTLY_RUN_HOUR_LOCAL) | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): NFR-010 four pages (Resident list, chart Summary, chart Voice trends, Study team); NFR-011, NFR-013 (review in the chart), NFR-061 status pills, NFR-062 v0.2 tokens light and dark, NFR-063 change-score bar contrast, NFR-066, NFR-068, NFR-070, NFR-105, NFR-128, NFR-133, AC-NFR-04 (9 routes), AC-NFR-10; SRC-21 replaces SRC-09/10/11/18/19 | — |
+| 0.10 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): NFR-133 and AC-NFR-10 keep the time-zone abbreviation ("Oct 30, 2:28 PM CT", D-119) | — |

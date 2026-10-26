@@ -12,20 +12,20 @@
 
 ## Purpose
 
-Implement the "Device" section of the resident chart (`/residents/[residentCode]/device`), new in wireframe v0.2 (SRC-21, TRD 24 D-110): the panel "Device <D>" for the resident's current device with four facts — Status ("● Online" when the device uploaded on the as-of date, otherwise "○ No upload today"), Last upload, Firmware and Used by ("This resident only" or "Shared with <codes>") —, the "History" list of the device's problems in the last 30 days (silent days of a shared device, a replacement, a firmware change), the empty text "No problems in the last 30 days." and the caption "Audio never leaves the device. Only voice measurements are uploaded." "Check the device" on the Summary of a Needs-attention resident and the Summary's Device tile lead here. Whether a device without uploads should turn its residents to Needs attention is open (OQ-31); until it is answered this section only reports the upload state.
+Implement the "Device" section of the resident chart (`/residents/[residentCode]/device`), new in wireframe v0.2 (SRC-21, TRD 24 D-110): the panel "Device <D>" for the resident's current device with four facts — Status ("● Online" when the device uploaded on the as-of date, otherwise "○ No upload today"), Last upload, Firmware and Used by ("This resident only" or "Shared with <codes>") —, the "History" list of the device's problems in the last 30 days (silent days of a shared device, a replacement, a firmware change), the empty text "No problems in the last 30 days." and the caption "Audio never leaves the device. Only voice measurements are uploaded." "Check the device" on the Summary of a Needs-attention resident and the Summary's Device tile lead here. A device without uploads does not turn its residents to Needs attention (OQ-31 answered, TRD 24 D-115): this section only reports the upload state, and device silence stays a study-team item.
 
 This feature ID was the v0.1 "Alarm review form, review history and snooze" on the retired Alert review page. Wireframe v0.2 moves the review form, reminder and review history into the chart's "Review and notes" section, where they are delivered together with the review panel by FEAT-069 (TRD 11 §4.17); the ID and file name are kept (TRD 25 §4.2) and reused for the new Device section so that no feature ID is left empty.
 
 ## Business Context
 
 - BR-12 (staff can check a resident's device when check-ins are missing), BR-06 (silent days of a shared device are shown, never filled), BR-08 (device replacement and firmware change restart the baseline), BR-01 (no audio leaves the device).
-- OQ-31 (when a device counts as offline and whether that changes the resident's status); interim: the section does not change the status (UX-433).
+- OQ-31, answered by TRD 24 D-115: a silent device is a device-health item and does not change the resident's status (UX-433).
 - D-110 (Device section), D-114 (`uploaded_on_as_of_date` on `Device`).
 - FRs covered (BACKLOG.md): FR-151, FR-152, FR-153, FR-155.
 
 ## Referenced TRDs
 
-- TRD 11 (v0.13) — owned by this feature: UX-430 (panel and four facts), UX-431 (History list and empty text), UX-432 (caption), UX-433 (no status change until OQ-31), §4.8 "Online / No upload today", Device section values of §4.13.3 (R03, R07, others).
+- TRD 11 (v0.13) — owned by this feature: UX-430 (panel and four facts), UX-431 (History list and empty text), UX-432 (caption), UX-433 (no status change, D-115), §4.8 "Online / No upload today", Device section values of §4.13.3 (R03, R07, others).
 - TRD 04 §4.8 `DevicePanel` (as updated for wireframe v0.2), FE-087 (per-panel errors).
 - TRD 19 E-17 `GET /api/v1/devices` (`Device`: `uploaded_on_as_of_date`, last upload, firmware, assigned residents, `device_gap_days_last_30`, `in_use_since`, `replaces_device_code`); E-10 check-in events (`baseline_restarted` with `restart_cause` `firmware`, `from_value`, `to_value`).
 - TRD 02 FR-151, FR-152, FR-153, FR-155; TRD 24 D-110, D-114, OQ-31.
@@ -50,9 +50,9 @@ This feature ID was the v0.1 "Alarm review form, review history and snooze" on t
 | FEAT-070-FR-02 | Below the facts, a heading "History" (h3) shall list the device events of the last 30 days newest first (grid: 80px `--muted` date column "<Mon D>", text column): each device-gap day "Silent all day. Affected <R> and <R>." (one resident: "Affected <R>."; three or more: "Affected R01, R02 and R03."); a replacement "Replaced <old D> with <D>. Baseline restarted."; a firmware change "Firmware changed (<from> to <to>). Baseline restarted."; with none, "No problems in the last 30 days." | UX-431, FR-153, FR-155, BR-06, BR-08 |
 | FEAT-070-FR-03 | The panel shall end with the caption (14px, `--muted`) "Audio never leaves the device. Only voice measurements are uploaded." | UX-432, BR-01 |
 | FEAT-070-FR-04 | The section shall report the upload state only and shall not change the resident's display status, pill or Summary (OQ-31). | UX-433 |
-| FEAT-070-FR-05 | "Last upload" shall be the device's latest non-duplicate record from any resident on it, formatted "Oct 30, 2:55 PM" in `meta.facility_tz`. | UX-430, UX-002 |
+| FEAT-070-FR-05 | "Last upload" shall be the device's latest non-duplicate record from any resident on it, formatted "Oct 30, 2:55 PM CT" in `meta.facility_tz`. | UX-430, UX-002 |
 | FEAT-070-FR-06 | The status fact shall not rely on colour: it carries the glyph "●" or "○" and the words "Online" or "No upload today". | UX-004 |
-| FEAT-070-FR-07 | With the reference data the section shall render TRD 11 §4.13.3: R03 "Device D02", "● Online", "Oct 30, 2:55 PM", "fw-1.0.0", "Shared with R02", History "Oct 12 Silent all day. Affected R02 and R03."; R07 "Device D07B", "● Online", "Oct 30, 2:52 PM", "fw-1.0.0", "This resident only", History "Oct 13 Replaced D07 with D07B. Baseline restarted."; every other resident "No problems in the last 30 days." | UX-262 (values), UX-430, UX-431 |
+| FEAT-070-FR-07 | With the reference data the section shall render TRD 11 §4.13.3: R03 "Device D02", "● Online", "Oct 30, 2:55 PM CT", "fw-1.0.0", "Shared with R02", History "Oct 12 Silent all day. Affected R02 and R03."; R07 "Device D07B", "● Online", "Oct 30, 2:52 PM CT", "fw-1.0.0", "This resident only", History "Oct 13 Replaced D07 with D07B. Baseline restarted."; every other resident "No problems in the last 30 days." | UX-262 (values), UX-430, UX-431 |
 
 ## Inputs
 
@@ -116,8 +116,8 @@ None in the frontend.
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-070-AC-01 | `/residents/R03/device` shows "Device D02", "● Online" / Status, "Oct 30, 2:55 PM" / Last upload, "fw-1.0.0" / Firmware, "Shared with R02" / Used by, and History "Oct 12 Silent all day. Affected R02 and R03." | E2E-12; UX-430; UX-431 |
-| FEAT-070-AC-02 | `/residents/R07/device` shows "Device D07B", "● Online", "Oct 30, 2:52 PM", "fw-1.0.0", "This resident only" and History "Oct 13 Replaced D07 with D07B. Baseline restarted." | E2E-10; UX-431 |
+| FEAT-070-AC-01 | `/residents/R03/device` shows "Device D02", "● Online" / Status, "Oct 30, 2:55 PM CT" / Last upload, "fw-1.0.0" / Firmware, "Shared with R02" / Used by, and History "Oct 12 Silent all day. Affected R02 and R03." | E2E-12; UX-430; UX-431 |
+| FEAT-070-AC-02 | `/residents/R07/device` shows "Device D07B", "● Online", "Oct 30, 2:52 PM CT", "fw-1.0.0", "This resident only" and History "Oct 13 Replaced D07 with D07B. Baseline restarted." | E2E-10; UX-431 |
 | FEAT-070-AC-03 | `/residents/R09/device` shows "Device D09", "● Online" and "No problems in the last 30 days.", and every Device section ends with "Audio never leaves the device. Only voice measurements are uploaded." | UX-431; UX-432 |
 | FEAT-070-AC-04 | With a fixture whose device has `uploaded_on_as_of_date` false, the section shows "○ No upload today", the Summary tile reads "<D> no upload today" and the resident's pill is unchanged. Verified by: Component and Page test (TST-090, TST-094). | UX-433; OQ-31 |
 
@@ -128,6 +128,6 @@ None in the frontend.
 
 ## Implementation Notes
 
-- "Online" = a non-duplicate record from the device on the as-of local date (TRD 11 §4.8, D-114); the offline threshold for status is OQ-31 (question 1 of the v0.2 review for the algorithm lead).
+- "Online" = a non-duplicate record from the device on the as-of local date (TRD 11 §4.8, D-114); a silent device never changes the status (OQ-31 answered, TRD 24 D-115; if that ever changes, two consecutive silent days are needed).
 - Show a replacement only when it happened within the last 30 days (TRD 11 §5 note); the retired device is not described further here (the Study team "Show all devices" table lists it, FEAT-072).
 - The file name keeps the v0.1 title (feature IDs and file names are never renamed, TRD 25 §4.2).

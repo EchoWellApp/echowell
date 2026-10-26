@@ -44,7 +44,7 @@ Feature files keep their IDs and file names (97 features). Retitled: FEAT-064 Ap
 | Mermaid diagrams changed in TRD 04, 11 and the design docs | parse with mermaid 10.9.1 |
 | TRD 19 YAML and JSON examples | parse; required lists match properties |
 | Test-data expectations (order, summary 2/2/0/6, data problems, Study team values) across TRD 11, 13, 14, 19, 09 and features | consistent |
-| New "Edge4Care" text | none added |
+| New text with the forbidden facility name (AGT-019) | none added |
 | UX ownership | each active UX ID owned by exactly one feature |
 
 ## 6. Follow-ups outside this PR
@@ -66,3 +66,24 @@ Feature files keep their IDs and file names (97 features). Retitled: FEAT-064 Ap
 | W-7 | Backlog: FEAT-069 now holds the whole review panel and FEAT-070 is reused for the chart's Device section; FEAT-066 complexity Medium → High, FEAT-068 Low → Medium, FEAT-070 P1 Low. OK? |
 | W-8 | Tests: E2E-09 now saves a second review on R09 after E2E-18's first one (the "Mark as reviewed" path is gone). OK, or move it to R10? NFR-133 drops the "CT" time-zone abbreviation to match "Oct 30, 2:28 PM". OK? |
 | W-9 | OQ-32: room numbers on the resident list (the wireframe asks; UX-001 forbids room data today). |
+
+## 8. Review round 1 resolutions (26 October 2026)
+
+The algorithm lead (Shaba) answered W-1..W-9 on GitHub PR #5 and requested changes. Every answer is applied on this branch.
+
+| # | Answer | Resolution | Files changed |
+|---|---|---|---|
+| W-1 | Keep the OQ-31 rule: only `baseline_stalled` and `high_set_aside` turn a resident yellow. A device with no upload is device health, not resident status; if it is ever surfaced through status, wait for two consecutive silent days. | OQ-31 Answered, D-115. UX-433 states the rule; the wireframe's Device-section question becomes a decided note; "interim" wording removed. | TRD 24, 02, 04, 05, 07, 09, 11, 13, 14, 19, 23; FEAT-027, FEAT-029, FEAT-065, FEAT-070; MVP checklist; BACKLOG; design docs; wireframe and WIREFRAMES.md |
+| W-2 | Show the Learning filter only when someone is Learning. | No change (already so). | — |
+| W-3 | Keep the D-111 content; make sure the SEC-124 privacy hint is represented if it is required. | No change. SEC-124 is a Must and the hint "Do not enter names or other identifying details." is already required by TRD 11 UX-121 and FEAT-071. | — |
+| W-4 | Use neutral pills for New admissions ("In range" / "Out of range"). | D-117: neutral `RangePill` "Out of range" / "In range" (ink on surface, no status colour, no glyph); "○ Learning" stays for the two waiting states. UX-185, FE-092, new `RangePill` in the TRD 04 inventory, FEAT-073, the wireframe table. | TRD 04, 11, 24; FEAT-073; UI_Architecture; wireframe |
+| W-5 | Build the D-114 API additions in checkpoint 4. | No change (planned for checkpoint 4, section 6). | — |
+| W-6 | Source Sans 3, dark mode as a Should and the 1px bar outline are fine. | No change. | — |
+| W-7 | Backlog moves and complexity changes are fine. | No change. | — |
+| W-8 | Move E2E-09 to R10 so it does not depend on E2E-18; keep "CT" in timestamps. | D-118 (amends D-73): the `@mutating` order is E2E-18 on R09, the FE-193 reminder step on R10, then E2E-09 on R10; E2E-09/FE-187 assert only R10 facts. FEAT-069-AC-07 (two reviews on one alarm) moves to a component test. D-119: date-time values end with "CT" ("Oct 30, 2:28 PM CT"): UX-003, NFR-133, AC-NFR-10, FE-151, the TRD 04 §4.11 format and every date-time example (88 strings) and the wireframe's sample times. | TRD 03, 04, 09, 11, 13, 14, 16, 23, 24, 25; FEAT-062, FEAT-065, FEAT-066, FEAT-069, FEAT-070, FEAT-071, FEAT-072, FEAT-076; roadmap; Testing_Architecture, UI_Architecture; wireframe |
+| W-9 | Follow UX-001: no room numbers; update the wireframe. | OQ-32 Answered, D-116. The wireframe's room question is replaced by the UX-001 rule ("No room numbers and no room sort"); UX-001 cites D-116. | TRD 24, 02, 04, 11; FEAT-065; design docs; wireframe and WIREFRAMES.md |
+
+New IDs: D-115, D-116, D-117, D-118, D-119 (TRD 24 v0.19). RAQ-018 no longer lists OQ-31, since its note is no longer an open question.
+
+Also answered on PR #17 by W-5: the D-114 read-model fields are added in checkpoint 4, not in the checkpoint 3 database PR.
+

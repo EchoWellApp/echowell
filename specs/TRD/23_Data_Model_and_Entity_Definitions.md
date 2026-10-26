@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -647,7 +647,7 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | quarantined (30 d) | count status `quarantined` in window | R05 2 |
 | missed (30 d) | count `day_ledger` status `missing_resident` + `missing_device_gap` in window | R02 6, R03 1, R08 12; total 19 (Study team "Where check-ins are lost") |
 | days in window | local days of the 30-day window (API `ResidentDetail.window.days`; equals used + set aside + quarantined + missed under ASM-02); the chart banner shows "<used> of <days in window>" | R03 22 of 30, R08 13 of 30 |
-| last check-in | max `timestamp_utc` of non-duplicate `processed_sessions`, shown local "Oct 30, 2:28 PM" | R09 Oct 30, 2:28 PM |
+| last check-in | max `timestamp_utc` of non-duplicate `processed_sessions`, shown local "Oct 30, 2:28 PM CT" | R09 Oct 30, 2:28 PM CT |
 | baseline progress | `min(count usable in current epoch, N)` "of N" | R08 13 of 16 |
 | baseline dates | local dates of `first_session_id` and `frozen_after_session_id` (composite row) | R09 Oct 1–16 |
 | watching since | local_date of the first `scores` row of the current epoch; before any scored session, the local date after the freeze session (R9) | R09 Oct 17 |
@@ -686,7 +686,7 @@ Separate derived fields (TRD 24 D-114; API `ResidentOverviewRow`, `ResidentDetai
 
 | Field | Rule | Test data (as of 2026-10-30) |
 |---|---|---|
-| `needs_attention` | the resident has ≥ 1 `data_alerts` row with `status` = `open` and `kind` ∈ {`baseline_stalled`, `high_set_aside`} (independent of `status`; which kinds count is OQ-31) | true for R03, R08 |
+| `needs_attention` | the resident has ≥ 1 `data_alerts` row with `status` = `open` and `kind` ∈ {`baseline_stalled`, `high_set_aside`} (independent of `status`; the kind set is TRD 24 D-115, answering OQ-31) | true for R03, R08 |
 | `attention_reasons` | those kinds, in the order baseline_stalled, high_set_aside; empty when `needs_attention` is false | R03 [high_set_aside], R08 [baseline_stalled] |
 | `alarm_reviewed` | null when the current epoch has no non-closed alert; true when that alert is `acknowledged`; false when `open` | R09, R10 false; others null |
 | `restart_cause` | restart cause of the current epoch (TRD 06 DB-065) when `epoch_number` > 1; null when it is 1 or there is no epoch | R07 device |
@@ -942,7 +942,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 - OQ-24 Data-alert thresholds.
 - OQ-25 Explanation checklist codes (`alert_reviews.explanations`).
 - OQ-26 Who may review alarms and how soon.
-- OQ-31 Which data-alert kinds set `needs_attention`, and whether a device without upload should.
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Only `baseline_stalled` and `high_set_aside` set `needs_attention`; a device without upload does not.
 
 ## Revision History
 
@@ -957,3 +957,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (resident_code pattern per TRD 20; ingest_rejections.row_number (D-84); in use since/until (D-82)) | — |
 | 0.9 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-8): §4.6 states that the `analytics_summary.py` read of `evaluation_ground_truth` through the read-only engine is the one exception to TRD 05 API-005 | — |
 | 0.10 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; §4.4.3 keeps the pipeline `status` and adds the derived `needs_attention`, `attention_reasons`, `alarm_reviewed`, `restart_cause` and the detail `window` with the four display statuses (D-109); §4.4.4 adds the `checkins_started` event and the same-date order; §4.4.2 adds upload on the as-of date; §4.3.7 and `data_alerts.detail` use the v0.2 detail texts; entity read-by notes, DME-011, DME-012, DME-024 and AC-DME-05, -08, -09 follow the v0.2 pages | — |
+| 0.11 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115); last check-in example with "CT" (D-119) | — |

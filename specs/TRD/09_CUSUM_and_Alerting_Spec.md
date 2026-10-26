@@ -1,6 +1,6 @@
 # 09 CUSUM and Alerting Spec
 
-Document ID: ECHOWELL-TRD-09 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-09 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -254,7 +254,7 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 |---|---|---|---|---|
 | CUS-037 | (Retired by TRD 24 D-110: there is no alarm queue; the alert facts above are returned by `GET /api/v1/alerts` (CUS-025, CUS-041) and rendered in the chart Summary, TRD 11 UX-076.) | — | D-110 | — |
 | CUS-038 | The review form ("Review and notes" section, TRD 11 §4.17.2) shall offer the explanation checklist from config key `review_explanations` (codes and labels: cold_cough_sore_throat "Cold, cough or sore throat"; dental_dentures "Dental problem or dentures out"; medication_change "New or changed medication"; poor_sleep_unusual_day "Poor sleep or unusual day"; room_device_moved "Room or device moved"; multi-select, optional; provisional, OQ-25) and a required single outcome: no_concern "Checked on resident, no concern"; known_cause "Explained by a known cause"; referred "Referred to nurse or provider"; data_problem "Looks like a data problem: send to study team" (UI legend "What did you find?", D-113). Unknown codes return 422. | Must | SRC-21, OQ-25 | Test |
-| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now (application clock, TRD 23 DME-022) + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; the "Review and notes" section then shows "Reminder set for <Mon D, h:mm AM/PM>." (TRD 11 UX-317); snoozing shall not change alert status, tally, alarm state or the nav badge count, and is audit-logged (action `alert.snoozed`, TRD 12 §4.12). | Must | SRC-21, §19 | Test |
+| CUS-039 | `POST /api/v1/alerts/{id}/snooze {hours?}` (clinician, admin) shall set `snoozed_until` = now (application clock, TRD 23 DME-022) + hours (default config `alert_snooze_hours` = 24) and `snoozed_by`; the "Review and notes" section then shows "Reminder set for <Mon D, h:mm AM/PM CT>." (TRD 11 UX-317); snoozing shall not change alert status, tally, alarm state or the nav badge count, and is audit-logged (action `alert.snoozed`, TRD 12 §4.12). | Must | SRC-21, §19 | Test |
 | CUS-040 | A review with outcome `data_problem` shall create or link a `data_alerts` row of kind `review_flagged_data_problem` as TRD 02 FR-273 specifies, with title "<R> · review flagged a data problem" and detail "a review flagged a data problem (<Mon D>, <display name>)." (date = facility-local date of the review, display name = reviewer; section 4.9; TRD 11 §4.18.2; TRD 24 D-114); the pipeline never creates, modifies or resolves this kind (TRD 07 ANL-060). | Must | SRC-21, §19, D-114 | Test |
 | CUS-041 | "Leaning most" shall be computed as defined above and returned with each alarm on `GET /api/v1/alerts`; it shall be absent (empty list) when no feature has a positive mean (the chart Summary then reads "Leaning most: no single measurement stands out.", TRD 11 UX-312). | Must | SRC-21, §19, D-92 | Test |
 | CUS-042 | Who may review and the required review time are not enforced in the MVP (roles clinician and admin may review; no SLA; OQ-26); the review panel shall carry the open-questions note of TRD 11 UX-321 and the chart Summary the note "It is a prompt to check in, not a diagnosis." (UX-072); the data bar states that no audio is stored or played (UX-400). | Must | OQ-26, BR-18, SRC-21 | Inspection |
@@ -264,7 +264,7 @@ the first 3; render each as the §6 plain-language label with the parenthetical 
 Data alerts are data-quality findings for the study team, not health alarms; they are listed on the Study team page under
 "Data problems to follow up" as "**<code>:** <detail>" with the code in bold, and the `title` is the code link's accessible
 name (TRD 11 §4.18.2). Open `baseline_stalled` and `high_set_aside` alerts also set the resident's attention flag
-(`needs_attention`, the yellow "Needs attention" status; TRD 23 §4.4.3, TRD 24 D-109; which data problems count is OQ-31);
+(`needs_attention`, the yellow "Needs attention" status; TRD 23 §4.4.3, TRD 24 D-109; which data problems count is TRD 24 D-115, answering OQ-31);
 the other kinds never change a resident's status. They are recomputed on every run over the
 30-day window of TRD 07 section 4.13 (local days ending on the as_of local date, not before enrolment). Thresholds are
 `config_parameters` keys with equal values in both profiles (provisional, OQ-24): `data_alert_baseline_stalled_enabled`
@@ -356,7 +356,7 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 - OQ-05 Does staff review reset the CUSUM tally or turn the alarm off?
 - OQ-06 Alert delivery: who is told, how and how fast (in-dashboard only in MVP).
 - OQ-12 Final clinical wording of the chart Summary ("Right now") and the resident-list note.
-- OQ-31 Which data problems turn a resident to "Needs attention" (interim: open `baseline_stalled` or `high_set_aside`), and when a device counts as offline.
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Only open `baseline_stalled` or `high_set_aside` data alerts turn a resident to "Needs attention"; a silent device does not.
 - OQ-13 Alarm limit calibration (production baseline_n = 30 is decided, D-01) on Team 1's 50-resident/120-day dataset.
 - OQ-18 EWMA trend versus baseline band display.
 - OQ-24 Data-alert thresholds (study team).
@@ -374,3 +374,4 @@ alert; D08's 12 silent days are never consecutive, so no device_silent alert for
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (CUS-029 fields per TRD 19; CUS-030 calibration database (D-75); CUS-031 baseline_n owner approval (D-01); CUS-034 target OQ-27) | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/18/19 superseded; §4.8 alarm review logic moves to the Resident chart (CUS-037 retired; CUS-017, CUS-022, CUS-023, CUS-039, CUS-042 redirected to the "Review and notes" section, the "Resident list" nav badge, the Voice trends change-score chart and the Study team page); §4.9 data-alert `detail` strings follow the v0.2 wording (titles unchanged; CUS-040, CUS-043 to CUS-045) and open `baseline_stalled`/`high_set_aside` alerts set the attention flag (D-109, OQ-31); CUS-020, CUS-021, CUS-026 use the Changed/Learning/Usual pills and "change score" wording | — |
+| 0.10 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115); reminder line with "CT" (D-119) | — |

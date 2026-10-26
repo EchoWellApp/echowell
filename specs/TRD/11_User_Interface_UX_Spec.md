@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -76,9 +76,9 @@ flowchart TD
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| UX-001 | The UI shall identify residents only by their study ID (`resident_code`, e.g. "R09") and shall show no name, photo, room or other personal data (room numbers: OQ-32). | Must | BR-16, contract §2 | I |
+| UX-001 | The UI shall identify residents only by their study ID (`resident_code`, e.g. "R09") and shall show no name, photo, room or other personal data (no room numbers or room sort: TRD 24 D-116, answering OQ-32). | Must | BR-16, contract §2 | I |
 | UX-002 | All dates and times shall be shown in the facility time zone delivered by the API (`meta.facility_tz`, America/Chicago per ASM-01), never in the viewer's browser time zone. | Must | ASM-01, contract §7 | T |
-| UX-003 | Date-time values shall use the format "Oct 30, 2:28 PM"; date-only values "Oct 21"; date ranges "Oct 1–16"; the year shall be added only when it differs from the year of the as-of date, except in the data bar and Study team period line, which always show it ("Oct 1–30, 2026") (formats defined in TRD 04 section 4.11). | Must | SRC-21 | T |
+| UX-003 | Date-time values shall use the format "Oct 30, 2:28 PM CT", ending with the abbreviation of the facility time zone (TRD 24 D-119); date-only values "Oct 21"; date ranges "Oct 1–16"; the year shall be added only when it differs from the year of the as-of date, except in the data bar and Study team period line, which always show it ("Oct 1–30, 2026") (formats defined in TRD 04 section 4.11). | Must | SRC-21, D-119 | T |
 | UX-004 | Status, alarm and outside-range information shall never be conveyed by colour alone: every status pill shall carry its glyph ("▲" Changed, "!" Needs attention, "●" Usual, "○" Learning), its text label and a border in its colour; alarm bars and the alarm line shall also be identified by the "▲" marker, the "Alarm line" label and the chart's data table. | Must | WCAG 1.4.1, contract §11, SRC-21 | T |
 | UX-005 | (Retired by TRD 24 D-110: the v0.1 page footers are replaced by the data bar of UX-400; the "Duplicate records are removed quietly and not shown." note moves to the check-in log, UX-148, and the Study team line "Counts only. No audio, no names." to UX-350.) | — | D-110 | — |
 | UX-006 | No page shall contain an audio player, recording control, waveform, spectrogram or any link to audio. | Must | BR-01, BR-16 | I, T |
@@ -141,7 +141,7 @@ Columns (SRC-21, exact header text): "Status" · "Resident" · "What's happening
 | UX-035 | (Retired by TRD 24 D-110: the device column moves to the chart banner, UX-063.) | — | D-110 | — |
 | UX-036 | The Status cell shall show a `StatusPill` with the display status of section 4.3.4. | Must | SRC-21, SRC-12, D-109 | T |
 | UX-037 | The Resident cell shall show the study ID in weight 700 as a link to `/residents/<R>` whose accessible name is "Open chart for <R>". | Must | SRC-21 | T |
-| UX-038 | The "Last check-in" cell (`--muted`) shall show the facility-local date-time of the resident's most recent non-duplicate record of any status (usable, set aside or held back) in the format "Oct 30, 2:28 PM", or "No check-ins yet" when none exists. | Must | SRC-21, contract §8 | T |
+| UX-038 | The "Last check-in" cell (`--muted`) shall show the facility-local date-time of the resident's most recent non-duplicate record of any status (usable, set aside or held back) in the format "Oct 30, 2:28 PM CT", or "No check-ins yet" when none exists. | Must | SRC-21, contract §8 | T |
 | UX-039 | (Retired by TRD 24 D-110: the last-30-day counts move to the chart banner, UX-063, and the Check-in log section, UX-140.) | — | D-110 | — |
 | UX-040 | The whole row shall open the resident's chart Summary when clicked (pointer convenience); keyboard and screen-reader users reach the chart through the study-ID link of UX-037, so the row itself is not a separate tab stop. | Must | SRC-21 | T |
 | UX-041 | When the API reports more residents than it returned, a line "Showing <returned> of <total> residents." shall appear under the table. | Must | ASM-08 | T |
@@ -215,7 +215,7 @@ Silent text: none → nothing; 1–3 days → " Silent all day <Mon D>[, <Mon D>
 | UX-050 | The Study team page shall contain a section with `id="devices"` and heading "Devices" (after the alarm timing section) showing rows per the table above in the order: grouped, shared, replacement, needing attention; within a kind by natural device-code order. The tag shall read "● Online" when the API reports `uploaded_on_as_of_date` true for the row's devices, otherwise "○ No upload today". | Must | SRC-21, SRC-12, BR-12 | T |
 | UX-051 | Each shared device row shall name the device and all residents assigned to it (e.g. "D02 (shared by R02 and R03): …"). | Must | SRC-21, SRC-12 | T |
 | UX-052 | Device silent periods shall be shown on the device's row using the silent text rule above (e.g. "Silent all day Oct 12."). | Must | SRC-21, SRC-12, BR-06 | T |
-| UX-053 | A replacement device row shall show the replacement date and the previous device (e.g. "D07B (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM."); the retired device shall not get its own row. | Must | SRC-21, BR-08 | T |
+| UX-053 | A replacement device row shall show the replacement date and the previous device (e.g. "D07B (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT."); the retired device shall not get its own row. | Must | SRC-21, BR-08 | T |
 | UX-054 | Remaining devices shall be grouped in one row per firmware version whose device list is in natural order, joining runs of 3 or more consecutive numbers with " to " (e.g. "D01, D04 to D06, D08 to D10"). | Must | SRC-21 | T |
 | UX-055 | Below the rows, a disclosure (`<details>`) "Show all devices (<count>)" shall reveal a table with columns "Device", "Residents", "In use", "Last upload", "Firmware", "Days with no device activity (last 30 days)" (from `silent_days_last_30`), "Silent days (shared device)" (from `device_gap_days_last_30`), one row per device including inactive ones (kept from v0.1, TRD 24 D-111). | Must | SRC-12, BR-12, D-111 | T |
 | UX-056 | "Days with no device activity (last 30 days)" shall show the number of local days in the window on which the device was assigned to at least one resident and received no non-duplicate record, followed by up to 3 dates (e.g. "1 (Oct 12)") or "0". | Must | SRC-12, RSK-05 | T |
@@ -332,7 +332,7 @@ The "Review and notes" section shows, in order, the alarm review panel (section 
 | UX-131 | When a save fails, the message "Could not save the note. Your text is kept — try again." shall appear and the typed text shall remain. | Must | BR-13 | T |
 | UX-132 | For users with role `researcher`, the form controls shall be replaced by "Only clinicians and admins can add notes." while previous notes remain visible. | Must | contract §10 | T |
 | UX-133 | Notes shall document observations, actions taken and follow-up activity through the three note types; the type shall be shown with every saved note. | Must | SRC-12, BR-13 | T |
-| UX-134 | Under the form, a list headed "Previous notes" (h3, 16px) shall show the resident's notes newest first, each as "<Mon D, h:mm AM/PM> · <Type> · <display name>" followed by the note text; with no notes the panel shall read "No notes yet. Add what you saw or did, for example “Resident has a cold; nurse notified.”" (`--muted`) instead of the list. | Must | SRC-21, SRC-12, BR-13 | T |
+| UX-134 | Under the form, a list headed "Previous notes" (h3, 16px) shall show the resident's notes newest first, each as "<Mon D, h:mm AM/PM CT> · <Type> · <display name>" followed by the note text; with no notes the panel shall read "No notes yet. Add what you saw or did, for example “Resident has a cold; nurse notified.”" (`--muted`) instead of the list. | Must | SRC-21, SRC-12, BR-13 | T |
 | UX-135 | The notes list shall show at most 10 notes initially and a button "Show all notes (<count>)" when more exist. | Should | BR-13 | T |
 | UX-136 | (Retired by TRD 24 D-110: no review dialog; the review form is in the same section, section 4.17.) | — | D-110 | — |
 | UX-137 | (Retired by D-110, with UX-136; saving: UX-318.) | — | D-110 | — |
@@ -395,7 +395,7 @@ The "Review and notes" section shows, in order, the alarm review panel (section 
 | UX-430 | The Device section shall show a panel headed "Device <D>" (current device) with four facts (value 18px weight 700 above a 13px `--muted` label): "● Online" in `--green` when the API reports `uploaded_on_as_of_date` true, otherwise "○ No upload today" in `--muted` / "Status"; "<last upload date-time>" / "Last upload"; "<firmware version>" / "Firmware"; "This resident only" or "Shared with <other resident codes>" / "Used by". | Must | SRC-21, BR-12 | T |
 | UX-431 | Below the facts, a heading "History" (h3) shall list the device events of the last 30 days newest first (grid like UX-140): each device-gap day "Silent all day. Affected <R> and <R>."; a replacement "Replaced <old D> with <D>. Baseline restarted."; a firmware change "Firmware changed (<from> to <to>). Baseline restarted."; with none, "No problems in the last 30 days." | Must | SRC-21, BR-06, BR-08 | T |
 | UX-432 | The panel shall end with the caption (14px, `--muted`) "Audio never leaves the device. Only voice measurements are uploaded." | Must | SRC-21, BR-01 | T |
-| UX-433 | Whether a device that stops uploading shall turn its residents to Needs attention, and after how many silent days, is OQ-31; until it is answered the Device section only reports the upload state and does not change the resident's status. | Must | SRC-21, OQ-31 | T |
+| UX-433 | A device that stops uploading shall not turn its residents to Needs attention: the Device section only reports the upload state and does not change the resident's status; device silence is a study-team item (`device_silent`, "Data problems to follow up"). If it is ever surfaced through resident status, two consecutive silent days are needed (TRD 24 D-115, answering OQ-31). | Must | SRC-21, D-115 | T |
 
 ### 4.6 Plain-language and clinical wording rules
 
@@ -421,7 +421,7 @@ SRC-21 order: open-question note → panel (header "New admissions" + intro, adm
 | UX-182 | The panel shall start with the `<h1>` "New admissions" (22px) and the line "New residents don’t have their own baseline yet, so their first check-ins are compared with the facility’s usual range." (`--muted`). | Must | SRC-21 | T |
 | UX-183 | The table shall have the columns "Status", "Resident", "Admitted", "Compared with facility range", "Own baseline" (and an action column, visually hidden header "Actions"), header styles of UX-034, `min-width: 640px` inside a horizontally scrolling container. | Must | SRC-21, contract §11 | T |
 | UX-184 | "Resident" shall show the study ID (weight 700); "Admitted" the admission date "<Mon D>". | Must | SRC-21 | T |
-| UX-185 | "Status" shall show a pill and "Compared with facility range" the matching text: `outside_range` → red "Changed" pill and "Outside facility range"; `within_range` → green "Usual" pill and "Within facility range"; `not_enough_checkins` → grey "Learning" pill and "Not enough check-ins yet"; `range_not_available` → grey "Learning" pill and "Facility range not available yet" (TRD 02 FR-202, TRD 19 `ComparisonStatus`; pill mapping is question 4 of the v0.2 review, TRD 24 D-109). | Must | SRC-21, UX-004 | T |
+| UX-185 | "Status" shall show a pill and "Compared with facility range" the matching text: `outside_range` → neutral "Out of range" pill and "Outside facility range"; `within_range` → neutral "In range" pill and "Within facility range" (neutral pill: `--ink` text on `--surface`, 1px `--ink` border, weight 600, no glyph; the red "Changed" and green "Usual" pills are reserved for comparisons with the resident's own baseline, TRD 24 D-117); `not_enough_checkins` → grey "Learning" pill and "Not enough check-ins yet"; `range_not_available` → grey "Learning" pill and "Facility range not available yet" (TRD 02 FR-202, TRD 19 `ComparisonStatus`; TRD 24 D-117). | Must | SRC-21, UX-004, D-117 | T |
 | UX-186 | "Own baseline" shall read "<n> of <N>" where n is the resident's usable check-ins towards their own baseline and N is `baseline_n` from the API. | Must | SRC-21, OQ-08 | T |
 | UX-187 | Each row shall contain a secondary button "Show comparison" (min-height 44px) that selects the resident for the comparison panel; the selected row shall have `aria-selected="true"` and a 5px `--chrome` left border on its first cell. | Must | SRC-21 | T |
 | UX-188 | The page shall list only residents of the new-admission cohort whose own baseline has not formed; when their baseline forms they shall leave this page and appear on the resident list, where they are compared with their own baseline only. | Must | SRC-12, BR-14 | T |
@@ -519,16 +519,16 @@ Data bar: "Test data only (pipeline test data v0.1, Oct 1–30, 2026). No real r
 
 | Order | Status pill | Resident | What's happening | Last check-in |
 |---|---|---|---|---|
-| 1 | ▲ Changed | R09 | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM |
-| 2 | ▲ Changed | R10 | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM |
-| 3 | ! Needs attention | R03 | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM |
-| 4 | ! Needs attention | R08 | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM |
-| 5 | ● Usual | R01 | Within their usual range. | Oct 30, 2:07 PM |
-| 6 | ● Usual | R02 | Within their usual range. | Oct 30, 2:55 PM |
-| 7 | ● Usual | R04 | Within their usual range. | Oct 30, 2:17 PM |
-| 8 | ● Usual | R05 | Within their usual range. | Oct 30, 2:40 PM |
-| 9 | ● Usual | R06 | Within their usual range. | Oct 30, 2:38 PM |
-| 10 | ● Usual | R07 | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM |
+| 1 | ▲ Changed | R09 | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM CT |
+| 2 | ▲ Changed | R10 | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM CT |
+| 3 | ! Needs attention | R03 | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM CT |
+| 4 | ! Needs attention | R08 | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM CT |
+| 5 | ● Usual | R01 | Within their usual range. | Oct 30, 2:07 PM CT |
+| 6 | ● Usual | R02 | Within their usual range. | Oct 30, 2:55 PM CT |
+| 7 | ● Usual | R04 | Within their usual range. | Oct 30, 2:17 PM CT |
+| 8 | ● Usual | R05 | Within their usual range. | Oct 30, 2:40 PM CT |
+| 9 | ● Usual | R06 | Within their usual range. | Oct 30, 2:38 PM CT |
+| 10 | ● Usual | R07 | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM CT |
 
 R04's two duplicate arrivals are not shown anywhere (its "used" stays 30).
 
@@ -545,13 +545,13 @@ R04's two duplicate arrivals are not shown anywhere (its "used" stays 30).
 
 | Resident | Banner (Device · Last check-in · Usable · Baseline · pill) | Baseline section text | Newest log lines |
 |---|---|---|---|
-| R09 | D09 · Oct 30, 2:28 PM · 30 of 30 · Complete · ▲ Changed | First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 21 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
-| R10 | D10 · Oct 30, 2:39 PM · 30 of 30 · Complete · ▲ Changed | … Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 24 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
-| R08 | D08 · Oct 30, 2:28 PM · 13 of 30 · 13 of 16 · ! Needs attention | Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down. | Oct 29 Check-in set aside: speech too short. / Oct 27 Check-in missed. / Oct 25 Check-in set aside: quality flag poor. |
-| R07 | D07B (replaced D07) · Oct 30, 2:52 PM · 30 of 30 · Complete · ● Usual | Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29. | Oct 29 Comparing with baseline started. / Oct 28 Baseline complete (16 of 16). / Oct 13 New device D07B. Baseline restarted. |
-| R05 | D05 · Oct 30, 2:40 PM · 28 of 30 · Complete · ● Usual | … Oct 1–17, then frozen. Compared with it since Oct 18. | Oct 22 Check-in held back: possible other voice. / Oct 18 Comparing with baseline started. / Oct 17 Baseline complete (16 of 16). |
-| R03 | D02 (shared with R02) · Oct 30, 2:19 PM · 22 of 30 · Complete · ! Needs attention | … Oct 1–23, then frozen. Compared with it since Oct 24. | Oct 26 Check-in set aside: speech too short. / Oct 24 Comparing with baseline started. / Oct 23 Baseline complete (16 of 16). |
-| R02 | D02 (shared with R03) · Oct 30, 2:55 PM · 24 of 30 · Complete · ● Usual | … Oct 1–21, then frozen. Compared with it since Oct 22. | Oct 23 Check-in missed. / Oct 22 Comparing with baseline started. / Oct 21 Baseline complete (16 of 16). |
+| R09 | D09 · Oct 30, 2:28 PM CT · 30 of 30 · Complete · ▲ Changed | First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 21 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
+| R10 | D10 · Oct 30, 2:39 PM CT · 30 of 30 · Complete · ▲ Changed | … Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 24 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
+| R08 | D08 · Oct 30, 2:28 PM CT · 13 of 30 · 13 of 16 · ! Needs attention | Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down. | Oct 29 Check-in set aside: speech too short. / Oct 27 Check-in missed. / Oct 25 Check-in set aside: quality flag poor. |
+| R07 | D07B (replaced D07) · Oct 30, 2:52 PM CT · 30 of 30 · Complete · ● Usual | Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29. | Oct 29 Comparing with baseline started. / Oct 28 Baseline complete (16 of 16). / Oct 13 New device D07B. Baseline restarted. |
+| R05 | D05 · Oct 30, 2:40 PM CT · 28 of 30 · Complete · ● Usual | … Oct 1–17, then frozen. Compared with it since Oct 18. | Oct 22 Check-in held back: possible other voice. / Oct 18 Comparing with baseline started. / Oct 17 Baseline complete (16 of 16). |
+| R03 | D02 (shared with R02) · Oct 30, 2:19 PM CT · 22 of 30 · Complete · ! Needs attention | … Oct 1–23, then frozen. Compared with it since Oct 24. | Oct 26 Check-in set aside: speech too short. / Oct 24 Comparing with baseline started. / Oct 23 Baseline complete (16 of 16). |
+| R02 | D02 (shared with R03) · Oct 30, 2:55 PM CT · 24 of 30 · Complete · ● Usual | … Oct 1–21, then frozen. Compared with it since Oct 22. | Oct 23 Check-in missed. / Oct 22 Comparing with baseline started. / Oct 21 Baseline complete (16 of 16). |
 | R01, R04, R06 | D0x · … · 30 of 30 · Complete · ● Usual | … Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
 
 Oldest log lines: every resident "Oct 1 Check-ins started." except R07 "Oct 1 Check-ins started on D07.". Further expected log lines: R03 "Oct 18 Check-in set aside: quality flag poor; noise above limit.", "Oct 12 Shared device D02 silent all day. Check-in missed."; R02 "Oct 12 Shared device D02 silent all day. Check-in missed."; R05 "Oct 8 Check-in held back: possible other voice." Check-in counts (Used / Set aside / Held back / Missed): R08 13 / 5 / 0 / 12; R03 22 / 7 / 0 / 1; R05 28 / 0 / 2 / 0; R02 24 / 0 / 0 / 6; all others 30 / 0 / 0 / 0.
@@ -560,17 +560,17 @@ Summary R09: lead "R09’s voice has moved away from their own usual pattern, st
 
 Voice trends R09: baseline slot "Baseline Oct 1–16"; 14 bars Oct 17–30 with values 3.2, 2.6, 1.8, 1.6 (`--c-aside`, `off`), 5.4 (`--red`, ▲, "Oct 21 · alarm"), 8.0, 8.3, 10.7, 12.4, 15.3, 16.7, 18.8, 23.1, 26.8 (`--red`, `on`). R10: 14 bars; Oct 17–23 `off` (0.2, 0.6, 1.0, 1.4, 2.4, 3.8, 4.4); Oct 24 `rings` ▲ 6.0; Oct 25–30 `on` (6.5, 7.0, 9.1, 10.8, 12.6, 13.4). R07: line "Showing the current device period since Oct 13…", baseline slot "Baseline Oct 13–28", 2 bars (Oct 29, Oct 30) with value 0.0 drawn as stubs. R08: no chart; text "No change score yet. Scoring starts after the baseline is complete (13 of 16 usable check-ins so far)."; all 7 cards "Not scored yet". (The bar values of SRC-21 are approximate; these values from SRC-03 are binding.)
 
-Device section R03: "Device D02"; "● Online"; "Oct 30, 2:55 PM" (the device's last upload is its latest record from any resident on it); firmware "fw-1.0.0"; "Shared with R02"; History "Oct 12 Silent all day. Affected R02 and R03." R07: "Device D07B"; "● Online"; "Oct 30, 2:52 PM"; "fw-1.0.0"; "This resident only"; History "Oct 13 Replaced D07 with D07B. Baseline restarted." Others: "No problems in the last 30 days."
+Device section R03: "Device D02"; "● Online"; "Oct 30, 2:55 PM CT" (the device's last upload is its latest record from any resident on it); firmware "fw-1.0.0"; "Shared with R02"; History "Oct 12 Silent all day. Affected R02 and R03." R07: "Device D07B"; "● Online"; "Oct 30, 2:52 PM CT"; "fw-1.0.0"; "This resident only"; History "Oct 13 Replaced D07 with D07B. Baseline restarted." Others: "No problems in the last 30 days."
 
 #### 4.13.4 Study team devices section
 
 | Tag | Row |
 |---|---|
 | ● Online | **D01, D04 to D06, D08 to D10:** all uploaded Oct 30. Firmware fw-1.0.0. |
-| ● Online | **D02** (shared by R02 and R03): last upload Oct 30, 2:55 PM. Silent all day Oct 12. |
-| ● Online | **D07B** (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM. |
+| ● Online | **D02** (shared by R02 and R03): last upload Oct 30, 2:55 PM CT. Silent all day Oct 12. |
+| ● Online | **D07B** (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT. |
 
-"Show all devices (10)" table: D01 R01 · D02 R02, R03 (no activity 1 (Oct 12), silent 1 (Oct 12)) · D04 R04 · D05 R05 · D06 R06 · D07 R07 "Oct 1–12 · replaced by D07B", last upload Oct 12, 2:14 PM · D07B R07 "Since Oct 13" · D08 R08 (no activity 12) · D09 R09 · D10 R10; all firmware fw-1.0.0; all other activity and silent counts 0.
+"Show all devices (10)" table: D01 R01 · D02 R02, R03 (no activity 1 (Oct 12), silent 1 (Oct 12)) · D04 R04 · D05 R05 · D06 R06 · D07 R07 "Oct 1–12 · replaced by D07B", last upload Oct 12, 2:14 PM CT · D07B R07 "Since Oct 13" · D08 R08 (no activity 12) · D09 R09 · D10 R10; all firmware fw-1.0.0; all other activity and silent counts 0.
 
 #### 4.13.5 New admissions
 
@@ -646,7 +646,7 @@ Fixed by SRC-21 (TRD 24 D-112) and implemented in TRD 04 section 4.12 as CSS cus
 | Pills Changed / Needs attention / Usual / Learning with ▲ ! ● ○ | section 4.3.4, UX-004, UX-036 |
 | Legend with meanings | UX-406 |
 | Note "A status is a prompt to check on someone, not a diagnosis…" | UX-407, UX-162 |
-| Note on room numbers and sorting by room | OQ-32, UX-001 |
+| Note on room numbers and sorting by room (replaced by the UX-001 rule, D-116) | UX-001, D-116 |
 | "← Resident list", banner (code, Device, Last check-in, Usable check-ins, Baseline, pill) | UX-060–UX-063 |
 | Chart navigation (Summary, Review and notes (badge), Voice trends, Baseline, Check-in log, Device) | UX-410, UX-411 |
 | Summary "Right now", facts, "Review this alert" / "See what changed", yellow buttons | UX-070–UX-077, section 4.5.2.1 |
@@ -658,7 +658,7 @@ Fixed by SRC-21 (TRD 24 D-112) and implemented in TRD 04 section 4.12 as CSS cus
 | "The 7 voice measurements behind the score", 7 cards, "12 other measurements … Stored, not scored", placeholder note | UX-100–UX-108 |
 | "Baseline: R09's usual", text, meter, explanation | UX-420–UX-423 |
 | "Check-ins, last 30 days" counts, "Events", "Duplicate records are removed quietly and not shown." | UX-140–UX-150 |
-| "Device D09", Online, Last upload, Firmware, Used by, History, offline question, "Audio never leaves the device…" | UX-430–UX-433, OQ-31 |
+| "Device D09", Online, Last upload, Firmware, Used by, History, offline note (answered, D-115), "Audio never leaves the device…" | UX-430–UX-433, D-115 |
 | New admissions note, header, table, comparison chart and sentence | UX-181–UX-195 |
 | Study team header "Study team: how the system is working", "Counts only. No audio, no names." | UX-010, UX-017, UX-350 |
 | KPI tiles 94% / 89% / 9 of 10 / 2 | UX-351–UX-355, UX-380 |
@@ -699,10 +699,10 @@ The v0.1 Alert review page (`/alerts`, SRC-18) is retired (TRD 24 D-110). Its al
 | UX-314 | A fieldset with legend "What did you find?" shall offer exactly one required radio choice among "Checked on resident, no concern", "Explained by a known cause", "Referred to nurse or provider", "Looks like a data problem: send to study team"; no option is preselected. | Must | SRC-21, contract §19 | T |
 | UX-315 | A textarea labelled "Note" (3 rows, optional, at most 2000 characters, counter "<count> / 2000") with placeholder "What you saw or did" shall follow. | Must | SRC-21, contract §19 | T |
 | UX-316 | The primary button "Save review" shall save the review; without a choice under "What did you find?" it shall not save and shall show "Choose what you found." linked to that fieldset and move focus to the first radio. | Must | SRC-21, contract §19 | T |
-| UX-317 | The secondary button "Remind me in <h> hours" (h = configured snooze hours, 24) shall set a reminder and announce "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on."; it shall not save a review. While a reminder is active the panel shall show the line "Reminder set for <Mon D, h:mm AM/PM>." under the buttons. A reminder never changes the alarm. | Must | SRC-21, contract §19 | T |
+| UX-317 | The secondary button "Remind me in <h> hours" (h = configured snooze hours, 24) shall set a reminder and announce "Reminder set for <Mon D, h:mm AM/PM CT>. The alarm stays on."; it shall not save a review. While a reminder is active the panel shall show the line "Reminder set for <Mon D, h:mm AM/PM CT>." under the buttons. A reminder never changes the alarm. | Must | SRC-21, contract §19 | T |
 | UX-318 | After "Save review" succeeds, the form shall reset, the message "Review saved." (outcome data problem: "Review saved and sent to the study team as a data problem.") shall be announced politely, the Summary review status and the list's "What's happening" text shall read "Reviewed", the nav and section badges shall decrease, and the alarm state, change score and status pill shall stay as returned by the API (no reset, OQ-05). | Must | SRC-21, contract §19, OQ-05 | T |
 | UX-319 | (Retired by D-110: the panel is shown only for a Changed resident and always reviews that resident's alarm.) | — | D-110 | — |
-| UX-320 | Under the buttons, a list headed "Previous reviews" (h3) shall show the alarm's reviews newest first as "<Mon D, h:mm AM/PM> · <display name> · <outcome label>", followed by "Possible explanations: <labels joined by ', '>" when any were checked and the note text; with none it shall read "Not reviewed yet." Several reviews per alarm are allowed (kept from v0.1, TRD 24 D-111). | Must | contract §19, D-111 | T |
+| UX-320 | Under the buttons, a list headed "Previous reviews" (h3) shall show the alarm's reviews newest first as "<Mon D, h:mm AM/PM CT> · <display name> · <outcome label>", followed by "Possible explanations: <labels joined by ', '>" when any were checked and the note text; with none it shall read "Not reviewed yet." Several reviews per alarm are allowed (kept from v0.1, TRD 24 D-111). | Must | contract §19, D-111 | T |
 | UX-321 | The panel shall end with the note (13px, `--muted`) "Open questions (OQ-05, OQ-26): Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | Must | SRC-21, OQ-05, OQ-26, RAQ-018 | T |
 | UX-322 | For the researcher role, the checklist, choices, note and buttons shall be replaced by "Only clinicians and admins can review alarms."; "Previous reviews" stays visible. | Must | contract §19 | T |
 
@@ -840,7 +840,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 - ASM-04 / D-OWNER-2: production N = 30; the test profile N = 16 is used only for build-out and testing. Screens render N from the API.
 - ASM-06: a new epoch closes the previous epoch's open alert and restarts the change score, so the pill reflects the current epoch only.
 - ASM-08: fewer than 100 residents, so the resident list shows all rows without paging.
-- Note for lead (TRD-local definitions): "Last check-in" = most recent non-duplicate record of any status; "Days with no device activity" = days while assigned with no non-duplicate record from the device; "(replaced <D>)" follows the single rule of TRD 23 §4.4.1 and is rendered whenever the API returns `previous_device_code`; the replacement row applies when the replacement happened within the last 30 days; "Online" = a non-duplicate record from the device on the as-of local date (D-114; the offline rule for status is OQ-31).
+- Note for lead (TRD-local definitions): "Last check-in" = most recent non-duplicate record of any status; "Days with no device activity" = days while assigned with no non-duplicate record from the device; "(replaced <D>)" follows the single rule of TRD 23 §4.4.1 and is rendered whenever the API returns `previous_device_code`; the replacement row applies when the replacement happened within the last 30 days; "Online" = a non-duplicate record from the device on the as-of local date (D-114; a silent device never changes the status, OQ-31 answered by D-115).
 
 ## 6. Dependencies
 
@@ -902,8 +902,8 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 | OQ-24 | Data-alert thresholds are provisional defaults; copy templates do not change if thresholds change. |
 | OQ-25 | The explanation checklist is provisional and comes from the configured list; the hint line of UX-313 stays until closed. |
 | OQ-26 | Who may review alarms and how soon; the MVP allows clinicians and admins and enforces no review time. |
-| OQ-31 | Which data problems turn a resident to Needs attention, and when a device counts as offline; interim: `baseline_stalled` and `high_set_aside` only, the Device section shows "No upload today" without changing the status (UX-433). |
-| OQ-32 | Room numbers and sorting by room on the resident list; until answered no room data is shown (UX-001). |
+| OQ-31 | Answered 26 Oct 2026 (TRD 24 D-115): only `baseline_stalled` and `high_set_aside` turn a resident to Needs attention; the Device section shows "No upload today" without changing the status (UX-433). |
+| OQ-32 | Answered 26 Oct 2026 (TRD 24 D-116): no room numbers and no room sort on the resident list (UX-001). |
 
 ## Revision History
 
@@ -918,3 +918,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 | 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-10: UX-186, UX-192 and §8 note count usable check-ins, not days) | — |
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-6): UX-127 latest-review line withdrawn from Resident detail, which follows the SRC-10 wireframe (D-102); §9 OQ-05 note | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21) replaces SRC-09/10/11/18/19 (TRD 24 D-108 to D-114): Resident list with four display statuses and filters; Resident chart with Summary, Review and notes, Voice trends, Baseline, Check-in log and Device sections; Alert review page retired (review form, reminder and previous reviews moved to the chart, data alerts to Study team); Analytics renamed Study team, with Devices and data problems; v0.2 tokens (Source Sans 3, light and dark); UI wording changes; retired IDs kept as "Retired"; new UX-400–UX-433; OQ-31, OQ-32 | — |
+| 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): PR #5 review: UX-001 and OQ-32 answered (no room numbers, D-116); UX-433 and OQ-31 answered (silent device never changes the status, D-115); UX-185 neutral "Out of range" / "In range" pills (D-117); UX-003 and every date-time example with "CT" (D-119) | — |

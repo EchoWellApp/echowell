@@ -318,10 +318,10 @@ Expected values for SRC-05 with profile `test_v0_1`, as-of 2026-10-30 15:00 Amer
 | OQ-13 | Production `cusum_k`, `cusum_h` uncalibrated (0.5, 5.0). |
 | OQ-18 | No EWMA. |
 | OQ-24 | Provisional data-alert thresholds. |
-| OQ-31 | The engine's data-alert rules are unchanged; only the read side decides that open `baseline_stalled` and `high_set_aside` alerts mean "Needs attention". |
+| OQ-31 | Answered (D-115). The engine's data-alert rules are unchanged; only the read side decides that open `baseline_stalled` and `high_set_aside` alerts mean "Needs attention". |
 
 ## Revision History
 
 | Version | Date | Change | Author |
 |---|---|---|---|
-| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 references replaced by the Study team page; §11 data-alert details use the v0.2 texts and the funnel the "held back" wording; OQ-31 | — |
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 references replaced by the Study team page; §11 data-alert details use the v0.2 texts and the funnel the "held back" wording; OQ-31; PR #5 review round 1: OQ-31 answered (D-115) | — |

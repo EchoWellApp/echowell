@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -583,7 +583,7 @@ has a current assignment), `replaced_by_device_code` "D07B" and `uploaded_on_as_
 `uploaded_on_as_of_date` (TRD 24 D-114) is true when the device has at least one non-duplicate record whose
 facility-local date is the as-of local date, otherwise false; the UI shows "● Online" / "○ No upload today" from it
 (TRD 11 UX-050, UX-078, UX-430). For the test data it is true for the nine active devices and false for D07. Whether a
-device without upload changes a resident's status is OQ-31 (it does not in v0.1).
+device without upload changes a resident's status was OQ-31; it does not (TRD 24 D-115).
 
 Day definitions (TRD 02 §4.1 glossary is the single definition): `silent_days_last_30` = the device's **silent days**,
 `device_gap_days_last_30` = its **device-gap days**. `silent_days_last_30` lists local dates in the 30-day window, on or after `in_use_since`, with zero arrivals from
@@ -2152,7 +2152,7 @@ components:
 - OQ-24 Data-alert thresholds; OQ-25 review explanation list (`ReviewExplanationCode` is config-driven); OQ-26 who may review and how soon.
 - OQ-08 Facility norm definition (`ReferenceRange.method`, `ComparisonStatus` thresholds).
 - OQ-12 Final chart Summary ("Right now") wording (only structured `Explanation` facts are returned).
-- OQ-31 Which data-alert kinds set `needs_attention` (v0.1: `baseline_stalled`, `high_set_aside`; changing it changes `AttentionReason`) and whether `uploaded_on_as_of_date` false should ever set it.
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Only `baseline_stalled` and `high_set_aside` set `needs_attention` (changing it would change `AttentionReason`); `uploaded_on_as_of_date` false never sets it.
 - OQ-14 Speaker verification confidence field (not in schema v0.1; adding it is a schema_version change).
 
 ## Revision History
@@ -2166,3 +2166,4 @@ components:
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (BaselineRow.robust_spread minimum 0; still_above_line and restart detail (D-82); AlarmTimingRow.result (D-81); E-18 latest succeeded run) | — |
 | 0.5 | 20 Oct 2026 | Documentation audit fixes (DA-05: E-10 same-date event order of TRD 11 UX-141) | — |
 | 0.6 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; D-114 additions: `ResidentOverviewRow` and `ResidentDetail` gain `needs_attention`, `attention_reasons` (new `AttentionReason`) and `alarm_reviewed`; `OverviewSummary` becomes `changed`, `needs_attention`, `learning`, `usual` (2/2/0/6); `sort=alarm` order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); `CheckinEventType` gains `checkins_started` and `CheckinEvent` gains `device_code`; `Device` gains `uploaded_on_as_of_date`; restart cause for the v0.2 texts (`restart_cause` on `ResidentOverviewRow` and `ResidentDetail`; `EpochInfo.from_value`, `to_value`); `ResidentDetail.window` and `DateWindow.days`; E-30 examples use the v0.2 data-alert details; consumers redirected from `/alerts` and `/analytics` to the Resident chart, nav badge and Study team page; OAS-021, OAS-027, OAS-028 updated | — |
+| 0.7 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |

@@ -1,6 +1,6 @@
 # 16 CI/CD Pipeline Specification
 
-Document ID: ECHOWELL-TRD-16 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-16 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -380,7 +380,7 @@ jobs:
         run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) before each invocation: seed test_v0_1 --reset + DS-10 loader, docker compose restart backend, one login per role (D-73, D-74)
           for p in ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}; do
             npm run test:e2e:readonly -- --project=$p   # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
-            npm run test:e2e:mutating -- --project=$p   # D-73 group, --workers=1: E2E-18; E2E-09 (FE-187); FE-193 snooze step
+            npm run test:e2e:mutating -- --project=$p   # D-73/D-118 group, --workers=1: E2E-18; FE-193 snooze step; E2E-09 (FE-187)
           done
       - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays exactly the test_v0_1 seed)
         run: |
@@ -627,3 +627,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.12 | 23 Oct 2026 | PR #3 review: CIC-101 reports committed by the Block 3 checkpoint PRs and the Block 4 PR (one PR per checkpoint, D-101) | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): CIC-032 minimum E2E assertions (Resident list, Resident chart, Study team; Alert review page retired); CIC-116 Lighthouse pages (the four pages of TRD 03 NFR-010) | — |
+| 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): `@mutating` order comment follows D-118 | — |

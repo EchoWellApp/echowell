@@ -24,13 +24,13 @@ Pages are exactly `/residents`, `/residents/[residentCode]` with its five sectio
 | App bar "[Facility name], Assisted living" | `meta.facility_name` (`facilities.name`) + ", Assisted living" | UX-011, UX-012 |
 | "Show wireframe notes" toggle and inline notes | not a product feature; only the open-question notes listed in TRD 11 §8 are shown | TRD 11 §2, RAQ-018 |
 | No "Learning" filter button | "Learning (<n>)" shown after "Needs attention" only when at least one resident is Learning (test data: hidden) | UX-401, D-109 |
-| Note on room numbers and sorting by room | no room data until OQ-32 is answered | UX-001, OQ-32 |
+| Note on room numbers and sorting by room | no room data and no room sort (OQ-32 answered) | UX-001, D-116 |
 | Summary note "Show the 2 or 3 measurements leaning most…" | API `leaning_most` rendered as "Leaning most: <labels>" | UX-312, D-92, D-111 |
 | Change-score bars coloured by value ≥ 5 | bar colour follows `alarm_state` (same result on the test data; keeps alarm persistence visible) | UX-083, D-03, D-111 |
 | Bar heights approximate | bars come from E-12 `cusum_tally` | UX-081, TRD 11 §4.13.3 |
 | Not drawn: Login, Admin, Sign out, note types, previous notes, previous reviews, the change-score baseline slot and data table, "Show all devices", Downloads | kept from v0.1 in the v0.2 style | D-111 |
 | "[n] of [N]" | `<n> of <N>` from `baseline_progress` and `meta.baseline_n` | UX-007, UX-186 |
-| Offline device rule | Device section shows "○ No upload today" without changing the resident's status | UX-433, OQ-31 |
+| Offline device rule | Device section shows "○ No upload today" without changing the resident's status (OQ-31 answered) | UX-433, D-115 |
 
 ## 2. Page hierarchy and navigation architecture
 
@@ -219,7 +219,7 @@ stateDiagram-v2
   NotReviewed --> [*]: new epoch or rebuild closes the alert
 ```
 
-Indicators: Summary fact "Not reviewed" / "Reviewed", list text "… Not reviewed yet." / "… Reviewed.", the nav badge and the "Review and notes" badge (only while not reviewed), and the line "Reminder set for <Mon D, h:mm AM/PM>." while a reminder is active (UX-076, UX-317, UX-405, UX-411, FE-205, FE-210). Researchers see the chart and "Previous reviews" but no form ("Only clinicians and admins can review alarms.", UX-322; "Only clinicians and admins can add notes.", UX-132).
+Indicators: Summary fact "Not reviewed" / "Reviewed", list text "… Not reviewed yet." / "… Reviewed.", the nav badge and the "Review and notes" badge (only while not reviewed), and the line "Reminder set for <Mon D, h:mm AM/PM CT>." while a reminder is active (UX-076, UX-317, UX-405, UX-411, FE-205, FE-210). Researchers see the chart and "Previous reviews" but no form ("Only clinicians and admins can review alarms.", UX-322; "Only clinicians and admins can add notes.", UX-132).
 
 ## 6. Screen design: Resident list (`/residents`, SRC-21)
 
@@ -236,12 +236,12 @@ Indicators: Summary fact "Not reviewed" / "Reviewed", list text "… Not reviewe
 | +-----------------------------------------------------------------------------------------+ |
 | | Residents in the study      [All (10)] [Changed (2)] [Needs attention (2)] [Usual (6)]  | |
 | | Status             | Resident | What's happening                          | Last check-in | |
-| | ▲ Changed          | R09      | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM |
-| | ▲ Changed          | R10      | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM |
-| | ! Needs attention  | R03      | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM |
-| | ! Needs attention  | R08      | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM |
-| | ● Usual            | R01      | Within their usual range.                  | Oct 30, 2:07 PM |
-| | ● Usual            | R07      | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM |
+| | ▲ Changed          | R09      | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM CT |
+| | ▲ Changed          | R10      | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM CT |
+| | ! Needs attention  | R03      | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM CT |
+| | ! Needs attention  | R08      | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM CT |
+| | ● Usual            | R01      | Within their usual range.                  | Oct 30, 2:07 PM CT |
+| | ● Usual            | R07      | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM CT |
 | | ▲ Changed  Their voice has moved away from their own usual. Check on them.  ! Needs …    | |
 | +-----------------------------------------------------------------------------------------+ |
 | A status is a prompt to check on someone, not a diagnosis. [Final clinical wording: confirm  |
@@ -270,7 +270,7 @@ Below 640 px the navigation wraps under the brand and the filter buttons move be
 | "Status" | `StatusPill` (glyph, label, colour, border); Changed rows have a 5 px `--red`, Needs-attention rows a 5 px `--yellow-edge` left border | `status`, `needs_attention` → `toDisplayStatus()` | UX-034, UX-036, TRD 11 §4.3.4 |
 | "Resident" | study ID, weight 700, link "Open chart for <R>" | `resident_code` | UX-037, UX-040 |
 | "What's happening" | one sentence of TRD 11 §4.3.6 | `alarm_since`, `alarm_reviewed`, `attention_reasons`, `baseline_progress`, `last_30_days.set_aside`, `current_epoch`, `baseline_restarted_on` | UX-405 |
-| "Last check-in" | "Oct 30, 2:28 PM" or "No check-ins yet" | `last_checkin_at` + `meta.facility_tz` | UX-038, DB-045 |
+| "Last check-in" | "Oct 30, 2:28 PM CT" or "No check-ins yet" | `last_checkin_at` + `meta.facility_tz` | UX-038, DB-045 |
 
 Visually hidden caption "Residents in the study, <filter label>"; `scope="col"` headers; `aria-busy` during a background refresh while previous rows stay visible (UX-043, UX-201, FE-083). Duplicates never appear in any count or row; missed days are never hidden or backfilled (UX-044, UX-047, AGT-046, AGT-053). The device column, the 30-day counts column and the "Open" column of v0.1 are removed; the device moves to the chart banner and Study team, the counts to the chart banner and Check-in log (UX-035, UX-039 retired).
 
@@ -314,7 +314,7 @@ Status is never conveyed by colour alone: glyph, text label and border always ac
 | (app bar and data bar as on the Resident list; "Resident list" is the current nav link)      |
 | [← Resident list]                                                                            |
 | +-----------------------------------------------------------------------------------------+ |
-| | R09   Device D09 · Last check-in Oct 30, 2:28 PM · Usable check-ins, last 30 days       | |
+| | R09   Device D09 · Last check-in Oct 30, 2:28 PM CT · Usable check-ins, last 30 days       | |
 | |       30 of 30 · Baseline Complete                                   [ ▲ Changed ] (lg)  | |
 | +-----------------------------------------------------------------------------------------+ |
 | +----------------------+ +--------------------------------------------------------------+ |
@@ -441,7 +441,7 @@ The panel ends with "The baseline is built from the first <N> usable check-ins, 
 |---|---|---|---|
 | Note | 1 px dashed `--yellow-edge`, `--yellow-bg`, `--yellow` text; second and third sentences stay until OQ-08 closes | — | UX-181, OQ-08 |
 | Columns | "Status", "Resident", "Admitted", "Compared with facility range", "Own baseline", hidden "Actions"; min width 640 px | E-22 `AdmissionRow` (`resident_code`, `admitted_on`, `comparison_status`, `own_baseline_progress`) | UX-183..UX-186 |
-| Status pill and text | `outside_range` red "Changed" / "Outside facility range"; `within_range` green "Usual" / "Within facility range"; `not_enough_checkins` grey "Learning" / "Not enough check-ins yet"; `range_not_available` grey "Learning" / "Facility range not available yet" (pill mapping is a v0.2 review question) | `comparison_status` | UX-185, FR-202 |
+| Status pill and text | `outside_range` neutral "Out of range" / "Outside facility range"; `within_range` neutral "In range" / "Within facility range" (D-117); `not_enough_checkins` grey "Learning" / "Not enough check-ins yet"; `range_not_available` grey "Learning" / "Facility range not available yet" | `comparison_status` | UX-185, FR-202 |
 | Filter | server-side: only `new_admission` residents whose own baseline has not formed; they move to the resident list when it forms | — | UX-188, FR-201, DB-025 |
 | Sorting | API order (no sort control is specified by TRD 11 or TRD 04) | — | E-22 |
 | Row selection | "Show comparison" button, `aria-selected`, 5 px `--chrome` left border | — | UX-187 |
@@ -521,11 +521,11 @@ WCAG 2.1 AA in the light and the dark colour scheme: status never by colour alon
 | OQ-26 | Reviewers are clinicians and admins; no deadline. |
 | OQ-28 | Earlier-epoch selection uses the TRD 24 interim "Device period" select. |
 | OQ-29 | Admissions comparison rules interim. |
-| OQ-31 | Which data problems turn a resident yellow and when a device counts as offline; interim: `baseline_stalled` and `high_set_aside` only. |
-| OQ-32 | Room numbers on the resident list; none shown until answered. |
+| OQ-31 | Answered (D-115): only `baseline_stalled` and `high_set_aside` turn a resident yellow; a silent device does not. |
+| OQ-32 | Answered (D-116): no room numbers on the resident list. |
 
 ## Revision History
 
 | Version | Date | Change | Author |
 |---|---|---|---|
-| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; pages Resident list (filters, four display statuses, legend), Resident chart with six section routes, New admissions restyled, Study team (`/study`, with data problems and Devices); Alert review page, summary tiles, sort select and footers retired; component hierarchy, navigation, state, write-path diagrams and component → API → database map updated; D-114 fields; v0.2 wording and tokens | — |
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; pages Resident list (filters, four display statuses, legend), Resident chart with six section routes, New admissions restyled, Study team (`/study`, with data problems and Devices); Alert review page, summary tiles, sort select and footers retired; component hierarchy, navigation, state, write-path diagrams and component → API → database map updated; D-114 fields; v0.2 wording and tokens; PR #5 review round 1: neutral New admissions pills (D-117), OQ-31 and OQ-32 answered (D-115, D-116), date-times with "CT" (D-119) | — |

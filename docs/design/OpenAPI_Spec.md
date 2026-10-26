@@ -357,7 +357,7 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 | OQ-05 | E-14 leaves tally and alarm unchanged. |
 | OQ-08, OQ-29 | E-22..E-24 return empty items until the facility norm is defined; `comparison_status` is `range_not_available` in v0.1. |
 | OQ-12 | E-09 returns only structured `explanation` facts; wording lives in the frontend. |
-| OQ-31 | `needs_attention` is set by open `baseline_stalled` and `high_set_aside` data alerts only; `uploaded_on_as_of_date` false does not set it (API-138). |
+| OQ-31 | Answered (D-115): `needs_attention` is set by open `baseline_stalled` and `high_set_aside` data alerts only; `uploaded_on_as_of_date` false does not set it (API-138). |
 | OQ-14 | Speaker verification field not in schema 0.1. |
 | OQ-24, OQ-25, OQ-26 | Data-alert thresholds, review explanation list (`review_explanations` via E-32) and reviewer roles are configuration or interim decisions. |
 
@@ -365,4 +365,4 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 
 | Version | Date | Change | Author |
 |---|---|---|---|
-| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §6.2 E-08 default order (D-109) and summary, attention flag, `alarm_reviewed`, `checkins_started`, `uploaded_on_as_of_date`, v0.2 data-alert details and the nav badge consumer; §8 `ResidentOverviewRow`, `OverviewSummary`, `DateWindow`, `EpochInfo`, `ResidentDetail`, `CheckinEvent`, `CheckinEventType`, `Device` and new `AttentionReason` per TRD 19 v0.6; OQ-31 | — |
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §6.2 E-08 default order (D-109) and summary, attention flag, `alarm_reviewed`, `checkins_started`, `uploaded_on_as_of_date`, v0.2 data-alert details and the nav badge consumer; §8 `ResidentOverviewRow`, `OverviewSummary`, `DateWindow`, `EpochInfo`, `ResidentDetail`, `CheckinEvent`, `CheckinEventType`, `Device` and new `AttentionReason` per TRD 19 v0.6; OQ-31; PR #5 review round 1: OQ-31 answered (D-115) | — |

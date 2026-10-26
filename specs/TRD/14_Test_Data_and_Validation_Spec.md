@@ -1,6 +1,6 @@
 # 14 Test Data and Validation Spec
 
-Document ID: ECHOWELL-TRD-14 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-14 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -514,22 +514,22 @@ Table 4.9-B Expected Resident list (as of 2026-10-30 15:00 America/Chicago; "las
 
 | Order | Resident | Display status | What's happening | Last check-in (local) | Device (chart banner) | used · set aside · held back · missed |
 |---|---|---|---|---|---|---|
-| 1 | R09 | ▲ Changed | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM | D09 | 30 · 0 · 0 · 0 |
-| 2 | R10 | ▲ Changed | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM | D10 | 30 · 0 · 0 · 0 |
-| 3 | R03 | ! Needs attention | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM | D02 (shared with R02) | 22 · 7 · 0 · 1 |
-| 4 | R08 | ! Needs attention | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM | D08 | 13 · 5 · 0 · 12 |
-| 5 | R01 | ● Usual | Within their usual range. | Oct 30, 2:07 PM | D01 | 30 · 0 · 0 · 0 |
-| 6 | R02 | ● Usual | Within their usual range. | Oct 30, 2:55 PM | D02 (shared with R03) | 24 · 0 · 0 · 6 |
-| 7 | R04 | ● Usual | Within their usual range. | Oct 30, 2:17 PM | D04 | 30 · 0 · 0 · 0 |
-| 8 | R05 | ● Usual | Within their usual range. | Oct 30, 2:40 PM | D05 | 28 · 0 · 2 · 0 |
-| 9 | R06 | ● Usual | Within their usual range. | Oct 30, 2:38 PM | D06 | 30 · 0 · 0 · 0 |
-| 10 | R07 | ● Usual | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM | D07B (replaced D07) | 30 · 0 · 0 · 0 |
+| 1 | R09 | ▲ Changed | Changed from their usual since Oct 21. Not reviewed yet. | Oct 30, 2:28 PM CT | D09 | 30 · 0 · 0 · 0 |
+| 2 | R10 | ▲ Changed | Changed from their usual since Oct 24. Not reviewed yet. | Oct 30, 2:39 PM CT | D10 | 30 · 0 · 0 · 0 |
+| 3 | R03 | ! Needs attention | 7 check-ins too noisy or too short to use. | Oct 30, 2:19 PM CT | D02 (shared with R02) | 22 · 7 · 0 · 1 |
+| 4 | R08 | ! Needs attention | Missing many check-ins. Baseline stuck at 13 of 16. | Oct 30, 2:28 PM CT | D08 | 13 · 5 · 0 · 12 |
+| 5 | R01 | ● Usual | Within their usual range. | Oct 30, 2:07 PM CT | D01 | 30 · 0 · 0 · 0 |
+| 6 | R02 | ● Usual | Within their usual range. | Oct 30, 2:55 PM CT | D02 (shared with R03) | 24 · 0 · 0 · 6 |
+| 7 | R04 | ● Usual | Within their usual range. | Oct 30, 2:17 PM CT | D04 | 30 · 0 · 0 · 0 |
+| 8 | R05 | ● Usual | Within their usual range. | Oct 30, 2:40 PM CT | D05 | 28 · 0 · 2 · 0 |
+| 9 | R06 | ● Usual | Within their usual range. | Oct 30, 2:38 PM CT | D06 | 30 · 0 · 0 · 0 |
+| 10 | R07 | ● Usual | Usual. Baseline restarted Oct 13 after a new device. | Oct 30, 2:52 PM CT | D07B (replaced D07) | 30 · 0 · 0 · 0 |
 
 API summary (TRD 24 D-114): changed 2 (R09, R10), needs_attention 2 (R03 `high_set_aside`, R08 `baseline_stalled`), learning 0, usual 6 (R01, R02, R04–R07); filter buttons "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" and no "Learning" button. `alarm_reviewed` is false for R09 and R10 and null for the others. Missed check-ins in the window total 19 (R02 6 + R03 1 + R08 12; Study team funnel note). Duplicates (R04: 2) are never shown.
 
-Study team Devices section (TRD 11 §4.13.4): "● Online" rows "D01, D04 to D06, D08 to D10: all uploaded Oct 30. Firmware fw-1.0.0.", "D02 (shared by R02 and R03): last upload Oct 30, 2:55 PM. Silent all day Oct 12.", "D07B (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM."; "Show all devices (10)" includes the retired D07 ("Oct 1–12 · replaced by D07B").
+Study team Devices section (TRD 11 §4.13.4): "● Online" rows "D01, D04 to D06, D08 to D10: all uploaded Oct 30. Firmware fw-1.0.0.", "D02 (shared by R02 and R03): last upload Oct 30, 2:55 PM CT. Silent all day Oct 12.", "D07B (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT."; "Show all devices (10)" includes the retired D07 ("Oct 1–12 · replaced by D07B").
 
-Resident chart R09 (TRD 11 §4.13.3): banner "R09", Device "D09", Last check-in "Oct 30, 2:28 PM", Usable check-ins "30 of 30", Baseline "Complete", pill "▲ Changed"; back link "← Resident list"; Summary facts "Oct 21" Alarm started, "9 days" Open, "Not reviewed"; Baseline section "First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."; Voice trends change score chart with a leading slot labelled "Baseline Oct 1–16" and 14 scored bars (Oct 17–30) with heights equal to the cusum_tally values in §4.7.9, bars 1–4 (Oct 17–20, alarm_state off) `--c-aside` and bars 5–14 (Oct 21–30, rings/on) `--red`, dashed "Alarm line: 5", "▲" and x label "Oct 21 · alarm"; Check-in log newest lines "Oct 21 Alarm on. Change score crossed 5.", "Oct 17 Comparing with baseline started.", "Oct 16 Baseline complete (16 of 16).", oldest line "Oct 1 Check-ins started." (R07: "Oct 1 Check-ins started on D07.").
+Resident chart R09 (TRD 11 §4.13.3): banner "R09", Device "D09", Last check-in "Oct 30, 2:28 PM CT", Usable check-ins "30 of 30", Baseline "Complete", pill "▲ Changed"; back link "← Resident list"; Summary facts "Oct 21" Alarm started, "9 days" Open, "Not reviewed"; Baseline section "First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."; Voice trends change score chart with a leading slot labelled "Baseline Oct 1–16" and 14 scored bars (Oct 17–30) with heights equal to the cusum_tally values in §4.7.9, bars 1–4 (Oct 17–20, alarm_state off) `--c-aside` and bars 5–14 (Oct 21–30, rings/on) `--red`, dashed "Alarm line: 5", "▲" and x label "Oct 21 · alarm"; Check-in log newest lines "Oct 21 Alarm on. Change score crossed 5.", "Oct 17 Comparing with baseline started.", "Oct 16 Baseline complete (16 of 16).", oldest line "Oct 1 Check-ins started." (R07: "Oct 1 Check-ins started on D07.").
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
@@ -537,7 +537,7 @@ Resident chart R09 (TRD 11 §4.13.3): banner "R09", Device "D09", Last check-in 
 | TDV-062 | With DS-07 loaded, `GET /api/v1/residents` (default sort) shall return the rows and order of Table 4.9-B with their `status`, `needs_attention`, `attention_reasons` and `alarm_reviewed` values, and the summary changed 2 / needs_attention 2 / learning 0 / usual 6 (TRD 24 D-114). | Must | BR-12, SRC-21 | Test |
 | TDV-063 | The default order (`sort=alarm`) shall follow TRD 24 D-109, which amends contract §8, R16 and D-17: Changed (alarm date oldest first, then natural resident code), then Needs attention, Learning and Usual, each by natural resident code: R09, R10, R03, R08, R01, R02, R04, R05, R06, R07. | Must | contract §8, D-109, SRC-21 | Test |
 | TDV-064 | "Last 30 days" counts shall cover the as-of local date and the 29 preceding local dates; "missed" = missing_resident + missing_device_gap; duplicates are excluded. | Must | contract §8, BR-06 | Test |
-| TDV-065 | Last check-in shall be the local time of the latest non-duplicate record of any status, formatted "Mon D, h:mm AM/PM". | Must | contract §8 | Test |
+| TDV-065 | Last check-in shall be the local time of the latest non-duplicate record of any status, formatted "Mon D, h:mm AM/PM CT". | Must | contract §8 | Test |
 | TDV-066 | The Study team Devices section and the Resident chart values of R09 shall match the text above, and the other residents' chart values shall match TRD 11 §4.13.3. | Must | BR-12, BR-13, SRC-21 | Test |
 
 #### 4.9.1 Alarm review fixture (SRC-21, contract §19)
@@ -773,7 +773,7 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 - OQ-15 Store-and-forward: gaps in DS-01/DS-04 are treated as missing data.
 - OQ-24 Data-alert thresholds (0.20 set-aside fraction, 10 received, 2 silent days): Table 4.9-D is the expected output of the provisional defaults.
 - OQ-26 Who may review: TDV-076 assumes clinician/admin reviewers.
-- OQ-31 Which data problems turn a resident to "Needs attention": Table 4.9-B uses the interim rule of TRD 24 D-109 (R03 and R08 only).
+- OQ-31 Which data problems turn a resident to "Needs attention": Table 4.9-B uses the rule of TRD 24 D-109 and D-115, which answered OQ-31 (R03 and R08 only).
 
 ## Revision History
 
@@ -788,3 +788,4 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 | 0.9 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.10 | 23 Oct 2026 | PR #3 review: TDV-073 refresh in each Block 3 checkpoint PR (one PR per checkpoint, D-101) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §4.9 UI fixture rewritten — Table 4.9-B Resident list with display statuses, "What's happening" and the D-109 order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07; summary 2/2/0/6; Study team devices; Resident chart R09; Table 4.9-C alarms in the chart Summary and nav badge; Table 4.9-D v0.2 details and tags; Table 4.9-E Study team; TDV-062, TDV-063, TDV-066–TDV-069, TDV-074–TDV-076, TDV-104, AC-TDV-07, AC-TDV-10, AC-TDV-11 updated; §9 OQ-31; SRC-21 replaces SRC-09/10/18/19 | — |
+| 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): Table 4.9-B and §4.13 times with "CT" (D-119); OQ-31 answered (D-115) | — |

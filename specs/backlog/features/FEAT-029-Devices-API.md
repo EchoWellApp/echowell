@@ -30,7 +30,7 @@ Serve the device data of wireframe v0.2 (SRC-21; TRD 24 D-110, D-114) — the St
 - TRD 10 ING-044..ING-046 (assignment resolution, shared definition).
 - TRD 11 §4.4 (Study team Devices section), §4.5.8 (chart Device section, UX-430..UX-433), UX-078 (Summary device tile), §4.13.3, §4.13.4 (expected rendering).
 - TRD 14 TDV-066; TRD 13 §4.10 E2E-07.
-- TRD 24 D-64 (fields derived on read), D-114 (`uploaded_on_as_of_date`), OQ-31 (whether a device without upload changes a resident's status; not in v0.1).
+- TRD 24 D-64 (fields derived on read), D-114 (`uploaded_on_as_of_date`), OQ-31 answered by D-115 (a device without upload does not change a resident's status).
 
 ## Scope
 

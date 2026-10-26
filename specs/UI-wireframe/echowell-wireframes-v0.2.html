@@ -62,6 +62,7 @@ main{max-width:1240px;margin:0 auto;padding:20px}
 .pill.yellow{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow-edge)} .pill.yellow::before{content:"!"; font-weight:800}
 .pill.green{background:var(--green-bg);color:var(--green);border-color:var(--green)} .pill.green::before{content:"●"}
 .pill.grey{background:var(--grey-bg);color:var(--grey);border-color:var(--grey)} .pill.grey::before{content:"○"}
+.pill.neutral{background:var(--surface);color:var(--ink);border-color:var(--ink);font-weight:600}
 .pill.big{font-size:18px;padding:6px 16px}
 
 /* Worklist */
@@ -173,33 +174,33 @@ const STATUS = {
 const ORDER = {red:0, yellow:1, grey:2, green:3};
 
 const R = {
-  R09:{dev:"D09", st:"red", last:"Oct 30, 2:28 PM", c:[30,0,0,0], why:"Changed from their usual since Oct 21. Not reviewed yet.",
+  R09:{dev:"D09", st:"red", last:"Oct 30, 2:28 PM CT", c:[30,0,0,0], why:"Changed from their usual since Oct 21. Not reviewed yet.",
        alarm:{since:"Oct 21", open:9, tally:26.8, reviewed:false},
        base:{n:16, of:16, text:"First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."},
        tally:[3.1,2.5,1.7,1.6,5.3,7.8,8.1,10.5,12.2,15.0,16.4,18.4,22.8,26.8], tallyStart:17,
        events:[["Oct 21","Alarm on. Change score crossed 5."],["Oct 17","Comparing with baseline started."],["Oct 16","Baseline complete (16 of 16)."]]},
-  R10:{dev:"D10", st:"red", last:"Oct 30, 2:39 PM", c:[30,0,0,0], why:"Changed from their usual since Oct 24. Not reviewed yet.",
+  R10:{dev:"D10", st:"red", last:"Oct 30, 2:39 PM CT", c:[30,0,0,0], why:"Changed from their usual since Oct 24. Not reviewed yet.",
        alarm:{since:"Oct 24", open:6, tally:13.4, reviewed:false},
        base:{n:16, of:16, text:"First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."},
        events:[["Oct 24","Alarm on. Change score crossed 5."],["Oct 17","Comparing with baseline started."],["Oct 16","Baseline complete (16 of 16)."]]},
-  R08:{dev:"D08", st:"yellow", last:"Oct 30, 2:28 PM", c:[13,5,0,12], why:"Missing many check-ins. Baseline stuck at 13 of 16.",
+  R08:{dev:"D08", st:"yellow", last:"Oct 30, 2:28 PM CT", c:[13,5,0,12], why:"Missing many check-ins. Baseline stuck at 13 of 16.",
        base:{n:13, of:16, text:"Still forming. 12 missed and 5 set-aside check-ins have slowed it down."},
        events:[["Oct 30","Baseline at 13 of 16."],["Oct 1","Check-ins started."]]},
-  R03:{dev:"D02", shared:"R02", st:"yellow", last:"Oct 30, 2:19 PM", c:[22,7,0,1], why:"7 check-ins too noisy or too short to use.",
+  R03:{dev:"D02", shared:"R02", st:"yellow", last:"Oct 30, 2:19 PM CT", c:[22,7,0,1], why:"7 check-ins too noisy or too short to use.",
        base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
        events:[["Oct 12","Shared device D02 silent all day. Check-in missed."],["Oct 1","Check-ins started."]]},
-  R07:{dev:"D07B", was:"D07", st:"green", last:"Oct 30, 2:52 PM", c:[30,0,0,0], why:"Usual. Baseline restarted Oct 13 after a new device.",
+  R07:{dev:"D07B", was:"D07", st:"green", last:"Oct 30, 2:52 PM CT", c:[30,0,0,0], why:"Usual. Baseline restarted Oct 13 after a new device.",
        base:{n:16, of:16, text:"Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in."},
        events:[["Oct 13","New device D07B. Baseline restarted."],["Oct 1","Check-ins started on D07."]]},
-  R05:{dev:"D05", st:"green", last:"Oct 30, 2:40 PM", c:[28,0,2,0], why:"Within their usual range.",
+  R05:{dev:"D05", st:"green", last:"Oct 30, 2:40 PM CT", c:[28,0,2,0], why:"Within their usual range.",
        base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
        events:[["Oct 22","Check-in held back: possible other voice."],["Oct 8","Check-in held back: possible other voice."]]},
-  R02:{dev:"D02", shared:"R03", st:"green", last:"Oct 30, 2:55 PM", c:[24,0,0,6], why:"Within their usual range.",
+  R02:{dev:"D02", shared:"R03", st:"green", last:"Oct 30, 2:55 PM CT", c:[24,0,0,6], why:"Within their usual range.",
        base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
        events:[["Oct 12","Shared device D02 silent all day. Check-in missed."]]},
-  R01:{dev:"D01", st:"green", last:"Oct 30, 2:07 PM", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
-  R04:{dev:"D04", st:"green", last:"Oct 30, 2:17 PM", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
-  R06:{dev:"D06", st:"green", last:"Oct 30, 2:38 PM", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]}
+  R01:{dev:"D01", st:"green", last:"Oct 30, 2:07 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
+  R04:{dev:"D04", st:"green", last:"Oct 30, 2:17 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
+  R06:{dev:"D06", st:"green", last:"Oct 30, 2:38 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]}
 };
 const MEASURES = [
   ["Quieter","loudness"],["Slower to say the phrase","phrase duration"],["Fewer syllables per second","speech rate"],
@@ -211,6 +212,7 @@ const DAYS = [[1,10,0,0,0],[2,9,0,0,1],[3,9,1,0,0],[4,8,0,0,2],[5,9,1,0,0],[6,9,
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
 const pill = (st, big) => `<span class="pill ${st}${big?' big':''}">${STATUS[st].label}</span>`;
+const npill = t => `<span class="pill neutral">${t}</span>`; /* neutral: compared with the facility range, not their own usual */
 const q = (t, info) => `<p class="q${info?' info':''}">${t}</p>`;
 const sorted = () => Object.entries(R).sort((a,b)=> ORDER[a[1].st]-ORDER[b[1].st] || a[0].localeCompare(b[0]));
 const alarmCount = () => Object.values(R).filter(r=>r.st==="red" && !r.alarm.reviewed).length;
@@ -247,7 +249,7 @@ function listView(){
         ${Object.keys(STATUS).map(s=>`<span>${pill(s)} ${STATUS[s].meaning}</span>`).join("")}
       </div>
     </div>
-    ${q("Changed residents always sort to the top. Should staff be able to sort by room once room numbers are added? Room column left out until Edgewood tells us how they identify residents on screen.")}
+    ${q("Changed residents always sort to the top. No room numbers and no room sort: residents are shown by study ID only (UX-001; decided in the v0.2 review).", true)}
     ${q("A status is a prompt to check on someone, not a diagnosis. Final clinical wording to be confirmed with the PI.", true)}
   </div>`;
 }
@@ -402,7 +404,7 @@ function device(id,r){
     </div>
     <h3 style="margin-top:8px">History</h3>
     ${hist.length?`<ul class="events">${hist.map(([d,t])=>`<li><span class="muted">${d}</span><span>${t}</span></li>`).join("")}</ul>`:`<p class="muted">No problems in the last 30 days.</p>`}
-    ${q("A device that stops uploading should turn the resident yellow. How long silent before it counts as offline: one missed day, or two?")}
+    ${q("A device that stops uploading is a device problem for the study team. It does not turn the resident yellow (decided in the v0.2 review).", true)}
     ${q("Audio never leaves the device. Only voice measurements are uploaded.", true)}
   </section>`;
 }
@@ -417,8 +419,8 @@ function admissionsView(){
       <div class="tablewrap"><table>
         <thead><tr><th>Status</th><th>Resident</th><th>Admitted</th><th>Compared with facility range</th><th>Own baseline</th></tr></thead>
         <tbody>
-          <tr><td>${pill("red")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Outside facility range</td><td>[n] of 16</td></tr>
-          <tr><td>${pill("green")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Within facility range</td><td>[n] of 16</td></tr>
+          <tr><td>${npill("Out of range")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Outside facility range</td><td>[n] of 16</td></tr>
+          <tr><td>${npill("In range")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Within facility range</td><td>[n] of 16</td></tr>
           <tr><td>${pill("grey")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Not enough check-ins yet</td><td>[n] of 16</td></tr>
         </tbody>
       </table></div>
@@ -506,8 +508,8 @@ function studyView(){
       <h2>Devices</h2>
       <ul class="events plain">
         <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D01, D04 to D06, D08 to D10:</b> all uploaded Oct 30. Firmware fw-1.0.0.</span></li>
-        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D02</b> (shared by R02 and R03): last upload Oct 30, 2:55 PM. Silent all day Oct 12.</span></li>
-        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D07B</b> (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM.</span></li>
+        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D02</b> (shared by R02 and R03): last upload Oct 30, 2:55 PM CT. Silent all day Oct 12.</span></li>
+        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D07B</b> (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT.</span></li>
       </ul>
     </section>
   </div>`;

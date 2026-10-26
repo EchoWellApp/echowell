@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -548,7 +548,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - OQ-10 Late-arriving records that predate a frozen baseline (accepted; pipeline warning).
 - OQ-11 Data handling on withdrawal (ingest refused; existing data kept and readable).
 - OQ-12 Final chart Summary and "What's happening" wording (API returns facts only, API-076).
-- OQ-31 Which data-alert kinds set `needs_attention` and whether a device without upload should (API-138; v0.1: `baseline_stalled`, `high_set_aside` only).
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Only `baseline_stalled` and `high_set_aside` set `needs_attention` (API-138); a device without upload does not.
 - OQ-15 Store-and-forward after outage (bursts of late records are accepted like any batch).
 
 ## Revision History
@@ -567,3 +567,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.11 | 20 Oct 2026 | Documentation audit fixes (DA-05: API-077 same-date event order of TRD 11 UX-141) | — |
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-1, Q-2, Q-5, Q-8, Q-10): `health_service.get_health` for GET /health (§4.1, §4.12); `health_service.py` and `config_service.py` added to the §4.1 service list; repository names from docs/design/Database_ERD.md §5; API-005 names the `analytics_summary.py` read of `evaluation_ground_truth` as its one exception; API-001 and API-103 use the uvicorn flags of TRD 15 DEP-022 and DEP-040 | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; API-071 default order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); API-073 summary `changed`/`needs_attention`/`learning`/`usual` (2/2/0/6); API-075, API-077 (`checkins_started`), API-086 (`uploaded_on_as_of_date`), API-133 (v0.2 data-alert details) updated; new API-138 (attention flag, `alarm_reviewed`, `restart_cause`, detail `window`); endpoint summary UI consumers moved from `/alerts` and `/analytics` to the Resident list, Resident chart and Study team page; AC-API-02, -03, -15 updated | — |
+| 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
