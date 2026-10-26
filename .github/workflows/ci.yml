@@ -73,7 +73,7 @@ jobs:
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
           --junitxml=build/junit.xml
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-reports
           path: build/
@@ -93,5 +93,5 @@ jobs:
       - run: npm run format:check # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
       - run: npm run test:coverage # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
