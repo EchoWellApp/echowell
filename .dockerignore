@@ -1,0 +1,18 @@
+# Keep the backend image free of secrets, tests, specs and the frontend (TRD 15 DEP-021).
+.git
+.github
+.env
+.env.*
+**/__pycache__
+**/*.py[cod]
+.venv
+venv
+.mypy_cache
+.ruff_cache
+.pytest_cache
+build
+frontend
+tests
+specs
+docs
+node_modules
