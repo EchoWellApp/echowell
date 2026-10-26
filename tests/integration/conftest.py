@@ -7,8 +7,10 @@ the append-only tables included). Tests that must commit use `fresh_db`, a throw
 
 from __future__ import annotations
 
+import io
 from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 from sqlalchemy import Connection, create_engine, text
@@ -19,6 +21,7 @@ from sqlalchemy.pool import NullPool
 from tests.integration.db_support import (
     PgUrls,
     alembic,
+    cli_environment,
     provision,
     throwaway_database,
     urls_for_superuser,
@@ -135,3 +138,76 @@ def owner_session(migrator_conn: Connection) -> Iterator[Session]:
 @pytest.fixture
 def owner_world(owner_session: Session) -> World:
     return World.build(owner_session)
+
+
+SEED_SECRETS = {
+    "SEED_ADMIN_PASSWORD": "ci-only-seed-admin-pw",
+    "SEED_CLINICIAN_PASSWORD": "ci-only-seed-clinician-pw",
+    "SEED_RESEARCHER_PASSWORD": "ci-only-seed-researcher-pw",
+    "SEED_INGEST_API_KEY": "ewk_ci-only-seed-ingest-key-0000000000000000000",
+}
+
+
+@dataclass
+class CliRun:
+    code: int
+    out: str
+    err: str
+
+
+class Cli:
+    """Runs `backend.cli.main` in-process against one database (TRD 15 §4.8)."""
+
+    def __init__(self, urls: PgUrls, monkeypatch: pytest.MonkeyPatch, capsys: Any) -> None:
+        self.urls = urls
+        self.monkeypatch = monkeypatch
+        self.capsys = capsys
+        for name, value in cli_environment(urls, JWT_SECRET="ci-only-" + "x" * 40).items():
+            if name != "PATH":
+                monkeypatch.setenv(name, value)
+        for name in SEED_SECRETS:
+            monkeypatch.delenv(name, raising=False)
+
+    def env(self, **values: str) -> None:
+        for name, value in values.items():
+            self.monkeypatch.setenv(name, value)
+
+    def __call__(self, *argv: str, stdin: str | None = None) -> CliRun:
+        from backend import cli
+        from backend.core import db
+        from backend.core.config import get_settings
+
+        get_settings.cache_clear()
+        db._engine.cache_clear()
+        if stdin is not None:
+            self.monkeypatch.setattr("sys.stdin", io.StringIO(stdin))
+        self.capsys.readouterr()
+        try:
+            code = cli.main(list(argv))
+        except SystemExit as exc:
+            code = int(exc.code or 0)
+        finally:
+            get_settings.cache_clear()
+        captured = self.capsys.readouterr()
+        return CliRun(code, captured.out, captured.err)
+
+    def scalar(self, sql: str, **params: Any) -> Any:
+        engine = _engine(self.urls.migrator)
+        try:
+            with engine.connect() as conn:
+                return conn.execute(text(sql), params).scalar()
+        finally:
+            engine.dispose()
+
+    def rows(self, sql: str, **params: Any) -> list[Any]:
+        engine = _engine(self.urls.migrator)
+        try:
+            with engine.connect() as conn:
+                return list(conn.execute(text(sql), params).all())
+        finally:
+            engine.dispose()
+
+
+@pytest.fixture
+def cli(fresh_db: PgUrls, monkeypatch: pytest.MonkeyPatch, capsys: Any) -> Cli:
+    return Cli(fresh_db, monkeypatch, capsys)
