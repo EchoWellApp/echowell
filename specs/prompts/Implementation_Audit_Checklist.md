@@ -13,6 +13,7 @@ Where a step here and a phase in `Implement_Feature_Batches.md` cover the same w
 | Sprint 3: Analytics engine | Phase 11 |
 | Sprint 4: Algorithm validation | Phase 12 |
 | Sprint 5: Frontend | Phase 13 |
+| Phases 14A and 14B: Audit Checklist (review only, no prompt) | Phases 14A and 14B |
 | Sprint 6: Full repository audit | Phase 15 |
 | Sprint 7: Backlog | `Generate_Backlog.md` |
 
@@ -285,3 +286,31 @@ containing:
 ```
 
 **Action:** Do not commit changes.
+
+---
+
+## Phases 14A and 14B: Audit Checklist
+
+Added on 26 Oct 2026 at the algorithm lead's request (TRD 24 D-107). This section has no prompt and is not run. The reviewer uses it on the checkpoint 8 PR (Phase 14A) and the Block 4 PR (Phase 14B). Each item repeats an output or check that the `Implement_Feature_Batches.md` prompt of that phase already names; it adds no requirement. Record each item as Pass, Fail or Not applicable, with evidence.
+
+### Phase 14A: Deployment configuration (checkpoint 8 PR)
+
+- [ ] Frontend: `netlify.toml`, environment templates and build configuration exist.
+- [ ] Backend: Railway configuration, environment templates and startup configuration exist.
+- [ ] Database: connection configuration and migration execution configuration exist.
+- [ ] CI/CD: GitHub Actions workflows for tests and deployment exist.
+- [ ] Docker: backend Dockerfile (and a frontend Dockerfile if needed) and `docker-compose.yml` for local development exist.
+- [ ] Environment: `.env.example`, `.env.development.example` and `.env.production.example` exist.
+- [ ] Security: the secrets management strategy and the environment variable documentation are written.
+- [ ] `DEPLOYMENT_CONFIGURATION_GUIDE.md` covers the purpose of each generated file, required environment variables, local development, staging setup, production setup and deployment prerequisites.
+- [ ] `CONFIGURATION_VALIDATION_REPORT.md` summarises every generated infrastructure artefact.
+- [ ] The configurations were validated against `Deployment_Architecture.md` and checked for compatibility with FastAPI, PostgreSQL, Railway, Netlify and GitHub Actions.
+- [ ] No deployment was performed; only configuration files and documentation were generated.
+
+### Phase 14B: Deployment (Block 4 PR)
+
+- [ ] Deployment tasks 1–12 of the prompt are done: production environment variables, database provisioned, migrations applied, backend and frontend deployments configured, CI/CD deployment workflows configured, frontend connected to backend, backend connected to PostgreSQL, startup, API connectivity, frontend functionality and database access verified.
+- [ ] Post-deployment validation: the health endpoint responds, the database connection is healthy, the frontend loads, API requests succeed, authentication works (if implemented), analytics services initialise, automated tests pass and the R01–R10 validation suite still passes.
+- [ ] `DEPLOYMENT_REPORT.md` includes deployment URLs, environment summary, infrastructure summary, services deployed, validation results, issues discovered, remediation steps and deployment status.
+- [ ] The report ends with "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED", with justification and supporting evidence.
+- [ ] Requirements and application logic were changed only where needed to fix a deployment-specific issue, and each such change is reported.

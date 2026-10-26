@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -89,7 +89,7 @@ the AWS target.
 |---|---|---|---|---|
 | ENV-010 | With APP_ENV=`production`, startup shall fail if PIPELINE_PROFILE is `test_v0_1`. | Must | D-OWNER-2, ASM-04 | Test |
 | ENV-011 | With APP_ENV=`staging` or `production`, startup shall fail if DATABASE_URL, DATABASE_MIGRATION_URL or DATABASE_READONLY_URL (when set) lacks `sslmode=require` or `sslmode=verify-full`. | Must | D-OWNER-3, TRD 12 | Test |
-| ENV-012 | With APP_ENV=`production`, startup shall fail if PIPELINE_AS_OF or CORS_ORIGIN_REGEX is non-empty, if LOG_FORMAT is `console`, or if any CORS origin uses `http://`; when LOG_LEVEL is `DEBUG` in staging or production the backend shall log WARNING `debug_logging_enabled` at startup and every hour (time-boxed use, TRD 17 LOG-012). | Must | BR-16, TRD 17 | Test |
+| ENV-012 | With APP_ENV=`production`, startup shall fail if PIPELINE_AS_OF or CORS_ORIGIN_REGEX is non-empty or if any CORS origin uses `http://`; with APP_ENV=`staging` or `production`, startup shall fail if LOG_FORMAT is `console` (staging mirrors production, D-103); when LOG_LEVEL is `DEBUG` in staging or production the backend shall log WARNING `debug_logging_enabled` at startup and every hour (time-boxed use, TRD 17 LOG-012). | Must | BR-16, TRD 17 | Test |
 | ENV-013 | JWT_SECRET shall be rejected if shorter than 32 bytes in every environment, including `test`. | Must | contract §12 | Test |
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
 | ENV-015 | FACILITY_NAME shall be rejected if it contains the string `Edge4Care` (case-insensitive). | Must | RSK-10, contract §2 | Test |
@@ -308,3 +308,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-02, R7-03) | — |
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (ENV-021 and config ownership: migration 0002 seeds, bootstrap verifies (D-85)) | — |
 | 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.11 | 26 Oct 2026 | Checkpoint 2 review Q-4: ENV-012 refuses LOG_FORMAT=`console` in staging as well as production, matching the §4.2 table and TRD 17 LOG-002 (D-103) | — |

@@ -1,6 +1,6 @@
 # Checkpoint 2 Report — Phase 8 Generate Project Skeleton
 
-Block 3 "Implement Features", checkpoint 2 of 9, its own PR (branch `feat/cp2-project-skeleton`, created from `main` at a1c718c after GitHub PR #3 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 8: Generate Project Skeleton" · TRD 25 Phase 3 · Features: FEAT-002..FEAT-007 · Date: 23 October 2026 · Status: delivered in the working tree for review; nothing was committed (AGT-012).
+Block 3 "Implement Features", checkpoint 2 of 9, its own PR (branch `feat/cp2-project-skeleton`, created from `main` at a1c718c after GitHub PR #3 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 8: Generate Project Skeleton" · TRD 25 Phase 3 · Features: FEAT-002..FEAT-007 · Date: 23 October 2026, revised 26 October 2026 · Status: delivered as GitHub PR #4; review round 1 (algorithm lead, 26 Oct 2026) answered Q-1..Q-6 and applied, section 9; ready for re-review and merge to `main` (D-101).
 
 Build groups were followed in the `BACKLOG.md` §9 order: [FEAT-002, FEAT-003, FEAT-005] → [FEAT-004] → [FEAT-006, FEAT-007]. Reading order: TRD 25, 00, 24; Phase 8 prompt; roadmap §2.2, §2.3, §5.2; FEAT-002..FEAT-007; TRDs 01, 18, 21, 16, 15, 13, 04, 05, 07; `docs/design/`.
 
@@ -97,15 +97,16 @@ Not run or not verifiable here: the CI workflow itself on GitHub (FEAT-007-AC-01
 
 ## 6. New OQ and D IDs
 
-- OQ-30 (TRD 24 §4.2, v0.15): pinned majors with known advisories (Next.js 14.2.x, Starlette via FastAPI 0.115.x, pytest 8.x) vs the CIC-019 `security-audit` gate. Interim: keep the §4.7 majors and take only in-range fixes; decide before checkpoint 8. No new D entry (no pinned major was changed).
+- OQ-30 (TRD 24 §4.2, v0.15): pinned majors with known advisories (Next.js 14.2.x, Starlette via FastAPI 0.115.x, pytest 8.x) vs the CIC-019 `security-audit` gate. Interim: keep the §4.7 majors and take only in-range fixes; decide before checkpoint 8. No new D entry (no pinned major was changed). Answered in review round 1 (D-105, RSK-16).
+- Review round 1 (TRD 24 v0.16): D-103, D-104, D-105, D-106, D-107 and RSK-16 (section 9).
 
 ## 7. Deviations and notes
 
 | # | Note | Handling |
 |---|---|---|
 | N-1 | Prompt vs TRDs: the prompt asks for "all required imports, wiring" and the TRD 25 Phase 3 list; FEAT-002..FEAT-007 narrow this (no service, repository or model modules beyond the skeleton) | feature files followed; services `config_service.py`, `auth_service.py`, `audit_service.py` and repository modules (Database_ERD §5 names) are created by their features (FEAT-009..FEAT-037) |
-| N-2 | TRD 18 CODEOWNERS block has `/netlify.toml /railway.toml    @…team2-devops` on one line, which GitHub parses as one pattern with an invalid owner | split into two lines (Q-3) |
-| N-3 | `LOG_FORMAT=console`: ENV-012 refuses it in production; the TRD 21 §4.2 table refuses it in staging and production | both refused (stricter reading, Q-4) |
+| N-2 | TRD 18 CODEOWNERS block has `/netlify.toml /railway.toml    @…team2-devops` on one line, which GitHub parses as one pattern with an invalid owner | split into two lines; TRD 18 §4.4 updated to match (Q-3, accepted) |
+| N-3 | `LOG_FORMAT=console`: ENV-012 refuses it in production; the TRD 21 §4.2 table refuses it in staging and production | both refused (stricter reading); ENV-012 and FEAT-003-FR-12 now say so (Q-4, D-103) |
 | N-4 | ENV-003 rejects unknown `ECHOWELL_*` variables, but the CI `backend-test` job env carries `ECHOWELL_*_DB_PASSWORD` (TRD 21 §4.5) | the three §4.5 names are treated as known |
 | N-5 | TRD 18 §4.5 ignores only S101 under `tests/**`; test secrets and `git` subprocess calls trigger S105/S106/S603 | per-line `noqa` with a reason (GIT-043), configuration unchanged |
 | N-6 | ENV-015 needs the forbidden facility name in code, while AGT-019/AC-AGT-03 forbid the literal in `backend/` | case-insensitive pattern `edge\W*4\W*care` (also catches spaced spellings); the test builds the string by concatenation so the future `repo-hygiene` term scan stays clean |
@@ -114,11 +115,11 @@ Not run or not verifiable here: the CI workflow itself on GitHub (FEAT-007-AC-01
 | N-9 | Swagger's OAuth redirect route defaults to `/docs/oauth2-redirect`, outside `/api/v1` (API-002) | moved to `/api/v1/docs/oauth2-redirect`; a test asserts every route starts with `/api/v1/` |
 | N-10 | `ci.yml` `backend-test` includes the provisioning step and `alembic upgrade head` (no-op until FEAT-008); the downgrade/upgrade round trip, coverage gates and `--validation-report` are left to FEAT-008/FEAT-078 | per FEAT-007 Out of Scope and D-94 |
 | N-11 | Frontend `services/api.ts` is an empty module (`export {}`), so it shows 0 % in the coverage table (no statements) | filled by FEAT-062 |
-| N-12 | Feature-file meta blocks still say "Status: Not Started"; checkpoint 1 left them unchanged as well, and D-95 tracks status in `BACKLOG.md` §10 | §10 refreshed only; roadmap §2.1 "Checkpoint 1 in review" also left for the reviewer (Q-5) |
+| N-12 | Feature-file meta blocks still say "Status: Not Started"; checkpoint 1 left them unchanged as well, and D-95 tracks status in `BACKLOG.md` §10 | resolved (Q-5, D-104): feature-file Status fields of FEAT-001..FEAT-007 and roadmap §2.1 refreshed with §10 |
 
-## 8. Questions for the reviewer
+## 8. Questions for the reviewer (all answered in review round 1, section 9)
 
-| ID | Question |
+| ID | Question (as raised on 23 Oct 2026) |
 |---|---|
 | Q-1 | The checkpoint is about 2,800 changed lines (GIT-034 "should" ≤ 1,500). Accept it as one PR committed in the seven sub-batches of section 2, or split differently? |
 | Q-2 | The roadmap pitfall says `ci.yml` triggers are "`pull_request` and `push` to `main` only", while CIC-010 and FEAT-007-FR-01 also require `workflow_dispatch`. I kept `workflow_dispatch` (TRD wins, AGT-001). Confirm? |
@@ -126,3 +127,38 @@ Not run or not verifiable here: the CI workflow itself on GitHub (FEAT-007-AC-01
 | Q-4 | Refuse `LOG_FORMAT=console` in staging as well as production (TRD 21 table), or only in production (ENV-012, FEAT-003-FR-12)? |
 | Q-5 | Should feature-file "Status" fields and the roadmap §2.1 Block 3 status cell also be refreshed per checkpoint, or is `BACKLOG.md` §10 the only tracker (D-95)? |
 | Q-6 | OQ-30: upgrade Next.js, FastAPI/Starlette and pytest beyond the §4.7 majors under the GIT-111 security exception (new D entry), or accept the advisories for the synthetic-data interim stack until the demo? Needed before checkpoint 8. |
+
+## 9. Review round 1 resolutions (26 October 2026)
+
+The algorithm lead (Shaba) answered Q-1..Q-6 and the three questions still open from earlier on GitHub PR #4 on 26 Oct 2026. Every answer is applied on this branch.
+
+### 9.1 Answers to Q-1..Q-6
+
+| ID | Reviewer answer | Resolution | Files changed |
+|---|---|---|---|
+| Q-1 | Accept it as one PR. | Kept as one PR in the seven sub-batch commits of section 2 (GIT-034 guideline exceeded with approval). | — |
+| Q-2 | Keep `workflow_dispatch`. | Kept (CIC-010, FEAT-007-FR-01); the roadmap pitfall that said "only" `pull_request` and `push` now lists all three triggers. | `IMPLEMENTATION_ROADMAP.md` §5.2 |
+| Q-3 | Accept the split; update TRD 18 to the valid format. | The TRD 18 §4.4 CODEOWNERS block now has `/netlify.toml` and `/railway.toml` on separate lines, identical to `.github/CODEOWNERS`; ownership unchanged. | TRD 18 §4.4 (v0.14) |
+| Q-4 | Keep as implemented; staging mirrors production; update ENV-012 and FEAT-003. | ENV-012 and FEAT-003-FR-12 refuse `LOG_FORMAT=console` in staging and production (D-103); the other ENV-012 guards stay production-only because staging uses a fixed PIPELINE_AS_OF (D-59). The code already did this; a staging test was added (`test_staging_refuses_console_logs`). | TRD 21 ENV-012 (v0.11); FEAT-003; FEAT-018; TRD 24 D-103; `tests/unit/backend/core/test_config.py` |
+| Q-5 | Update all status sources; `BACKLOG.md` §10 stays primary. | D-104 (amends D-95): each checkpoint PR also refreshes the feature-file Status fields and the roadmap §2.1 status cell. FEAT-001 Complete; FEAT-002..FEAT-007 In Progress until this PR is merged; roadmap §2.1 names GitHub PR #4. | TRD 24 D-95, D-104; `IMPLEMENTATION_ROADMAP.md` §2.1, §2.3 (v0.5); `BACKLOG.md` §10 (v0.7); FEAT-001..FEAT-007 |
+| Q-6 | Defer the major upgrades; record an approved security-risk/debt item; revisit before the demo or checkpoint 8. | OQ-30 Answered (D-105); RSK-16 records the accepted security debt and the revisit point. The GIT-111 exception remains available as a scope decision. | TRD 24 OQ-30, RSK-16, D-105 (v0.16) |
+
+### 9.2 Earlier open questions
+
+| Question | Reviewer answer | Resolution |
+|---|---|---|
+| Test-case output path (roadmap §11 question 3) | `specs/testing/test-cases/` | D-106; roadmap §7 and §11 updated |
+| Audit-checklist section for 14A/14B (roadmap §11 question 1) | Yes, if they define verifiable deliverables | They do (files, reports, deployment checks): `Implementation_Audit_Checklist.md` gains a review-only section "Phases 14A and 14B: Audit Checklist" that lists only what the two prompts already require (D-107); roadmap §3.1 and §5.8 updated |
+| GitHub Support purge of old commits containing the removed preprint PDF | No; leave the history as is | No action |
+
+### 9.3 Verification after review round 1
+
+| Check | Result |
+|---|---|
+| `ruff check .`; `ruff format --check .`; `mypy analytics backend`; `lint-imports` | all exit 0; 3 contracts kept |
+| `pytest -q tests/unit -p no:randomly` (Python 3.12.3) | 36 passed, 1 skipped (TST-011, by design), including the new `test_staging_refuses_console_logs` |
+| Markdown tables of every changed file | equal column counts |
+| D-103..D-107 and RSK-16 cited in changed files | all defined in TRD 24 |
+| grep: "Checkpoint 1 in review", "opened when checkpoint 2" | none left |
+| Integration tests and the frontend | unchanged by this round; run by CI on the PR head |
+

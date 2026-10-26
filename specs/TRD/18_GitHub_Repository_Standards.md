@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.13 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.14 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -193,7 +193,8 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 /specs/TRD/09_*                @EchoWellApp/team2-algorithm
 /specs/TRD/14_*                @EchoWellApp/team2-algorithm
 /.github/                      @EchoWellApp/team2-devops
-/netlify.toml /railway.toml    @EchoWellApp/team2-devops
+/netlify.toml                  @EchoWellApp/team2-devops
+/railway.toml                  @EchoWellApp/team2-devops
 /docker-compose.yml            @EchoWellApp/team2-devops
 ```
 
@@ -451,3 +452,4 @@ updates:
 | 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (branch table: linear history on staging only (GIT-010); GIT-053 wording avoids the literal marker words so the TRD 25 Phase 1 grep returns nothing) | — |
 | 0.12 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.13 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5 and one PR per Block 3 checkpoint (D-101): §3 references, branch table, §4.2 diagram, GIT-010, GIT-012, GIT-014, GIT-020, GIT-030, GIT-031, GIT-034, PR template, AC-GIT-01, §8; root `scripts/` added to the §4.1 layout (checkpoint 1 Q-4) | — |
+| 0.14 | 26 Oct 2026 | Checkpoint 2 review Q-3: §4.4 CODEOWNERS block lists `/netlify.toml` and `/railway.toml` on separate lines (one pattern per line, as GitHub parses CODEOWNERS); ownership unchanged | — |

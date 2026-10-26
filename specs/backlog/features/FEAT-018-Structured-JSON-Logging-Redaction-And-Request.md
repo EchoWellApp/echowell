@@ -93,7 +93,7 @@ Request arrives → request-ID middleware (outermost) validates or generates the
 
 Required before implementation (BACKLOG.md): FEAT-003
 
-- FEAT-003 provides `create_app()`, `Settings` (`LOG_FORMAT`, `LOG_LEVEL`, `GIT_SHA`) and the guard that refuses `console` in production.
+- FEAT-003 provides `create_app()`, `Settings` (`LOG_FORMAT`, `LOG_LEVEL`, `GIT_SHA`) and the guard that refuses `console` in staging and production (D-103).
 
 Features that build directly on this one (BACKLOG.md §4): FEAT-019, FEAT-056, FEAT-084.
 

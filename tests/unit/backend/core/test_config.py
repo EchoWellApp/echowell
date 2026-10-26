@@ -92,6 +92,11 @@ def test_production_refuses_unsafe_cors_and_console_logs() -> None:
     assert names(cors_origins="http://echowell.example.org") == {"CORS_ORIGINS"}
 
 
+@pytest.mark.req("ENV-012", "LOG-002", "D-103")
+def test_staging_refuses_console_logs() -> None:
+    assert names(app_env="staging", log_format="console") == {"LOG_FORMAT"}
+
+
 @pytest.mark.req("ENV-011", "ARC-057", "AC-ENV-02", "AC-ARC-09")
 def test_staging_requires_sslmode_but_local_does_not() -> None:
     no_tls = "postgresql+psycopg://app:pw-1@db.example.org/echowell"

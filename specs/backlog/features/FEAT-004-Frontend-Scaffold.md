@@ -8,7 +8,7 @@
 | Complexity | Medium |
 | MVP status | Required |
 | Dependencies | FEAT-002 |
-| Status | Not Started |
+| Status | In Progress |
 
 ## Purpose
 
