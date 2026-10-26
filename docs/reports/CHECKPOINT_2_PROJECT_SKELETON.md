@@ -1,6 +1,6 @@
 # Checkpoint 2 Report — Phase 8 Generate Project Skeleton
 
-Block 3 "Implement Features", checkpoint 2 of 9, its own PR (branch `feat/cp2-project-skeleton`, created from `main` at a1c718c after GitHub PR #3 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 8: Generate Project Skeleton" · TRD 25 Phase 3 · Features: FEAT-002..FEAT-007 · Date: 23 October 2026, revised 26 October 2026 · Status: delivered as GitHub PR #4; review round 1 (algorithm lead, 26 Oct 2026) answered Q-1..Q-6 and applied, section 9; ready for re-review and merge to `main` (D-101).
+Block 3 "Implement Features", checkpoint 2 of 9, its own PR (branch `feat/cp2-project-skeleton`, created from `main` at a1c718c after GitHub PR #3 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 8: Generate Project Skeleton" · TRD 25 Phase 3 · Features: FEAT-002..FEAT-007 · Date: 23 October 2026, revised 26 October 2026 · Status: delivered as GitHub PR #4; review rounds 1 and 2 (algorithm lead, 26 Oct 2026) answered and applied, sections 9 and 10; ready for re-review and merge to `main` (D-101).
 
 Build groups were followed in the `BACKLOG.md` §9 order: [FEAT-002, FEAT-003, FEAT-005] → [FEAT-004] → [FEAT-006, FEAT-007]. Reading order: TRD 25, 00, 24; Phase 8 prompt; roadmap §2.2, §2.3, §5.2; FEAT-002..FEAT-007; TRDs 01, 18, 21, 16, 15, 13, 04, 05, 07; `docs/design/`.
 
@@ -161,4 +161,11 @@ The algorithm lead (Shaba) answered Q-1..Q-6 and the three questions still open 
 | D-103..D-107 and RSK-16 cited in changed files | all defined in TRD 24 |
 | grep: "Checkpoint 1 in review", "opened when checkpoint 2" | none left |
 | Integration tests and the frontend | unchanged by this round; run by CI on the PR head |
+
+## 10. Review round 2 resolutions (26 October 2026)
+
+| Follow-up question | Reviewer answer | Resolution |
+|---|---|---|
+| 1. Status of a checkpoint's own features | Set "Complete" in the checkpoint PR before it is merged, once implemented and verified | D-104 amended (TRD 24 v0.17); FEAT-002..FEAT-007 Status "Complete"; `BACKLOG.md` §10 (v0.8): 7 Complete, 0 In Progress; roadmap §2.3 rule (v0.6). The deferred parts noted in section 7 (N-7: ENV-021 and the FEAT-003-AC-08 audit-row check) stay with FEAT-009 and FEAT-012 |
+| 2. 14A/14B audit-checklist section | Approved as written | No change |
 
