@@ -79,14 +79,20 @@ class World:
         world.run_id = run.id
         return world
 
-    def raw(
-        self, resident: str, device: str, *, at: datetime = T0, session_id: str | None = None
-    ) -> tuple[uuid.UUID, str]:
+    def raw_values(
+        self,
+        resident: str,
+        device: str,
+        *,
+        at: datetime = T0,
+        session_id: str | None = None,
+        **overrides: Any,
+    ) -> dict[str, Any]:
+        """Column values for one `raw_sessions` arrival (payload included)."""
         self._seq += 1
-        sid = session_id or f"S-{resident}-{self._seq:04d}"
-        fields = {
+        fields: dict[str, Any] = {
             "schema_version": "0.1",
-            "session_id": sid,
+            "session_id": session_id or f"S-{resident}-{self._seq:04d}",
             "resident_code": resident,
             "device_code": device,
             "timestamp_utc": at,
@@ -97,17 +103,22 @@ class World:
             "speech_duration_s": 3.0,
             "phrase_id": "P1",
             **FEATURES,
+            **overrides,
         }
         payload = {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in fields.items()}
-        raw_id, _ = RawSessionRepository(self.session).insert(
-            {
-                **fields,
-                "payload": payload,
-                "resident_id": self.residents[resident],
-                "device_id": self.devices[device],
-            }
-        )
-        return raw_id, sid
+        return {
+            **fields,
+            "payload": payload,
+            "resident_id": self.residents[resident],
+            "device_id": self.devices[device],
+        }
+
+    def raw(
+        self, resident: str, device: str, *, at: datetime = T0, session_id: str | None = None
+    ) -> tuple[uuid.UUID, str]:
+        values = self.raw_values(resident, device, at=at, session_id=session_id)
+        raw_id, _ = RawSessionRepository(self.session).insert(values)
+        return raw_id, values["session_id"]
 
     def epoch(self, resident: str, device: str, *, number: int = 1) -> uuid.UUID:
         epoch = Epoch(

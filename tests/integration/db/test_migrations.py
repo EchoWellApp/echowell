@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from tests.integration.conftest import RoundTrip
-from tests.integration.db_support import PgUrls, alembic, throwaway_database
+from tests.integration.db_support import PgUrls, alembic
 
 pytestmark = pytest.mark.integration
 
@@ -29,11 +29,3 @@ def test_alembic_check_reports_no_difference(pg_urls: PgUrls, migrated: RoundTri
     result = alembic(pg_urls, "check")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "No new upgrade operations detected" in result.stdout + result.stderr
-
-
-@pytest.mark.req("PGS-002", "D-72", "FEAT-008-AC-03")
-def test_0001_fails_without_the_extensions(superuser_urls: PgUrls) -> None:
-    with throwaway_database(superuser_urls, extensions=False, migrate=False) as urls:
-        result = alembic(urls, "upgrade", "head")
-    assert result.returncode != 0
-    assert "EchoWell needs extensions pgcrypto and btree_gist" in result.stderr

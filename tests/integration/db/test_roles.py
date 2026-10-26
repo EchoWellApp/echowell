@@ -7,7 +7,7 @@ from sqlalchemy import Connection, text
 from sqlalchemy.exc import DBAPIError
 
 from backend.models import PG_ENUMS
-from tests.integration.db_support import sqlstate
+from tests.integration.db_support import PgUrls, alembic, sqlstate, throwaway_database
 
 pytestmark = pytest.mark.integration
 
@@ -78,3 +78,11 @@ def test_enum_labels_and_order_match_trd_20_and_python(app_conn: Connection) -> 
     python = {enum.name: list(enum.enums) for enum in PG_ENUMS}
     assert database == python
     assert len(database) == 15
+
+
+@pytest.mark.req("PGS-002", "D-72", "FEAT-008-AC-03")
+def test_0001_fails_without_the_extensions(superuser_urls: PgUrls) -> None:
+    with throwaway_database(superuser_urls, extensions=False, migrate=False) as urls:
+        result = alembic(urls, "upgrade", "head")
+    assert result.returncode != 0
+    assert "EchoWell needs extensions pgcrypto and btree_gist" in result.stderr
