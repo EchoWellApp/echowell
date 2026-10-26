@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Serve the second queue of the Alert review page, "Data alerts · go to the study team" (SRC-18): data-quality flags such as a stalled baseline, a possible other speaker, many set-aside check-ins, a silent device, or a review that flagged a data problem (`GET /api/v1/data-alerts`). Provide the only way to close a review-flagged data problem: the operator command `python -m backend.cli resolve-data-alert --id <uuid> --reason "<text>"`. Data alerts are never health alarms and never touch the tally.
+Serve the Study team page's "Data problems to follow up" list (wireframe v0.2, SRC-21; was the second queue of the retired v0.1 Alert review page, TRD 24 D-110): data-quality flags such as a stalled baseline, a possible other speaker, many set-aside check-ins, a silent device, or a review that flagged a data problem (`GET /api/v1/data-alerts`). Provide the only way to close a review-flagged data problem: the operator command `python -m backend.cli resolve-data-alert --id <uuid> --reason "<text>"`. Data alerts are never health alarms and never touch the tally; open `baseline_stalled` and `high_set_aside` alerts are also read by the resident list's attention flag (FEAT-027, OQ-31).
 
 ## Business Context
 
@@ -25,7 +25,8 @@ Serve the second queue of the Alert review page, "Data alerts · go to the study
 
 - TRD 05 API-133 (endpoint, filters, order, test values), API-057, API-100, API-121.
 - TRD 19 §4.3 E-30; schemas `DataAlert`, `DataAlertList`, `DataAlertKind`, `DataAlertStatus`.
-- TRD 09 CUS-045 (list fields and order; never in alarm counts), CUS-040 (pipeline never changes `review_flagged_data_problem`), §4.9 (kinds and texts).
+- TRD 09 CUS-045 (list fields and order; never in alarm counts), CUS-040 (pipeline never changes `review_flagged_data_problem`; its v0.2 detail), §4.9 (kinds, titles and v0.2 detail texts, TRD 24 D-114).
+- TRD 11 §4.18.2 (UX-306 to UX-309: rows "**<code>:** <detail>", tags, the display kind order the page applies), §4.18.8 (test-data rows).
 - TRD 15 §4.8 command table row `resolve-data-alert --id <uuid> --reason "<text>"`.
 - TRD 23 DME-023, §4.2.19, §4.3.7 (data alert lifecycle).
 - TRD 06 DB-036 (natural keys; review-flagged rows only changed by the review service and the CLI).
@@ -43,7 +44,7 @@ Serve the second queue of the Alert review page, "Data alerts · go to the study
 
 - Generating rule-based data alerts (`analytics/data_alerts.py`, FEAT-050) and reconciling them in the runner (FEAT-053).
 - Creating `review_flagged_data_problem` alerts (review service, FEAT-031).
-- The `DataAlertQueue` UI (FEAT-069).
+- The Study team "Data problems to follow up" UI, including its display grouping ("Staff can help" kinds first, TRD 11 UX-307) (FEAT-072).
 - Any e-mail, SMS or push for data alerts (LOG-113).
 
 ## Functional Requirements
@@ -53,7 +54,7 @@ Serve the second queue of the Alert review page, "Data alerts · go to the study
 | FEAT-032-FR-01 | `GET /api/v1/data-alerts` shall be available to every authenticated user role and accept `status` ∈ {open, resolved} (default `open`), `kind` ∈ {baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem} and `limit`/`offset`; any other value returns 422 `INVALID_QUERY_PARAMETER`. | API-133; TRD 19 E-30; FR-299 |
 | FEAT-032-FR-02 | Items shall be ordered by kind in the enum order above, then by `resident_code` or `device_code` (natural order), and each `DataAlert` shall carry `id`, `kind`, `resident_code`, `device_code`, `title`, `detail`, `status`, `first_detected_at`, `last_detected_at`, `pipeline_run_id`. | API-133, CUS-045; TRD 19 `DataAlert` |
 | FEAT-032-FR-03 | The API shall only read `data_alerts`; it shall never compute, create or modify a rule-based data alert. | API-133, CUS-045 |
-| FEAT-032-FR-04 | Data alerts shall never appear in `GET /alerts`, the nav count or any alarm count. | CUS-045, FR-300 |
+| FEAT-032-FR-04 | Data alerts shall never appear in `GET /alerts`, the "Resident list" nav badge or any alarm count. | CUS-045, FR-300 |
 | FEAT-032-FR-05 | `python -m backend.cli resolve-data-alert --id <uuid> --reason "<text>"` shall, connected with `DATABASE_URL` (role `echowell_app`), set the open `review_flagged_data_problem` data alert `<uuid>` to `resolved` with `resolved_at` = now and write one `audit_logs` row `data_alert.resolved` (actor_type `system`, entity data_alert / id, details `{alert_id, kind, reason, operator}`) in the same transaction. | TRD 15 §4.8; FR-297; TRD 12 §4.12, SEC-103 |
 | FEAT-032-FR-06 | The command shall refuse with exit code 2 and change nothing for an unknown id, a data alert of any other kind, or one that is not `open`. | TRD 15 §4.8; TST-189 |
 | FEAT-032-FR-07 | A `review_flagged_data_problem` data alert shall remain `open` across pipeline runs until resolved by this command; this feature provides the only resolution path. | FR-297, CUS-040, DB-036 |
@@ -99,7 +100,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, F
 
 ## Frontend Impact
 
-None in this feature. Consumer: `DataAlertQueue` on `/alerts` via `getDataAlerts({status})` (TRD 04 §4.6.2), delivered by FEAT-069.
+None in this feature. Consumer: the Study team page's "Data problems to follow up" panel (`/study`) via `getDataAlerts({status})` (TRD 04), delivered by FEAT-072 as re-scoped for wireframe v0.2.
 
 ## Analytics Impact
 
@@ -133,7 +134,7 @@ None: the rules that produce data alerts belong to FEAT-050; this feature reads 
 |---|---|---|
 | FEAT-032-AC-01 | `GET /api/v1/data-alerts?kind=unknown` returns 422 `INVALID_QUERY_PARAMETER`; `GET /data-alerts` without parameters returns only `open` rows. Verified by: Integration (`tests/integration/test_resolve_data_alert.py`; TST-189). | API-133 |
 | FEAT-032-AC-02 | With fixture rows of kinds device_silent (D02), baseline_stalled (R08) and high_set_aside (R03), the list order is R08 baseline_stalled, R03 high_set_aside, D02 device_silent. Verified by: Integration (`tests/integration/api/test_alerts.py`). | API-133, CUS-045 |
-| FEAT-032-AC-03 | With DS-07 loaded, the open list is exactly: R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"; R05 possible_other_speaker "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22"; R03 high_set_aside "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short"; D02 device_silent "D02 · device silent all day" / "Oct 12 · affects R02 and R03". Verified by: DS-07 values (DS-07 values (FEAT-060, TDV-068, AC-API-14): exactly four open data alerts with the TRD 19 E-30 titles and details). | AC-API-14, TDV-068, FR-301 |
+| FEAT-032-AC-03 | With DS-07 loaded, the open list is exactly: R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days."; R05 possible_other_speaker "R05 · possible other speaker" / "2 check-ins held back as possible other voice (Oct 8, Oct 22)."; R03 high_set_aside "R03 · many check-ins set aside" / "7 of 29 received check-ins set aside (noise, quality flag, too short)."; D02 device_silent "D02 · device silent all day" / "silent all day Oct 12. Affected R02 and R03." (v0.2 details, D-114). Verified by: DS-07 values (DS-07 values (FEAT-060, TDV-068, AC-API-14): exactly four open data alerts with the TRD 19 E-30 titles and details). | AC-API-14, TDV-068, FR-301 |
 | FEAT-032-AC-04 | `resolve-data-alert --id <open review_flagged_data_problem id> --reason "checked"` exits 0, sets `status` `resolved` and `resolved_at`, and writes exactly one `audit_logs` row `data_alert.resolved` whose details contain `alert_id`, `kind`, `reason` "checked" and `operator`. | TST-189, FR-297 |
 | FEAT-032-AC-05 | The same command with the id of a `device_silent` row, a random uuid, or an already resolved row exits 2 and changes no row in `data_alerts` or `audit_logs`. | TST-189, TRD 15 §4.8 |
 | FEAT-032-AC-06 | A full pipeline run after a `data_problem` review leaves the `review_flagged_data_problem` row `open` and unchanged. | TST-189, CUS-040 |

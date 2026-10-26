@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Expose the scored sessions (per-feature z, composite, running tally and alarm state) that draw the "Running change tally" chart and its mini version on the Alert review page, and the frozen baselines that researchers compare with the answer key, both in the SRC-03 Exp_scores / Exp_baselines shape. Researchers and admins can download either as CSV for offline analysis (mixed-effects models, SRC-14 B.2) with study IDs only.
+Expose the scored sessions (per-feature z, composite, running tally and alarm state) that draw the "Change score" chart on the Resident chart's Voice trends section (wireframe v0.2, SRC-21; the v0.1 Alert review mini chart is retired, TRD 24 D-110), and the frozen baselines that researchers compare with the answer key, both in the SRC-03 Exp_scores / Exp_baselines shape. Researchers and admins can download either as CSV for offline analysis (mixed-effects models, SRC-14 B.2) with study IDs only.
 
 ## Business Context
 

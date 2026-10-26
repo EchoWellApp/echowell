@@ -244,7 +244,7 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 | `BaselineFeatureKey` | — | string enum [loudness_dbfs, total_phrase_duration_s, speech_rate_syl_per_s, articulation_rate_syl_per_s, number_of_pauses, pause_fraction, voiced_fraction, mean_f0_hz, f0_variability_st, jitter_local_pct, shimmer_local_pct, hnr_db, cpps_db, alpha_ratio_db, hammarberg_index_db, mfcc1, mfcc2, mfcc3, mfcc4, composite] |
 | `PageMeta` | `meta`, `total`, `limit`, `offset` | `meta` Meta; `total` integer; `limit` integer; `offset` integer |
 | `Last30Days` | `used`, `set_aside`, `quarantined`, `missed` | `used` integer; `set_aside` integer; `quarantined` integer; `missed` integer |
-| `DateWindow` | `from`, `to` | `from` string (date); `to` string (date) |
+| `DateWindow` | `from`, `to`, `days` | `from` string (date); `to` string (date); `days` integer |
 | `ProblemFieldError` | `field`, `code`, `message` | `field` string; `code` string; `message` string |
 | `Problem` | `type`, `title`, `status`, `detail`, `request_id`, `errors` | `type` string; `title` string; `status` integer; `detail` string; `request_id` string; `errors` array<ProblemFieldError> |
 | `Health` | `status`, `database`, `version`, `time` | `status` string enum [ok, degraded]; `database` string enum [ok, unavailable]; `version` string; `time` string (date-time) |

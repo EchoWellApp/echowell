@@ -1,5 +1,7 @@
 # FEAT-051 Analytics page aggregates (stage 12) wired into GET /api/v1/analytics
 
+(The consuming page is the v0.2 Study team page `/study`, which replaces the Analytics page; file name and ID kept.)
+
 | Field | Value |
 |---|---|
 | Epic | Analytics Engine |
@@ -12,7 +14,7 @@
 
 ## Purpose
 
-Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Analytics page (SRC-19): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (TRD 24 D-92; BACKLOG.md §12 Q-01). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
+Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_analytics_summary`, which turns one pipeline result into the counts shown on the Study team page (`/study`, wireframe v0.2, SRC-21; TRD 24 D-110): four KPIs, the daily stacked series, the loss funnel and the usable share per resident. Then map that `AnalyticsSummary` in `backend/services/analytics_summary.py` onto the `kpis`, `daily_series`, `funnel` and `by_resident` blocks of `GET /api/v1/analytics` (TRD 19 E-18), which FEAT-035 delivered in Phase 5 without these four blocks (TRD 24 D-92; BACKLOG.md §12 Q-01). The study team needs these numbers to equal the pipeline answer key exactly ("numbers match the pipeline answer key").
 
 ## Business Context
 
@@ -29,7 +31,7 @@ Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_anal
 - TRD 02 FR-312..FR-317, FR-322 (and FR-323 as the reference-data check).
 - TRD 11 UX-352..UX-355 (KPI note wording that the UI composes from the DTO), UX-363..UX-366 (funnel notes).
 - TRD 13 AN-01..AN-05 (unit cases), TST-011, TST-140; TRD 14 TDV-074, TDV-075, Table 4.9-E, per-day list.
-- TRD 03 NFR-128 (one window and one source for overview, alerts and analytics).
+- TRD 03 NFR-128 (one window and one source for the resident list, alerts and Study team analytics).
 
 ## Scope
 
@@ -43,7 +45,7 @@ Implement stage 12 of the analytics engine, `analytics/aggregates.py::build_anal
 
 - The endpoint itself, authentication, `meta`, `period`, `status_totals`, `status_counts`, `resident_outcomes`, `pipeline_run`, `alarm_timing` and `review_outcomes` (FEAT-035, Phase 5).
 - Data-alert rules (FEAT-050); the `silent_device_codes` of a day only read the `device_silent` data alerts that FEAT-050 produces.
-- The Analytics page UI and every wording string (FEAT-072); the KPI `note` text of TRD 07 §4.13 is rendered by the frontend per TRD 11 UX-354/UX-355.
+- The Study team page UI and every wording string (FEAT-072); the KPI `note` text of TRD 07 §4.13 (v0.2 wording, e.g. "R09, R10; neither reviewed yet") is rendered by the frontend per TRD 11 UX-354/UX-355.
 - Persisting the summary in a table (TRD 20 defines none; see Implementation Notes).
 
 ## Functional Requirements

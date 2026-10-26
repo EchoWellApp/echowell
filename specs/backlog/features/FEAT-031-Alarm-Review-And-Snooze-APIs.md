@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Implement the single review model of the Alert review page (SRC-18) and the Resident detail "Mark as reviewed" dialog: a clinician or admin records a review of a change alarm (optional explanations from the configured checklist, a required outcome, an optional note), may review the same alarm again later, can read the review history, and can snooze the "Not reviewed" emphasis with "Remind me in 24 h". A review with outcome `data_problem` also raises a data alert for the study team. Reviewing or snoozing never changes the tally, the alarm state or the resident's status in v0.1 (OQ-05).
+Implement the single review model used by the Resident chart's "Review and notes" section (wireframe v0.2, SRC-21; the v0.1 Alert review page and "Mark as reviewed" dialog are retired, TRD 24 D-110): a clinician or admin records a review of a change alarm (optional explanations from the configured checklist, a required outcome, an optional note), may review the same alarm again later, can read the review history ("Previous reviews"), and can set a reminder with "Remind me in 24 hours" (snooze). A review with outcome `data_problem` also raises a data alert for the study team. Reviewing or snoozing never changes the tally, the alarm state or the resident's status in v0.1 (OQ-05).
 
 ## Business Context
 
@@ -27,7 +27,7 @@ Implement the single review model of the Alert review page (SRC-18) and the Resi
 - TRD 19 §4.3 E-14, E-28, E-29; schemas `AlertReviewCreate`, `AlertReview`, `AlertReviewList`, `SnoozeRequest`, `Alert`, `ReviewOutcome`.
 - TRD 09 CUS-008 (no reset), CUS-016, CUS-017 (review semantics, history), CUS-038 (checklist and outcomes), CUS-039 (snooze), CUS-040 (data_problem), CUS-042 (no SLA enforced).
 - TRD 23 DME-007 (status transitions), DME-021 (immutable reviews, data alert link), DME-022 (application clock), §4.2.17, §4.2.18, §4.2.19, §4.3.2, §4.3.2a, §4.3.7.
-- TRD 11 §4.17.2 (title and detail strings of `review_flagged_data_problem`).
+- TRD 09 CUS-040 (title and v0.2 detail strings of `review_flagged_data_problem`, TRD 24 D-114); TRD 11 §4.17.2 (review panel, UX-310 to UX-322) and §4.18.2 (how the data alert is listed on the Study team page).
 - TRD 12 §4.6 (clinician, admin), §4.12 (`alert.reviewed`, `alert.snoozed`), SEC-045 (researchers read-only).
 - TRD 20 §4.6.17 (`alerts_ack_ck`, `alerts_snooze_ck`), §4.6.18 (`alert_reviews` checks), §4.6.19 (`data_alerts_subject_ck`, `data_alerts_run_ck`, `data_alerts_alert_review_uq`), PGS-042, PGS-043.
 - TRD 13 TST-056..TST-059, TST-065..TST-067, AC-TST-12; TRD 05 AC-API-15; TRD 09 AC-CUS-06, AC-CUS-10.
@@ -57,7 +57,7 @@ Implement the single review model of the Alert review page (SRC-18) and the Resi
 | FEAT-031-FR-02 | The body `AlertReviewCreate` shall be `{explanations: 0..5 unique codes, outcome ∈ {no_concern, known_cause, referred, data_problem} (required), note?: ≤ 2000 characters}` with no other properties; a missing or unknown outcome, an explanation code not in the active profile's `review_explanations`, duplicate codes, more than 5 codes, or a note over 2000 characters returns 422 `VALIDATION_ERROR` and writes nothing. | API-081, API-082, CUS-038, DME-021; FR-271 |
 | FEAT-031-FR-03 | A valid review shall insert one immutable `alert_reviews` row (`alert_id`, `reviewer_user_id` from the token, `explanations`, `outcome`, `note`) and, if the alert status is `open`, set it to `acknowledged` with `acknowledged_by` and `acknowledged_at`; further reviews add rows and leave status `acknowledged`. Response 201 `AlertReview` (`reviewer` = {id, display_name}). | API-081, CUS-016, CUS-017, DME-007; FR-106, FR-270, FR-272 |
 | FEAT-031-FR-04 | A review or snooze shall not change `cusum_state`, any `scores` row, the alert's `cusum_value`, `alarm_state` values or the resident's display status. | API-081, API-132, CUS-008, DME-007; FR-107; D-03 |
-| FEAT-031-FR-05 | A review with outcome `data_problem` shall, in the same transaction, insert a `data_alerts` row of kind `review_flagged_data_problem` for the alert's resident with `alert_review_id` = the new review, title "<R> · review flagged a data problem", detail "Reviewed <Mon D> by <display name>", `first_detected_at` = `last_detected_at` = review time, `pipeline_run_id` null; when such a data alert is already open for the resident, it shall not insert another but set that row's `alert_review_id` to the new review and refresh `detail` and `last_detected_at`. | API-130, CUS-040, DME-021; FR-273; TRD 11 §4.17.2 |
+| FEAT-031-FR-05 | A review with outcome `data_problem` shall, in the same transaction, insert a `data_alerts` row of kind `review_flagged_data_problem` for the alert's resident with `alert_review_id` = the new review, title "<R> · review flagged a data problem", detail "a review flagged a data problem (<Mon D>, <display name>)." (facility-local date of the review; reviewer display name; D-114), `first_detected_at` = `last_detected_at` = review time, `pipeline_run_id` null; when such a data alert is already open for the resident, it shall not insert another but set that row's `alert_review_id` to the new review and refresh `detail` and `last_detected_at`. | API-130, CUS-040, DME-021; FR-273; D-114 |
 | FEAT-031-FR-06 | `GET /alerts/{id}/reviews` (all user roles) shall return `AlertReviewList` newest first (`created_at` descending) with pagination and `meta`. | API-131; TRD 19 E-28; FR-272 |
 | FEAT-031-FR-07 | `POST /alerts/{id}/snooze` (clinician, admin) shall accept `{hours?: integer 1..168}` (default `alert_snooze_hours` of the active profile, 24), set `alerts.snoozed_until` = application-clock now (computed in Python, never database `now()`) + hours and `snoozed_by` = caller, and return 200 with the `Alert` DTO; status and alarm state are unchanged. | API-132, CUS-039, DME-022, D-37; FR-274 |
 | FEAT-031-FR-08 | Reviewing or snoozing a `closed` alert shall return 409 `ALERT_CLOSED` and write nothing; an unknown alert id returns 404 `ALERT_NOT_FOUND`; a malformed uuid returns 422. | API-082; TRD 19 E-14, E-29 |
@@ -109,7 +109,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-070.
 
 ## Frontend Impact
 
-None in this feature. Consumers: `AlertReviewForm` (`createAlertReview`, `snoozeAlert`), `ReviewHistory` (`getAlertReviews`), `ReviewDialog` on Resident detail (TRD 04 §4.6.2), delivered by FEAT-070 and FEAT-071.
+None in this feature. Consumers: the review panel of the chart's "Review and notes" section (`createAlertReview`, `snoozeAlert`) and its "Previous reviews" list (`getAlertReviews`) (TRD 04), delivered by FEAT-070 and FEAT-071 as re-scoped for wireframe v0.2.
 
 ## Analytics Impact
 

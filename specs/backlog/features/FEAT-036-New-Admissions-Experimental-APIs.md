@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Provide the three read-only endpoints of the experimental New admissions study arm (SRC-11): the list of new-admission residents who do not yet have their own baseline, a per-feature comparison of a selected resident with the facility's reference ranges, and the stored reference ranges with their method, number of residents and computation time. The arm is labelled "Future / experimental study arm", never creates alerts and never touches any CUSUM. How the facility ranges are computed is an open question (OQ-08); in v0.1 no ranges exist and the comparison status is "range not available".
+Provide the three read-only endpoints of the experimental New admissions study arm (SRC-21, which supersedes SRC-11): the list of new-admission residents who do not yet have their own baseline, a per-feature comparison of a selected resident with the facility's reference ranges, and the stored reference ranges with their method, number of residents and computation time. The arm is labelled "Future / experimental study arm", never creates alerts and never touches any CUSUM. How the facility ranges are computed is an open question (OQ-08); in v0.1 no ranges exist and the comparison status is "range not available".
 
 ## Business Context
 

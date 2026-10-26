@@ -12,25 +12,25 @@
 
 ## Purpose
 
-Serve the Devices panel of the Residents overview (`/residents#devices`, SRC-09): one item per device with the residents assigned on the as-of date, whether it is shared, which device it replaced or was replaced by, when it was in use, its last upload and firmware, and its silent and device-gap days over the last 30 days. Staff and the study team use it to spot devices that stopped sending data and to understand shared-device gaps such as D02 on Oct 12.
+Serve the device data of wireframe v0.2 (SRC-21; TRD 24 D-110, D-114) — the Study team page's "Devices" section (`/study#devices`), each Resident chart's "Device" section and the Summary device tile: one item per device with the residents assigned on the as-of date, whether it is shared, which device it replaced or was replaced by, when it was in use, its last upload and firmware, whether it uploaded on the as-of date (`uploaded_on_as_of_date`, shown as "● Online" / "○ No upload today"), and its silent and device-gap days over the last 30 days. Staff and the study team use it to spot devices that stopped sending data and to understand shared-device gaps such as D02 on Oct 12.
 
 ## Business Context
 
-- BR-12 (overview including device status), BR-06 (missed days visible; device-gap days distinguished from resident misses), BR-08 (device moves visible: "In use since Oct 13 (replaced D07)").
-- BR-15: with the test data the list has 10 devices; D02 is shared by R02 and R03 with device-gap day 2026-10-12; D07 is retired with `in_use_until` 2026-10-12 and replaced by D07B.
+- BR-12 (device status visible), BR-06 (missed days visible; device-gap days distinguished from resident misses), BR-08 (device moves visible: "D07B (R07): in use since Oct 13, replacing D07.").
+- BR-15: with the test data the list has 10 devices; D02 is shared by R02 and R03 with device-gap day 2026-10-12; D07 is retired with `in_use_until` 2026-10-12 and replaced by D07B; the nine active devices uploaded on Oct 30 (`uploaded_on_as_of_date` true) and D07 did not (false).
 - FRs covered (BACKLOG.md): FR-150, FR-151, FR-152, FR-153, FR-154, FR-155.
 
 ## Referenced TRDs
 
-- TRD 05 API-086 (fields and test values), API-057, API-069 (meta, as-of), API-100 (envelope), API-094 (times), API-121 (latency).
+- TRD 05 API-086 (fields incl. `uploaded_on_as_of_date`, and test values), API-057, API-069 (meta, as-of), API-100 (envelope), API-094 (times), API-121 (latency).
 - TRD 19 §4.3 E-17; schemas `Device`, `DeviceList`, `DeviceCode`.
 - TRD 06 DB-044 (silent day derived), DB-066 (`in_use_until` derived).
 - TRD 02 §4.1 glossary "Silent day (device)" and "Device-gap day".
-- TRD 23 §4.4.2 (device values), §4.2.4 (devices), §4.2.5 (device assignments).
+- TRD 23 §4.4.2 (device values incl. upload on the as-of date), §4.2.4 (devices), §4.2.5 (device assignments).
 - TRD 10 ING-044..ING-046 (assignment resolution, shared definition).
-- TRD 11 §4.4 (Devices panel the API serves), §4.13.4 (expected rendering).
+- TRD 11 §4.4 (Study team Devices section), §4.5.8 (chart Device section, UX-430..UX-433), UX-078 (Summary device tile), §4.13.3, §4.13.4 (expected rendering).
 - TRD 14 TDV-066; TRD 13 §4.10 E2E-07.
-- TRD 24 D-64 (fields derived on read).
+- TRD 24 D-64 (fields derived on read), D-114 (`uploaded_on_as_of_date`), OQ-31 (whether a device without upload changes a resident's status; not in v0.1).
 
 ## Scope
 
@@ -40,9 +40,9 @@ Serve the Devices panel of the Residents overview (`/residents#devices`, SRC-09)
 
 ## Out of Scope
 
-- The `DevicePanel` component and device-range labels (`compressDeviceCodes`, FEAT-065).
+- The Study team Devices section, the chart Device section and device-range labels (`compressDeviceCodes`) (frontend features FEAT-065, FEAT-066, FEAT-072).
 - Device registration or assignment changes (CLI `import-master-data`, FEAT-017; no device endpoint exists in the MVP, TRD 10 §4.9).
-- `device_silent` data alerts (FEAT-050) — the panel reports silent days, the data alert is a separate rule.
+- `device_silent` data alerts (FEAT-050) — this endpoint reports silent days, the data alert is a separate rule. Any effect of a missing upload on a resident's status (OQ-31).
 
 ## Functional Requirements
 
@@ -56,6 +56,7 @@ Serve the Devices panel of the Residents overview (`/residents#devices`, SRC-09)
 | FEAT-029-FR-06 | `silent_days_last_30` shall list the local dates in the 30-day window, on or after `in_use_since`, on which at least one `day_ledger` row has the device and none of those rows is `checked_in`. | DB-044, API-086; TRD 02 §4.1; FR-154 |
 | FEAT-029-FR-07 | `device_gap_days_last_30` shall list the local dates in the window on which the ledger recorded `missing_device_gap` for the device's residents. | API-086; TRD 02 §4.1; FR-153 |
 | FEAT-029-FR-08 | Both day lists shall be ascending ISO dates; the window is the 30 local days ending on the as-of local date (latest succeeded run). | API-069, API-094 |
+| FEAT-029-FR-09 | `uploaded_on_as_of_date` shall be true when the device has at least one non-duplicate record whose facility-local date is the as-of local date, otherwise false (a duplicate arrival repeats its original's timestamp, so an `EXISTS` on `raw_sessions` within that local day gives the same result). It never changes a resident's status (OQ-31). | API-086, D-114; TRD 23 §4.4.2; FR-152 |
 
 ## Inputs
 
@@ -70,7 +71,7 @@ Serve the Devices panel of the Residents overview (`/residents#devices`, SRC-09)
 
 1. Auth dependencies authorise any user role.
 2. `device_service.panel` reads all devices and all assignments, resolves the as-of local date from `meta`, and computes per device: assigned residents on that date, shared flag, predecessor and successor devices per resident, `in_use_since`, `in_use_until`.
-3. One grouped query gets `max(timestamp_utc)` per device from `raw_sessions`; one grouped query over `day_ledger` in the window yields silent and device-gap dates per device.
+3. One grouped query gets `max(timestamp_utc)` per device from `raw_sessions` (whose local date also decides `uploaded_on_as_of_date`); one grouped query over `day_ledger` in the window yields silent and device-gap dates per device.
 4. Items are sorted naturally by `device_code`, paged and mapped to `Device`.
 
 ## Dependencies
@@ -94,7 +95,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, F
 
 ## Frontend Impact
 
-None in this feature. Consumer: `DevicePanel` on `/residents#devices` via client function `getDevices()` (TRD 04 §4.6.2), delivered by FEAT-065.
+None in this feature. Consumers: the Study team "Devices" section (`/study#devices`), the chart "Device" section and the Summary device tile via client function `getDevices()` (TRD 04), delivered by the frontend features.
 
 ## Analytics Impact
 
@@ -118,7 +119,7 @@ None: silent and device-gap days are read-model derivations over the persisted d
 ## Testing Requirements
 
 - Integration (`tests/integration/api/test_devices.py`, marker `integration`) with fixture rows: shared device with two residents; retired device with a successor (D07 → D07B pattern) giving `active` false, `in_use_until`, `replaced_by_device_code`; device without any upload (`last_upload_at` null); silent day on a single-resident device that is not a device-gap day; natural ordering D07 before D07B before D08; schema validation (TST-061) and `meta` (TST-064).
-- DS-07 values (FEAT-060, TDV-066, E2E-07): 10 devices; D02 residents [R02, R03], shared true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12]; D07 `active` false, `in_use_until` 2026-10-12, `replaced_by_device_code` D07B; D08 has 12 silent days and no device-gap day.
+- DS-07 values (FEAT-060, TDV-066, E2E-07): 10 devices; D02 residents [R02, R03], shared true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12]; D07 `active` false, `in_use_until` 2026-10-12, `replaced_by_device_code` D07B; D08 has 12 silent days and no device-gap day; `uploaded_on_as_of_date` true for the nine active devices, false for D07.
 - Performance: API-121 / TST-122 (FEAT-079).
 
 ## Acceptance Criteria
@@ -130,6 +131,7 @@ None: silent and device-gap days are read-model derivations over the persisted d
 | FEAT-029-AC-03 | With DS-07 loaded, D07 has `active` false, `in_use_since` 2026-10-01, `in_use_until` 2026-10-12, `replaced_by_device_code` D07B; D07B has `replaces_device_code` D07, `in_use_since` 2026-10-13, `in_use_until` null. Verified by: Integration (`tests/integration/api/test_devices.py`). | API-086, DB-066, FR-155 |
 | FEAT-029-AC-04 | With DS-07 loaded, D08 has 12 dates in `silent_days_last_30` and an empty `device_gap_days_last_30`. Verified by: DS-07 values (D02 residents [R02, R03], shared true, `silent_days_last_30` [2026-10-12], `device_gap_days_last_30` [2026-10-12]). | DB-044, TRD 19 E-17 notes |
 | FEAT-029-AC-05 | The response validates against `DeviceList`, contains `meta`, and an API key receives 401 while every user role receives 200. | TST-061, TST-064, TRD 13 Table 4.13-A |
+| FEAT-029-AC-06 | With DS-07 loaded, D01, D02, D04, D05, D06, D07B, D08, D09 and D10 have `uploaded_on_as_of_date` true and D07 false; with a fixture whose device's last record is the day before the as-of date, the flag is false. Verified by: Integration (`tests/integration/api/test_devices.py`) and DS-07 values (FEAT-060). | API-086, D-114 |
 
 ## Definition of Done
 

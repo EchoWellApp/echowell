@@ -646,7 +646,7 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | set aside (30 d) | count status `set_aside` in window | R03 7 |
 | quarantined (30 d) | count status `quarantined` in window | R05 2 |
 | missed (30 d) | count `day_ledger` status `missing_resident` + `missing_device_gap` in window | R02 6, R03 1, R08 12; total 19 (Study team "Where check-ins are lost") |
-| days in window | used + set aside + quarantined + missed (one session per resident-day, ASM-02); the chart banner shows "<used> of <days in window>" | R03 22 of 30, R08 13 of 30 |
+| days in window | local days of the 30-day window (API `ResidentDetail.window.days`; equals used + set aside + quarantined + missed under ASM-02); the chart banner shows "<used> of <days in window>" | R03 22 of 30, R08 13 of 30 |
 | last check-in | max `timestamp_utc` of non-duplicate `processed_sessions`, shown local "Oct 30, 2:28 PM" | R09 Oct 30, 2:28 PM |
 | baseline progress | `min(count usable in current epoch, N)` "of N" | R08 13 of 16 |
 | baseline dates | local dates of `first_session_id` and `frozen_after_session_id` (composite row) | R09 Oct 1–16 |

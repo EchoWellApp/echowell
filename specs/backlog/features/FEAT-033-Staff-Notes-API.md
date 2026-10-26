@@ -12,11 +12,11 @@
 
 ## Purpose
 
-Let clinicians and admins write free-text staff notes about a resident (observation, action taken, follow-up), optionally linked to one of the resident's alarms, and let every user role read them newest first on the Resident detail "Staff review" section. Notes are append-only: an edit is a new note that supersedes the old one. Notes are a separate feature from alarm reviews and never change alert status.
+Let clinicians and admins write free-text staff notes about a resident (observation, action taken, follow-up), optionally linked to one of the resident's alarms, and let every user role read them newest first in the "Staff notes" panel of the Resident chart's "Review and notes" section (wireframe v0.2, SRC-21). Notes are append-only: an edit is a new note that supersedes the old one. Notes are a separate feature from alarm reviews and never change alert status.
 
 ## Business Context
 
-- BR-13 (staff review on Resident detail): notes with type, author and time, newest first, only the latest version of edited notes.
+- BR-13 (staff notes on the Resident chart): notes with type, author and time, newest first, only the latest version of edited notes.
 - BR-16 (traceability, no PII): append-only storage, audited creation, body never logged or audited, UI hint against identifying details.
 - FRs covered (BACKLOG.md): FR-190, FR-192, FR-193.
 
@@ -38,8 +38,8 @@ Let clinicians and admins write free-text staff notes about a resident (observat
 
 ## Out of Scope
 
-- Alarm reviews and "Mark as reviewed" (FEAT-031); notes never acknowledge an alert.
-- The Staff review UI, note form and hint text (FEAT-071).
+- Alarm reviews (FEAT-031; the v0.1 "Mark as reviewed" dialog is retired, TRD 24 D-110); notes never acknowledge an alert.
+- The "Staff notes" UI, note form and hint text (FEAT-071).
 - Editing in place or deleting notes (not allowed; corrections are new rows).
 
 ## Functional Requirements
@@ -93,7 +93,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-071.
 
 ## Frontend Impact
 
-None in this feature. Consumers: `NotesList` (`getNotes(code)`) and `StaffReviewForm` (`createNote(code, body)`) on Resident detail (TRD 04 §4.6.2), delivered by FEAT-071, which also shows the SEC-124 hint.
+None in this feature. Consumers: the "Staff notes" list (`getNotes(code)`) and form (`createNote(code, body)`) in the Resident chart's "Review and notes" section (TRD 04), delivered by FEAT-071, which also shows the SEC-124 hint.
 
 ## Analytics Impact
 
