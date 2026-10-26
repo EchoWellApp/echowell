@@ -1,4 +1,4 @@
-# FEAT-069 Alert review page: change-alarm queue, data-alert queue and review panel
+# FEAT-069 Alarm review panel in the resident chart (review form, reminder, previous reviews)
 
 | Field | Value |
 |---|---|
@@ -7,141 +7,147 @@
 | Priority | P0 |
 | Complexity | High |
 | MVP status | Required |
-| Dependencies | FEAT-064, FEAT-030, FEAT-032, FEAT-067, FEAT-048 |
+| Dependencies | FEAT-066, FEAT-030, FEAT-031 |
 | Status | Not Started |
 
 ## Purpose
 
-Implement `/alerts` (SRC-18), the page where the charge nurse or clinical lead reviews change alarms and the study team sees data-quality alerts: the header and subline, a two-column layout (queues left, review panel right; stacked on narrow screens), Queue 1 "Change alarms · need a nurse review" with cards in the FR-261 group order and their review badges, the selected alarm kept in the URL, the review panel title and link, the mini tally chart reusing `CusumChart`, "Leaning most", Queue 2 "Data alerts · go to the study team" without alarm styling or review form, the empty states and the page footer. The review form, history and snooze are added by FEAT-070.
+Let clinicians and admins review a change alarm where wireframe v0.2 puts it (SRC-21, TRD 24 D-110): in the "Review and notes" section of a Changed resident's chart (`/residents/[residentCode]/review`), above the staff notes. The panel "Review alert: changed since <Mon D>" holds the explanation checklist "Anything that could explain it?" read from `GET /config/ui` (provisional, OQ-25), the required choice "What did you find?", an optional note (≤ 2000 characters), "Save review" and "Remind me in <h> hours" with query invalidation, the "Previous reviews" list (kept from v0.1, D-111), the open-questions note (OQ-05, OQ-26) and the read-only text for researchers. A saved review marks the alarm "Reviewed" but never changes the alarm state, change score or pill (OQ-05). The v0.1 Alert review page (`/alerts`, its change-alarm queue, selection in `?alert=`, mini chart and data-alert queue) and the v0.1 "Mark as reviewed" dialog are retired: the queue is replaced by the resident list (Changed first, FEAT-065) and the nav badge (FEAT-064), the mini chart by Voice trends (FEAT-067), "Leaning most" moves to the Summary (FEAT-066) and the data alerts to the Study team page (FEAT-072).
 
 ## Business Context
 
-- BR-11, BR-13 (alarms are reviewed by staff; persistence and context visible), BR-12 (data problems routed to the study team).
-- VIS-028 (Alert review page in the MVP), VIS-029 (data alerts are never presented as health alarms).
-- BR-15: the page renders the SRC-18 reference values.
-- FRs covered (BACKLOG.md): FR-260, FR-261, FR-262, FR-263, FR-264, FR-265, FR-266, FR-278, FR-280, FR-298.
+- BR-13 (staff record what they checked and decided, from the resident's own chart), BR-11 (an alarm stays on after review in v0.1, OQ-05), BR-16 (only clinicians and admins review; audited server-side).
+- One review model (contract §20 R5): the review form is the only way to mark an alarm reviewed; notes never do.
+- OQ-25 (provisional explanation checklist), OQ-26 (who may review and how soon); D-108, D-110, D-111, D-113 ("Review outcome" becomes "What did you find?").
+- FRs covered (BACKLOG.md): FR-191, FR-194, FR-195, FR-260, FR-264, FR-267, FR-268, FR-269, FR-270, FR-271, FR-272, FR-274, FR-277, FR-280.
 
 ## Referenced TRDs
 
-- TRD 04 FE-139 (`?alert=` selection, default first card, empty panel), FE-193 (E2E `alerts.spec.ts`), FE-205 (snooze regrouping with fake timers), FE-036, §4.8 `AlertsPage`, `AlertQueue`, `AlertCard`, `DataAlertQueue`, `AlertReviewPanel`, `MiniTallyChart`, `LeaningMost`.
-- TRD 11 UX-300..UX-309 (queues, card texts, badges, selection, empty texts, data-alert cards, order, links), UX-310 (panel title and link), UX-311 (mini chart), UX-312 (Leaning most), UX-319 (panel empty texts), UX-323, UX-324 (accessibility), UX-330, UX-331 (reference rendering), UX-246 (stacking), §4.17.2 data-alert wording, §4.17.6.
-- TRD 09 CUS-037 (one card per non-closed alarm of a current epoch); TRD 00 VIS-028, VIS-029.
-- TRD 19 E-13 `GET /api/v1/alerts`, E-30 `GET /api/v1/data-alerts`, E-12 `GET /api/v1/scores`.
-- TRD 02 FR-260..FR-266, FR-278, FR-280, FR-298.
-- TRD 13 E2E-17, TST-090; TRD 14 TDV-067, TDV-068, TDV-069.
+- TRD 11 (v0.13) — owned by this feature: UX-310 (panel only for a Changed resident, heading), UX-313..UX-318 (checklist and hint, "What did you find?", note, "Save review" and its validation, "Remind me in <h> hours" and the reminder line, post-save state), UX-320 (Previous reviews), UX-321 (open-questions note), UX-322 (researcher replacement), §4.17.3 wording rules, UX-324 (44px label rows), UX-330 and §4.17.5 (reference rendering and badges after a review). Retired, not built: UX-300..UX-305 (queue), UX-311 (mini chart), UX-319 (empty panel), UX-323 (card selection), UX-125 (moved to UX-321), UX-136..UX-138 (review dialog).
+- TRD 04 (v0.11) FE-209 (review panel for `ResidentDetail.open_alert_id` on `/review`, only for a Changed resident), FE-086 (invalidations after review and reminder), FE-134 (UI never changes alarm state), FE-135 (role gating), FE-136..FE-138 (form contents from `getUiConfig`, request body, reminder call), FE-079 (field errors), FE-205 (reminder line with fake timers), FE-187 (E2E-09 review step), FE-193 (E2E `review.spec.ts`), §4.9, §4.8 `AlarmReviewPanel`, `AlertReviewForm`, `ReviewHistory`. Retired: FE-131, FE-139.
+- TRD 19 E-13 `GET /api/v1/alerts`, E-14 `POST /api/v1/alerts/{id}/reviews`, E-28 `GET /api/v1/alerts/{id}/reviews`, E-29 `POST /api/v1/alerts/{id}/snooze`, E-32 `GET /api/v1/config/ui`.
+- TRD 02 FR-191, FR-194, FR-195, FR-260, FR-264, FR-267..FR-272, FR-274, FR-277, FR-280; TRD 24 D-03, D-35, D-37, D-110, D-111, D-113, OQ-05, OQ-25, OQ-26.
+- TRD 13 E2E-09 (review step), E2E-18, E2E-21, TST-090, TST-111; TRD 14 TDV-076.
 
 ## Scope
 
-- `app/(protected)/alerts/page.tsx` (`AlertsPage`) with `AppHeader` (title "Alert review", active "alerts"), two-column grid (left 5fr, right 7fr, gap 24px), footer variant `alerts`.
-- `AlertQueue`, `AlertCard`, `DataAlertQueue`, `AlertReviewPanel` frame with title row, link, `MiniTallyChart` (90px variant of `CusumChart`) and `LeaningMost`.
-- Queries: `getAlerts({ status: "open" })` and `getAlerts({ status: "acknowledged" })` for the alarms of Queue 1 (TRD 02 UC-13), `getDataAlerts({ status: "open" })`, `getScores({ residentCode, epoch })` for the selected alarm.
-- URL state `?alert=<id>`; live-region announcement on selection.
+- `app/(protected)/residents/[residentCode]/review/page.tsx` (shared with FEAT-071): `AlarmReviewPanel` first, only when the resident's display status is Changed; `StaffNotes` (FEAT-071) after it.
+- `AlarmReviewPanel` (`{ alarm, reviews, uiConfig, canReview, meta }`) for the alert whose id is `ResidentDetail.open_alert_id`, with `AlertReviewForm` (`{ alertId, snoozeHours, explanations, snoozedUntil, onSaved }`) and `ReviewHistory` (`{ reviews, tz }`) from `GET /alerts/{id}/reviews`; open-questions note; researcher replacement text.
+- Mutations `createAlertReview`, `snoozeAlert` with TanStack Query invalidations, so that the Summary review status, the list's "What's happening" text and both badges update from the API.
+- `@mutating` E2E steps E2E-18 and the FE-193 reminder step in `frontend/tests/e2e/mutating.spec.ts` (order per D-73), and the review step of E2E-09.
 
 ## Out of Scope
 
-- `AlertReviewForm`, "Save review", "Remind me in 24 h", `ReviewHistory`, open-questions note, researcher read-only replacement (FEAT-070).
-- Backend alert list, `leaning_most`, data alerts (FEAT-030, FEAT-048, FEAT-032).
-- Chart rules themselves (FEAT-067 `CusumChart`).
+- Backend review, review-list, snooze and config endpoints (FEAT-031, FEAT-030).
+- Staff notes (FEAT-071); the Summary facts and "Leaning most" (FEAT-066); the change score chart (FEAT-067); data problems (FEAT-072).
+- Any reset of the change score or switching the alarm off (OQ-05; not in pipeline v0.1).
 
 ## Functional Requirements
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-069-FR-01 | `/alerts` shall show the header "Alert review", the subline "For the charge nurse or clinical lead · <data_source_label> as of <Mon D, YYYY>", and a two-column layout with the queues on the left and the review panel for the selected alarm on the right, stacking (queues first) on narrow screens. | FR-260, UX-017, UX-246 |
-| FEAT-069-FR-02 | Queue 1 headed "Change alarms · need a nurse review" shall contain one card per change alarm that is on in a resident's current epoch (status `open` or `acknowledged`), ordered (1) not reviewed and not snoozed, (2) not reviewed and snoozed (`snoozed_until` after now), (3) reviewed; within each group alarm date ascending, then resident code; closed alerts are not listed. | FR-261, UX-300, UX-301, CUS-037 |
-| FEAT-069-FR-03 | Each card shall show line 1 "<R> · <D>" (600) with the review badge right-aligned and line 2 "Alarm since <Mon D> · open <d> days · tally <x.x>" ("open 1 day" for 1, "opened today" for 0), d = `open_days`, tally = `current_tally` with one decimal. | FR-262, UX-302 |
-| FEAT-069-FR-04 | The badge shall read "Not reviewed" (accent, 600) for `open` without an active reminder; "Not reviewed · reminder <Mon D, h:mm AM/PM>" (secondary, 400) while `snoozed_until` is in the future; "Reviewed" (secondary) for `acknowledged`; when `snoozed_until` passes, the card returns to group 1 with the emphasis without a new API call. | UX-303, FR-261, FE-205 |
-| FEAT-069-FR-05 | Each card shall be a full-card button (min-height 44px) that selects the alarm and sets `?alert=<id>`; the selected card has a 2px ink left border and `aria-current="true"`; with no valid `?alert` the first card is selected. Selecting does not move focus; the panel is an `aria-live="polite"` region announcing "Reviewing <R>, alarm since <Mon D>." | FE-139, UX-304, UX-323, FR-264 |
-| FEAT-069-FR-06 | With no change alarms, Queue 1 shall show its empty text and the panel shall show its empty state ("No change alarms right now." and "No change alarms to review."). | UX-305, UX-319, FR-280 |
-| FEAT-069-FR-07 | The review panel shall start with the heading "<R> · alarm since <Mon D>" (h2) and the link "Open full resident view →" to `/residents/<R>`. | UX-310, FR-264 |
-| FEAT-069-FR-08 | Under the label "Change tally since watching began (alarm line <h>)" the panel shall show `MiniTallyChart` (plot height 90px) with the same rules as the Resident detail chart: grey baseline slot "Baseline <Mon D>–<Mon D>", one bar per scored session of the current epoch, #BDBDB8 with #8A8A85 outline while `off`, #9A4508 when `rings`/`on`, dashed accent line at h, x labels for first and last scored dates, accessible name in the UX-091 form. | UX-311, FR-265, D-30 |
-| FEAT-069-FR-09 | "Leaning most" shall list up to 3 labels from the alert's `leaning_most` keys as lower-cased plain-language labels without the technical name, joined by ", " (R09 "more pauses, quieter, less voiced sound"); with none, "No single measurement stands out." | UX-312, FR-266 |
-| FEAT-069-FR-10 | Queue 2 headed "Data alerts · go to the study team" shall list one card per open data alert with line 1 the API `title` and line 2 the API `detail`, ordered by kind (baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem) then code, without "▲", accent colour or any review form. | UX-306, UX-307, FR-298, VIS-029 |
-| FEAT-069-FR-11 | A resident data-alert card shall link to `/residents/<R>` and a device card to `/residents#devices`, with the title as accessible name; with none, "No data alerts in the last 30 days." | UX-308, UX-309 |
-| FEAT-069-FR-12 | The page footer shall read "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." | FR-278, UX-005 |
-| FEAT-069-FR-13 | Checkbox and radio rows in the panel shall each be at least 44px high (applies to the form added by FEAT-070 inside this panel). | UX-324 |
-| FEAT-069-FR-14 | With the reference data the page shall render exactly TRD 11 §4.17.6: nav "Alerts (2)"; R09 · D09 "Not reviewed" "Alarm since Oct 21 · open 9 days · tally 26.8"; R10 · D10 "Not reviewed" "Alarm since Oct 24 · open 6 days · tally 13.4"; the four data alerts in order; R09 panel with 14 bars and "more pauses, quieter, less voiced sound"; R10 panel "more pauses, slower while talking, fewer syllables per second". | UX-330, UX-331, FR-263 |
+| FEAT-069-FR-01 | When the resident is Changed, the "Review and notes" section shall start with a panel headed "Review alert: changed since <alarm Mon D>" (h2) that reviews the non-closed alert of the current epoch; for other residents no review panel is rendered (only the staff notes, FEAT-071). | UX-310, FE-209, FR-260, FR-264, FR-280 |
+| FEAT-069-FR-02 | A fieldset with legend "Anything that could explain it?" (weight 700, 1px `--rule` border, radius 6px, padding 12px 14px) shall list one checkbox per `review_explanations` entry of `GET /api/v1/config/ui`, in the returned order (test configuration: "Cold, cough or sore throat", "Dental problem or dentures out", "New or changed medication", "Poor sleep or unusual day", "Room or device moved"), with the hint (13px, `--muted`) "Provisional list — to be confirmed with the clinical team (OQ-25)."; any number may be checked. | UX-313, FE-136, FR-267, OQ-25 |
+| FEAT-069-FR-03 | A fieldset with legend "What did you find?" shall offer exactly one required radio among "Checked on resident, no concern" (`no_concern`), "Explained by a known cause" (`known_cause`), "Referred to nurse or provider" (`referred`), "Looks like a data problem: send to study team" (`data_problem`), none preselected. | UX-314, FE-136, FR-268, D-113 |
+| FEAT-069-FR-04 | A textarea labelled "Note" (3 rows, optional, ≤ 2000 characters, counter "<count> / 2000", placeholder "What you saw or did") shall follow. | UX-315, FR-269 |
+| FEAT-069-FR-05 | The primary button "Save review" without a choice under "What did you find?" shall not call the API, shall show "Choose what you found." linked to that fieldset and move focus to the first radio; otherwise it sends `POST /api/v1/alerts/{id}/reviews` with `{ explanations: string[] (codes), outcome, note? }`, omitting an empty or whitespace-only note. | UX-316, FE-137, FR-270 |
+| FEAT-069-FR-06 | After success the form shall reset, announce politely "Review saved." (outcome `data_problem`: "Review saved and sent to the study team as a data problem."), and invalidate `["alerts"]`, `["data-alerts"]`, `["resident", code]`, `["residents"]` and `["analytics"]`, so that the Summary review status and the list's "What's happening" text read "Reviewed" and the nav and section badges decrease, as returned by the API. | UX-318, FE-086, FR-270 |
+| FEAT-069-FR-07 | The UI shall not change the alarm state, change score, chart or pill after a save or a reminder; it renders only the API state after refetch (no reset, OQ-05). | UX-318, FE-134, OQ-05 |
+| FEAT-069-FR-08 | 422 responses shall show field errors under the matching control (`explanations`, `outcome`, `note`) and other errors above the buttons; 409 `ALERT_CLOSED` shows the API error message above the buttons; entered values are kept on failure. | FE-079, FR-271, UX-207 |
+| FEAT-069-FR-09 | The secondary button "Remind me in <h> hours" (h = `alert_snooze_hours`, 24) shall call `POST /api/v1/alerts/{id}/snooze` with `{}`, create no review, change no alarm state, announce "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on." and invalidate the queries of FE-086; while `snoozed_until` is in the future the panel shows the line "Reminder set for <Mon D, h:mm AM/PM>." under the buttons. | UX-317, FE-138, FR-274 |
+| FEAT-069-FR-10 | Under the buttons, "Previous reviews" (h3) shall list the alarm's reviews newest first as "<Mon D, h:mm AM/PM> · <display name> · <outcome label>", then "Possible explanations: <labels joined by ', '>" when any and the note text; with none, "Not reviewed yet."; several reviews per alarm are allowed. | UX-320, FR-272, D-111 |
+| FEAT-069-FR-11 | The panel shall end with the note (13px, `--muted`) "Open questions (OQ-05, OQ-26): Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on." | UX-321, FR-195, FR-277 |
+| FEAT-069-FR-12 | For role researcher (`canReviewAlarms` false) the checklist, choices, note and both buttons shall be replaced by "Only clinicians and admins can review alarms."; "Previous reviews" stays visible. | UX-322, FE-135, FR-194, SEC-043 |
+| FEAT-069-FR-13 | Explanation and outcome labels shall be shown exactly as listed; labels for codes outside the current configured list use the API-supplied labels. | TRD 11 §4.17.3 |
+| FEAT-069-FR-14 | Checkbox and radio controls shall each have a 44px-high clickable label row; every control is keyboard-operable with visible focus. | UX-324, TST-111 |
+| FEAT-069-FR-15 | With the reference data the panels shall render TRD 11 §4.17.5 (R09 "Review alert: changed since Oct 21", R10 "… since Oct 24", five checkboxes, four choices, "Save review", "Remind me in 24 hours", "Previous reviews": "Not reviewed yet."; no panel for other residents), and after a review of R09 the nav badge reads "1", R09's section badge is gone and R09's pill still reads "Changed". | UX-330, AC-UX-11 |
 
 ## Inputs
 
-- `GET /api/v1/alerts?status=open` and `?status=acknowledged` (`AlertList` with `open_days`, `current_tally`, `snoozed_until`, `reviewed`, `leaning_most`), `GET /api/v1/data-alerts?status=open`, `GET /api/v1/scores?resident_code=<R>&epoch=<n>` for the selected alarm; `meta` for formatting; `?alert=` URL parameter; the client clock (for the snooze comparison).
+- `GET /api/v1/config/ui` → `UiConfig {meta, alert_snooze_hours, review_explanations[{code, label}]}`.
+- The resident's non-closed alert from FEAT-066's `["alerts", {residentCode}]` query (`id`, `local_date`, `status`, `snoozed_until`); `GET /api/v1/alerts/{id}/reviews` → `AlertReviewList`.
+- User input (checkboxes, choice, note); role from `useAuth()`.
 
 ## Outputs
 
-- Rendered `/alerts` page with queues, panel frame, mini chart, Leaning most, empty states and footer.
+- `POST /alerts/{id}/reviews` and `POST /alerts/{id}/snooze` requests; refreshed queries; live-region messages; rendered review history and reminder line.
 
 ## Data Flow
 
-`["alerts", {status: "open"}]`, `["alerts", {status: "acknowledged"}]` and `["data-alerts", {status: "open"}]` queries → client groups and orders alarm cards per FR-261 using `reviewed`/`status`, `snoozed_until` vs now, `local_date`, `resident_code` → selected id from `?alert` → `["resident", code, "scores", epoch]` → `AlertReviewPanel` (title, link, `MiniTallyChart`, `LeaningMost`; form slot for FEAT-070).
+Layout queries (FEAT-066) → display status Changed? → `getUiConfig()` (`["config", "ui"]`) → checklist and reminder hours → user submits → `createAlertReview` → success → reset + announce + invalidate (alerts, data-alerts, resident, residents, analytics) → Summary, list text and badges re-render from the API → `getAlertReviews(id)` shows the new entry. "Remind me" → `snoozeAlert(id, {})` → invalidate → reminder line from the returned `snoozed_until`.
 
 ## Dependencies
 
-Required before implementation (BACKLOG.md): FEAT-064, FEAT-030, FEAT-032, FEAT-067, FEAT-048
+Required before implementation (BACKLOG.md): FEAT-066, FEAT-030, FEAT-031
 
-- FEAT-064: header, nav, route shell; FEAT-030: `GET /alerts`; FEAT-032: `GET /data-alerts`; FEAT-067: `CusumChart` reused by `MiniTallyChart`; FEAT-048: `leaning_most` values.
+- FEAT-066 provides the chart layout, the `/review` route shell, the resident's alert query and the section badge.
+- FEAT-030 provides `GET /alerts` and `GET /config/ui`; FEAT-031 provides the review, review-list and snooze endpoints.
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-070.
+Features that build directly on this one (BACKLOG.md §4): FEAT-075.
 
 ## Database Impact
 
-None (frontend only).
+None directly. The backend writes `alert_reviews`, updates `alerts.status`/`snoozed_until`/`snoozed_by`, may create a `review_flagged_data_problem` data alert, and writes audit rows `alert.reviewed` / `alert.snoozed` (FEAT-031).
 
 ## API Impact
 
-Endpoints consumed: `GET /api/v1/alerts` (E-13), `GET /api/v1/data-alerts` (E-30), `GET /api/v1/scores` (E-12). None exposed.
+Endpoints consumed: `GET /api/v1/config/ui` (E-32), `POST /api/v1/alerts/{id}/reviews` (E-14), `GET /api/v1/alerts/{id}/reviews` (E-28), `POST /api/v1/alerts/{id}/snooze` (E-29); `GET /api/v1/alerts` (E-13) through FEAT-066. None exposed. There is no `/alerts/{id}/acknowledge` call and no `/alerts` page.
 
 ## Frontend Impact
 
-- Page: `app/(protected)/alerts/page.tsx`.
-- Components: `AlertsPage`, `AlertQueue`, `AlertCard`, `DataAlertQueue`, `AlertReviewPanel`, `MiniTallyChart`, `LeaningMost`, `Footer` (alerts).
+- Section page `app/(protected)/residents/[residentCode]/review/page.tsx` (review panel part).
+- Components: `AlarmReviewPanel`, `AlertReviewForm`, `ReviewHistory`; wording in `lib/wording.ts`.
 
 ## Analytics Impact
 
-None. "Leaning most" keys come from the API (FEAT-048); the UI only maps keys to labels.
+None. The UI never recomputes the change score or alarm state (OQ-05).
 
 ## Security Requirements
 
-- All roles may view (`GET /alerts`, `GET /data-alerts`: admin, clinician, researcher); review controls are gated in FEAT-070 (SEC-043).
-- Data alerts never styled as health alarms (VIS-029).
+- Review and reminder controls only for admin and clinician (`canReviewAlarms`); the backend returns 403 for researchers (FR-275); the UI shows the read-only text (UX-322, SEC-043).
+- The note is plain text sent as typed and rendered as text (SEC-076).
 
 ## Error Handling
 
-- Each queue and the panel have independent loading/empty/error states (LOG-083, UX-202).
-- Unknown `?alert` id → first card selected (FE-139).
-- Scores query error → error state inside the panel chart area only.
+- Missing choice → client-side error, no request (UX-316).
+- 422 → field errors; 409 `ALERT_CLOSED` → message above the buttons; 403 → "You do not have access to this information." (FE-035); network error → message with "Reference:" (FEAT-062).
+- Config query error → error state inside the panel; "Previous reviews" still shown when its query succeeds (UX-202).
 
 ## Logging Requirements
 
-None in the frontend.
+None in the frontend. Audit rows `alert.reviewed` and `alert.snoozed` are written by the backend (TRD 12 §4.12, FR-279).
 
 ## Testing Requirements
 
-- Component (TST-090): `AlertCard` (texts, badges incl. reminder form), `AlertQueue` (FR-261 grouping and order; FE-205 with `vi.useFakeTimers()` — snoozed card moves back to "Not reviewed" when time passes `snoozed_until`, no API call), `DataAlertQueue` (four cards, no "▲", links), `AlertReviewPanel` (title, link, mini chart bars, Leaning most texts and empty text).
-- Page test (`frontend/tests/pages/alerts.test.tsx`): loading, populated, empty (no alarms), error, 401 → login (TST-094).
-- E2E: E2E-17 (queues on DS-07), `alerts.spec.ts` read-only part of FE-193 (cards, data alerts, R09 default selection, Leaning most).
+- Component (`components/AlertReviewForm/AlertReviewForm.test.tsx`, TST-090): checklist from config order with the OQ-25 hint, required choice error "Choose what you found." and focus, request body without empty note, both success messages, reminder call `{}`, message and reminder line, researcher replacement, 422 field mapping; `ReviewHistory` formatting and "Not reviewed yet."; no panel for a non-Changed resident.
+- Component (FE-205, fake timers): `AlarmReviewPanel` with `snoozed_until` 1 minute after now shows the reminder line and "Not reviewed"; after the timers pass `snoozed_until` the line is gone without a new API call.
+- E2E read-only (`review.spec.ts`, FE-193): the R09 and R10 panels of §4.17.5 and "Choose what you found.".
+- Keyboard test: checkboxes, radios, "Save review", "Remind me in 24 hours" reachable and operable with visible focus (TST-111, part of FEAT-075's suite).
+- E2E (`@mutating`, `mutating.spec.ts`, D-73 order): E2E-18 (1st: on `/residents/R09/review` save without a choice → "Choose what you found."; then "Checked on resident, no concern" → "Review saved.", R09 Summary "Reviewed", list text "Changed from their usual since Oct 21. Reviewed.", nav badge "1", R09 section badge gone, pill "▲ Changed", change score 26.8 unchanged); E2E-09 review step (2nd: "Cold, cough or sore throat" + "Explained by a known cause" → both reviews in "Previous reviews"); FE-193 reminder step (3rd: "Remind me in 24 hours" on R10 → reminder line).
+- E2E-21 researcher part: form replaced by "Only clinicians and admins can review alarms."; a direct `POST /alerts/{id}/reviews` returns 403.
 
 ## Acceptance Criteria
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-069-AC-01 | As clinician on DS-07, `/alerts` shows nav "Alerts (2)" and the cards "R09 · D09" "Not reviewed" "Alarm since Oct 21 · open 9 days · tally 26.8" then "R10 · D10" "Not reviewed" "Alarm since Oct 24 · open 6 days · tally 13.4". | E2E-17; FR-263; TDV-067 |
-| FEAT-069-AC-02 | Queue 2 shows exactly the four data alerts of TRD 11 §4.17.6 in order (R08, R05, R03, D02 titles and details) with no "▲" and no form. | E2E-17; UX-331; TDV-068 |
-| FEAT-069-AC-03 | Without `?alert`, R09 is selected; the panel shows "R09 · alarm since Oct 21", "Open full resident view →" linking to `/residents/R09`, a mini chart with "Baseline Oct 1–16" and 14 bars (Oct 17–20 grey, Oct 21–30 accent), and "Leaning most" "more pauses, quieter, less voiced sound". | FE-193; UX-330; TDV-069 |
-| FEAT-069-AC-04 | Selecting R10 sets `?alert=<R10 id>`, does not move focus, announces "Reviewing R10, alarm since Oct 24." and shows "more pauses, slower while talking, fewer syllables per second". Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | UX-304; UX-323; UX-330 |
-| FEAT-069-AC-05 | With fake timers, an open alert whose `snoozed_until` is 1 minute after now is in the snoozed group without the "Not reviewed" emphasis, and after advancing past `snoozed_until` it re-enters the "Not reviewed" group with no new API call. Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | FE-205; UX-303 |
-| FEAT-069-AC-06 | The page footer reads "An alarm is a prompt to check in, not a diagnosis. No audio is stored or played here." Verified by: Inspection (the inspection method of FR-278, applied to the condition stated in the criterion). | FR-278; UX-005 |
-| FEAT-069-AC-07 | With an empty alert list, Queue 1 shows its empty text and the panel shows its empty state, and no review form is rendered. Verified by: Page test (`frontend/tests/pages/alerts.test.tsx`; TST-094). | UX-305; UX-319; FR-280 |
+| FEAT-069-AC-01 | `/residents/R09/review` shows "Review alert: changed since Oct 21", five explanation checkboxes in the configured order with the OQ-25 hint, the four choices of "What did you find?", "Save review", "Remind me in 24 hours", "Previous reviews" "Not reviewed yet." and the open-questions note; `/residents/R01/review` shows no review panel. | UX-330; §4.17.5; UX-310; AC-UX-11 |
+| FEAT-069-AC-02 | Clicking "Save review" without a choice shows "Choose what you found.", moves focus to the first radio and sends no request. | E2E-18; UX-316 |
+| FEAT-069-AC-03 | Saving R09 with "Checked on resident, no concern" announces "Review saved.", the nav badge reads "1", R09's "Review and notes" badge is gone, R09's Summary shows "Reviewed", the list reads "Changed from their usual since Oct 21. Reviewed.", and the pill still reads "Changed" with change score 26.8. | E2E-18; TDV-076; UX-318; AC-UX-06 |
+| FEAT-069-AC-04 | The request body contains the checked codes (e.g. `["cold_cough_sore_throat"]`) and the chosen `outcome`, and omits a whitespace-only note; with outcome `data_problem` the message reads "Review saved and sent to the study team as a data problem." Verified by: Component (`AlertReviewForm.test.tsx`; TST-090). | FE-137; UX-318 |
+| FEAT-069-AC-05 | "Remind me in 24 hours" on R10 sends `POST /api/v1/alerts/{id}/snooze` with `{}`, creates no review, announces "Reminder set for <Mon D, h:mm AM/PM>. The alarm stays on." and shows "Reminder set for <Mon D, h:mm AM/PM>." under the buttons; R10's pill stays "Changed". | FE-193; FE-138; UX-317 |
+| FEAT-069-AC-06 | As researcher on `/residents/R09/review`, the form is replaced by "Only clinicians and admins can review alarms." while "Previous reviews" remains; a direct review POST returns 403. | E2E-21; UX-322 |
+| FEAT-069-AC-07 | After two reviews on the same alarm, "Previous reviews" lists both newest first with time, reviewer and outcome label, and "Possible explanations: Cold, cough or sore throat" for the one that had a checked explanation. | E2E-09; UX-320; FR-272 |
 
 ## Definition of Done
 
-- All FEAT-069 acceptance criteria pass; component, page and E2E (read-only) tests green.
-- Alert review shows R09 and R10 and the four data alerts with test data (TRD 25 Phase 8 DoD).
-- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
+- All FEAT-069 acceptance criteria pass; component tests and the `@mutating` E2E steps pass in Chromium.
+- OQ-05 note present (TRD 25 Phase 8 DoD).
+- Batch report lists IDs (AGT-022).
 
 ## Implementation Notes
 
-- Columns stack below 1024px (UX-246, the TRD 04 FE-165 tablet breakpoint); TRD 02 FR-260 was aligned in the PR #2 consistency fixes.
-- With no open alarm, Queue 1 reads "No change alarms right now." (UX-305) and the panel "No change alarms to review." (UX-319, FE-139); TRD 02 FR-280 was aligned in the PR #2 consistency fixes.
-- The queue order is defined once in FR-261; compute the snoozed group client-side from `snoozed_until` vs the current time, because the API exposes only `snoozed_until` (TST-065 note).
-- Lower-case the TRD 11 §4.5.4 labels for Leaning most ("Quieter" → "quieter").
-- E-13 accepts a single `status` value; as TRD 02 UC-13 describes, call `getAlerts({ status: "open" })` and `getAlerts({ status: "acknowledged" })` (the open call also feeds the nav count, FE-036) and merge them for Queue 1.
+- The `@mutating` scenarios run after all read-only ones on a freshly re-seeded database in the D-73 order E2E-18 → E2E-09/FE-187 → FE-193 reminder step; do not add other writes to read-only specs.
+- Use `UiConfig.alert_snooze_hours` only for the button label; send `{}` so the server default applies (FE-138). Show the reminder time from the API's `snoozed_until` in `meta.facility_tz`.
+- The v0.1 queue grouping by reminder state (FE-205) has no place in v0.2; the reminder is shown only as the line under the buttons.
+- Branch on `ApiError.code` (`ALERT_CLOSED`, `VALIDATION_ERROR`), never on message text (FE-079).
+- The file name keeps the v0.1 title (feature IDs and file names are never renamed, TRD 25 §4.2).

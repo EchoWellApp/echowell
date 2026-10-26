@@ -1,12 +1,12 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
 This document specifies the EchoWell analytics engine: the Python package `analytics/` that turns the immutable
 raw record store into every derived result (session status, epochs, morning-adjusted values, frozen baselines,
-scores, CUSUM tally, alarm events, the day ledger, data-quality alerts and the Analytics page aggregates). It fixes the engine architecture, the module boundaries,
+scores, CUSUM tally, alarm events, the day ledger, data-quality alerts and the Study team page aggregates). It fixes the engine architecture, the module boundaries,
 the typed data contracts between stages, the orchestrator `run_pipeline`, determinism rules, configuration
 profiles, how the backend persists results, performance targets, error handling, logging and extension points.
 
@@ -25,8 +25,10 @@ In scope:
 - Configuration profiles `production` and `test_v0_1` (`analytics/config.py::PipelineConfig`).
 - The backend persistence service that loads inputs, calls the engine and writes derived tables.
 - Triggers (after ingest, nightly in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 02:xx) via the Railway Cron Job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
-- Data-alert generation (stage 11, rules in TRD 09 section 4.9) and Analytics page aggregates (stage 12: KPIs, daily
-  series, funnel, by-resident shares), and the "Leaning most" computation for the Alert review page (SRC-18, SRC-19).
+- Data-alert generation (stage 11, rules in TRD 09 section 4.9; its open `baseline_stalled` and `high_set_aside` alerts
+  also drive the API attention flag, TRD 23 §4.4.3) and Study team page aggregates (stage 12: KPIs, daily series, funnel,
+  by-resident shares; `GET /api/v1/analytics`), and the "Leaning most" computation shown in the Resident chart Summary
+  (SRC-21; TRD 24 D-110).
 - Extension points: morning offset estimation (OQ-09), EWMA display (OQ-18), facility norms (BR-14, OQ-08).
 
 Out of scope:
@@ -45,8 +47,8 @@ Out of scope:
 | SRC-04 | Pipeline test generator script v0.1 (reference implementation) |
 | SRC-05 | Pipeline test input CSV v0.1 |
 | SRC-13 | Synthetic dataset specification for Team 1 (record fields, answer key separation) |
-| SRC-18 | UI wireframe: Alert review (`specs/UI-wireframe/Alerts.dc.html`) — alarm queue, data alerts, "Leaning most" |
-| SRC-19 | UI wireframe: Analytics (`specs/UI-wireframe/Analytics.dc.html`) — KPIs, check-ins per day, funnel, usable share by resident |
+| SRC-21 | Clinical dashboard wireframe v0.2 (`specs/UI-wireframe/echowell-wireframes-v0.2.html`) — Study team page (KPIs, data problems, check-ins per day, where check-ins are lost, usable check-ins by resident, alarm timing check), chart Summary "Leaning most" |
+| SRC-18 / SRC-19 | Wireframes v0.1 (Alert review, Analytics): superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | TRD 01 | System Architecture |
 | TRD 05 / TRD 19 | Backend API / OpenAPI contracts (ingest and pipeline endpoints) |
 | TRD 06 / TRD 20 / TRD 23 | Database design / PostgreSQL schema / entities |
@@ -69,7 +71,7 @@ Out of scope:
 | ANL-003 | Every public function in `analytics/` shall be pure: its output depends only on its arguments, it performs no I/O, reads no clock, uses no randomness and does not mutate its arguments. | Must | BR-15 | Test, Inspection |
 | ANL-004 | The package shall contain exactly the modules listed in section 4.2, each owning the responsibility stated there; no stage logic shall be duplicated across modules. | Must | SRC-01, TRD 01 | Inspection |
 | ANL-005 | The only runtime dependencies of `analytics/` shall be the Python standard library (`dataclasses`, `datetime`, `zoneinfo`, `typing`, `math`, `hashlib`, `json`) and `numpy` 2.x. `pandas` and `openpyxl` shall be used only in tests. | Must | SRC-01 | Inspection |
-| ANL-006 | Stages shall execute in this fixed order: (1) duplicate detection, (2) quality gate, (3) epoch detection, (4) speaker screen, (5) context (morning) adjustment, (6) personal baseline, (7) daily deviation score, (8) CUSUM persistence rule, (9) alert generation, (10) day ledger, (11) data alerts, (12) analytics aggregates. | Must | SRC-02, SRC-04, SRC-18, SRC-19, BR-03..BR-12 | Inspection, Test |
+| ANL-006 | Stages shall execute in this fixed order: (1) duplicate detection, (2) quality gate, (3) epoch detection, (4) speaker screen, (5) context (morning) adjustment, (6) personal baseline, (7) daily deviation score, (8) CUSUM persistence rule, (9) alert generation, (10) day ledger, (11) data alerts, (12) analytics aggregates. | Must | SRC-02, SRC-04, SRC-21, BR-03..BR-12 | Inspection, Test |
 | ANL-007 | The engine shall be callable from the backend, from Pytest and from a command-line entry point `python scripts/run_engine.py --input <csv> --profile test_v0_1 --as-of "2026-10-30 15:00" --assignments <json> --residents <json> --out <dir>` that writes the result as JSON files; the CLI lives outside the `analytics/` package (in `scripts/`), so every module under `analytics/` stays free of file I/O (TRD 01 ARC-041). | Should | BR-15, TRD 13 | Test |
 
 ### 4.2 Module responsibilities
@@ -90,7 +92,7 @@ Out of scope:
 | `alert_generator.py` | alarm events, epoch-end closure facts, "Leaning most" | `generate_alerts(scores: Sequence[ScoreRow], epochs: Sequence[EpochSummary], config) -> list[AlertEvent]`; `leaning_most(scores: Sequence[ScoreRow], alert: AlertEvent, config) -> tuple[str, ...]` | TRD 09 |
 | `day_ledger.py` | resident-day ledger and missing-day classification | `build_ledger(rows: Sequence[EpochedRecord], residents: Sequence[ResidentInfo], assignments: Sequence[DeviceAssignment], config, as_of: datetime) -> list[LedgerDay]` | TRD 10 |
 | `data_alerts.py` | rule-based data-quality alerts (baseline_stalled, possible_other_speaker, high_set_aside, device_silent) | `generate_data_alerts(sessions: Sequence[AdjustedRecord], ledger: Sequence[LedgerDay], epochs: Sequence[EpochSummary], residents: Sequence[ResidentInfo], assignments: Sequence[DeviceAssignment], config, as_of: datetime) -> list[DataAlert]` | TRD 09 |
-| `aggregates.py` | Analytics page aggregates over the 30-day window | `build_analytics_summary(sessions, ledger, epochs, alerts: Sequence[AlertEvent], data_alerts: Sequence[DataAlert], residents, config, as_of) -> AnalyticsSummary` | this TRD |
+| `aggregates.py` | Study team page aggregates (`GET /analytics`) over the 30-day window | `build_analytics_summary(sessions, ledger, epochs, alerts: Sequence[AlertEvent], data_alerts: Sequence[DataAlert], residents, config, as_of) -> AnalyticsSummary` | this TRD |
 | `pipeline.py` | orchestration, late-arrival detection, as-of filter, result assembly (no CLI; the file-based CLI is `scripts/run_engine.py`, ANL-007) | `run_pipeline(records, residents, assignments, config, as_of) -> PipelineResult` | this TRD |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -408,18 +410,18 @@ Internal `AnalyticsSummary` shapes (engine output; `backend/services/analytics_s
 | `kpis.checkins_received` | `{value: n, expected: d, percent: pct}` | 281 of 300, 94% |
 | `kpis.used_for_scoring` | `{value: usable, expected: d, percent}` (usable = status usable, incl. baseline sessions) | 267 of 300, 89% |
 | `kpis.baselines_formed` | `{value, total, forming: [codes], restarts: {code: n}, note}`; value = active residents whose current epoch has a formed baseline; restarts = current epoch number − 1 where > 0; note = "<forming codes> still forming; <code> restarted once\|<n> times" | 9 of 10, note "R08 still forming; R07 restarted once" |
-| `kpis.alarms_raised` | `{value, residents: [codes], not_reviewed: n, note}`; alerts (not superseded) whose `local_date` is in the period; note = codes joined ", " + " · " + the review state of TRD 11 UX-355 (the only wording source: "not yet reviewed" for 1 alarm, "both not yet reviewed" for 2, "none reviewed yet" for ≥ 3 when none is reviewed, "<k> not yet reviewed" when some are, "reviewed" / "both reviewed" / "all reviewed" when none is outstanding; with 0 alarms the note is "none in this period") | 2, "R09, R10 · both not yet reviewed" |
-| `daily_series[]` | one item per local day: `{local_date, used, set_aside, quarantined, missed, silent_device_codes}` (TRD 19 `DailySeriesPoint`); missed = missing_resident + missing_device_gap ledger rows; duplicates excluded; silent_device_codes = devices with a device_silent data alert covering that day (the UI renders "<Mon D> · <device> silent") | Oct 12: used 8, missed 2, silent_device_codes ["D02"] (rendered "Oct 12 · D02 silent"); Σ of all segments over 30 days = 300 |
-| `funnel[]` | 4 steps `{step, value, note}`: expected ("<n> residents × <days> days"); received ("<missed> missed · <dup> duplicate copies removed"); passed_quality = received − set_aside ("<s> set aside: quality flag <a>, noise <b>, too short <c> (<m> had two reasons)", each reason occurrence counted); used = passed_quality − quarantined ("<q> quarantined as possible other speaker") | 300 → 281 ("19 missed · 2 duplicate copies removed") → 269 ("12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)") → 267 ("2 quarantined as possible other speaker") |
+| `kpis.alarms_raised` | `{value, residents: [codes], not_reviewed: n, note}`; alerts (not superseded) whose `local_date` is in the period; note = codes joined ", " + "; " + the review state of TRD 11 UX-355 (the only wording source: "not reviewed yet" for 1 alarm, "neither reviewed yet" for 2, "none reviewed yet" for ≥ 3 when none is reviewed, "<k> not reviewed yet" when some are, "reviewed" / "both reviewed" / "all reviewed" when none is outstanding; with 0 alarms the note is "none in this period") | 2, "R09, R10; neither reviewed yet" |
+| `daily_series[]` | one item per local day: `{local_date, used, set_aside, quarantined, missed, silent_device_codes}` (TRD 19 `DailySeriesPoint`); missed = missing_resident + missing_device_gap ledger rows; duplicates excluded; silent_device_codes = devices with a device_silent data alert covering that day (the UI renders "<Mon D>: <device> silent", TRD 11 UX-358) | Oct 12: used 8, missed 2, silent_device_codes ["D02"] (rendered "Oct 12: D02 silent"); Σ of all segments over 30 days = 300 |
+| `funnel[]` | 4 steps `{step, value, note}`: expected ("<n> residents × <days> days"); received ("<missed> missed; <dup> duplicate copies removed"); passed_quality = received − set_aside ("<s> set aside: quality flag <a>, noise <b>, too short <c> (<m> had two reasons)", each reason occurrence counted); used = passed_quality − quarantined ("<q> held back as possible other voice"); note texts follow TRD 11 UX-363 to UX-366 | 300 → 281 ("19 missed; 2 duplicate copies removed") → 269 ("12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)") → 267 ("2 held back as possible other voice") |
 | `by_resident[]` | `{resident_code, days, used_days, set_aside_days, quarantined_days, missed_days, used_percent}` (TRD 19 `ByResidentRow`); a day counts once, in the first of used, set aside, quarantined that has a record; used_percent = pct(days with ≥ 1 usable record, days enrolled in period); sorted by used_percent ascending, then resident_code | R08 43, R03 73, R02 80, R05 93, R01/R04/R06/R07/R09/R10 100 |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ANL-059 | Stage 11 shall compute data alerts with `analytics/data_alerts.py::generate_data_alerts` using exactly the rules, texts, suppression and ordering of TRD 09 section 4.9, recomputed on every run. | Must | SRC-18, §19, TRD 09 | Test |
+| ANL-059 | Stage 11 shall compute data alerts with `analytics/data_alerts.py::generate_data_alerts` using exactly the rules, texts, suppression and ordering of TRD 09 section 4.9, recomputed on every run. | Must | SRC-21, §19, TRD 09 | Test |
 | ANL-060 | The runner shall reconcile `data_alerts` exactly as TRD 06 DB-036 defines (the owning row): per natural key `(kind, resident_id, device_id)` a detected condition without an `open` row inserts a new `open` row with `first_detected_at` = `last_detected_at` = the run's `as_of`; a detected condition with an `open` row updates `title`, `detail`, `last_detected_at` (= the run's `as_of`) and `pipeline_run_id`; an `open` rule-kind row not detected in a run covering its subject is set `resolved` with `resolved_at` = the run's `as_of`; a resolved row is never reopened (a recurrence inserts a new row, TRD 23 §4.3.7); alerts of kind `review_flagged_data_problem` (created by reviews, TRD 09) are never modified by the pipeline. | Must | §19, R15 | Test |
-| ANL-061 | Stage 12 shall compute `AnalyticsSummary` with `analytics/aggregates.py::build_analytics_summary` using the window, definitions and shapes of this section. | Must | SRC-19, §19 | Test |
-| ANL-062 | All aggregate counts shall be derived from the same `PipelineResult` (sessions, ledger, epochs, alerts) so that they equal the status counts of the pipeline (SRC-03 Exp_status_counts) without separate SQL recomputation. | Must | BR-15, SRC-19 | Test |
-| ANL-063 | Percentages shall use the integer half-up formula `pct(n, d)`; for d = 0 the percent shall be null. | Must | SRC-19 | Test |
+| ANL-061 | Stage 12 shall compute `AnalyticsSummary` with `analytics/aggregates.py::build_analytics_summary` using the window, definitions and shapes of this section. | Must | SRC-21, §19 | Test |
+| ANL-062 | All aggregate counts shall be derived from the same `PipelineResult` (sessions, ledger, epochs, alerts) so that they equal the status counts of the pipeline (SRC-03 Exp_status_counts) without separate SQL recomputation. | Must | BR-15, SRC-21 | Test |
+| ANL-063 | Percentages shall use the integer half-up formula `pct(n, d)`; for d = 0 the percent shall be null. | Must | SRC-21 | Test |
 | ANL-064 | The engine and the pipeline runner shall never read `evaluation_ground_truth` or any answer-key data; they connect only through `DATABASE_URL` (role `echowell_app`, which has no SELECT on that table). The "Alarm timing check" is assembled after the run solely by `backend/services/analytics_summary.py` through a second connection `DATABASE_READONLY_URL` (role `echowell_readonly`), in profile test_v0_1 only (TRD 09 CUS-047). | Must | SRC-02, §19, §21 R20, R27 | Inspection, Test |
 | ANL-065 | `alerts_raised.not_reviewed` shall be computed by the backend from persisted alert status (`open` = not reviewed) at response time, because reviews are human state that the pure engine does not receive; the engine supplies the alert list. | Must | §19 | Test |
 
@@ -427,7 +429,7 @@ Verification performed for this TRD (independent implementation of these rules o
 America/Chicago): KPIs 281/300 = 94%, 267/300 = 89%, baselines 9 of 10 (R08 forming, R07 restarted once), alarms 2
 (R09, R10); funnel 300 → 281 → 269 → 267 with set-aside reason counts quality flag 5, noise 5, too short 3, one record
 with two reasons; by-resident R08 43%, R03 73%, R02 80%, R05 93%, all others 100%; daily series totals 300 with
-Oct 12 = 8 used + 2 missed. All values equal SRC-19.
+Oct 12 = 8 used + 2 missed. All values equal the Study team expected rendering of TRD 11 §4.18.8 (SRC-21).
 
 ## 5. Assumptions
 
@@ -488,7 +490,8 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 - OQ-13 Alarm-limit calibration on the larger dataset and the participant-criteria minimum stay (production baseline_n = 30 is decided, D-01; config values only; no code change).
 - OQ-18 EWMA trend display (extension point ANL-056).
 - OQ-08 Facility norm definition (extension point ANL-057).
-- OQ-24 Data-alert thresholds (provisional defaults reproduce SRC-18).
+- OQ-24 Data-alert thresholds (provisional defaults reproduce the four test-data data problems of TRD 11 §4.18.8).
+- OQ-31 Which data-alert kinds turn a resident to "Needs attention" (read side only; the engine's rules are unchanged).
 
 ## Revision History
 
@@ -501,3 +504,4 @@ Oct 12 = 8 used + 2 missed. All values equal SRC-19.
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-05) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (assign_epochs signature; ANL-045 NIGHTLY_RUN_HOUR_LOCAL; ANL-047 ubuntu-24.04; ANL-053 log events (D-80); ANL-056 step reference; ANL-057 run ownership (D-76)) | — |
+| 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 superseded; stage 12 aggregates feed the Study team page and "Leaning most" the chart Summary; `AnalyticsSummary` notes use the v0.2 wording ("neither reviewed yet", "Oct 12: D02 silent", "held back as possible other voice"); ANL-059, ANL-061 to ANL-063 traces; OQ-31 | — |

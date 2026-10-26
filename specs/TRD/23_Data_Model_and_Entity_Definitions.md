@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.9 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -36,8 +36,8 @@ Out of scope:
 | SRC-04 | Generator v0.1 (reference implementation of stage rules) |
 | SRC-05 | Pipeline test input CSV v0.1 |
 | SRC-06 | Legacy mock data (old schema; not ingestible) |
-| SRC-09 / SRC-10 / SRC-11 | Wireframes: overview, resident detail, new admissions |
-| SRC-18 / SRC-19 | Wireframes: Alert review (`/alerts`), Analytics (`/analytics`) |
+| SRC-21 | Clinical dashboard wireframe v0.2: Resident list, Resident chart, New admissions, Study team (`/study`) |
+| SRC-09 / SRC-10 / SRC-11 / SRC-18 / SRC-19 | Wireframes v0.1 (overview, resident detail, new admissions, Alert review, Analytics): superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | Contract §19–§21 | Alert reviews, snooze, data alerts, evaluation answer key, R5, R9, R10, R15, R20, R21 |
 | TRD 05 / TRD 19 | Backend API, OpenAPI contracts |
 | TRD 06 / TRD 20 | Database design, PostgreSQL schema |
@@ -55,19 +55,19 @@ Out of scope:
 | DME-002 | The 19 feature keys shall be defined once, in order, in `analytics/config.py` as `FEATURE_KEYS`, with `COMPOSITE_KEYS` (first 7) and `COMPOSITE_SIGNS` `{loudness_dbfs: -1, total_phrase_duration_s: +1, speech_rate_syl_per_s: -1, articulation_rate_syl_per_s: -1, number_of_pauses: +1, pause_fraction: +1, voiced_fraction: -1}`; models, schemas and tests shall import them rather than repeat the list. | Must | SRC-03, SRC-04, BR-10 | Test (equality with SRC-05 header columns 12–30) |
 | DME-003 | Python enums mirroring the 15 PostgreSQL enum types (`str`-valued `enum.Enum`, same labels) shall be defined in `backend/models/__init__.py` and reused by Pydantic schemas; `analytics/` shall use plain string constants with the same values. | Must | TRD 20 PGS-005 | Test (labels equal `pg_enum`) |
 | DME-004 | The API shall identify residents and devices by `resident_code` and `device_code` in paths and payloads, and shall never expose `residents.id` or `devices.id`. | Must | BR-16, contract §10 | Test (OpenAPI schema scan) |
-| DME-005 | No Pydantic response schema shall contain `password_hash`, `key_hash`, `raw_sessions.payload`, any `evaluation_ground_truth` column outside the Analytics `alarm_timing` block, or `ingest_rejections.raw_body`; `GET /api/v1/ingest/batches/{id}` returns for each rejection only the TRD 19 `IngestRejection` fields (`row_number`, `session_id`, `received_at`, `errors`), never `raw_body`. | Must | BR-16, TRD 12 | Test |
+| DME-005 | No Pydantic response schema shall contain `password_hash`, `key_hash`, `raw_sessions.payload`, any `evaluation_ground_truth` column outside the `GET /analytics` `alarm_timing` block, or `ingest_rejections.raw_body`; `GET /api/v1/ingest/batches/{id}` returns for each rejection only the TRD 19 `IngestRejection` fields (`row_number`, `session_id`, `received_at`, `errors`), never `raw_body`. | Must | BR-16, TRD 12 | Test |
 | DME-006 | `processed_sessions.status` shall take exactly the transitions of section 4.3.1; `pending_screen` shall exist only in memory inside `analytics/` and shall never be persisted. | Must | BR-03, BR-04, BR-05, SRC-04 | Test (status counts of test_v0_1 = 267/12/2/2) |
 | DME-007 | `alerts.status` shall change only along section 4.3.2; the first `alert_reviews` row sets `open` → `acknowledged` with `acknowledged_by`/`acknowledged_at`; neither a review nor a snooze shall change `scores`, `cusum_state` or `alarm_state` in v0.1 (OQ-05). | Must | BR-11, OQ-05, contract §19, R5 | Test |
 | DME-021 | `alert_reviews` rows shall be immutable and several may exist per alert; a review with outcome `data_problem` shall, in the same transaction, create or link one `data_alerts` row of kind `review_flagged_data_problem` by `alert_review_id` (TRD 02 FR-273); `explanations` codes shall be validated against config `review_explanations`. | Must | Contract §19, OQ-25 | Test |
 | DME-022 | A snooze shall set `alerts.snoozed_until` = the application clock's current time (computed in Python, never the database `now()`) + `alert_snooze_hours` and `snoozed_by`, leaving `status` unchanged; the UI shows "Not reviewed" emphasis again once `snoozed_until` has passed (a client-side comparison, TRD 04 FE-205). | Must | Contract §19 | Test |
 | DME-023 | `data_alerts` shall follow the lifecycle of section 4.3.7 and the natural keys of TRD 06 DB-036; for test_v0_1 as of 2026-10-30 exactly 4 rows are open: R08 baseline_stalled, R05 possible_other_speaker, R03 high_set_aside, D02 device_silent. | Must | Contract §19, OQ-24 | Test |
-| DME-024 | `evaluation_ground_truth` shall hold rows only in databases running the test_v0_1 profile, shall never be read by `analytics/` or the pipeline service, and shall feed only the Analytics "Alarm timing check" (R09 Sudden step Oct 21 → alarm Oct 21, delay 0 days; R10 Slow drift Oct 17 → Oct 24, 7 days; other 8 None, no alarm, Correct). | Must | SRC-02, contract §19, R20 | Test |
+| DME-024 | `evaluation_ground_truth` shall hold rows only in databases running the test_v0_1 profile, shall never be read by `analytics/` or the pipeline service, and shall feed only the Study team "Alarm timing check" (`GET /api/v1/analytics`) (R09 Sudden step Oct 21 → alarm Oct 21, delay 0 days; R10 Slow drift Oct 17 → Oct 24, 7 days; other 8 None, no alarm, Correct). | Must | SRC-02, contract §19, R20 | Test |
 | DME-025 | Entities carrying human state (`alerts`, `alert_reviews`, `staff_notes`, `data_alerts`) shall keep their primary keys across rebuilds by natural-key upsert (contract R15). | Must | R15 | Test (TRD 06 AC-DB-02a) |
 | DME-008 | `residents.cohort` shall change only from `new_admission` to `longitudinal`, set by the pipeline when the resident's current epoch has a frozen baseline (section 4.3.3). | Should | BR-14, SRC-12 | Test |
 | DME-009 | `residents.status` shall change only from `active` to `withdrawn` via `python -m backend.cli withdraw-resident <resident_code> --on <YYYY-MM-DD>` (section 4.3.4). | Must | OQ-11 | Test |
 | DME-010 | The baseline state of a resident-epoch shall be derived as: `not_started` (0 usable), `forming` (1 … baseline_n − 1 usable), `frozen` (20 `baselines` rows exist); it shall never return from `frozen` to `forming` within an epoch. | Must | BR-09, ASM-07 | Test (R08 forming 13 of 16; R07 epoch 2 frozen) |
-| DME-011 | The resident display status shall be derived on read by the rules of section 4.4.3 and shall not be stored. | Must | BR-12, contract §8 | Test (as of 2026-10-30: alarm_on R09, R10; baseline_forming R08; no_alarm 7 others) |
-| DME-012 | The 30-day counts, last check-in, baseline progress, watching-since, alarm-since, baseline-restarted date and device silent days shall be derived on read by the definitions of section 4.4. | Must | BR-12, BR-13 | Test (wireframe SRC-09 values for test data) |
+| DME-011 | The resident `status`, the attention flag (`needs_attention`, `attention_reasons`) and `alarm_reviewed` shall be derived on read by the rules of section 4.4.3 and shall not be stored. | Must | BR-12, contract §8, D-109, D-114 | Test (as of 2026-10-30: status alarm_on R09, R10; baseline_forming R08; no_alarm 7 others; needs_attention R03, R08; display Changed R09, R10, Needs attention R03, R08, Usual 6 others) |
+| DME-012 | The 30-day counts, last check-in, baseline progress, watching-since, alarm-since, baseline-restarted date and cause, device silent days, device upload on the as-of date and the check-in log events (including `checkins_started`) shall be derived on read by the definitions of section 4.4. | Must | BR-12, BR-13 | Test (TRD 11 §4.13 values for test data) |
 | DME-013 | JSON columns shall follow the shapes of section 4.5 and shall be validated by a Pydantic model before insert. | Must | BR-02 | Test |
 | DME-014 | Values in `double precision` columns and JSON numbers shall be Python `float` (IEEE 754 float64) without rounding; JSON responses shall serialise them with full precision (no fixed decimal formatting in the API layer). | Must | BR-15, contract §7 tolerance 1e-6 | Test (round-trip of Exp_scores values) |
 | DME-015 | Every ingest field of SRC-05 shall map to the `raw_sessions` column of section 4.7.1; the ingest layer shall resolve `resident_id` → `residents.id` and `device_id` → `devices.id` and keep the received strings in `resident_code` and `device_code`. | Must | BR-01, BR-02, SRC-05 | Test |
@@ -110,7 +110,7 @@ Dashboard user. Written by `/api/v1/users` (admin) and seed CLI. Read by `/api/v
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.3 Resident (`residents`)
-Enrolled resident identified by study ID only. Written by roster load / seed CLI, withdraw CLI, pipeline (cohort). Read by every resident endpoint and the overview, detail and admissions pages.
+Enrolled resident identified by study ID only. Written by roster load / seed CLI, withdraw CLI, pipeline (cohort). Read by every resident endpoint and the Resident list, Resident chart and New admissions pages.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -127,7 +127,7 @@ Enrolled resident identified by study ID only. Written by roster load / seed CLI
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.4 Device (`devices`)
-Recording device. Written by roster load / seed; `firmware_version_last` by ingestion. Read by `/api/v1/devices` (Devices panel), overview Device column.
+Recording device. Written by roster load / seed; `firmware_version_last` by ingestion. Read by `/api/v1/devices` (Study team "Devices" section, chart Device section), resident chart banner "Device".
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -141,7 +141,7 @@ Recording device. Written by roster load / seed; `firmware_version_last` by inge
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.5 Device assignment (`device_assignments`)
-Resident ↔ device over time; expresses sharing (R02 + R03 on D02) and moves (R07 D07 → D07B on 2026-10-13). Read by stage 10 (device gap rule), `/api/v1/devices`, overview "(shared)" / "(was D07)".
+Resident ↔ device over time; expresses sharing (R02 + R03 on D02) and moves (R07 D07 → D07B on 2026-10-13). Read by stage 10 (device gap rule), `/api/v1/devices`, chart banner "(shared with R03)" / "(replaced D07)".
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -283,7 +283,7 @@ Period with constant (device, firmware, extractor) for a resident. Read by resid
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.12 Processed session (`processed_sessions`)
-Pipeline interpretation of one raw record. Read by overview 30-day counts and last check-in, check-in log, feature sparklines, analytics status counts.
+Pipeline interpretation of one raw record. Read by the 30-day counts and last check-in (resident list, chart banner and Check-in log), check-in log events, feature sparklines, Study team status counts.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -308,7 +308,7 @@ Pipeline interpretation of one raw record. Read by overview 30-day counts and la
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 
 #### 4.2.13 Day ledger entry (`day_ledger`)
-One row per resident per local day; the honest record of missing days (never backfilled). Read by overview "missed", check-in log ("missed", "device silent"), Devices panel silent days, analytics status counts.
+One row per resident per local day; the honest record of missing days (never backfilled). Read by the 30-day "missed" count, check-in log ("missed", "device silent"), device silent days (Study team Devices, chart Device section), Study team status counts.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -322,7 +322,7 @@ One row per resident per local day; the honest record of missing days (never bac
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 
 #### 4.2.14 Baseline (`baselines`)
-Frozen per-feature statistics of a resident-epoch (19 features + composite = 20 rows). Read by resident detail baseline line, `/api/v1/analytics/baselines`, scoring.
+Frozen per-feature statistics of a resident-epoch (19 features + composite = 20 rows). Read by the chart Baseline section, `/api/v1/analytics/baselines`, scoring.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -361,7 +361,7 @@ Daily deviation score of one usable post-freeze session. Read by `/api/v1/scores
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 
 #### 4.2.16 CUSUM state (`cusum_state`)
-Latest tally per epoch. Read by overview and detail status, `/api/v1/residents/{code}`.
+Latest tally per epoch. Read by resident status and the chart Summary change score, `/api/v1/residents/{code}`, `/api/v1/alerts`.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -374,7 +374,7 @@ Latest tally per epoch. Read by overview and detail status, `/api/v1/residents/{
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.17 Alert (`alerts`)
-Alarm event at the first crossing of h; a flag for clinician review, not a diagnosis. Read by `/api/v1/alerts`, overview badge "▲ Alarm since <Mon D>", detail check-in log.
+Alarm event at the first crossing of h; a flag for clinician review, not a diagnosis. Read by `/api/v1/alerts` (nav badge, chart Summary and "Review and notes"), resident status ("▲ Changed", "Changed from their usual since <Mon D>"), `alarm_reviewed`, check-in log.
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -397,7 +397,7 @@ Alarm event at the first crossing of h; a flag for clinician review, not a diagn
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.18 Alert review (`alert_reviews`)
-Nurse/clinical-lead review of an alarm (SRC-18 review panel). Written by `POST /api/v1/alerts/{id}/reviews` (clinician, admin). Read by `GET /api/v1/alerts/{id}/reviews`, the "Reviewed"/"Not reviewed" badge, Analytics review outcomes (production profile).
+Nurse/clinical-lead review of an alarm (the chart's "Review and notes" section, SRC-21). Written by `POST /api/v1/alerts/{id}/reviews` (clinician, admin). Read by `GET /api/v1/alerts/{id}/reviews` ("Previous reviews"), the "Reviewed"/"Not reviewed" state (`alarm_reviewed`), Study team review outcomes (production profile).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -410,7 +410,7 @@ Nurse/clinical-lead review of an alarm (SRC-18 review panel). Written by `POST /
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 
 #### 4.2.19 Data alert (`data_alerts`)
-Data-quality alert for the study team (not a health alarm), queue 2 of the Alert review page. Written by the pipeline's data-alert rules and by the review service. Read by `GET /api/v1/data-alerts`.
+Data-quality alert for the study team (not a health alarm), listed on the Study team page under "Data problems to follow up". Written by the pipeline's data-alert rules and by the review service. Read by `GET /api/v1/data-alerts` and by the attention flag of section 4.4.3 (open `baseline_stalled` / `high_set_aside` rows).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -419,8 +419,8 @@ Data-quality alert for the study team (not a health alarm), queue 2 of the Alert
 | `resident_id` | uuid | yes | Subject resident (all kinds except device_silent) | Same |
 | `device_id` | uuid | yes | Subject device (device_silent only) | Same |
 | `alert_review_id` | uuid | yes | Review with outcome data_problem that raised it (review_flagged_data_problem only) | Review service |
-| `title` | text | no | Queue card title, e.g. `R08 · baseline stuck at 13 of 16`, `D02 · device silent all day` (≤ 200 chars) | Same |
-| `detail` | text | no | Queue card detail, e.g. `12 missed and 5 set aside in 30 days`, `Oct 12 · affects R02 and R03` (≤ 500 chars) | Same |
+| `title` | text | no | Title (accessible name of the code link on the Study team page), e.g. `R08 · baseline stuck at 13 of 16`, `D02 · device silent all day` (≤ 200 chars) | Same |
+| `detail` | text | no | Row text after "<code>: " (v0.2 wording, TRD 09 §4.9, TRD 24 D-114), e.g. `baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.`, `silent all day Oct 12. Affected R02 and R03.` (≤ 500 chars) | Same |
 | `first_detected_at` | timestamptz | no | as_of of the run that first detected it (review time for review-flagged) | Same |
 | `last_detected_at` | timestamptz | no | as_of of the latest run that detected it | Same |
 | `status` | data_alert_status | no | `open` or `resolved` | Same |
@@ -430,7 +430,7 @@ Data-quality alert for the study team (not a health alarm), queue 2 of the Alert
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
 #### 4.2.20 Staff note (`staff_notes`)
-Staff review note (append-only; corrections supersede). Read by `/api/v1/residents/{code}/notes`, detail "Staff review" section.
+Staff note (append-only; corrections supersede). Read by `/api/v1/residents/{code}/notes`, the chart's "Review and notes" section ("Staff notes").
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -489,7 +489,7 @@ Append-only audit trail. Read by admins via SQL (`echowell_readonly`); no MVP en
 | `request_id` | text | yes | X-Request-ID of the request | API layer |
 
 #### 4.2.24 Evaluation ground truth (`evaluation_ground_truth`)
-Answer-key facts for the Analytics "Alarm timing check" (SRC-19), loaded only in test_v0_1. `echowell_app` has no privilege; loaded by `database/seeds/load_evaluation_ground_truth.py`; read after the run only by `backend/services/analytics_summary.py` through `DATABASE_READONLY_URL` (role `echowell_readonly`, contract R27). Never read by the pipeline (SRC-02).
+Answer-key facts for the Study team "Alarm timing check" (SRC-21), loaded only in test_v0_1. `echowell_app` has no privilege; loaded by `database/seeds/load_evaluation_ground_truth.py`; read after the run only by `backend/services/analytics_summary.py` through `DATABASE_READONLY_URL` (role `echowell_readonly`, contract R27). Never read by the pipeline (SRC-02).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
@@ -520,11 +520,11 @@ stateDiagram-v2
   quarantined --> [*]
 ```
 
-| Status | Epoch | In baseline / scored | Updates CUSUM | Counted in overview |
+| Status | Epoch | In baseline / scored | Updates CUSUM | Counted in 30-day counts (UI label) |
 |---|---|---|---|---|
-| usable | yes | first baseline_n → baseline; later → scored | yes (when scored) | "used" |
-| set_aside | yes | never | no | "set aside" |
-| quarantined | yes | never | no | "quarantined" |
+| usable | yes | first baseline_n → baseline; later → scored | yes (when scored) | "Used" |
+| set_aside | yes | never | no | "Set aside" |
+| quarantined | yes | never | no | "Held back (possible other voice)" (TRD 24 D-113) |
 | duplicate | no (NULL) | never | no | never shown |
 
 #### 4.3.2 Alert status
@@ -540,9 +540,10 @@ stateDiagram-v2
   closed --> [*]
 ```
 
-The first review records `acknowledged_by`/`acknowledged_at` ("Reviewed" badge) and leaves the tally and alarm unchanged
-(OQ-05). A closed alert is never reopened; a later crossing in a new epoch creates a new alert. The Resident detail "Mark as
-reviewed" button opens the same review form (contract R5); there is no separate acknowledge endpoint.
+The first review records `acknowledged_by`/`acknowledged_at` ("Reviewed", `alarm_reviewed` true) and leaves the tally and
+alarm unchanged (OQ-05). A closed alert is never reopened; a later crossing in a new epoch creates a new alert. Reviews are
+saved only from the Resident chart's "Review and notes" section (contract R5; the v0.1 "Mark as reviewed" dialog is retired,
+TRD 24 D-110); there is no separate acknowledge endpoint.
 
 #### 4.3.2a Alert review
 
@@ -568,7 +569,7 @@ stateDiagram-v2
 ```
 
 While `new_admission`, the resident appears on the New admissions page (compared with facility ranges, experimental);
-after the transition the resident appears in the main Residents overview.
+after the transition the resident appears on the Resident list.
 
 #### 4.3.4 Resident status
 
@@ -623,11 +624,13 @@ key). Rules (thresholds from config, provisional, OQ-24) — last 30 days ending
 
 | Kind | Raised when | Example (test data, as of Oct 30) |
 |---|---|---|
-| baseline_stalled | `data_alert_baseline_stalled_enabled` and resident baseline forming and days in the current epoch, counted inclusively ((as-of − epoch start) + 1), ≥ baseline_n (TRD 09 §4.9) | "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days" |
-| possible_other_speaker | ≥ 1 quarantined session | "R05 · possible other speaker" / "2 check-ins quarantined: Oct 8, Oct 22" |
-| high_set_aside | received ≥ 10 and set_aside / received ≥ `data_alert_set_aside_fraction` (0.20); suppressed when the resident has baseline_stalled | "R03 · many check-ins set aside" / "7 of 29 received: noise, quality flag, too short" |
-| device_silent | a shared device with no record from any assigned resident on a day, or ≥ `data_alert_device_silent_days` (2) consecutive silent days on a single-resident device | "D02 · device silent all day" / "Oct 12 · affects R02 and R03" |
-| review_flagged_data_problem | an alert review with outcome `data_problem` (create or link, TRD 02 FR-273) | strings of TRD 11 §4.17.2: "<R> · review flagged a data problem" / "Reviewed <Mon D> by <display name>" |
+| baseline_stalled | `data_alert_baseline_stalled_enabled` and resident baseline forming and days in the current epoch, counted inclusively ((as-of − epoch start) + 1), ≥ baseline_n (TRD 09 §4.9) | "R08 · baseline stuck at 13 of 16" / "baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days." |
+| possible_other_speaker | ≥ 1 quarantined session | "R05 · possible other speaker" / "2 check-ins held back as possible other voice (Oct 8, Oct 22)." |
+| high_set_aside | received ≥ 10 and set_aside / received ≥ `data_alert_set_aside_fraction` (0.20); suppressed when the resident has baseline_stalled | "R03 · many check-ins set aside" / "7 of 29 received check-ins set aside (noise, quality flag, too short)." |
+| device_silent | a shared device with no record from any assigned resident on a day, or ≥ `data_alert_device_silent_days` (2) consecutive silent days on a single-resident device | "D02 · device silent all day" / "silent all day Oct 12. Affected R02 and R03." |
+| review_flagged_data_problem | an alert review with outcome `data_problem` (create or link, TRD 02 FR-273) | strings of TRD 09 CUS-040: "<R> · review flagged a data problem" / "a review flagged a data problem (<Mon D>, <display name>)." |
+
+Titles are unchanged from v0.1; details follow wireframe v0.2 (TRD 24 D-114; templates in TRD 09 §4.9).
 
 ### 4.4 Derived values (computed on read, not stored)
 
@@ -642,7 +645,8 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | used (30 d) | count `processed_sessions` status `usable` in window | R05 28 |
 | set aside (30 d) | count status `set_aside` in window | R03 7 |
 | quarantined (30 d) | count status `quarantined` in window | R05 2 |
-| missed (30 d) | count `day_ledger` status `missing_resident` + `missing_device_gap` in window | R02 6, R03 1, R08 12; tile total 19 |
+| missed (30 d) | count `day_ledger` status `missing_resident` + `missing_device_gap` in window | R02 6, R03 1, R08 12; total 19 (Study team "Where check-ins are lost") |
+| days in window | used + set aside + quarantined + missed (one session per resident-day, ASM-02); the chart banner shows "<used> of <days in window>" | R03 22 of 30, R08 13 of 30 |
 | last check-in | max `timestamp_utc` of non-duplicate `processed_sessions`, shown local "Oct 30, 2:28 PM" | R09 Oct 30, 2:28 PM |
 | baseline progress | `min(count usable in current epoch, N)` "of N" | R08 13 of 16 |
 | baseline dates | local dates of `first_session_id` and `frozen_after_session_id` (composite row) | R09 Oct 1–16 |
@@ -650,11 +654,11 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | alarm since | `local_date` of the non-closed alert of the current epoch | R09 Oct 21, R10 Oct 24 |
 | alert open days | `d` − alarm since (days) | R09 9, R10 6 |
 | alert tally | `cusum_state.current_tally` of the alert's epoch, 1 decimal | R09 26.8, R10 13.4 |
-| reviewed badge | "Reviewed" when the alert has ≥ 1 `alert_reviews` row, else "Not reviewed" | both Not reviewed |
-| baseline restarted | local date of current epoch `started_at` when `epoch_number > 1` | R07 Oct 13 |
-| device label suffix | "(shared)" when ≥ `shared_device_min_residents` residents have an assignment to the device covering `d`; "(was <code>)" when the resident's previous assignment ended the day before the current one started | R02/R03 "D02 (shared)", R07 "D07B (was D07)" |
+| alarm reviewed | `alarm_reviewed` (section 4.4.3): "Reviewed" when the alert is `acknowledged` (≥ 1 `alert_reviews` row), else "Not reviewed" | both Not reviewed |
+| baseline restarted | local date of current epoch `started_at` when `epoch_number > 1`; its cause is the epoch's `restart_cause` (TRD 06 DB-065; API `restart_cause`) | R07 Oct 13, device |
+| device label suffix | " (shared with <other residents>)" when ≥ `shared_device_min_residents` residents have an assignment to the device covering `d`; " (replaced <code>)" when the resident's previous assignment ended the day before the current one started (API `previous_device_code`) | R02 "D02 (shared with R03)", R03 "D02 (shared with R02)", R07 "D07B (replaced D07)" |
 
-#### 4.4.2 Device values (Devices panel)
+#### 4.4.2 Device values (Study team "Devices" section, chart Device section)
 
 | Value | Definition |
 |---|---|
@@ -664,16 +668,40 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | in use since / until | `in_use_since` = earliest `valid_from` of the device's assignments (null when none); `in_use_until` = null while an assignment covers the as-of date, otherwise the latest `valid_to` (TRD 06 DB-066; D07: Oct 1–12, D07B: since Oct 13; TRD 24 D-82) |
 | last upload | max `raw_sessions.timestamp_utc` for the device (local display) |
 | firmware | `devices.firmware_version_last` |
+| uploaded on as-of date | true when the device has ≥ 1 non-duplicate record (`processed_sessions` status ≠ duplicate) whose facility-local date is `d` (API `uploaded_on_as_of_date`, TRD 24 D-114; "● Online" / "○ No upload today"; test data: true for the nine active devices, false for D07). It does not change any resident's status (OQ-31) |
 | silent day | local day in the 30-day window where ≥ 1 `day_ledger` row has the device and none of them is `checked_in` (TRD 02 §4.1, TRD 06 DB-044; API `silent_days_last_30`; D02: Oct 12; D08: R08's 12 missed days) |
 | device-gap day | silent day of a device shared that day (ledger `missing_device_gap`; API `device_gap_days_last_30`; D02: Oct 12) |
 
-#### 4.4.3 Resident display status
+#### 4.4.3 Resident status, attention flag and display status
 
-| Code | Rule (evaluated in this order) | UI label |
+The pipeline `status` (API `DisplayStatus`) is unchanged by wireframe v0.2:
+
+| Code | Rule (evaluated in this order) |
+|---|---|
+| alarm_on | a non-closed `alerts` row exists for the current epoch |
+| baseline_forming | the current epoch has no frozen baseline (fewer than N usable sessions, or no epoch yet) |
+| no_alarm | otherwise |
+
+Separate derived fields (TRD 24 D-114; API `ResidentOverviewRow`, `ResidentDetail`):
+
+| Field | Rule | Test data (as of 2026-10-30) |
 |---|---|---|
-| alarm_on | a non-closed `alerts` row exists for the current epoch | "Alarm on" / "▲ Alarm since <Mon D>" |
-| baseline_forming | the current epoch has no frozen baseline (fewer than N usable sessions, or no epoch yet) | "Baseline forming · n of N sessions" |
-| no_alarm | otherwise | "No alarm" (+ " · baseline restarted <Mon D>" if current epoch_number > 1) |
+| `needs_attention` | the resident has ≥ 1 `data_alerts` row with `status` = `open` and `kind` ∈ {`baseline_stalled`, `high_set_aside`} (independent of `status`; which kinds count is OQ-31) | true for R03, R08 |
+| `attention_reasons` | those kinds, in the order baseline_stalled, high_set_aside; empty when `needs_attention` is false | R03 [high_set_aside], R08 [baseline_stalled] |
+| `alarm_reviewed` | null when the current epoch has no non-closed alert; true when that alert is `acknowledged`; false when `open` | R09, R10 false; others null |
+| `restart_cause` | restart cause of the current epoch (TRD 06 DB-065) when `epoch_number` > 1; null when it is 1 or there is no epoch | R07 device |
+| `window` (detail only) | the resident's 30-day window `{from, to, days}` (section 4.4.1) | R08 Oct 1–30, 30 days |
+
+The frontend maps `status` and `needs_attention` to the four display statuses (presentation only, TRD 11 §4.3.4; TRD 24
+D-109), first match wins; the API `summary` counts and the `sort=alarm` order (TRD 05 API-071, API-073) use the same
+precedence:
+
+| Display status | Rule (first match) | Test data |
+|---|---|---|
+| Changed ("▲ Changed") | `status` = `alarm_on` | R09, R10 |
+| Needs attention ("! Needs attention") | `needs_attention` = true | R03, R08 |
+| Learning ("○ Learning") | `status` = `baseline_forming` | — |
+| Usual ("● Usual") | `status` = `no_alarm` | R01, R02, R04, R05, R06, R07 |
 
 #### 4.4.4 Check-in log events (`GET /api/v1/residents/{code}/checkins`)
 
@@ -687,6 +715,10 @@ the active profile, and "current epoch" the resident's epoch with `ended_at IS N
 | missed | `day_ledger` status missing_resident | `local_date` |
 | device_silent | `day_ledger` status missing_device_gap | `local_date` |
 | baseline_restarted | `epochs` with epoch_number > 1; `restart_cause`, `previous_device_code`, `from_value`, `to_value` derived from the previous epoch (TRD 06 DB-065) | local date of `started_at` |
+| checkins_started | the resident's first non-duplicate `processed_sessions` row of the enrolment (lowest `timestamp_utc`, any status, any epoch); `session_id`, `epoch_number` (null when `epoch_id` is null) and `device_code` (via `raw_session_id` → `raw_sessions.device_id`) of that record; exactly one per resident with at least one non-duplicate record (TRD 24 D-113, D-114; API-only event type, no database enum) | its `local_date` (test data: 2026-10-01 for every resident; R07 on D07) |
+
+Same-date order: alarm_on, watching_started, baseline_complete, baseline_restarted, quarantined, set_aside,
+device_silent, missed, checkins_started (TRD 11 UX-141).
 
 ### 4.5 JSON column shapes
 
@@ -852,7 +884,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | Source fact | Column |
 |---|---|
 | Test_plan.resident_id | resident_code |
-| test case "Step change" (R09), "Gradual drift" (R10), others no inserted change | planted_change `Sudden step`, `Slow drift`, `None` (SRC-19 labels) |
+| test case "Step change" (R09), "Gradual drift" (R10), others no inserted change | planted_change `Sudden step`, `Slow drift`, `None` (Study team labels, SRC-21) |
 | generator: R09 shift from day 21; R10 drift from day 17 | true_onset_date 2026-10-21, 2026-10-17 |
 | workbook file name | source_file |
 
@@ -878,11 +910,11 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 2. AC-DME-02: `analytics.config.FEATURE_KEYS` equals SRC-05 header columns 12–30 in order; `COMPOSITE_KEYS` equals the first 7.
 3. AC-DME-03: For test_v0_1 as of 2026-10-30 15:00 CT, all 302 Annotated_sessions rows match the database by the mapping of 4.7.2 (status, reason, morning, epoch, in_baseline).
 4. AC-DME-04: All 180 Exp_baselines rows and 98 Exp_scores rows match within 1e-6 and exact strings/booleans.
-5. AC-DME-05: `/api/v1/residents` returns display statuses alarm_on {R09, R10}, baseline_forming {R08}, no_alarm {R01–R07}; R07 label "No alarm · baseline restarted Oct 13"; tiles 2 / 7 / 1 / 19.
+5. AC-DME-05: `/api/v1/residents` returns `status` alarm_on {R09, R10}, baseline_forming {R08}, no_alarm {R01–R07}; `needs_attention` true for {R03, R08} only; summary changed 2, needs_attention 2, learning 0, usual 6; default order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07; R07 `baseline_restarted_on` 2026-10-13 with `restart_cause` device ("Usual. Baseline restarted Oct 13 after a new device.").
 6. AC-DME-06: Saving a review of R09's alert (outcome `known_cause`, explanations `[poor_sleep_unusual_day]`) moves it to `acknowledged`, sets acknowledged_by/at, inserts one `alert_reviews` row, and leaves R09's `cusum_state` and `scores` unchanged; a second review adds a row and leaves acknowledged_by/at unchanged; a review with outcome `data_problem` adds one open `review_flagged_data_problem` data alert.
 7. AC-DME-07: No OpenAPI response schema contains `password_hash`, `key_hash`, `payload`, a resident UUID or a device UUID.
-8. AC-DME-08: Device panel for test data shows D02 shared by R02, R03 with one silent day (Oct 12), D07B "replaced D07" in use since Oct 13.
-9. AC-DME-09: Analytics alarm timing for test_v0_1 reads R09 delay 0 days and R10 delay 7 days from `evaluation_ground_truth`, and the pipeline modules contain no reference to that table (static check).
+8. AC-DME-08: Device values for test data show D02 shared by R02, R03 with one silent day (Oct 12), D07B replacing D07 in use since Oct 13, `uploaded_on_as_of_date` true for D02 and D07B and false for D07.
+9. AC-DME-09: Study team alarm timing for test_v0_1 reads R09 delay 0 days and R10 delay 7 days from `evaluation_ground_truth`, and the pipeline modules contain no reference to that table (static check).
 
 ## 8. Implementation Notes
 
@@ -892,7 +924,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 - Map `raw_sessions` feature columns by iterating `FEATURE_KEYS` is tempting but hides columns from type checkers; write
   them out explicitly and add a unit test that compares them with `FEATURE_KEYS`.
 - `DayLedgerEntry` is the class name for table `day_ledger` (singular table name is fixed by the contract).
-- Keep relationship loading explicit (`selectinload`) in repositories; the overview must not issue N+1 queries.
+- Keep relationship loading explicit (`selectinload`) in repositories; the resident list (`GET /residents`) must not issue N+1 queries.
 - Conversions between workbook strings and booleans (`yes`/`no`) and alarm labels live only in `tests/validation/`.
 - Pitfall: workbook `expected_reason` is NaN for usable rows when read by pandas; normalise to `''` before comparing.
 - Pitfall: workbook `epoch` and `expected_epoch` are floats after pandas reads blanks; cast to int where present.
@@ -910,6 +942,7 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 - OQ-24 Data-alert thresholds.
 - OQ-25 Explanation checklist codes (`alert_reviews.explanations`).
 - OQ-26 Who may review alarms and how soon.
+- OQ-31 Which data-alert kinds set `needs_attention`, and whether a device without upload should.
 
 ## Revision History
 
@@ -923,3 +956,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-05) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (resident_code pattern per TRD 20; ingest_rejections.row_number (D-84); in use since/until (D-82)) | — |
 | 0.9 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-8): §4.6 states that the `analytics_summary.py` read of `evaluation_ground_truth` through the read-only engine is the one exception to TRD 05 API-005 | — |
+| 0.10 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; §4.4.3 keeps the pipeline `status` and adds the derived `needs_attention`, `attention_reasons`, `alarm_reviewed`, `restart_cause` and the detail `window` with the four display statuses (D-109); §4.4.4 adds the `checkins_started` event and the same-date order; §4.4.2 adds upload on the as-of date; §4.3.7 and `data_alerts.detail` use the v0.2 detail texts; entity read-by notes, DME-011, DME-012, DME-024 and AC-DME-05, -08, -09 follow the v0.2 pages | — |

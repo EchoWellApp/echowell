@@ -1,88 +1,91 @@
-# FEAT-066 Resident detail page: header, What this means and the 7 measurements
+# FEAT-066 Resident chart frame and Summary (back link, banner, section navigation, Right now, Leaning most, More detail)
 
 | Field | Value |
 |---|---|
 | Epic | Frontend |
 | Build phase | Phase 8 (TRD 25) |
 | Priority | P0 |
-| Complexity | Medium |
+| Complexity | High |
 | MVP status | Required |
-| Dependencies | FEAT-064, FEAT-028 |
+| Dependencies | FEAT-064, FEAT-028, FEAT-029, FEAT-048 |
 | Status | Not Started |
 
 ## Purpose
 
-Implement the frame and the explanatory sections of `/residents/[residentCode]` (SRC-10): the back link, the header with device and large status badge, the baseline line (frozen range and watched-since date, or forming progress, plus the restart suffix), the "What this means" section from the PI-reviewed wording with the confirmation marker, the seven measurement cards with plain-language labels and signed sparklines, the "12 other measurements" card, the captions, and the "Resident not found" state. The tally chart, check-in log and staff review sections are added by FEAT-067, FEAT-068 and FEAT-071.
+Implement the frame of the resident chart `/residents/[residentCode]` as wireframe v0.2 draws it (SRC-21, TRD 24 D-110) and its first section, Summary: the back link "← Resident list" (keeping the list's filter), the banner with the resident code as `<h1>`, the facts Device, Last check-in, Usable check-ins (last 30 days) and Baseline and the large status pill, the left section navigation with its six links (Summary, Review and notes with an unreviewed-alarm badge, Voice trends, Baseline, Check-in log, Device; each section its own URL), the two-column chart grid, the "Right now" panel (lead sentence per situation, alarm facts, "Leaning most", action buttons, the "not a diagnosis" note with the PI-confirmation marker), the "More detail" tiles linking to the other sections, and the "Resident not found" state. The other sections are added by FEAT-067 (Voice trends), FEAT-068 (Baseline, Check-in log), FEAT-069 and FEAT-071 (Review and notes) and FEAT-070 (Device).
 
 ## Business Context
 
-- BR-13 (staff understand why a resident is flagged and what it means): plain-language explanation and the measurements behind the score.
-- BR-09 (frozen personal baseline) and BR-08 (baseline restarts on device change): the baseline line states exactly what the resident is compared with.
-- BR-10 (7 scored features, 12 stored), BR-18 (detection, not diagnosis; OQ-12 marker).
-- FRs covered (BACKLOG.md): FR-160, FR-161, FR-162, FR-163, FR-164, FR-169, FR-170, FR-171, FR-173.
+- BR-13 (staff understand right away whether a resident changed and what to do next): the chart opens on "Right now", the way staff read an electronic health record, and goes into detail only on request.
+- BR-11, BR-18: a Changed resident's alarm date, open days and review status are visible together with the reminder that the status is a prompt to check in, not a diagnosis (OQ-12 marker).
+- BR-08, BR-09: the banner and the Summary state the current device, the baseline state and any restart.
+- The alarm facts and "Leaning most" of the retired Alert review page move here (TRD 11 §4.17, UX-312; TRD 24 D-92, D-110, D-111).
+- FRs covered (BACKLOG.md): FR-134, FR-160, FR-161, FR-164, FR-173, FR-262, FR-263, FR-266, FR-331.
 
 ## Referenced TRDs
 
-- TRD 04 FE-087 (parallel queries, per-section errors), FE-092 (`StatusBadge` via `statusLabel()`), FE-098 (`Sparkline` signed deviations), FE-142 (404 → whole-page not-found), §4.8 `ResidentHeader`, `WhatThisMeans`, `FeatureCard`, `Sparkline`, `OtherMeasurementsCard`, `BackLink`, FE-186 (E2E `resident-detail.spec.ts`).
-- TRD 11 UX-060..UX-066 (back link, header, large badge, baseline line, progress element, restart text, stable dates), §4.5.1.1 baseline line templates, UX-070..UX-075 (What this means), §4.5.2.1 templates, UX-100..UX-108 (measurement cards, sparkline, accessible names, forming state, 12 other measurements, caption), UX-205, §4.13.3.
-- TRD 13 TST-096 (marker), TST-097 (wording), TST-090; E2E-08, E2E-10, E2E-11.
-- TRD 19 E-09 `GET /api/v1/residents/{resident_code}`, E-11 `GET /api/v1/residents/{resident_code}/features`.
-- TRD 02 FR-160..FR-164, FR-169..FR-171, FR-173; TRD 24 OQ-12, D-18.
+- TRD 11 (v0.13) — owned by this feature: UX-060 (back link), UX-061..UX-063 (banner, large pill, facts), UX-065 (restart stated in Summary, Baseline and Voice trends; this feature owns the Summary sentence and checks the other two sections), UX-070..UX-073, UX-075..UX-078 (Right now panel, lead templates §4.5.2.1, note and marker, facts, buttons, More detail tiles), UX-312 (Leaning most), UX-410, UX-411 (section navigation and badge), UX-412 (unknown resident), UX-262 (reference rendering of the chart, §4.13.3; section values are asserted by the section features). Uses: `StatusPill` and wording (FEAT-062). Retired, not built: UX-064 (moved to UX-422, FEAT-068), UX-302, UX-311.
+- TRD 04 (v0.11) FE-025 (back link with the last `?show=`), FE-206 (six section routes sharing the chart layout), FE-210 (section badge, review status and list text from `alarm_reviewed`), FE-087 (per-section reads, per-panel errors), FE-142 (404 → not-found for every chart route), FE-186 (E2E `resident-chart.spec.ts`), FE-193 (E2E `review.spec.ts`, Summary part), §4.3 chart routes, §4.8 `BackLink`, `ChartBanner`, `ChartSectionNav`, `CountBadge`, `SummaryPanel`, `LeaningMost`, `MoreDetailTiles`.
+- TRD 19 E-09 `GET /api/v1/residents/{resident_code}` (`ResidentDetail` with `needs_attention`, `attention_reasons`, `alarm_reviewed`, D-114), E-13 `GET /api/v1/alerts?resident_code=` (`open_days`, `leaning_most`, status), E-17 `GET /api/v1/devices` (`uploaded_on_as_of_date`).
+- TRD 13 TST-090, TST-096, TST-097; E2E-08, E2E-10, E2E-11, E2E-12.
+- TRD 02 FR-134, FR-160, FR-161, FR-164, FR-173, FR-262, FR-263, FR-266, FR-331; TRD 24 D-18, D-92, D-108..D-111, D-113, OQ-12.
 
 ## Scope
 
-- `app/(protected)/residents/[residentCode]/page.tsx`: validated code, parallel queries (`getResident`, `getFeatures`; `getScores`, `getCheckins`, `getNotes` are issued here and consumed by FEAT-067, FEAT-068, FEAT-071 sections), layout order Back link → header → What this means → Running change tally → measurements → (Staff review | Check-in log) → default footer.
-- Components: `ResidentHeader`, `WhatThisMeans`, `FeatureCard` (×7), `Sparkline`, `OtherMeasurementsCard`; resident not-found state.
-- Wording templates in `lib/wording.ts` for the baseline line and "What this means" (all situations of §4.5.1.1 and §4.5.2.1).
+- `app/(protected)/residents/[residentCode]/layout.tsx`: validated code, the chart queries shared by all sections (`getResident`, `getAlerts({ residentCode })`, `getDevices()`), `BackLink`, `ChartBanner`, two-column grid (200px `ChartSectionNav` | section content, gap 16px, top-aligned; one column below 760px per UX-241, verified by FEAT-075), resident not-found state.
+- Section route files `page.tsx` (Summary), `review/page.tsx`, `trends/page.tsx`, `baseline/page.tsx`, `log/page.tsx`, `device/page.tsx`; this feature fills Summary and provides empty shells that FEAT-067..FEAT-071 fill.
+- Components: `BackLink` ("← Resident list"), `ChartBanner`, `ChartSectionNav`, `SummaryPanel`, `LeaningMost`, `MoreDetailTiles`; Summary templates (§4.5.2.1), fact labels and button texts in `lib/wording.ts`.
 
 ## Out of Scope
 
-- `CusumChart`/`CusumTable` (FEAT-067), `CheckinLog` (FEAT-068), `StaffReviewForm`/`NotesList`/`ReviewDialog` (FEAT-071).
-- The status, baseline and feature computations (backend FEAT-028).
+- Change score chart and the 7 measurement cards (FEAT-067); Baseline and Check-in log sections (FEAT-068); alarm review panel (FEAT-069); Device section (FEAT-070); staff notes (FEAT-071).
+- The status, attention flag, baseline, alert and `leaning_most` computations (backend FEAT-028, FEAT-030, FEAT-048).
 - Approval of the final clinical wording (OQ-12, PI decision); the marker stays until then.
 
 ## Functional Requirements
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-066-FR-01 | The page shall start with "← Back to all residents" to `/residents`, preserving the last overview `?sort=`. | UX-060, FR-160 |
-| FEAT-066-FR-02 | The `<h1>` shall read "<R> · Device <D>" with the current device (e.g. "R09 · Device D09", "R07 · Device D07B") and a large status badge on the right with the §4.3.4 text and style rules (via `statusLabel()`, "▲" on alarm). | UX-061, UX-062, FE-092, FR-161 |
-| FEAT-066-FR-03 | Below the `<h1>` the baseline line shall use the §4.5.1.1 templates: frozen with scored sessions "Baseline: first <N> usable check-ins, <first>–<frozen-after> (then frozen) · watched since <first scored date>"; frozen without scored session "… · watched since <local date after the freeze session>"; forming "Baseline: forming · <n> of <N> usable check-ins so far (frozen when <N> are reached)"; plus the restart suffix by cause (device, firmware, software) when the current epoch > 1. | UX-063, UX-065, FR-162, FR-163 |
-| FEAT-066-FR-04 | When forming, a native `<progress>` (max N, value n, width 200px) with accessible name "Baseline progress: <n> of <N> usable check-ins" shall be shown. | UX-064, FR-163 |
-| FEAT-066-FR-05 | Baseline dates and frozen state shall be rendered only from the API (`baseline.first_local_date`, `baseline.frozen_after_local_date`, `watching_since`) and never change after freeze. | UX-066 |
-| FEAT-066-FR-06 | "What this means" shall show a main paragraph (16px) from the §4.5.2.1 template for the resident's situation (alarm_on above/below line, no_alarm with/without scored sessions, baseline_forming, plus the restart sentence for epoch > 1) and a note paragraph "This compares <R> only with <R>. It is a prompt to check in, not a diagnosis." (forming: "Once the baseline is complete, <R> will be compared only with <R>. An alarm is a prompt to check in, not a diagnosis."). | UX-070, UX-071, UX-072, FR-164 |
-| FEAT-066-FR-07 | Until `CLINICAL_WORDING_APPROVED` is true the note shall end with " [Final clinical wording: confirm with PI]"; all texts come from `lib/wording.ts`; no diagnosis, condition, severity or cause is stated. | UX-073, UX-074, UX-075, FR-164, OQ-12, D-18 |
-| FEAT-066-FR-08 | "The 7 measurements behind the score" shall show the intro "Each is compared with <R>’s own baseline. The score rises when the voice is:" and exactly 7 cards in order: Quieter (loudness), Slower to say the phrase (phrase duration), Fewer syllables per second (speech rate), Slower while talking (articulation rate), More pauses (number of pauses), More time in pauses (pause fraction), Less voiced sound (voiced fraction), in a 2-column grid. | UX-100, UX-101, FR-169 |
-| FEAT-066-FR-09 | Each card's sparkline (120 × 32px) shall plot `sign × z` of the scored sessions of the current epoch as a 1.5px ink line with a dashed zero line, no axes, grid, tooltip or animation, and have the accessible name "<label> (<technical name>): latest <signed value> compared with own baseline over <k> scored check-ins". | UX-102, UX-103, FE-098, FE-099 |
-| FEAT-066-FR-10 | While the baseline is forming each card shall show "Not scored yet" with a 1px dashed border instead of a sparkline; cards show no per-feature alarm, threshold or "abnormal" label and no accent colour. | UX-104, UX-105 |
-| FEAT-066-FR-11 | An eighth card (muted panel, 1px rule border) shall read "12 other measurements (pitch, jitter, MFCCs …)" and "stored, not scored", with the number from `stored_feature_keys.length`; those features are not listed, plotted or summarised. | UX-106, UX-107, FR-170 |
-| FEAT-066-FR-12 | Below the cards the caption "Column names are placeholders until Team 1 confirms extractor output names. Morning check-ins are adjusted before comparing." shall appear (IBM Plex Mono 12px, secondary). | UX-108, FR-171 |
-| FEAT-066-FR-13 | The page shall issue `getResident`, `getScores`, `getFeatures`, `getCheckins` and `getNotes` in parallel; a failure of one renders the error state only in its section. | FE-087, UX-202 |
-| FEAT-066-FR-14 | A 404 from `getResident` (or an invalid code) shall render "Resident <code> was not found." with the back link and no other section. | FE-142, UX-205, FR-173 |
-| FEAT-066-FR-15 | With the reference data the header, badge and baseline lines shall equal TRD 11 §4.13.3 (e.g. R09 "Baseline: first 16 usable check-ins, Oct 1–16 (then frozen) · watched since Oct 17"; R08 forming 13 of 16; R07 "… Oct 13–28 (then frozen) · watched since Oct 29 · restarted Oct 13 (new device D07B, was D07)"). | UX-262 |
+| FEAT-066-FR-01 | Every chart page shall start with the link "← Resident list" (weight 600, no underline, min-height 44px) to `/residents`, keeping the list's last `?show=` value (read from `sessionStorage["echowell.residentList.show"]`, default `all`). | UX-060, FE-025, FR-160, FR-331 |
+| FEAT-066-FR-02 | The banner (`<section aria-label="Resident">`, panel) shall show the resident code as the page `<h1>` (26px, weight 700) and at its right end the large `StatusPill`. | UX-061, UX-062, FR-161 |
+| FEAT-066-FR-03 | The banner shall show a `<dl>` (term 13px `--muted`, value weight 600) with "Device" — the current device code, plus " (replaced <previous device>)" when the API returns `previous_device_code`, or " (shared with <other resident codes>)" when the device is shared (e.g. "D07B (replaced D07)", "D02 (shared with R03)", "D09"); "Last check-in" — "Oct 30, 2:28 PM" or "No check-ins yet"; "Usable check-ins, last 30 days" — "<used> of <days in window>" (e.g. "30 of 30", "13 of 30"); "Baseline" — "Complete" when the current epoch's baseline is frozen, otherwise "<n> of <N>". | UX-063, FR-134 |
+| FEAT-066-FR-04 | The section navigation (`<nav aria-label="Resident chart">`, in a panel) shall list "Summary" (`/residents/<R>`), "Review and notes" (`/review`), "Voice trends" (`/trends`), "Baseline" (`/baseline`), "Check-in log" (`/log`), "Device" (`/device`) in that order (weight 600, padding 10px 12px, min-height 44px); the current section's link has `aria-current="page"`, `--chrome` background and `--chrome-ink` text; each section has its own URL, so bookmarks and the browser back button work. | UX-410, FE-206 |
+| FEAT-066-FR-05 | When the resident has an open, unreviewed change alarm (`ResidentDetail.alarm_reviewed` is `false`), the "Review and notes" link shall end with the `CountBadge` "1" and have the accessible name "Review and notes, alarm not reviewed"; the Summary review status uses the same field. | UX-411, FE-210 |
+| FEAT-066-FR-06 | The Summary section shall start with a panel headed "Right now" with a 6px left border in the status colour (`--red`, `--yellow-edge`, `--grey`, `--green`) and the lead paragraph (20px, weight 600, max 62 characters per line) from the §4.5.2.1 template for the situation: Changed with current change score ≥ h ("<R>’s voice has moved away from their own usual pattern, steadily and long enough to set off the alarm on <Mon D>. It is still changed.") or < h ("… The change score is now below the alarm line, but the alarm stays on: in this version alarms are not switched off automatically."); Needs attention (the "What's happening" sentence + " EchoWell can’t judge their voice well until more good check-ins come in."); Learning; Usual with or without scored sessions; plus, when the current epoch > 1, " The baseline restarted on <Mon D> because <cause text>; <R> is now compared only with the new baseline." | UX-070, UX-071, UX-065, FR-164 |
+| FEAT-066-FR-07 | For a Changed resident the panel shall show three facts (value 18px weight 700 above a 13px `--muted` label): "<alarm Mon D>" / "Alarm started"; "<d> days" / "Open" ("1 day"; "opened today" for 0); "Not reviewed" or "Reviewed" / "Review status"; then the line "Leaning most: <labels>"; then the primary button "Review this alert" (link to `/residents/<R>/review`) and the secondary button "See what changed" (link to `/residents/<R>/trends`). | UX-076, FR-262 |
+| FEAT-066-FR-08 | "Leaning most" shall list up to 3 labels from the alert's `leaning_most` as the §4.5.4 plain-language labels in lower case without the technical name, joined by ", " (R09 "more pauses, quieter, less voiced sound"); with none it shall read "Leaning most: no single measurement stands out." | UX-312, FR-266, D-92 |
+| FEAT-066-FR-09 | For a Needs-attention resident the panel shall show the secondary buttons "See missed and set-aside check-ins" (to `/residents/<R>/log`) and "Check the device" (to `/residents/<R>/device`). | UX-077 |
+| FEAT-066-FR-10 | The panel shall end with the note (14px, `--muted`) "This compares <R> only with <R>. It is a prompt to check in, not a diagnosis." (Learning: "Once the baseline is complete, <R> will be compared only with <R>. A change is a prompt to check in, not a diagnosis."), followed by " [Final clinical wording: confirm with PI]" while `CLINICAL_WORDING_APPROVED` is false; no text states or implies a diagnosis, condition, severity or cause. | UX-072, UX-073, UX-075, FR-164, OQ-12, D-18 |
+| FEAT-066-FR-11 | Below "Right now" a heading "More detail" (h2) shall head four link tiles (grid, min tile width 200px, gap 12px; label 13px `--muted`, value 18px weight 700, "Open" 14px link colour): "Voice trends" — "Change score <x.x>" (Changed), "Not scored yet" (no frozen baseline), otherwise "No change"; "Baseline" — "<n> of <N> check-ins"; "Check-ins, last 30 days" — "<used> used, <missed> missed"; "Device" — "<D> online" or "<D> no upload today" (`uploaded_on_as_of_date`); each tile links to its section. | UX-078 |
+| FEAT-066-FR-12 | The chart layout shall issue `getResident`, `getAlerts({ residentCode })` and `getDevices()` in parallel; a failure of one renders the error state only in the panels that need it (UX-202); sections load their own data. | FE-087, UX-202 |
+| FEAT-066-FR-13 | A 404 from `getResident` (or an invalid code) shall render "Resident <code> was not found." with the back link, and no banner, navigation or section. | UX-412, FE-142, FR-173 |
+| FEAT-066-FR-14 | With the reference data the banners and Summaries shall equal TRD 11 §4.13.3 (R09, R10, R08, R03, R07). | UX-262, FR-263 |
 
 ## Inputs
 
-- `GET /api/v1/residents/{code}` → `ResidentDetail` (status, device, current_epoch, epoch_count, baseline, watching_since, alarm_since, current_tally, explanation, meta).
-- `GET /api/v1/residents/{code}/features` → `FeaturesResponse` (`scored_features[7]` with `label`, `composite_sign`, `points[{z, …}]`, `stored_feature_keys[12]`).
-- Route parameter `residentCode`.
+- `GET /api/v1/residents/{code}` → `ResidentDetail` (status, `needs_attention`, `attention_reasons`, `alarm_reviewed`, device and previous device, shared-with codes, last check-in, `last_30_days`, current epoch, epoch start and restart cause, baseline state and progress, alarm since, current change score, meta).
+- `GET /api/v1/alerts?resident_code=<R>` → the non-closed alert of the current epoch (`id`, `local_date`, `open_days`, `status`, `leaning_most`).
+- `GET /api/v1/devices?limit=500` → `uploaded_on_as_of_date` of the resident's device.
+- Route parameter `residentCode`; last list filter (`sessionStorage["echowell.residentList.show"]`, written by FEAT-065).
 
 ## Outputs
 
-- Rendered header, baseline line, "What this means", measurement cards and captions; not-found state.
+- Rendered chart frame (back link, banner, section navigation) and Summary section; not-found state; section route shells.
 
 ## Data Flow
 
-`residentCode` validated (FEAT-064) → parallel queries `["resident", code]`, `["resident", code, "features"]` (and scores, check-ins, notes for sibling sections) → `ResidentHeader` (resident, meta) → `WhatThisMeans` (resident, meta, wording templates) → `FeatureCard` ×7 (label, sign, series of `z` per scored session) + `OtherMeasurementsCard` (stored keys).
+`residentCode` validated (FEAT-064) → parallel queries `["resident", code]`, `["alerts", {residentCode}]`, `["devices"]` → `ChartBanner` (resident, meta → `displayStatus()` → large `StatusPill`) and `ChartSectionNav` (current section, `alarm_reviewed`) → Summary: `SummaryPanel` (resident, alert, meta, wording templates) and `MoreDetailTiles` (resident, device). Other sections render inside the same layout.
 
 ## Dependencies
 
-Required before implementation (BACKLOG.md): FEAT-064, FEAT-028
+Required before implementation (BACKLOG.md): FEAT-064, FEAT-028, FEAT-029, FEAT-048
 
-- FEAT-064 provides the route shell, `BackLink`, code validation.
-- FEAT-028 provides `GET /residents/{code}`, `/checkins` and `/features`.
+- FEAT-064 provides the route shell, app bar, code validation.
+- FEAT-028 provides `GET /residents/{code}` (with the D-114 attention fields).
+- FEAT-029 provides `GET /devices` with `uploaded_on_as_of_date` for the Device tile.
+- FEAT-048 provides `leaning_most` on the alerts of `GET /alerts` (FEAT-030).
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-067, FEAT-068, FEAT-071.
+Features that build directly on this one (BACKLOG.md §4): FEAT-067, FEAT-068, FEAT-069, FEAT-070, FEAT-071.
 
 ## Database Impact
 
@@ -90,27 +93,28 @@ None (frontend only).
 
 ## API Impact
 
-Endpoints consumed: `GET /api/v1/residents/{resident_code}` (E-09), `GET /api/v1/residents/{resident_code}/features` (E-11); the page also starts `GET /api/v1/scores` (E-12), `/checkins` (E-10) and `/notes` (E-15) for sibling sections. None exposed.
+Endpoints consumed: `GET /api/v1/residents/{resident_code}` (E-09), `GET /api/v1/alerts` (E-13), `GET /api/v1/devices` (E-17). None exposed.
 
 ## Frontend Impact
 
-- Page: `app/(protected)/residents/[residentCode]/page.tsx`.
-- Components: `ResidentHeader`, `WhatThisMeans`, `FeatureCard`, `Sparkline`, `OtherMeasurementsCard`, `StatusBadge` (size `lg`), `BackLink`, `Footer` (default), `SectionState`.
+- Pages: `app/(protected)/residents/[residentCode]/layout.tsx`, `page.tsx` (Summary) and the shells of `review/`, `trends/`, `baseline/`, `log/`, `device/`.
+- Components: `BackLink`, `ChartBanner`, `ChartSectionNav`, `CountBadge`, `SummaryPanel`, `LeaningMost`, `MoreDetailTiles`, `StatusPill` (size `lg`), `SectionState`.
 
 ## Analytics Impact
 
-None. The UI multiplies the API's unsigned `z` by `composite_sign` for display only (FE-098); no scoring is computed.
+None. Open days, change score, baseline progress and `leaning_most` come from the API; the UI maps measurement keys to labels only.
 
 ## Security Requirements
 
 - Study ID only; no PII (UX-001); API strings rendered as text (SEC-076).
 - Resident code validated and encoded (FE-030, FE-031, via FEAT-064).
+- The "Review this alert" button is a link for every role; the review controls are gated by FEAT-069.
 
 ## Error Handling
 
-- 404 → whole-page not-found (FE-142).
-- Features query error → error state in the measurements section only (FE-087).
-- Missing required field in a response → section error state (FE-078).
+- 404 → whole-page not-found (FE-142, UX-412).
+- Alerts or devices query error → error state in the facts and tiles that need it; the lead text still renders from `ResidentDetail` (UX-202).
+- Missing required field in a response → panel error state (FE-078).
 
 ## Logging Requirements
 
@@ -118,31 +122,34 @@ None in the frontend.
 
 ## Testing Requirements
 
-- Component: `ResidentHeader` (baseline line templates incl. restart suffix and forming progress), `WhatThisMeans` (each template; marker "[Final clinical wording: confirm with PI]" present while unapproved — TST-096; "It is a prompt to check in, not a diagnosis." present — TST-097), `FeatureCard`/`Sparkline` (signed series, accessible name, "Not scored yet"), `OtherMeasurementsCard` (TST-090).
-- Page test (`frontend/tests/pages/resident-detail.test.tsx`): loading, populated (R09 fixture), 404 not-found, section error isolation, 401 → login (TST-094).
-- E2E: `resident-detail.spec.ts` (FE-186) header, badge, baseline line for R09, R10, R08, R07; E2E-08 (R09 header and 7 cards plus "12 other measurements"), E2E-10 (R07 badge), E2E-11 (R08 forming, no error banner).
+- Component (TST-090): `ChartBanner` (device texts "D07B (replaced D07)", "D02 (shared with R02)", "D09"; "30 of 30", "13 of 30"; "Complete" / "13 of 16"; large pill), `ChartSectionNav` (order, `aria-current`, badge "1" and accessible name only for an open alarm), `SummaryPanel` (every §4.5.2.1 template incl. below-line and restart sentences, facts "9 days" / "1 day" / "opened today", Leaning most incl. the empty text, buttons per status; marker "[Final clinical wording: confirm with PI]" present while unapproved — TST-096; "It is a prompt to check in, not a diagnosis." present — TST-097), `MoreDetailTiles` (four values per status).
+- Page test (`frontend/tests/pages/resident-chart.test.tsx`): loading, populated (R09 fixture), 404 not-found, panel error isolation, back link keeps `?show=`, 401 → login (TST-094).
+- E2E (`resident-chart.spec.ts`, FE-186; `review.spec.ts` Summary part, FE-193): E2E-08 (R09 banner and Summary), E2E-10 (R07 banner and restart sentence), E2E-11 (R08 Needs attention), E2E-17 (alarm entry points: R09 and R10 facts and tiles) of TRD 13 Table 4.10-A.
 
 ## Acceptance Criteria
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-066-AC-01 | `/residents/R09` shows "R09 · Device D09", "▲ Alarm since Oct 21", "Baseline: first 16 usable check-ins, Oct 1–16 (then frozen) · watched since Oct 17", and the main paragraph "R09’s voice has moved away from their own usual pattern, steadily enough and for long enough to cross the alarm line on Oct 21. It is still above the line." | E2E-08; AC-UX-04; UX-262 |
-| FEAT-066-AC-02 | The note paragraph contains "It is a prompt to check in, not a diagnosis." and ends with "[Final clinical wording: confirm with PI]". | TST-096; TST-097 |
-| FEAT-066-AC-03 | R09 shows 7 measurement cards with the §4.5.4 labels in order and the card "12 other measurements (pitch, jitter, MFCCs …)" / "stored, not scored". | E2E-08; UX-101; UX-106 |
-| FEAT-066-AC-04 | `/residents/R08` shows "Baseline forming · 13 of 16 sessions", the forming baseline line, a `<progress>` 13/16 and "Not scored yet" on all 7 cards, with no error banner. | E2E-11; AC-FE-04; AC-UX-05 |
-| FEAT-066-AC-05 | `/residents/R07` shows "No alarm · baseline restarted Oct 13" and the restart suffix "restarted Oct 13 (new device D07B, was D07)". | E2E-10; AC-UX-05 |
-| FEAT-066-AC-06 | `/residents/R11` (unknown) shows "Resident R11 was not found." with the back link and no other section. Verified by: Page test (`frontend/tests/pages/resident-detail.test.tsx`; TST-094). | FE-142; UX-205; FR-173 |
-| FEAT-066-AC-07 | Switching the backend to the production profile shows "of 30" in forming texts without a frontend change. Verified by: E2E (`resident-detail.spec.ts`; E2E-08, E2E-10, E2E-11). | AC-FE-04; AC-UX-10 |
+| FEAT-066-AC-01 | `/residents/R09` shows "← Resident list", the `<h1>` "R09", Device "D09", Last check-in "Oct 30, 2:28 PM", Usable check-ins "30 of 30", Baseline "Complete", the large pill "▲ Changed", and the lead "R09’s voice has moved away from their own usual pattern, steadily and long enough to set off the alarm on Oct 21. It is still changed." | E2E-08; AC-UX-04; UX-262 |
+| FEAT-066-AC-02 | R09's Summary shows "Oct 21" Alarm started, "9 days" Open, "Not reviewed" Review status, "Leaning most: more pauses, quieter, less voiced sound", the buttons "Review this alert" and "See what changed", and the tiles "Change score 26.8", "16 of 16 check-ins", "30 used, 0 missed", "D09 online"; R10 shows "6 days", "more pauses, slower while talking, fewer syllables per second" and "Change score 13.4". | E2E-08; UX-076; UX-078; UX-312 |
+| FEAT-066-AC-03 | The Summary note contains "It is a prompt to check in, not a diagnosis." and ends with "[Final clinical wording: confirm with PI]". Verified by: Component (TST-096, TST-097). | UX-072; UX-073 |
+| FEAT-066-AC-04 | `/residents/R08` shows "! Needs attention", Usable "13 of 30", Baseline "13 of 16", the lead "Missing many check-ins. Baseline stuck at 13 of 16. EchoWell can’t judge their voice well until more good check-ins come in.", the buttons "See missed and set-aside check-ins" and "Check the device", and the tiles "Not scored yet", "13 of 16 check-ins", "13 used, 12 missed", "D08 online", with no error banner. | E2E-11; AC-UX-05; UX-077 |
+| FEAT-066-AC-05 | `/residents/R07` shows Device "D07B (replaced D07)", "● Usual" and the lead "R07’s voice is within their own usual range. Nothing to do. The baseline restarted on Oct 13 because the device changed (D07B, was D07); R07 is now compared only with the new baseline."; `/residents/R03` shows Device "D02 (shared with R02)", "22 of 30" and "! Needs attention". | E2E-10; E2E-12; UX-065 |
+| FEAT-066-AC-06 | The section navigation lists the six links in order; on R09 and R10 "Review and notes" carries the badge "1" with the accessible name "Review and notes, alarm not reviewed"; on R01 it has no badge; each link opens its own URL. Verified by: Component and Page test (TST-090, TST-094). | UX-410; UX-411; AC-UX-11 |
+| FEAT-066-AC-07 | `/residents/R11` (unknown) shows "Resident R11 was not found." with the back link and no banner, navigation or section. Verified by: Page test (TST-094). | UX-412; FE-142; FR-173 |
+| FEAT-066-AC-08 | Switching the backend to the production profile shows "of 30" in Baseline facts and Learning texts without a frontend change. Verified by: Component test with a production fixture. | UX-007; AC-UX-10 |
 
 ## Definition of Done
 
 - All FEAT-066 acceptance criteria pass; component, page and E2E tests green.
-- OQ-12 marker present (TRD 25 Phase 8 DoD).
-- The batch report lists the implemented requirement IDs (AGT-022); the TRD differences noted under Implementation Notes were resolved in PR #2 and need no report.
+- OQ-12 marker present in the Summary note (TRD 25 Phase 8 DoD).
+- The batch report lists the implemented requirement IDs (AGT-022).
 
 ## Implementation Notes
 
-- The sparkline plots signed deviations `sign × z` (UX-102, FE-098); TRD 02 FR-169 was aligned in the PR #2 consistency fixes.
-- FR-163 says the header shows "Baseline forming · n of N sessions" as a progress indicator; this is satisfied by the large badge text plus the UX-063 baseline line and the UX-064 `<progress>` element.
-- Use the typographic apostrophe "’" exactly as in TRD 11 (e.g. "R09’s", "<R>’s own baseline").
-- Labels for the 7 cards come from the API `label` where it matches TRD 11 §4.5.4; split "Quieter (loudness)" into label and technical name for the two-tone rendering.
+- Use the typographic apostrophe "’" exactly as in TRD 11 ("R09’s", "can’t").
+- "Leaning most" is the alert's `leaning_most` (mean signed z since the alarm date, TRD 24 D-92); lower-case the §4.5.4 labels ("Quieter" → "quieter"). The v0.2 wireframe note asking for the 2 or 3 measurements leaning most is answered by this line (D-111).
+- The open-day count and the change score come from the API; never compute them in the browser.
+- The v0.1 header text "<R> · Device <D>", the "What this means" heading, the baseline line in the header and the `<progress>` in the header are not built; the baseline text and meter are the Baseline section (FEAT-068).
+- Pages that FEAT-067..FEAT-071 fill render a `SectionState` until their feature is merged within this checkpoint; no section may stay empty at the checkpoint exit.
+- The file name keeps the v0.1 title (feature IDs and file names are never renamed, TRD 25 §4.2).
