@@ -22,3 +22,10 @@ class InvalidQueryParameterError(AppError):
 
     status_code = 422
     code = "INVALID_QUERY_PARAMETER"
+
+
+class PasswordPolicyError(AppError):
+    """A password breaks TRD 12 SEC-012 (length, equal to e-mail, common password)."""
+
+    status_code = 422
+    code = "PASSWORD_POLICY_VIOLATION"

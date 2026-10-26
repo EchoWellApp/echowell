@@ -254,6 +254,12 @@ def _web_violations(settings: Settings) -> list[tuple[str, str]]:
     return problems
 
 
+def environment_value(name: str) -> str:
+    """One raw environment variable, for operator refusals checked before settings are built
+    (TRD 15 §4.8: refusals exit with code 2 before settings validation, ENV-002)."""
+    return os.environ.get(name, "")
+
+
 def _environment_violations() -> list[tuple[str, str]]:
     """Unknown ECHOWELL_* variables are typos (ENV-003)."""
     unknown = sorted(

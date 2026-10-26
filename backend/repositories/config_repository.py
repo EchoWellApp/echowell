@@ -14,6 +14,33 @@ from sqlalchemy.orm import Session
 
 from backend.models import ConfigParameter
 
+# The 23 keys seeded for each profile by migration 0002 (TRD 20 §4.11, PGS-024).
+CONFIG_KEYS: tuple[str, ...] = (
+    "facility_tz",
+    "noise_limit_dbfs",
+    "min_speech_s",
+    "screen_min_n",
+    "screen_f0_z",
+    "screen_other_z",
+    "screen_other_count",
+    "mad_scale",
+    "pause_floor",
+    "composite_floor",
+    "cusum_k",
+    "cusum_h",
+    "morning_cutoff_hour",
+    "morning_offsets",
+    "shared_device_min_residents",
+    "baseline_n",
+    "data_alert_baseline_stalled_enabled",
+    "data_alert_set_aside_fraction",
+    "data_alert_device_silent_days",
+    "alert_snooze_hours",
+    "review_explanations",
+    "supported_schema_versions",
+    "feature_name_map",
+)
+
 
 class ConfigRepository:
     def __init__(self, session: Session) -> None:

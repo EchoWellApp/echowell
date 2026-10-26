@@ -118,6 +118,8 @@ def migrator_connection(settings: Settings) -> Iterator[Connection]:
     with engine.connect() as connection:
         for statement in MIGRATOR_SETUP:
             connection.execute(text(statement))
+        # Session-level settings survive this commit; callers then begin their own transaction.
+        connection.commit()
         try:
             yield connection
         finally:
