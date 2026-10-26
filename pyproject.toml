@@ -11,6 +11,8 @@ select = ["E", "F", "W", "I", "B", "UP", "N", "S", "SIM", "RUF", "PT", "DTZ"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
+# Migrations hold the TRD 20 SQL verbatim (TRD 20 §8), so long SQL lines are kept as written.
+"backend/alembic/versions/*" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

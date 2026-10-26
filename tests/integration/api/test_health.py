@@ -27,7 +27,7 @@ def test_tst_054_health_ok_with_database_up(client: TestClient) -> None:
 @pytest.mark.req("TST-054", "API-111", "FR-253")
 def test_tst_054_health_degraded_with_database_down(client: TestClient) -> None:
     down = SecretStr("postgresql+psycopg://nobody:x@127.0.0.1:1/none")
-    client.app.dependency_overrides[get_engine] = lambda: db.get_engine(down)  # type: ignore[attr-defined]
+    client.app.dependency_overrides[get_engine] = lambda: db.create_engine_for(down, app_env="test")  # type: ignore[attr-defined]
     response = client.get("/api/v1/health")
     assert response.status_code == 503
     body = response.json()
