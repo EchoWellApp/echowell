@@ -8,7 +8,7 @@
 | Complexity | Medium |
 | MVP status | Required |
 | Dependencies | FEAT-002 |
-| Status | Not Started |
+| Status | Complete |
 
 ## Purpose
 
@@ -35,7 +35,7 @@ Give the backend its single entry point and configuration backbone: `backend.mai
 
 - `backend/core/config.py`: `Settings` (pydantic-settings 2.x `BaseSettings`) with every backend variable of TRD 21 §4.2 and §4.3, their defaults and validation rules, and the cached `get_settings()`.
 - Startup validation executed before the app accepts traffic: exit code 1 and one CRITICAL `startup_config_invalid` record naming invalid variables and the rule, never their values.
-- Guards: `APP_ENV=production` refuses `PIPELINE_PROFILE=test_v0_1`, non-empty `PIPELINE_AS_OF`, non-empty `CORS_ORIGIN_REGEX`, `LOG_FORMAT=console` and `http://` CORS origins; `APP_ENV` in {staging, production} refuses database URLs without `sslmode=require`/`verify-full` and `RATE_LIMIT_LOGIN` other than `5/minute`; `JWT_SECRET` < 32 bytes refused everywhere; `FACILITY_NAME` containing `Edge4Care` refused; `DATABASE_URL` scheme normalised to `postgresql+psycopg://`.
+- Guards: `APP_ENV=production` refuses `PIPELINE_PROFILE=test_v0_1`, non-empty `PIPELINE_AS_OF`, non-empty `CORS_ORIGIN_REGEX` and `http://` CORS origins; `APP_ENV` in {staging, production} refuses `LOG_FORMAT=console` (D-103), database URLs without `sslmode=require`/`verify-full` and `RATE_LIMIT_LOGIN` other than `5/minute`; `JWT_SECRET` < 32 bytes refused everywhere; `FACILITY_NAME` containing `Edge4Care` refused; `DATABASE_URL` scheme normalised to `postgresql+psycopg://`.
 - The guard function is reusable by `backend/jobs/nightly_run.py` and by `backend/cli.py` (operator commands validate only the ENV-053 subset).
 - `backend/main.py`: `create_app()` mounting routers under `/api/v1`, served by uvicorn with `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands (API-001; TRD 15 DEP-022, DEP-040).
 - `backend/api/deps.py`: `get_db()` (per-request session, commit/rollback/close), `get_pagination()` (limit 1..500 default 50, offset ≥ 0 default 0), override-friendly for tests.
@@ -65,7 +65,7 @@ Give the backend its single entry point and configuration backbone: `backend.mai
 | FEAT-003-FR-09 | A `.env` file shall be loaded only when `APP_ENV` is `local` or `test`. | ENV-006 |
 | FEAT-003-FR-10 | With `APP_ENV=production`, startup shall fail if `PIPELINE_PROFILE=test_v0_1`; the same guard shall be callable by `backend/jobs/nightly_run.py`. | ENV-010, API-058, ARC-056, AGT-015, FR-230, D-01 |
 | FEAT-003-FR-11 | With `APP_ENV` `staging` or `production`, startup shall fail if `DATABASE_URL`, `DATABASE_MIGRATION_URL` or `DATABASE_READONLY_URL` (when set) lacks `sslmode=require` or `sslmode=verify-full`. | ENV-011, API-059, ARC-057 |
-| FEAT-003-FR-12 | With `APP_ENV=production`, startup shall fail if `PIPELINE_AS_OF` or `CORS_ORIGIN_REGEX` is non-empty, `LOG_FORMAT` is `console`, or any CORS origin uses `http://`; `LOG_LEVEL=DEBUG` in staging or production logs WARNING `debug_logging_enabled` at startup. | ENV-012, D-50 |
+| FEAT-003-FR-12 | With `APP_ENV=production`, startup shall fail if `PIPELINE_AS_OF` or `CORS_ORIGIN_REGEX` is non-empty or any CORS origin uses `http://`; with `APP_ENV` `staging` or `production`, startup shall fail if `LOG_FORMAT` is `console` (D-103); `LOG_LEVEL=DEBUG` in staging or production logs WARNING `debug_logging_enabled` at startup. | ENV-012, D-50, D-103 |
 | FEAT-003-FR-13 | `JWT_SECRET` shorter than 32 bytes shall be rejected in every environment; in staging and production it shall also be rejected if it equals a value in a committed template or has fewer than 16 distinct characters. | ENV-013, TRD 21 §4.2 |
 | FEAT-003-FR-14 | `DATABASE_URL` values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` with all query parameters preserved. | ENV-014, AC-ENV-05 |
 | FEAT-003-FR-15 | `FACILITY_NAME` containing `Edge4Care` (case-insensitive) shall be rejected. | ENV-015, AC-ENV-07 |

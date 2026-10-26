@@ -1,1 +1,53 @@
-version: "3"
+# Local development stack (TRD 15 §4.2, DEP-010..DEP-018, DEP-119; replaces the legacy stub, D-55).
+# Only local-dev-only-* placeholder passwords appear here (DEP-018, ENV-041). Copy
+# .env.development.example to .env first. The demo profile service frontend-prod is added by FEAT-077.
+name: echowell
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: echowell
+      POSTGRES_PASSWORD: local-dev-only-postgres # local-only placeholder (TRD 06 DB-057 exception)
+      POSTGRES_DB: echowell
+      ECHOWELL_MIGRATOR_DB_PASSWORD: local-dev-only-migrator # read by \getenv in the provisioning script
+      ECHOWELL_APP_DB_PASSWORD: local-dev-only-app
+      ECHOWELL_READONLY_DB_PASSWORD: local-dev-only-readonly
+    ports: ["127.0.0.1:5432:5432"]
+    volumes:
+      - "pgdata:/var/lib/postgresql/data"
+      # runs once, as superuser, on an empty volume (D-72, D-90)
+      - "./database/roles/provision_login_roles.sql:/docker-entrypoint-initdb.d/10_provision_login_roles.sql:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echowell -d echowell"]
+      interval: 5s
+      retries: 10
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://echowell_app_login:local-dev-only-app@db:5432/echowell
+      DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:local-dev-only-migrator@db:5432/echowell
+      DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:local-dev-only-readonly@db:5432/echowell
+      PORT: "8000"
+    # Local command: no --proxy-headers, the client IP is the socket peer (TRD 05 API-103).
+    command: sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
+    ports: ["127.0.0.1:8000:8000"]
+    volumes:
+      - "./backend:/app/backend"
+      - "./analytics:/app/analytics"
+      - "./database:/app/database:ro" # DEP-119: seed and fixture files
+      - "./tests/fixtures:/app/tests/fixtures:ro"
+    depends_on: { db: { condition: service_healthy } }
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000 # origin only (TRD 21)
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    ports: ["127.0.0.1:3000:3000"]
+    volumes: ["./frontend:/app", "frontend_node_modules:/app/node_modules"]
+    depends_on: [backend]
+volumes:
+  pgdata: {}
+  frontend_node_modules: {}

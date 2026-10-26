@@ -1,0 +1,16 @@
+name: Feature request
+description: Propose a change traced to requirement IDs (TRD 18 GIT-072).
+labels: ["type:feature"]
+body:
+  - type: input
+    id: requirement-ids
+    attributes: { label: Requirement IDs, description: "e.g. FR-120, UX-031, FEAT-027" }
+    validations: { required: true }
+  - type: textarea
+    id: user-need
+    attributes: { label: User need }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes: { label: Acceptance criteria }
+    validations: { required: true }

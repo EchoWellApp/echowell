@@ -1,0 +1,84 @@
+# Python tooling for backend/, analytics/ and tests/ (TRD 18 §4.5, TRD 16 §6, TRD 13 TST-006).
+# Runtime pins live in backend/requirements.txt, tools in backend/requirements-dev.txt.
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["frontend", "specs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "SIM", "RUF", "PT", "DTZ"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["analytics", "analytics.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["backend", "backend.*"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+
+# Import boundaries (TRD 07 ANL-002, TRD 01 ARC-041, ARC-051, TRD 05 API-004, AC-ARC-01, TST-021).
+[tool.importlinter]
+root_packages = ["analytics", "backend"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "analytics is pure: no backend, database, HTTP, environment or randomness"
+type = "forbidden"
+source_modules = ["analytics"]
+forbidden_modules = ["backend", "sqlalchemy", "psycopg", "fastapi", "httpx", "requests", "os", "random"]
+
+[[tool.importlinter.contracts]]
+name = "backend layers: api -> services -> repositories -> models"
+type = "layers"
+layers = ["backend.api", "backend.services", "backend.repositories", "backend.models"]
+
+[[tool.importlinter.contracts]]
+name = "services and repositories never import fastapi"
+type = "forbidden"
+source_modules = ["backend.services", "backend.repositories", "backend.models"]
+forbidden_modules = ["fastapi"]
+
+# Test configuration (TRD 13 TST-006): the single marker list; no pytest.ini.
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers --import-mode=importlib -ra"
+markers = [
+    "unit: in-process tests, no database or network (level marker)",
+    "integration: tests against PostgreSQL 16 (level marker)",
+    "contract: OpenAPI contract tests (level marker)",
+    "validation: R01-R10 answer-key validation (level marker)",
+    "security: auth, rate-limit and grant tests (level marker)",
+    "performance: runtime and latency budgets (level marker)",
+    "smoke: post-deploy smoke tests (level marker)",
+    "slow: long-running test",
+    "authenticated: smoke test that logs in (staging only)",
+    "budget: PR-scope performance budget",
+    "req(*ids): requirement IDs the test verifies (TST-013)",
+]
+
+# Coverage (TRD 13 TST-140..TST-144); thresholds are enforced in CI from FEAT-078.
+[tool.coverage.run]
+source = ["analytics", "backend"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    'if __name__ == "__main__":',  # script entry points (TST-144)
+    "if TYPE_CHECKING:",  # typing-only imports (TST-144)
+]

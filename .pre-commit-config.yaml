@@ -1,0 +1,26 @@
+# Local convenience hooks (TRD 18 GIT-045); CI remains the authority (TRD 16).
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (frontend)
+        entry: bash -c 'cd frontend && npx --no-install prettier --check .'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: no-audio-files
+        name: no audio files (GIT-091)
+        entry: audio files must never be committed
+        language: fail
+        files: (?i)\.(wav|mp3|flac|m4a|ogg|opus|aac|wma|aif|aiff|amr|webm|caf|pcm)$
+      - id: no-env-files
+        name: no .env files (GIT-080)
+        entry: .env files must never be committed
+        language: fail
+        files: (^|/)\.env($|\.)
+        exclude: \.example$
