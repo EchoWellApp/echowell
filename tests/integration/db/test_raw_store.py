@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import insert, text
 
 from backend.models import FEATURE_KEYS, RawSession
+from backend.repositories.raw_session_repository import RawSessionRepository
 from tests.integration.db_support import outcome
 from tests.integration.world import World
 
@@ -57,3 +58,13 @@ def test_rejection_and_batch_checks(world: World) -> None:
     assert outcome(world.session, rejection) == CHECK
     batch = "INSERT INTO ingest_batches (source, uploaded_by) VALUES ('csv_upload', NULL)"
     assert outcome(world.session, batch) == CHECK
+
+
+@pytest.mark.req("DB-001", "D-09", "AGT-043", "FEAT-010-AC-06")
+def test_same_session_id_twice_gets_increasing_arrival_seq(world: World) -> None:
+    repo = RawSessionRepository(world.session)
+    first = repo.insert(world.raw_values("R01", "D01", session_id="S-dup"))
+    second = repo.insert(world.raw_values("R01", "D01", session_id="S-dup"))
+    assert first[0] != second[0]
+    assert second[1] > first[1]
+    assert [r.arrival_seq for r in repo.by_session_id("S-dup")] == [first[1], second[1]]
