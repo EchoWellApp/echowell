@@ -94,7 +94,7 @@ None exposed. The configuration constrains which API origin the browser may call
 ## Frontend Impact
 
 - New: `netlify.toml`, `frontend/scripts/check-csp.mjs`; `echowell-build` meta tag on `/login` (if absent).
-- All routes (`/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`) receive the header set; no component logic changes.
+- All routes (`/login`, `/residents`, `/residents/[residentCode]` and its sections, `/admissions`, `/study`, `/admin`; TRD 24 D-110) receive the header set; no component logic changes.
 
 ## Analytics Impact
 

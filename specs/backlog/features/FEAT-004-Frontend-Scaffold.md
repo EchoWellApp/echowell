@@ -38,7 +38,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 - `.eslintrc.json` per FE-200, `.prettierrc` per FE-201, `tsconfig.json`, `vitest.config.ts` per FE-180, `vitest.setup.ts`, `playwright.config.ts` and `playwright.isolated.config.ts` skeletons per TST-004.
 - `next.config.js` with `reactStrictMode: true`, `poweredByHeader: false`, no `images.remotePatterns`, and `env.NEXT_PUBLIC_GIT_SHA` from `COMMIT_REF`, else `GIT_SHA`, else `unknown`.
 - `frontend/lib/config.ts` as the only reader of `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV`, throwing at build time on missing/invalid values; `frontend/.env.example` with local values.
-- `app/layout.tsx` (`<html lang="en">`, IBM Plex Sans 400/600 and IBM Plex Mono 400 via `next/font/google`), `app/page.tsx` redirecting `/` to `/residents`, and a minimal `app/login/page.tsx` that renders a heading.
+- `app/layout.tsx` (`<html lang="en">`, IBM Plex Sans 400/600 and IBM Plex Mono 400 via `next/font/google`; wireframe v0.2 replaces them with "Source Sans 3" 400/600/700 in checkpoint 7, FEAT-062, TRD 24 D-112), `app/page.tsx` redirecting `/` to `/residents`, and a minimal `app/login/page.tsx` that renders a heading.
 - Environment ribbon of FE-172 in the root layout for `local` and `staging`.
 - One smoke test (`frontend/tests/pages/login.test.tsx`) that renders `/login`.
 
@@ -57,7 +57,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 | FEAT-004-FR-01 | `frontend/` shall be a Next.js 14.2.x App Router application in TypeScript 5.x with `strict: true`. | FE-001, ARC-010 |
 | FEAT-004-FR-02 | `frontend/package.json` shall pin the packages of TRD 04 §4.1 and `frontend/package-lock.json` shall be committed. | FE-002, AGT-024 |
 | FEAT-004-FR-03 | No UI component library, no charting library other than Recharts 2.x, TanStack Query 5.x for server state; React 18.3.x. | FE-003, FE-005, FE-006 |
-| FEAT-004-FR-04 | IBM Plex Sans 400/600 and IBM Plex Mono 400 shall be loaded via `next/font/google` (self-hosted at build time) with no runtime request to `fonts.googleapis.com` or `fonts.gstatic.com`, and no font file committed. | FE-004, TPS-050, GIT-097 |
+| FEAT-004-FR-04 | IBM Plex Sans 400/600 and IBM Plex Mono 400 shall be loaded via `next/font/google` (self-hosted at build time) with no runtime request to `fonts.googleapis.com` or `fonts.gstatic.com`, and no font file committed (checkpoint 2 scaffold; FEAT-062 switches to "Source Sans 3" per the current FE-004, TRD 24 D-112). | FE-004, TPS-050, GIT-097 |
 | FEAT-004-FR-05 | No dependency, component or route shall handle audio or provide an LLM feature. | FE-007, FE-008, AGT-004 |
 | FEAT-004-FR-06 | The source tree shall follow TRD 04 §4.2; existing `package.json`, `next.config.js` and `services/api.ts` are filled in place. | FE-010 |
 | FEAT-004-FR-07 | The `gen:api` script shall be `openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts`. | FE-012 |
@@ -65,7 +65,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 | FEAT-004-FR-09 | Only standard Next.js 14 features shall be used; no Netlify-specific API. | FE-044 |
 | FEAT-004-FR-10 | `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV` shall be read only in `frontend/lib/config.ts`; the build shall fail with a clear message when the URL is missing, not an absolute `http(s)` URL, contains a path (origin only), or is `http://` while the app env is `staging` or `production`. | ENV-030, FE-170, FE-171, D-65 |
 | FEAT-004-FR-11 | No secret and no database URL shall be referenced from frontend code or any `NEXT_PUBLIC_*` variable. | FE-173, ENV-031 |
-| FEAT-004-FR-12 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the root layout shall render a non-dismissable ribbon "STAGING – synthetic data" (staging) or "LOCAL" (local) in IBM Plex Mono 12px at the top of `<body>`. | FE-172, ENV-032 |
+| FEAT-004-FR-12 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the root layout shall render a non-dismissable ribbon "STAGING – synthetic data" (staging) or "LOCAL" (local) in IBM Plex Mono 12px at the top of `<body>` (from checkpoint 7 the system monospace stack, TRD 24 D-112). | FE-172, ENV-032 |
 | FEAT-004-FR-13 | ESLint shall extend `next/core-web-vitals`, `plugin:@typescript-eslint/recommended`, `plugin:jsx-a11y/strict` and `prettier`, with `react/no-danger: error`, `no-console` allowing only warn/error, `@typescript-eslint/no-explicit-any: error`; `npm run lint` uses `--max-warnings=0`. | FE-200, GIT-042 |
 | FEAT-004-FR-14 | Prettier shall use `printWidth: 100`, `singleQuote: false`, `trailingComma: "all"`, `semi: true`. | FE-201 |
 | FEAT-004-FR-15 | `vitest.config.ts` shall configure v8 coverage exactly as FE-180 with `thresholds.lines: 80`. | FE-180, TST-142 |

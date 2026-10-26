@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -20,9 +20,10 @@ This document specifies the measurable quality attributes of EchoWell: performan
 | SRC-02 | Raw store immutability, rebuildability |
 | SRC-03, SRC-04, SRC-05 | Numeric tolerance (1e-6), determinism, test volumes |
 | SRC-07 | Rationale: version comparability, adherence, time-of-day effect (cited by link only, D-OWNER-1) |
-| SRC-09, SRC-10, SRC-11 | Design tokens, touch targets, plain language, status glyphs |
+| SRC-21 | Wireframe v0.2: design tokens (light and dark), touch targets, plain language, status glyphs; Resident list, Resident chart, New admissions and Study team pages (performance, accessibility, consistency) |
+| SRC-09, SRC-10, SRC-11 | Wireframes v0.1: superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | SRC-14 | Fixed constraints (no audio, detection not diagnosis, research system) |
-| SRC-18, SRC-19 | Alert review and Analytics pages (performance, accessibility, consistency) |
+| SRC-18, SRC-19 | Wireframes v0.1 Alert review and Analytics: superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | Contract §20–§21 (R7, R8, R18–R25) | Coverage gates, canonical budgets, nightly job, error format, DB roles, OpenAPI artefacts, driver, regions |
 | D-OWNER-2, D-OWNER-3, D-OWNER-4 | Production baseline 30 / test-only 16; AWS target, interim hosting, PHI-derived data protection; no real resident data on the interim stack, go-live on AWS only |
 
@@ -47,17 +48,17 @@ Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sl
 |---|---|---|---|---|
 | NFR-001 | `GET /api/v1/residents` shall respond with p95 ≤ 500 ms for 100 residents (DS-08), warm. | Must | BR-12, ASM-08, R8 | Test (TRD 13 TST-122: pytest with `time.perf_counter` in the nightly `performance` job, TRD 16 CIC-035) |
 | NFR-002 | `GET /api/v1/residents/{code}`, `/checkins`, `/features`, `/notes` and `GET /api/v1/scores?resident_code=` shall each respond with p95 ≤ 500 ms on DS-08, warm. | Must | BR-13, ASM-08, R8 | Test |
-| NFR-003 | `GET /api/v1/devices`, `GET /api/v1/alerts`, `GET /api/v1/data-alerts`, `GET /api/v1/alerts/{id}/reviews` and `GET /api/v1/analytics` shall each respond with p95 ≤ 500 ms on DS-08, warm. | Must | BR-12, BR-13, BR-15, SRC-18, SRC-19, R8 | Test |
+| NFR-003 | `GET /api/v1/devices`, `GET /api/v1/alerts`, `GET /api/v1/data-alerts`, `GET /api/v1/alerts/{id}/reviews` and `GET /api/v1/analytics` shall each respond with p95 ≤ 500 ms on DS-08, warm. | Must | BR-12, BR-13, BR-15, SRC-21, R8 | Test |
 | NFR-004 | `POST /api/v1/sessions` shall respond with p95 ≤ 1,000 ms including the synchronous resident-scoped pipeline run, on DS-08, warm. | Must | BR-01, SRC-15 demo step 4, R8 | Test |
 | NFR-005 | The analytics pipeline (`analytics.pipeline.run_pipeline`, in memory, no database I/O) on the SRC-05 test input shall complete in ≤ 5 s. | Must | BR-15, R8 | Test (CI timing) |
 | NFR-006 | A full rebuild of the reference dataset (SRC-05, 283 arrivals) including database writes shall complete in ≤ 30 s. | Must | BR-15, SRC-02, R8 | Test (CI validation job timing) |
 | NFR-007 | A full rebuild of DS-08 (100 residents, 10,800 records) shall complete in ≤ 120 s. | Must | BR-02, ASM-08, R8 | Test (scheduled performance job) |
 | NFR-008 | The first request after an idle period (cold start of backend or database on interim tiers) shall complete in < 15 s; the frontend shall show a loading state (not an error) for up to 20 s. | Should | BR-12, RSK-07 | Test (manual, staging) |
 | NFR-009 | Batch ingest of the reference CSV (283 rows) shall return 202 in ≤ 2 s and the batch shall be fully processed in ≤ 30 s. | Must | BR-15, R8 | Test |
-| NFR-010 | The Residents overview, Resident detail, Alert review and Analytics pages shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI, TRD 13 TST-125) |
-| NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Residents overview "Last check-in" of that resident shows the record's local time and its 30-day "used" count rises by 1; and (b) when the resident's baseline is frozen, the Resident detail tally chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E timing test TRD 13 TST-187), Demo (TST-181, 60 s incl. cold start) |
+| NFR-010 | The four pages Resident list (`/residents`), Resident chart Summary (`/residents/R09`), Resident chart Voice trends (`/residents/R09/trends`) and Study team (`/study`) shall reach Largest Contentful Paint < 2.5 s and Interaction to Next Paint < 200 ms on a desktop Chrome profile with "Fast 4G" throttling, warm API. | Should | BR-12, BR-13 | Test (Lighthouse CI, TRD 13 TST-125) |
+| NFR-011 | A record accepted by `POST /api/v1/sessions` shall show on the dashboard (after reload) within 5 s of the API response, end to end, as defined by TRD 02 FR-184: (a) the Resident list "Last check-in" of that resident shows the record's local time and its 30-day "used" count (Resident chart) rises by 1; and (b) when the resident's baseline is frozen, the Resident chart's change score chart (Voice trends) gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67). | Must | BR-13, SRC-15 demo step 5 | Test (E2E timing test TRD 13 TST-187), Demo (TST-181, 60 s incl. cold start) |
 | NFR-012 | The initial JavaScript transferred for any dashboard route shall be ≤ 300 KB gzip. | Should | BR-12 | Test (`next build` output check in CI, TRD 13 TST-191) |
-| NFR-013 | The Alert review page shall reflect a saved review or snooze (badge change, history entry) within 1 s of the API response, without a full page reload. | Should | BR-13, SRC-18 | Test (E2E) |
+| NFR-013 | The "Review and notes" section of the Resident chart shall reflect a saved review or reminder (badge change, review status, "Previous reviews" entry, reminder line) within 1 s of the API response, without a full page reload. | Should | BR-13, SRC-21 | Test (E2E) |
 
 ### 4.3 Availability and reliability
 
@@ -114,16 +115,16 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | NFR-060 | The dashboard shall conform to WCAG 2.1 Level AA. | Must | BR-12, BR-13 | Test (axe-core in Playwright: 0 serious/critical violations on the route list of TRD 13 TST-110), Inspection (manual keyboard and screen-reader pass) |
-| NFR-061 | Status shall never be conveyed by colour alone: alarm states shall combine the ▲ glyph, text ("Alarm on", "Alarm since …") and a 2 px #9A4508 border. | Must | BR-12, SRC-09, SRC-10 | Inspection, Test |
-| NFR-062 | Text contrast shall be ≥ 4.5:1 for body text and ≥ 3:1 for large text and non-text UI elements; the specified tokens meet this (#1F1F1E on #F6F6F4 = 15.2:1; #4A4A47 on #F6F6F4 = 8.2:1; #9A4508 on #FFFFFF = 6.5:1). | Must | BR-12, SRC-09 | Test (contrast check) |
-| NFR-063 | Baseline-period chart bars (#BDBDB8, 1.9:1 on white) shall carry a 1 px #8A8A85 outline (3.5:1) or equivalent so that they meet the 3:1 non-text contrast criterion, and the chart shall have a text-table alternative. | Must | BR-13, SRC-10, WCAG 1.4.11 | Test, Inspection |
-| NFR-064 | Every interactive control shall have a target size of at least 44 × 44 CSS px. | Must | BR-12, SRC-09 | Test (automated size check in E2E) |
+| NFR-061 | Status shall never be conveyed by colour alone: every status pill shall combine its glyph ("▲" Changed, "!" Needs attention, "○" Learning, "●" Usual), its text label and a border in its colour (TRD 11 UX-004). | Must | BR-12, SRC-21 | Inspection, Test |
+| NFR-062 | Text contrast shall be ≥ 4.5:1 for body text and ≥ 3:1 for large text and non-text UI elements; in both the light and the dark colour scheme; the main v0.2 token pairs meet this (light: `--ink` #17232E on `--canvas` #EDF1F4 = 14.0:1; `--muted` #556677 on `--surface` #FFFFFF = 5.9:1; `--red` #B3261E on #FFFFFF = 6.5:1; `--grey` #5C6B78 on `--grey-bg` #EEF1F4 = 4.8:1; dark: `--ink` #E6EDF3 on `--canvas` #121A21 = 14.9:1; `--muted` #9DB0C0 on `--surface` #1A242D = 7.0:1), and every other pair is checked by TRD 11 UX-224. | Must | BR-12, SRC-21 | Test (contrast check) |
+| NFR-063 | Change-score bars before the alarm (`--c-aside` #9FB0BF, 2.2:1 on white `--surface`) shall carry a 1 px `--muted` outline (5.9:1) or an adjusted token value (TRD 11 UX-224) so that they meet the 3:1 non-text contrast criterion, and the chart shall have a text-table alternative. | Must | BR-13, SRC-21, WCAG 1.4.11 | Test, Inspection |
+| NFR-064 | Every interactive control shall have a target size of at least 44 × 44 CSS px. | Must | BR-12, SRC-21 | Test (automated size check in E2E) |
 | NFR-065 | All functions shall be operable by keyboard alone with a visible focus indicator and a logical tab order. | Must | BR-12, BR-13 | Test (Playwright keyboard flow) |
-| NFR-066 | User-facing text shall use plain language: no statistical terms without a plain-language label (e.g. "Running change tally", "Quieter (loudness)"); the "What this means" text shall score ≤ grade 8 on the Flesch-Kincaid scale. | Should | BR-13, BR-18, SRC-10 | Analysis (readability check of configured strings) |
+| NFR-066 | User-facing text shall use plain language: no statistical terms without a plain-language label (e.g. "Change score", "Quieter (loudness)"); the "Right now" summary texts of the Resident chart shall score ≤ grade 8 on the Flesch-Kincaid scale. | Should | BR-13, BR-18, SRC-21 | Analysis (readability check of configured strings) |
 | NFR-067 | Wording shall follow detection-not-diagnosis rules (TRD 00 §4.2); a CI text check shall fail on forbidden terms in UI copy. | Must | BR-18, VIS-003 | Test (CI) |
-| NFR-068 | Pages shall remain usable at 200% browser zoom and at viewport widths ≥ 320 px (TRD 11 UX-243) without horizontal page scroll; data tables may scroll horizontally inside their container below 900 px (overview) and 760 px (admissions). | Must | BR-12, SRC-09, SRC-11 | Test (Playwright at 320, 360, 375, 390, 768 and 1280 px; TRD 04 FE-191, TRD 24 D-78) |
+| NFR-068 | Pages shall remain usable at 200% browser zoom and at viewport widths ≥ 320 px (TRD 11 UX-243) without horizontal page scroll; only the tables and charts listed in TRD 11 UX-243 (residents and admissions tables with min width 640 px) may scroll horizontally inside their own container. | Must | BR-12, SRC-21 | Test (Playwright at 320, 360, 375, 390, 768 and 1280 px; TRD 04 FE-191, TRD 24 D-78) |
 | NFR-069 | A first-time clinician shall be able to identify which residents have an alarm and open one resident's detail within 60 s without training, in a usability session with at least 3 Edgewood staff or proxy participants. | Should | BR-12, BR-13, SRC-14 Part D §7 | Demo (usability session after the Ann and Lovette interviews) |
-| NFR-070 | Loading, empty and error states shall be shown in words for every data region (e.g. "Baseline forming · 5 of 30 sessions", "No new admissions"). | Must | BR-12, BR-13 | Test |
+| NFR-070 | Loading, empty and error states shall be shown in words for every data region (e.g. "Learning their usual: 5 of 30 check-ins so far.", "No new admissions."). | Must | BR-12, BR-13 | Test |
 
 ### 4.7 Maintainability
 
@@ -159,7 +160,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-102 | Unhandled exceptions shall be reported to Sentry when `SENTRY_DSN` is set, with request ID and without PII or feature values; with `SENTRY_DSN` empty, nothing shall be sent. | Should | BR-16, BR-17 | Test |
 | NFR-103 | The absence of a successful nightly run in the previous 26 h shall be detectable from `pipeline_runs` and shall be shown on the Admin page as a warning. | Should | BR-06, RSK-05, RSK-07 | Test |
 | NFR-104 | An uptime monitor shall poll `GET /api/v1/health` every 30 minutes in staging and production (TRD 16 CIC-060; the interval is limited by the Neon Free compute hours, TRD 15 DEP-102, CIC-061). | Should | BR-17 | Inspection |
-| NFR-105 | Silent devices shall be visible to staff within one nightly run: a shared device with no record from any resident on a local day shall appear in the Devices panel after the next nightly run. | Must | BR-06, BR-12, RSK-05 | Test |
+| NFR-105 | Silent devices shall be visible to staff within one nightly run: a shared device with no record from any resident on a local day shall appear after the next nightly run in the affected residents' Check-in log and Device sections and on the Study team page (Devices, "Data problems to follow up"). | Must | BR-06, BR-12, RSK-05 | Test |
 
 ### 4.10 Compliance posture and traceability
 
@@ -183,8 +184,8 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-124 | A frozen baseline shall never change value after being persisted; a test shall compare baselines before and after ingesting later records and a full rebuild. | Must | BR-09, ASM-07 | Test |
 | NFR-125 | The sum of usable + set_aside + quarantined + duplicate per resident shall equal that resident's arrivals in `raw_sessions`, and checked_in + missing_resident + missing_device_gap shall equal the number of days in the ledger window. | Must | BR-02, BR-06 | Test (invariant check after every run) |
 | NFR-126 | `audit_logs`, `staff_notes` and `alert_reviews` shall be append-only for the `echowell_app` role. | Must | BR-16, BR-13, R20 | Test |
-| NFR-127 | The evaluation ground truth (answer key) shall be isolated from the pipeline: a run with `evaluation_ground_truth` populated and a run with it empty shall produce identical derived tables, and the table shall be empty in the `production` profile. | Must | BR-15, SRC-02, SRC-19, ARC-034 | Test |
-| NFR-128 | Data alerts and Analytics figures shall be computed from the same derived tables and 30-day window as the Residents overview, so that the overview, Alert review and Analytics pages never show contradictory counts for the same as-of time. | Must | BR-12, BR-15, SRC-18, SRC-19 | Test (cross-page consistency check on the reference data) |
+| NFR-127 | The evaluation ground truth (answer key) shall be isolated from the pipeline: a run with `evaluation_ground_truth` populated and a run with it empty shall produce identical derived tables, and the table shall be empty in the `production` profile. | Must | BR-15, SRC-02, SRC-21, ARC-034 | Test |
+| NFR-128 | Data alerts and Study team figures shall be computed from the same derived tables and 30-day window as the Resident list and Resident chart, so that the Resident list, Resident chart and Study team pages never show contradictory counts for the same as-of time. | Must | BR-12, BR-15, SRC-21 | Test (cross-page consistency check on the reference data) |
 | NFR-129 | A `POST /api/v1/sessions` response with `status_after_processing: "pending"` shall be followed by processing of that record in the next successful run, with no manual data repair. | Must | BR-02, R23 | Test (fault injection) |
 
 ### 4.12 Timezone correctness
@@ -194,7 +195,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-130 | All instants shall be stored as `timestamptz` in UTC and converted to facility local time only with the IANA zone database (Python `zoneinfo`; frontend `Intl.DateTimeFormat` with `timeZone` set to the facility zone). | Must | BR-07, ASM-01 | Inspection, Test |
 | NFR-131 | Local date, local time and morning classification shall be correct across daylight-saving transitions: test vectors 2026-11-01 06:30:00 UTC → 01:30 CDT, and 2026-11-01 07:30:00 UTC → 01:30 CST, both local date 2026-11-01 and morning; 2027-03-14 08:30:00 UTC → 03:30 CDT, morning. | Must | BR-06, BR-07 | Test |
 | NFR-132 | Records with local time just before and after midnight shall be assigned to the correct local date (e.g. 2026-10-02 04:59:59 UTC → 2026-10-01 23:59:59 CDT, local date 2026-10-01). | Must | BR-06 | Test |
-| NFR-133 | The dashboard shall display all dates and times in the facility timezone with its abbreviation (e.g. "Oct 30, 2026, 3:00 PM CT"), independent of the viewer's browser timezone. | Must | BR-12, SRC-09 | Test (Playwright with browser timezone set to Europe/London) |
+| NFR-133 | The dashboard shall display all dates and times in the facility timezone in the formats of TRD 11 UX-002 and UX-003 (e.g. "Oct 30, 2:28 PM"), independent of the viewer's browser timezone. | Must | BR-12, SRC-21 | Test (Playwright with browser timezone set to Europe/London) |
 | NFR-134 | The nightly run (separate Railway Cron Job service, `0 7,8 * * *` UTC) shall run exactly once per local day, in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx), including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
 
 ### 4.13 Browser and device support
@@ -218,7 +219,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 
 - ASM-01 facility timezone America/Chicago; ASM-04 test profile 16 / production 30 (D-OWNER-2); ASM-08 small scale (basis of all performance and scalability targets).
 - Decided by the lead and applied: coverage gates 95/85/80 (R7); canonical budgets and DS-08 (R8); nightly Cron Job (R18); error and health format (R19); DB roles (R20); OpenAPI artefacts (R22); `pending` status (R23); psycopg 3 (R24); regions (R25).
-- Notes for lead (TRD-local, introduced here): cold-start allowance 15 s; availability target 99.0% only in the demo window; RPO 24 h / RTO 8 working hours; 2 GB size budget; LCP/INP and 300 KB bundle budgets; Flesch-Kincaid grade ≤ 8; no automatic nightly retry (NFR-023); review UI update within 1 s (NFR-013); cross-page count consistency (NFR-128); baseline-bar outline #8A8A85 (now also R1).
+- Notes for lead (TRD-local, introduced here): cold-start allowance 15 s; availability target 99.0% only in the demo window; RPO 24 h / RTO 8 working hours; 2 GB size budget; LCP/INP and 300 KB bundle budgets; Flesch-Kincaid grade ≤ 8; no automatic nightly retry (NFR-023); review UI update within 1 s (NFR-013); cross-page count consistency (NFR-128); change-score bar outline `--muted` before the alarm (NFR-063; replaces the v0.1 #8A8A85 outline of R1, TRD 24 D-112).
 
 ## 6. Dependencies
 
@@ -232,13 +233,13 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | AC-NFR-01 | Load test report on DS-08 shows p95 ≤ 500 ms for the read endpoints of NFR-001–NFR-003 and p95 ≤ 1,000 ms for `POST /api/v1/sessions`, warm, on staging. |
 | AC-NFR-02 | CI validation job runs the in-memory pipeline on SRC-05 in ≤ 5 s, rebuilds SRC-05 with database writes in ≤ 30 s, and matches SRC-03 within 1e-6; a second rebuild produces identical outputs. |
 | AC-NFR-03 | CI coverage gate reports analytics ≥ 95%, backend ≥ 85%, frontend ≥ 80% line coverage. |
-| AC-NFR-04 | axe-core reports 0 serious or critical violations on the 8 routes of TRD 13 TST-110; all interactive targets measure ≥ 44 × 44 px. |
+| AC-NFR-04 | axe-core reports 0 serious or critical violations on the 9 routes of TRD 13 TST-110; all interactive targets measure ≥ 44 × 44 px. |
 | AC-NFR-05 | TLS scan of staging frontend and backend shows only TLS 1.2/1.3; the backend refuses to start in staging/production when `DATABASE_URL` lacks `sslmode=require` or stricter. |
 | AC-NFR-06 | Provider evidence (screenshots or configuration exports) shows encryption at rest and backups enabled for the interim database; the AWS go-live checklist includes RDS KMS encryption, encrypted backups and Secrets Manager. |
 | AC-NFR-07 | Every `ingest_batches` row in staging and production has a synthetic/test source and DATA_SOURCE_LABEL names test or synthetic data (interim stack). |
 | AC-NFR-08 | A log-capture test of ingest, note creation and login finds no feature values, note text, passwords, tokens or API keys in logs. |
 | AC-NFR-09 | DST and midnight test vectors of NFR-131 and NFR-132 pass. |
-| AC-NFR-10 | The main-run Playwright suites pass on Chromium, Firefox and WebKit (the `@isolated` scenarios run in Chromium only, TRD 13 TST-100); a run with browser timezone Europe/London shows times in CT. |
+| AC-NFR-10 | The main-run Playwright suites pass on Chromium, Firefox and WebKit (the `@isolated` scenarios run in Chromium only, TRD 13 TST-100); a run with browser timezone Europe/London shows facility (America/Chicago) times. |
 | AC-NFR-11 | An attempt to UPDATE or DELETE `raw_sessions` or `audit_logs` with the application role fails; invariant checks of NFR-125 pass after every pipeline run in the validation suite. |
 | AC-NFR-12 | The ground-truth isolation test of NFR-127 and the OpenAPI drift check of NFR-088 pass in CI. |
 
@@ -274,3 +275,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-02, R5-05) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-08) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (NFR-001, NFR-010, NFR-012, NFR-151 verification (D-98); NFR-068 widths (D-78); NFR-023, NFR-134 NIGHTLY_RUN_HOUR_LOCAL) | — |
+| 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): NFR-010 four pages (Resident list, chart Summary, chart Voice trends, Study team); NFR-011, NFR-013 (review in the chart), NFR-061 status pills, NFR-062 v0.2 tokens light and dark, NFR-063 change-score bar contrast, NFR-066, NFR-068, NFR-070, NFR-105, NFR-128, NFR-133, AC-NFR-04 (9 routes), AC-NFR-10; SRC-21 replaces SRC-09/10/11/18/19 | — |

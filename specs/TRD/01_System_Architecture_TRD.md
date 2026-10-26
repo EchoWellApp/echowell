@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -19,7 +19,8 @@ This document specifies the EchoWell system architecture: system context and the
 | SRC-01 | Technology stack, hosting, repository strategy, target AWS platform |
 | SRC-02 | Storage flow (diagram 1) and 6-stage daily processing flow (diagram 2) |
 | SRC-03, SRC-04, SRC-05 | Pipeline rules, reference implementation, input format |
-| SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Dashboard views served by the frontend (Residents, Resident detail, New admissions, Alert review, Analytics) |
+| SRC-21 | Dashboard views served by the frontend (wireframe v0.2: Resident list, Resident chart, New admissions, Study team) |
+| SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Wireframes v0.1: superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | Contract §19–§20 (R1–R17) | Data alerts, alert reviews, evaluation ground truth, as-of rule, budgets |
 | SRC-13 | Record fields; transport to the cloud is Team 1's |
 | SRC-14 | Cloud/edge split and team boundaries |
@@ -72,7 +73,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Netlify
-        NX["Next.js 14.2 App Router (TypeScript, React 18.3)<br/>routes: /login, /residents, /residents/[residentCode],<br/>/alerts, /analytics, /admissions, /admin<br/>services/api.ts = only HTTP client"]
+        NX["Next.js 14.2 App Router (TypeScript, React 18.3)<br/>routes: /login, /residents, /residents/[residentCode] (+ /review, /trends,<br/>/baseline, /log, /device), /admissions, /study, /admin<br/>services/api.ts = only HTTP client"]
     end
     subgraph Railway
         API["FastAPI 0.115 (Python 3.12)<br/>backend/api routers -> services -> repositories -> models"]
@@ -189,10 +190,10 @@ Human-entered and operational data outside SRC-02's diagram: `alert_reviews`, `a
 |---|---|---|---|---|
 | ARC-030 | `raw_sessions` shall be insert-only: the `echowell_app` role shall hold no UPDATE or DELETE privilege on it and a trigger shall reject UPDATE and DELETE. | Must | BR-02, SRC-02 diagram 1, TRD 12, R20 | Test |
 | ARC-031 | `raw_sessions.payload` shall hold the record exactly as received (JSON object; for CSV, the row as a header-keyed object of strings). | Must | BR-02, SRC-02 | Test |
-| ARC-032 | Every derived table (processed_sessions, epochs, day_ledger, baselines, scores, cusum_state, alerts, data_alerts, facility_reference_ranges) shall be writable only by the PipelineService code path, except alert status and snooze fields and `review_flagged_data_problem` data alerts written by the alarm review service. | Must | BR-02, SRC-02, SRC-18 | Inspection |
+| ARC-032 | Every derived table (processed_sessions, epochs, day_ledger, baselines, scores, cusum_state, alerts, data_alerts, facility_reference_ranges) shall be writable only by the PipelineService code path, except alert status and snooze fields and `review_flagged_data_problem` data alerts written by the alarm review service. | Must | BR-02, SRC-02, SRC-21 | Inspection |
 | ARC-033 | The answer key files (SRC-03) shall be stored only under `tests/fixtures/` and shall not be importable or readable by `analytics/` or `backend/` runtime code. | Must | BR-15, SRC-02 ("answer key never touches the analytics"), SRC-03 README | Inspection (import-lint in CI) |
 | ARC-034 | The `evaluation_ground_truth` table shall be populated only when the active profile is `test_v0_1`, by the loader `database/seeds/load_evaluation_ground_truth.py` (contract R27), and shall be read only by `backend/services/analytics_summary.py` for the alarm timing check after the run, through a second connection `DATABASE_READONLY_URL` (role `echowell_readonly`); the `echowell_app` role shall have no SELECT on it, and `analytics/` and PipelineService shall never query it. | Must | BR-15, SRC-02, SRC-19, R17, R20 | Inspection, Test (privilege test; pipeline run with the table populated vs empty gives identical outputs) |
-| ARC-035 | In the `production` profile the `evaluation_ground_truth` table shall be empty and the Analytics page shall show review outcomes instead of the alarm timing check. | Must | BR-15, SRC-19 | Test |
+| ARC-035 | In the `production` profile the `evaluation_ground_truth` table shall be empty and the Study team page (`/study`) shall show review outcomes instead of the alarm timing check. | Must | BR-15, SRC-21 | Test |
 
 ### 4.5 Processing flow (SRC-02 diagram 2) and stage mapping
 
@@ -235,14 +236,14 @@ flowchart TB
 | 6. Persistence rule | 8 CUSUM | `analytics/cusum_engine.py` | `scores.cusum_tally`, `cusum_state` |
 | Flag for clinician review | 9 Alert generation | `analytics/alert_generator.py` | `alerts` |
 | (missing days, SRC-03) | 10 Day ledger | `analytics/day_ledger.py` | `day_ledger` |
-| (data-quality flags for the study team, SRC-18) | 11 Data-alert generation (after all other stages; rules baseline_stalled, possible_other_speaker, high_set_aside, device_silent over the last 30 days; thresholds from `config_parameters`) | `analytics/data_alerts.py` | `data_alerts` (kinds as above; `review_flagged_data_problem` is created by alarm review, not by the pipeline) |
-| (study-team analytics, SRC-19) | 12 Analytics aggregates (KPIs, check-ins per day, funnel, by resident; after stage 11) | `analytics/aggregates.py` | `GET /api/v1/analytics` (computed, not stored) |
+| (data-quality flags for the study team, SRC-21) | 11 Data-alert generation (after all other stages; rules baseline_stalled, possible_other_speaker, high_set_aside, device_silent over the last 30 days; thresholds from `config_parameters`) | `analytics/data_alerts.py` | `data_alerts` (kinds as above; `review_flagged_data_problem` is created by alarm review, not by the pipeline) |
+| (study-team analytics, SRC-21) | 12 Analytics aggregates (KPIs, check-ins per day, funnel, by resident; after stage 11) | `analytics/aggregates.py` | `GET /api/v1/analytics` (computed, not stored) |
 
 SRC-02's final box also mentions "EWMA trend shown against baseline band"; this display is deferred (OQ-18) and is not part of the MVP pipeline.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| ARC-040 | `analytics.pipeline.run_pipeline` shall execute the stages in the order of section 4.5 and TRD 07 ANL-006 (data alerts as stage 11, analytics aggregates as stage 12, last), and shall be the single entry point used by every trigger. | Must | BR-03..BR-11, SRC-02, SRC-04, SRC-18 | Inspection, Test |
+| ARC-040 | `analytics.pipeline.run_pipeline` shall execute the stages in the order of section 4.5 and TRD 07 ANL-006 (data alerts as stage 11, analytics aggregates as stage 12, last), and shall be the single entry point used by every trigger. | Must | BR-03..BR-11, SRC-02, SRC-04, SRC-21 | Inspection, Test |
 | ARC-041 | Modules in `analytics/` shall be pure: they shall not import `backend`, SQLAlchemy, psycopg, FastAPI, httpx, or perform file, network, clock or random-number access; current time is passed in as `as_of`. | Must | BR-15, SRC-01 | Inspection (import-lint in CI), Test |
 | ARC-042 | Given identical raw records (in arrival order), identical frozen baselines, identical configuration snapshot and identical `as_of`, `run_pipeline` shall return identical outputs (bit-identical float64 values and identical ordering). | Must | BR-15, SRC-02 | Test (run twice, compare) |
 | ARC-043 | A baseline that has been persisted as frozen shall be passed to the pipeline as an input on later runs and shall not be recomputed, except by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56); a late record that would change its membership shall be recorded as a `late_arrival` warning in `pipeline_runs.warnings`. | Must | BR-09, ASM-07, OQ-10 | Test |
@@ -475,3 +476,4 @@ flowchart LR
 | 0.6 | 20 Oct 2026 | PR #2 backlog consistency fixes (ARC-040 stage order per TRD 07; ARC-061 and nightly diagram use NIGHTLY_RUN_HOUR_LOCAL) | — |
 | 0.7 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.8 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-3, Q-4, Q-5, Q-7): §4.6 router list aligned with TRD 05 §4.1 (data alerts in `alarms`, notes in `residents`, facility reference ranges in `admissions`; `config` added); service names `health_service`, `config_service`, `auth_service`, `audit_service`; repository module names from docs/design/Database_ERD.md §5; root `scripts/` added | — |
+| 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend routes in §4.2 (Resident chart sections, `/study`; `/alerts` and `/analytics` pages retired); SRC-21 replaces SRC-09/10/11/18/19 in references and traces (ARC-032, ARC-035, ARC-040, §4.5) | — |

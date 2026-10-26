@@ -18,7 +18,7 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 
 - BR-17 (monorepo with Next.js, FastAPI, PostgreSQL and GitHub Actions): the documents fix the module layout of TRD 01 §4.6 for every later phase.
 - BR-15 (reproduce the R01–R10 answer key): Analytics_Architecture.md and Testing_Architecture.md lay out the stage order and the validation tiers that the answer key is checked against.
-- BR-12, BR-13, BR-14: UI_Architecture.md and Frontend_Architecture.md map the five wireframes (SRC-09, SRC-10, SRC-11, SRC-18, SRC-19) to routes and endpoints.
+- BR-12, BR-13, BR-14: UI_Architecture.md and Frontend_Architecture.md map the wireframe v0.2 (SRC-21; it superseded SRC-09, SRC-10, SRC-11, SRC-18 and SRC-19, TRD 24 D-108) to routes and endpoints.
 - BR-16: Backend_Architecture.md and Deployment_Architecture.md record the authentication, role and TLS boundaries (ARC-004..ARC-008).
 
 ## Referenced TRDs
@@ -29,8 +29,8 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 - TRD 19 §4.3 endpoint index E-01..E-32.
 - TRD 20 §4.6 tables (4.6.1–4.6.24), §4.7 indexes.
 - TRD 18 GIT-054, GIT-055 (docs content and Mermaid diagrams).
-- TRD 24 D-23 (exactly seven routes), OQ-18 (no EWMA chart).
-- Source wireframes SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 under `specs/UI-wireframe/`.
+- TRD 24 D-110 (pages and routes of wireframe v0.2; supersedes D-23), OQ-18 (no EWMA chart).
+- Source wireframe SRC-21 (`specs/UI-wireframe/echowell-wireframes-v0.2.html`, notes in `WIREFRAMES.md`).
 
 ## Scope
 
@@ -53,7 +53,7 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 | FEAT-001-FR-01 | The nine documents listed in Scope shall exist under `docs/design/` with exactly those file names. | TRD 25 §4.6 Phase 2 Outputs |
 | FEAT-001-FR-02 | `OpenAPI_Spec.md` and `Backend_Architecture.md` shall map every endpoint E-01..E-32 to one router file under `backend/api/` (keeping the skeleton names, so `/api/v1/alerts`, reviews, snooze and data-alerts are served by `backend/api/alarms.py`) and one service module under `backend/services/`. | TRD 19 §4.3; TRD 25 §4.6 Phase 2 DoD; D-24; ARC-050 |
 | FEAT-001-FR-03 | `Database_ERD.md` shall show every table of TRD 20 §4.6 (facilities through evaluation_ground_truth) in a Mermaid `erDiagram` with primary and foreign keys, and a table that names, for each table, the API repository or analytics module that writes it and the ones that read it. | TRD 20 §4.6; TRD 25 §4.6 Phase 2 DoD |
-| FEAT-001-FR-04 | `Frontend_Architecture.md` and `UI_Architecture.md` shall map each of the routes `/login`, `/residents` (with the `#devices` panel), `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin` to the endpoints it calls, and shall contain no other page. | FE-020; D-23; TRD 25 §4.6 Phase 2 Pitfalls |
+| FEAT-001-FR-04 | `Frontend_Architecture.md` and `UI_Architecture.md` shall map each of the routes `/login`, `/residents`, `/residents/[residentCode]` (with the sections `/review`, `/trends`, `/baseline`, `/log`, `/device`), `/admissions`, `/study`, `/admin` (Study team with the `#devices` section) to the endpoints it calls, and shall contain no other page. | FE-020; D-110; TRD 25 §4.6 Phase 2 Pitfalls |
 | FEAT-001-FR-05 | `Analytics_Architecture.md` shall show the stage order of TRD 01 §4.5 with `analytics.pipeline.run_pipeline` as the single entry point, data alerts (stage 11) followed by analytics aggregates (stage 12, last; TRD 07 ANL-006), and shall state the purity, float64 and determinism rules. | ARC-040, ARC-041, ARC-042, ARC-046 |
 | FEAT-001-FR-06 | `Analytics_Architecture.md` shall describe frozen-baseline reuse, the `late_arrival` warning and the natural keys used for idempotent upserts, including preservation of human-entered data on rebuild. | ARC-043, ARC-044, ARC-045 |
 | FEAT-001-FR-07 | `Backend_Architecture.md` and `Deployment_Architecture.md` shall show the system boundary (ingest API only), the no-audio rule, the authentication methods (API key scopes `ingest:write`, `pipeline:run`; JWT for users), TLS on every hop including the database, encryption at rest, and the synthetic-data-only rule for the interim stack. | ARC-001..ARC-008 |
@@ -66,7 +66,7 @@ Produce the nine design documents under `docs/design/` that translate the TRDs i
 ## Inputs
 
 - `specs/TRD/` 00–25, read in the TRD 25 §4.4 "Design documents" order: 01, 02, 06, 20, 23, 05, 19, 07, 08, 09, 10, 04, 11, 13, 15, 16, 21, 22.
-- Wireframes SRC-09 (Main), SRC-10 (Resident), SRC-11 (Admission), SRC-18 (Alerts), SRC-19 (Analytics) under `specs/UI-wireframe/`.
+- Wireframe v0.2 SRC-21 under `specs/UI-wireframe/` (`echowell-wireframes-v0.2.html`, `WIREFRAMES.md`).
 - `specs/backlog/BACKLOG.md` when present (TRD 25 §4.6 Phase 2 Inputs).
 
 ## Outputs
@@ -129,7 +129,7 @@ None at runtime. The batch report records commands run and their results (AGT-02
 | FEAT-001-AC-01 | `ls docs/design` lists exactly the nine file names of FEAT-001-FR-01. Verified by: Inspection (review of `ls docs/design` against the cited requirements). | TRD 25 §4.6 Phase 2 Outputs |
 | FEAT-001-AC-02 | The endpoint mapping table contains 32 rows, one per E-01..E-32, each naming an existing-or-planned file under `backend/api/` and a module under `backend/services/`. Verified by: Review checks (each E-01..E-32 row appears in the endpoint mapping table). | TRD 25 §4.6 Phase 2 DoD |
 | FEAT-001-AC-03 | Every table name listed under TRD 20 §4.6 appears in the Mermaid `erDiagram` of `Database_ERD.md` and in its writer/reader table. Verified by: Review checks (each TRD 20 §4.6 table appears in the ERD and the writer/reader table). | TRD 25 §4.6 Phase 2 DoD |
-| FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. Verified by: Test (the test method of FE-020, applied to the condition stated in the criterion). | FE-020; D-23; OQ-18 |
+| FEAT-001-AC-04 | The route mapping lists exactly `/login`, `/residents`, `/residents/[residentCode]` (with the sections `/review`, `/trends`, `/baseline`, `/log`, `/device`), `/admissions`, `/study`, `/admin`, each with at least one endpoint ID, and no EWMA component is mentioned as planned. Verified by: Test (the test method of FE-020, applied to the condition stated in the criterion). | FE-020; D-110; OQ-18 |
 | FEAT-001-AC-05 | Mermaid diagrams exist for the ERD, the request flow, the pipeline stages and the page hierarchy, and `Repository_Structure.md` contains the repository dependency diagram. Verified by: Inspection (review of `Repository_Structure.md` against the cited requirements). | TRD 25 §4.6 Phase 2 Outputs and DoD |
 | FEAT-001-AC-06 | `grep -rnE "T[B]D\|T[O]DO" docs/design` exits with status 1 (no match). Verified by: Inspection (run the command in the criterion and check its output). | TRD 25 §4.6 Phase 2 Commands |
 | FEAT-001-AC-07 | The Phase 7 prompt run changes no file outside `docs/design/` (and the batch report) and modifies no TRD file; TRD, backlog and TRD 24 corrections requested in the checkpoint review are made in the same checkpoint PR (GitHub PR #3, review round 1; D-101). Verified by: Inspection (the inspection method of AGT-001, applied to the condition stated in the criterion). | AGT-001; TRD 25 §4.6 Phase 2 |

@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.13 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -290,7 +290,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | GIT-094 | SRC-07 (JMIR preprint 113062) shall be referenced only by its link https://preprints.jmir.org/preprint/113062 (DOI 10.2196/preprints.113062) as listed in `REFERENCES.md`; no TRD or document shall reference a repository path for it. | Must | D-OWNER-1 | Inspection |
 | GIT-095 | Binary specification files authored by the team (`.xlsx`, `.pdf`, `.docx`) are allowed only under `specs/` and shall be at most 10 MB each; elsewhere binaries are limited to frontend static assets (`.svg`, `.png`, `.ico`) of at most 1 MB each. | Must | TRD 16 CIC-021 | Test |
 | GIT-096 | Git LFS shall not be used. | Must | — | Inspection |
-| GIT-097 | Fonts shall not be committed; IBM Plex is self-hosted through `next/font` at build time (TRD 22). | Should | TRD 22 | Inspection |
+| GIT-097 | Fonts shall not be committed; "Source Sans 3" is self-hosted through `next/font` at build time (TRD 22; TRD 24 D-112). | Should | TRD 22 | Inspection |
 
 ### 4.11 `.gitignore`
 
@@ -451,3 +451,4 @@ updates:
 | 0.11 | 20 Oct 2026 | PR #2 backlog consistency fixes (branch table: linear history on staging only (GIT-010); GIT-053 wording avoids the literal marker words so the TRD 25 Phase 1 grep returns nothing) | — |
 | 0.12 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.13 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5 and one PR per Block 3 checkpoint (D-101): §3 references, branch table, §4.2 diagram, GIT-010, GIT-012, GIT-014, GIT-020, GIT-030, GIT-031, GIT-034, PR template, AC-GIT-01, §8; root `scripts/` added to the §4.1 layout (checkpoint 1 Q-4) | — |
+| 0.14 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): GIT-097 names the v0.2 font Source Sans 3 (D-112) | — |
