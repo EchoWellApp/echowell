@@ -84,7 +84,7 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-015
 - Transitively FEAT-012 (`data_alerts` table, app-role UPDATE grant) and FEAT-016/FEAT-017 (CLI framework in `backend/cli.py`).
 - TST-189 runs a full pipeline and a `data_problem` review, so it executes once FEAT-031 and FEAT-053 are merged.
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-069.
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-072.
 
 ## Database Impact
 

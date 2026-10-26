@@ -342,7 +342,7 @@ Frozen per-feature statistics of a resident-epoch (19 features + composite = 20 
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 
 #### 4.2.15 Score (`scores`)
-Daily deviation score of one usable post-freeze session. Read by `/api/v1/scores` (Running change tally chart), `/api/v1/residents/{code}/features` (z sparklines).
+Daily deviation score of one usable post-freeze session. Read by `/api/v1/scores` (change score chart, Voice trends section), `/api/v1/residents/{code}/features` (z sparklines).
 
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|

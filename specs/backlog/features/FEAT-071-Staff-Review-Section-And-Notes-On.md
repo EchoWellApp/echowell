@@ -130,11 +130,11 @@ None in the frontend; the backend writes `note.created` audit rows (TRD 12 §4.1
 ## Definition of Done
 
 - All FEAT-071 acceptance criteria pass; component tests and the `@mutating` E2E step pass in Chromium.
-- Batch report lists IDs and the gap below (AGT-022).
+- Batch report lists IDs (AGT-022).
 
 ## Implementation Notes
 
 - FR-192 and E-16 allow a new note to supersede an earlier one (`supersedes_id`), but TRD 11 offers no edit control (UX-129); do not build an edit UI. The list relies on the API default `include_superseded=false` (API-083).
-- The hint "Do not enter names or other identifying details." comes from TRD 12 SEC-124; TRD 11 v0.13 UX-121 does not list it. Keep it until TRD 11 and TRD 12 are aligned (question for the algorithm lead).
+- The hint "Do not enter names or other identifying details." comes from TRD 12 SEC-124 and is part of TRD 11 UX-121.
 - Keep the draft in component state only, never in storage (FE-089, FE-045).
 - The file name keeps the v0.1 title (feature IDs and file names are never renamed, TRD 25 §4.2).

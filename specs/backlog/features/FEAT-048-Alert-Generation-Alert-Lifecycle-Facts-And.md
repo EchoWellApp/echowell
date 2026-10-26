@@ -79,7 +79,7 @@ Required before implementation (BACKLOG.md): FEAT-047, FEAT-030
 - FEAT-047 (CUSUM engine): tallies and "rings" states.
 - FEAT-030 (Alerts list API): the `leaning_most` provider seam and the `Alert` DTO.
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052, FEAT-069.
+Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052, FEAT-066.
 
 ## Database Impact
 

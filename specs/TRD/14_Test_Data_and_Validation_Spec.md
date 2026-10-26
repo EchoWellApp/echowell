@@ -552,7 +552,7 @@ change score = `cusum_state.current_tally` rounded half-up to 1 decimal.
 
 Nav: "Resident list" with badge "2" (accessible name "Resident list, 2 alarms not reviewed"; open change alarms only, data alerts not counted); the chart navigation of R09 and R10 shows "Review and notes" with badge "1".
 
-Table 4.9-D Data alerts — exactly these 4 open rows, no others, in the order of the Study team "Data problems to follow up" list (TRD 11 §4.18.2, §4.18.8). Titles are unchanged from v0.1; details follow the v0.2 wording (TRD 24 D-114).
+Table 4.9-D Data alerts — exactly these 4 open rows, no others, listed in the order of the Study team "Data problems to follow up" list (TRD 11 §4.18.2, UX-307, §4.18.8). The API returns them in data-alert kind order (TRD 09 CUS-045: R08, R05, R03, D02); the page orders them by the UX-307 kind order (R08, R03, R05, D02). Titles are unchanged from v0.1; details follow the v0.2 wording (TRD 24 D-114).
 
 | Kind | Tag (Study team) | Title | Detail | Derivation from DS-01 (window 2026-10-01..2026-10-30) |
 |---|---|---|---|---|
@@ -597,7 +597,7 @@ Per-day check-ins (used/set aside/held back/missed), days 1–30: 1 10/0/0/0; 2 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-067 | With DS-07 loaded, `GET /api/v1/alerts?status=open` shall return the 2 change alarms of Table 4.9-C (session, alarm date, open days 9 and 6, current tally 26.830256 and 13.418183 ±1e-6), and the Resident chart Summaries and the nav badge shall render them as in Table 4.9-C. | Must | BR-11, SRC-21 | Test |
-| TDV-068 | With DS-07 loaded, `GET /api/v1/data-alerts?status=open` shall return exactly the 4 rows of Table 4.9-D (kind, resident or device, title, detail exact) and none of the listed non-alerts, and the Study team page shall list them as in Table 4.9-D. | Must | BR-06, SRC-21, OQ-24 | Test |
+| TDV-068 | With DS-07 loaded, `GET /api/v1/data-alerts?status=open` shall return exactly the 4 rows of Table 4.9-D (kind, resident or device, title, detail exact) in the order R08, R05, R03, D02 and none of the listed non-alerts, and the Study team page shall list them as in Table 4.9-D. | Must | BR-06, SRC-21, OQ-24 | Test |
 | TDV-069 | The R09 and R10 "Leaning most" strings of the Resident chart Summary shall equal §4.9.1. | Should | SRC-21 | Test |
 | TDV-074 | With DS-07 and DS-10 loaded, `GET /api/v1/analytics` (researcher) shall return kpis, daily_series, funnel, by_resident and alarm_timing equal to Table 4.9-E and the per-day list (integers exact; percentages as integers after half-up rounding), and the Study team page shall render them. | Must | BR-15, SRC-21 | Test |
 | TDV-075 | Every Study team figure in Table 4.9-E shall also be recomputed by the validation harness from DS-02 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes) and compared with the API, so that the page "matches the pipeline answer key". | Must | SRC-21 period line | Test |

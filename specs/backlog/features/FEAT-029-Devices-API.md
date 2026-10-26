@@ -81,7 +81,7 @@ Required before implementation (BACKLOG.md): FEAT-021, FEAT-014
 - FEAT-021 (Role-based authorization matrix): role check for GET /devices.
 - FEAT-014 (Read-model derivations): silent days (DB-044), device-gap days and `in_use_until` (DB-066) queries.
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-065.
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-060, FEAT-066, FEAT-070, FEAT-072.
 
 ## Database Impact
 

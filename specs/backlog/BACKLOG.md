@@ -378,7 +378,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | MVP Status | Required |
 | Dependencies | FEAT-021, FEAT-014 |
 | Referenced TRDs | TRD 05 API-070..API-074; TRD 19 §4.3 (E-08); TRD 11 UX-401, UX-408, UX-047, UX-048; TRD 23 DME-011; TRD 13 TST-033; TRD 25 AGT-052, AGT-053; D-17, D-42 |
-| FRs covered | FR-130..FR-136 |
+| FRs covered | FR-130..FR-135 |
 
 #### FEAT-028 Resident detail, check-in log and features APIs
 
@@ -951,6 +951,25 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 
 ### 5.6 Epic: Frontend
 
+The frontend features follow wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114) and TRD 11 v0.13. Each active TRD 11 UX requirement is owned by exactly one feature (the feature files list it under "owned by this feature"; other features only use it); the retired UX IDs (UX-005, UX-016, UX-020..UX-024, UX-030..UX-033, UX-035, UX-039, UX-064, UX-088, UX-125, UX-127, UX-136..UX-138, UX-180, UX-246, UX-300..UX-305, UX-311, UX-319, UX-323) are built by no feature. FEAT-076 verifies the reference renderings end to end and owns no UX ID.
+
+| Feature | TRD 11 UX requirements owned |
+|---|---|
+| FEAT-062 | UX-001..UX-004, UX-006..UX-009, §4.3.4 (status pills), UX-074, UX-122, UX-160..UX-167, UX-200..UX-207, UX-250..UX-253 |
+| FEAT-063 | UX-170..UX-176 |
+| FEAT-064 | UX-010..UX-015, UX-018, UX-215, UX-229, UX-400 |
+| FEAT-065 | UX-034, UX-036..UX-038, UX-040..UX-046, UX-260, UX-261, UX-401..UX-408 |
+| FEAT-066 | UX-060..UX-063, UX-065, UX-070..UX-073, UX-075..UX-078, UX-262, UX-312, UX-410..UX-412 |
+| FEAT-067 | UX-080..UX-087, UX-089..UX-092, UX-100..UX-108 |
+| FEAT-068 | UX-047, UX-048, UX-066, UX-140..UX-150, UX-420..UX-423 |
+| FEAT-069 | UX-310, UX-313..UX-318, UX-320..UX-322, UX-324, UX-330 |
+| FEAT-070 | UX-430..UX-433 |
+| FEAT-071 | UX-120, UX-121, UX-123, UX-124, UX-126, UX-128..UX-135 |
+| FEAT-072 | UX-017, UX-050..UX-058, UX-263, UX-306..UX-309, UX-331, UX-350..UX-384 |
+| FEAT-073 | UX-181..UX-195, UX-264 |
+| FEAT-074 | UX-210..UX-214, UX-216..UX-219 |
+| FEAT-075 | UX-220..UX-228, UX-230, UX-240..UX-245 |
+
 #### FEAT-004 Frontend scaffold (Next.js 14.2 App Router, TypeScript, lint, test tooling)
 
 | Field | Value |
@@ -1443,7 +1462,7 @@ Rules applied: every feature cites the TRD requirement IDs it implements; nothin
 | Feature Name | Demo acceptance and local fallback rehearsal (SRC-15 steps 4–5) |
 | Epic | Testing & Validation |
 | Build phase | Phase 10 Deploy |
-| Description | Execute and record the demo acceptance: step 4 answer-key run on an isolated `test_v0_1` database, step 5 live check-in posted to interim production under a demo study ID (overview last check-in and used count update; tally chart gains a bar once the baseline is frozen), the latency test within 5 s, the seeded-login test, and the rehearsed local Docker Compose fallback if production is not passing smoke tests by 5 Nov 2026. |
+| Description | Execute and record the demo acceptance: step 4 answer-key run on an isolated `test_v0_1` database, step 5 live check-in posted to interim production under a demo study ID (Resident list last check-in and chart used count update; change score chart gains a bar once the baseline is frozen), the latency test within 5 s, the seeded-login test, and the rehearsed local Docker Compose fallback if production is not passing smoke tests by 5 Nov 2026. |
 | Priority | P0 |
 | Complexity | Medium |
 | MVP Status | Required |
@@ -2472,7 +2491,7 @@ Status as of 23 October 2026. Phase 1 (TRD validation) is complete: TRDs 00–25
 
 ## 11. FR → FEAT coverage
 
-TRD 02 defines 211 functional requirements (FR-001..FR-333, numbered with gaps by section). TRD 02 contains no retired FR rows; the only retired item in TRD 02 is the glossary term "No-upload day" (§4.1), replaced by "Silent day (device)" and covered through FR-153, FR-154 and FR-294. Every FR maps to at least one feature.
+TRD 02 defines 211 functional requirement rows (FR-001..FR-333, numbered with gaps by section). Wireframe v0.2 (TRD 24 D-110) retired 9 of them (FR-136, FR-139, FR-195, FR-207, FR-260, FR-261, FR-265, FR-278, FR-321); they keep their rows below, marked retired, and need no feature. The glossary term "No-upload day" (§4.1) is retired too, replaced by "Silent day (device)" and covered through FR-153, FR-154 and FR-294. Every active FR maps to at least one feature.
 
 | FR | TRD 02 section | Features |
 |---|---|---|
@@ -2554,49 +2573,49 @@ TRD 02 defines 211 functional requirements (FR-001..FR-333, numbered with gaps b
 | FR-123 | 4.11 Day ledger and missing days (BR-06) | FEAT-049 |
 | FR-124 | 4.11 Day ledger and missing days (BR-06) | FEAT-049 |
 | FR-125 | 4.11 Day ledger and missing days (BR-06) | FEAT-049, FEAT-054 |
-| FR-130 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-131 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-132 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-133 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-134 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-135 | 4.12 Residents overview (BR-12) | FEAT-014, FEAT-027, FEAT-065 |
-| FR-136 | 4.12 Residents overview (BR-12) | FEAT-027, FEAT-065 |
-| FR-137 | 4.12 Residents overview (BR-12) | FEAT-060, FEAT-065 |
-| FR-138 | 4.12 Residents overview (BR-12) | FEAT-065 |
-| FR-139 | 4.12 Residents overview (BR-12) | FEAT-065 |
-| FR-140 | 4.12 Residents overview (BR-12) | FEAT-065 |
-| FR-150 | 4.13 Devices panel (BR-12, BR-06) | FEAT-029, FEAT-065 |
-| FR-151 | 4.13 Devices panel (BR-12, BR-06) | FEAT-029, FEAT-065 |
-| FR-152 | 4.13 Devices panel (BR-12, BR-06) | FEAT-029, FEAT-065 |
-| FR-153 | 4.13 Devices panel (BR-12, BR-06) | FEAT-029, FEAT-065 |
-| FR-154 | 4.13 Devices panel (BR-12, BR-06) | FEAT-014, FEAT-029, FEAT-065 |
-| FR-155 | 4.13 Devices panel (BR-12, BR-06) | FEAT-029, FEAT-065 |
-| FR-156 | 4.13 Devices panel (BR-12, BR-06) | FEAT-065 |
-| FR-160 | 4.14 Resident detail (BR-13) | FEAT-066 |
-| FR-161 | 4.14 Resident detail (BR-13) | FEAT-028, FEAT-066 |
-| FR-162 | 4.14 Resident detail (BR-13) | FEAT-028, FEAT-066 |
-| FR-163 | 4.14 Resident detail (BR-13) | FEAT-028, FEAT-066 |
-| FR-164 | 4.14 Resident detail (BR-13) | FEAT-066 |
-| FR-165 | 4.14 Resident detail (BR-13) | FEAT-067 |
-| FR-166 | 4.14 Resident detail (BR-13) | FEAT-067 |
-| FR-167 | 4.14 Resident detail (BR-13) | FEAT-067 |
-| FR-168 | 4.14 Resident detail (BR-13) | FEAT-067, FEAT-075 |
-| FR-169 | 4.14 Resident detail (BR-13) | FEAT-066 |
-| FR-170 | 4.14 Resident detail (BR-13) | FEAT-066 |
-| FR-171 | 4.14 Resident detail (BR-13) | FEAT-066 |
-| FR-172 | 4.14 Resident detail (BR-13) | FEAT-028, FEAT-067 |
-| FR-173 | 4.14 Resident detail (BR-13) | FEAT-028, FEAT-066 |
+| FR-130 | 4.12 Resident list (BR-12) | FEAT-027, FEAT-065 |
+| FR-131 | 4.12 Resident list (BR-12) | FEAT-027, FEAT-065 |
+| FR-132 | 4.12 Resident list (BR-12) | FEAT-027, FEAT-065 |
+| FR-133 | 4.12 Resident list (BR-12) | FEAT-027, FEAT-065 |
+| FR-134 | 4.12 Resident list (BR-12) | FEAT-027, FEAT-065 |
+| FR-135 | 4.12 Resident list (BR-12) | FEAT-014, FEAT-027, FEAT-068 |
+| FR-136 | 4.12 Resident list (BR-12) | — (retired by TRD 24 D-110) |
+| FR-137 | 4.12 Resident list (BR-12) | FEAT-060, FEAT-065 |
+| FR-138 | 4.12 Resident list (BR-12) | FEAT-064 |
+| FR-139 | 4.12 Resident list (BR-12) | — (retired by TRD 24 D-110) |
+| FR-140 | 4.12 Resident list (BR-12) | FEAT-065 |
+| FR-150 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-029, FEAT-072 |
+| FR-151 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-029, FEAT-070, FEAT-072 |
+| FR-152 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-029, FEAT-070, FEAT-072 |
+| FR-153 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-014, FEAT-029, FEAT-070, FEAT-072 |
+| FR-154 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-014, FEAT-029, FEAT-072 |
+| FR-155 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-029, FEAT-070, FEAT-072 |
+| FR-156 | 4.13 Devices (Study team page and chart Device section) (BR-12, BR-06) | FEAT-072 |
+| FR-160 | 4.14 Resident chart (BR-13) | FEAT-066 |
+| FR-161 | 4.14 Resident chart (BR-13) | FEAT-028, FEAT-066 |
+| FR-162 | 4.14 Resident chart (BR-13) | FEAT-028, FEAT-068 |
+| FR-163 | 4.14 Resident chart (BR-13) | FEAT-028, FEAT-068 |
+| FR-164 | 4.14 Resident chart (BR-13) | FEAT-066 |
+| FR-165 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-166 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-167 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-168 | 4.14 Resident chart (BR-13) | FEAT-067, FEAT-075 |
+| FR-169 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-170 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-171 | 4.14 Resident chart (BR-13) | FEAT-067 |
+| FR-172 | 4.14 Resident chart (BR-13) | FEAT-028, FEAT-067 |
+| FR-173 | 4.14 Resident chart (BR-13) | FEAT-028, FEAT-066 |
 | FR-180 | 4.15 Check-in log (BR-13, BR-06) | FEAT-028, FEAT-068 |
 | FR-181 | 4.15 Check-in log (BR-13, BR-06) | FEAT-028, FEAT-068 |
 | FR-182 | 4.15 Check-in log (BR-13, BR-06) | FEAT-028, FEAT-068 |
 | FR-183 | 4.15 Check-in log (BR-13, BR-06) | FEAT-028, FEAT-068 |
 | FR-184 | 4.15 Check-in log (BR-13, BR-06) | FEAT-054, FEAT-076, FEAT-090 |
-| FR-190 | 4.16 Staff review (BR-13) | FEAT-033, FEAT-071 |
-| FR-191 | 4.16 Staff review (BR-13) | FEAT-071 |
-| FR-192 | 4.16 Staff review (BR-13) | FEAT-012, FEAT-033 |
-| FR-193 | 4.16 Staff review (BR-13) | FEAT-033, FEAT-071 |
-| FR-194 | 4.16 Staff review (BR-13) | FEAT-071 |
-| FR-195 | 4.16 Staff review (BR-13) | FEAT-071 |
+| FR-190 | 4.16 Staff notes (BR-13) | FEAT-033, FEAT-071 |
+| FR-191 | 4.16 Staff notes (BR-13) | FEAT-069 |
+| FR-192 | 4.16 Staff notes (BR-13) | FEAT-012, FEAT-033 |
+| FR-193 | 4.16 Staff notes (BR-13) | FEAT-033, FEAT-071 |
+| FR-194 | 4.16 Staff notes (BR-13) | FEAT-021, FEAT-069, FEAT-071 |
+| FR-195 | 4.16 Staff notes (BR-13) | — (retired by TRD 24 D-110) |
 | FR-200 | 4.17 New admissions — future / experimental (BR-14) | FEAT-073 |
 | FR-201 | 4.17 New admissions — future / experimental (BR-14) | FEAT-036, FEAT-073 |
 | FR-202 | 4.17 New admissions — future / experimental (BR-14) | FEAT-036, FEAT-073 |
@@ -2604,7 +2623,7 @@ TRD 02 defines 211 functional requirements (FR-001..FR-333, numbered with gaps b
 | FR-204 | 4.17 New admissions — future / experimental (BR-14) | FEAT-012, FEAT-036, FEAT-095 |
 | FR-205 | 4.17 New admissions — future / experimental (BR-14) | FEAT-053, FEAT-073 |
 | FR-206 | 4.17 New admissions — future / experimental (BR-14) | FEAT-036, FEAT-048 |
-| FR-207 | 4.17 New admissions — future / experimental (BR-14) | FEAT-073 |
+| FR-207 | 4.17 New admissions — future / experimental (BR-14) | — (retired by TRD 24 D-110) |
 | FR-210 | 4.18 Authentication and roles (BR-16) | FEAT-020, FEAT-063 |
 | FR-211 | 4.18 Authentication and roles (BR-16) | FEAT-063 |
 | FR-212 | 4.18 Authentication and roles (BR-16) | FEAT-020, FEAT-039 |
@@ -2636,55 +2655,55 @@ TRD 02 defines 211 functional requirements (FR-001..FR-333, numbered with gaps b
 | FR-252 | 4.21 Audit and health (BR-16, BR-17) | FEAT-012, FEAT-015 |
 | FR-253 | 4.21 Audit and health (BR-16, BR-17) | FEAT-003 |
 | FR-254 | 4.21 Audit and health (BR-16, BR-17) | FEAT-018 |
-| FR-260 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-069 |
-| FR-261 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-030, FEAT-069 |
-| FR-262 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-030, FEAT-069 |
-| FR-263 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-060, FEAT-069 |
-| FR-264 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-069 |
-| FR-265 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-069 |
-| FR-266 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-048, FEAT-069 |
-| FR-267 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-070 |
-| FR-268 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-070 |
-| FR-269 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-070 |
-| FR-270 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031, FEAT-070 |
-| FR-271 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031, FEAT-070 |
-| FR-272 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031, FEAT-070 |
-| FR-273 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031 |
-| FR-274 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031, FEAT-070 |
-| FR-275 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-021, FEAT-031 |
-| FR-276 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031 |
-| FR-277 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-070 |
-| FR-278 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-069 |
-| FR-279 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-031 |
-| FR-280 | 4.22 Alert review page (BR-11, BR-13) — SRC-18 | FEAT-069 |
-| FR-290 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-291 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-292 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-293 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-294 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-295 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-296 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050, FEAT-053 |
-| FR-297 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-032 |
-| FR-298 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-069 |
-| FR-299 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-032 |
-| FR-300 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050 |
-| FR-301 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-18 | FEAT-050, FEAT-060 |
-| FR-310 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-021, FEAT-064, FEAT-072 |
-| FR-311 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-072 |
-| FR-312 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-035, FEAT-051 |
-| FR-313 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-051, FEAT-072 |
-| FR-314 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-051, FEAT-072 |
-| FR-315 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-051, FEAT-072 |
-| FR-316 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-051, FEAT-072 |
-| FR-317 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-051, FEAT-072 |
-| FR-318 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-035, FEAT-057, FEAT-072 |
-| FR-319 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-035, FEAT-072 |
-| FR-320 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-072, FEAT-075 |
-| FR-321 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-072 |
-| FR-322 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-035, FEAT-051 |
-| FR-323 | 4.24 Analytics page (BR-12, BR-15) — SRC-19 | FEAT-060, FEAT-072 |
+| FR-260 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | — (retired by TRD 24 D-110) |
+| FR-261 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | — (retired by TRD 24 D-110) |
+| FR-262 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-030, FEAT-066 |
+| FR-263 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-060, FEAT-066 |
+| FR-264 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-265 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | — (retired by TRD 24 D-110) |
+| FR-266 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-048, FEAT-066 |
+| FR-267 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-268 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-269 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-270 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031, FEAT-069 |
+| FR-271 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031, FEAT-069 |
+| FR-272 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031, FEAT-069 |
+| FR-273 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031 |
+| FR-274 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031, FEAT-069 |
+| FR-275 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-021, FEAT-031 |
+| FR-276 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031 |
+| FR-277 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-278 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | — (retired by TRD 24 D-110) |
+| FR-279 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-031 |
+| FR-280 | 4.22 Alarm review (Resident chart "Review and notes") (BR-11, BR-13) — SRC-21 | FEAT-069 |
+| FR-290 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-291 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-292 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-293 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-294 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-295 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-296 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050, FEAT-053 |
+| FR-297 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-032 |
+| FR-298 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-072 |
+| FR-299 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-032 |
+| FR-300 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050 |
+| FR-301 | 4.23 Data alerts for the study team (BR-04, BR-05, BR-06) — SRC-21 | FEAT-050, FEAT-060 |
+| FR-310 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-021, FEAT-064, FEAT-072 |
+| FR-311 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-072 |
+| FR-312 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-035, FEAT-051 |
+| FR-313 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-051, FEAT-072 |
+| FR-314 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-051, FEAT-072 |
+| FR-315 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-051, FEAT-072 |
+| FR-316 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-051, FEAT-072 |
+| FR-317 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-051, FEAT-072 |
+| FR-318 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-035, FEAT-057, FEAT-072 |
+| FR-319 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-035, FEAT-072 |
+| FR-320 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-072, FEAT-075 |
+| FR-321 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | — (retired by TRD 24 D-110) |
+| FR-322 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-035, FEAT-051 |
+| FR-323 | 4.24 Study team page (BR-12, BR-15) — SRC-21 | FEAT-060, FEAT-072 |
 | FR-330 | 4.25 Page chrome, navigation and response metadata | FEAT-064 |
-| FR-331 | 4.25 Page chrome, navigation and response metadata | FEAT-064 |
+| FR-331 | 4.25 Page chrome, navigation and response metadata | FEAT-066 |
 | FR-332 | 4.25 Page chrome, navigation and response metadata | FEAT-019 |
 | FR-333 | 4.25 Page chrome, navigation and response metadata | FEAT-019 |
 
@@ -2803,3 +2822,4 @@ Open questions of TRD 24 that shape features in this backlog: OQ-03 (feature nam
 | 0.3 | 20 Oct 2026 | Documentation audit fixes DA-01..DA-12 (section 1 decision-log wording; sections 11.1 and 11.2 added; FEAT-080 no longer depends on Optional FEAT-061; feature files: requirement citations, Verified-by notes on acceptance criteria, Definition of Done and dependents lines) | — |
 | 0.4 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.5 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5 and one PR per Block 3 checkpoint (D-101) in sections 2, 6, 9, 10, 11.1 and 12; FEAT-001 In Progress (checkpoint 1 in GitHub PR #3, pending merge); FEAT-003 health service function (checkpoint 1 Q-1) | — |
+| 0.6 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 citations replaced by SRC-21; frontend features retitled and rescoped — FEAT-065 Resident list, FEAT-066 Resident chart frame and Summary, FEAT-067 Voice trends (measurement cards moved in), FEAT-068 Check-in log and Baseline, FEAT-069 Alarm review panel in the chart (absorbs the v0.1 FEAT-070 review form, history and reminder), FEAT-070 reused for the chart Device section, FEAT-071 Staff notes, FEAT-072 Study team (with Data problems and Devices); FEAT-062, FEAT-064, FEAT-073..FEAT-076 updated (v0.2 tokens and Source Sans 3, display statuses, app bar and data bar, routes `/study` and chart sections; `/alerts` and `/analytics` removed); dependencies, graph, sprint 7 gate, FR coverage (9 FRs retired in TRD 02) and the UX ownership table of §5.6 updated; still 97 features | — |

@@ -93,7 +93,7 @@ Required before implementation (BACKLOG.md): FEAT-030, FEAT-015
 - Transitively FEAT-021 (roles) and FEAT-012 (tables and append-only grants).
 - TST-067 performs a real full rebuild and therefore runs once FEAT-053 (pipeline runner) is merged; until then this feature's guarantee is FEAT-031-FR-12 (stable ids, no review data held outside the alert's natural key).
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-070.
+Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-069.
 
 ## Database Impact
 
