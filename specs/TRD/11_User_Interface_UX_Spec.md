@@ -383,7 +383,7 @@ The "Review and notes" section shows, in order, the alarm review panel (section 
 |---|---|---|
 | Frozen, scored sessions exist | "First <N> usable check-ins, <first date>–<frozen-after date>, then frozen. Compared with it since <first scored date>." | "First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17." |
 | Frozen, no scored session yet | "First <N> usable check-ins, <range>, then frozen. Comparing starts with the next usable check-in." | — |
-| Forming | "Still forming: <n> of <N> usable check-ins so far." + when missed or set-aside check-ins occurred in the current epoch: " <m> missed and <s> set-aside check-ins have slowed it down." | "Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins have slowed it down." |
+| Forming | "Still forming: <n> of <N> usable check-ins so far." + when missed or set-aside check-ins occurred in the last 30 days: " <m> missed and <s> set-aside check-ins in the last 30 days have slowed it down." (counts from `last_30_days`) | "Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down." |
 | Restart prefix (epoch > 1), cause device | "Restarted <Mon D> when the device was replaced (<old D> to <D>), so readings from the old device are not mixed in. " | "Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29." |
 | Restart prefix, cause firmware | "Restarted <Mon D> when the device firmware changed (<from> to <to>), so earlier readings are not mixed in. " | — |
 | Restart prefix, cause software | "Restarted <Mon D> when the extraction software changed (<from> to <to>), so earlier readings are not mixed in. " | — |
@@ -547,7 +547,7 @@ R04's two duplicate arrivals are not shown anywhere (its "used" stays 30).
 |---|---|---|---|
 | R09 | D09 · Oct 30, 2:28 PM · 30 of 30 · Complete · ▲ Changed | First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 21 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
 | R10 | D10 · Oct 30, 2:39 PM · 30 of 30 · Complete · ▲ Changed | … Oct 1–16, then frozen. Compared with it since Oct 17. | Oct 24 Alarm on. Change score crossed 5. / Oct 17 Comparing with baseline started. / Oct 16 Baseline complete (16 of 16). |
-| R08 | D08 · Oct 30, 2:28 PM · 13 of 30 · 13 of 16 · ! Needs attention | Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins have slowed it down. | Oct 29 Check-in set aside: speech too short. / Oct 27 Check-in missed. / Oct 25 Check-in set aside: quality flag poor. |
+| R08 | D08 · Oct 30, 2:28 PM · 13 of 30 · 13 of 16 · ! Needs attention | Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down. | Oct 29 Check-in set aside: speech too short. / Oct 27 Check-in missed. / Oct 25 Check-in set aside: quality flag poor. |
 | R07 | D07B (replaced D07) · Oct 30, 2:52 PM · 30 of 30 · Complete · ● Usual | Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29. | Oct 29 Comparing with baseline started. / Oct 28 Baseline complete (16 of 16). / Oct 13 New device D07B. Baseline restarted. |
 | R05 | D05 · Oct 30, 2:40 PM · 28 of 30 · Complete · ● Usual | … Oct 1–17, then frozen. Compared with it since Oct 18. | Oct 22 Check-in held back: possible other voice. / Oct 18 Comparing with baseline started. / Oct 17 Baseline complete (16 of 16). |
 | R03 | D02 (shared with R02) · Oct 30, 2:19 PM · 22 of 30 · Complete · ! Needs attention | … Oct 1–23, then frozen. Compared with it since Oct 24. | Oct 26 Check-in set aside: speech too short. / Oct 24 Comparing with baseline started. / Oct 23 Baseline complete (16 of 16). |
@@ -846,8 +846,8 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 
 | Dependency | For |
 |---|---|
-| GET /residents (meta, summary `changed`/`needs_attention`/`learning`/`usual`, rows incl. `needs_attention`, `attention_reasons`, `alarm_reviewed`, last_30_days, previous_device_code) | Resident list, nav badge fallback |
-| GET /residents/{code}, /checkins (incl. `checkins_started`), /features, /notes; GET /scores; GET /alerts | Resident chart |
+| GET /residents (meta, summary `changed`/`needs_attention`/`learning`/`usual`, rows incl. `needs_attention`, `attention_reasons`, `alarm_reviewed`, `restart_cause`, last_30_days, previous_device_code) | Resident list, nav badge fallback |
+| GET /residents/{code} (incl. `window`, `restart_cause`), /checkins (incl. `checkins_started` with `device_code`), /features, /notes; GET /scores; GET /alerts | Resident chart |
 | POST /residents/{code}/notes (free staff notes) | Staff notes |
 | GET /alerts, GET/POST /alerts/{id}/reviews, POST /alerts/{id}/snooze, GET /config/ui (review checklist, snooze hours) | Nav badge, chart review panel, Summary "Leaning most" |
 | GET /devices (`uploaded_on_as_of_date`, silent_days_last_30, device_gap_days_last_30, in_use_until, replaces/replaced_by_device_code, firmware, last upload) | Chart Device section, Study team Devices |

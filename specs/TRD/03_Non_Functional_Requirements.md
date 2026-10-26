@@ -233,7 +233,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | AC-NFR-01 | Load test report on DS-08 shows p95 ≤ 500 ms for the read endpoints of NFR-001–NFR-003 and p95 ≤ 1,000 ms for `POST /api/v1/sessions`, warm, on staging. |
 | AC-NFR-02 | CI validation job runs the in-memory pipeline on SRC-05 in ≤ 5 s, rebuilds SRC-05 with database writes in ≤ 30 s, and matches SRC-03 within 1e-6; a second rebuild produces identical outputs. |
 | AC-NFR-03 | CI coverage gate reports analytics ≥ 95%, backend ≥ 85%, frontend ≥ 80% line coverage. |
-| AC-NFR-04 | axe-core reports 0 serious or critical violations on the 9 routes of TRD 13 TST-110; all interactive targets measure ≥ 44 × 44 px. |
+| AC-NFR-04 | axe-core reports 0 serious or critical violations on the 12 routes of TRD 13 TST-110; all interactive targets measure ≥ 44 × 44 px. |
 | AC-NFR-05 | TLS scan of staging frontend and backend shows only TLS 1.2/1.3; the backend refuses to start in staging/production when `DATABASE_URL` lacks `sslmode=require` or stricter. |
 | AC-NFR-06 | Provider evidence (screenshots or configuration exports) shows encryption at rest and backups enabled for the interim database; the AWS go-live checklist includes RDS KMS encryption, encrypted backups and Secrets Manager. |
 | AC-NFR-07 | Every `ingest_batches` row in staging and production has a synthetic/test source and DATA_SOURCE_LABEL names test or synthetic data (interim stack). |

@@ -288,7 +288,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | SC-04 | No audio, no PII | Audio-like fields or endpoints; name-like fields | 0 | Inspection, schema test |
 | SC-05 | Reproducibility | Two full rebuilds of SRC-05 with the same config produce identical derived tables | Byte-identical comparison of exported derived tables | Test |
 | SC-06 | Deployed | Frontend on Netlify and backend on Railway reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
-| SC-07 | Accessibility | Automated axe-core checks on the 9 routes of TRD 13 TST-110 | 0 serious or critical violations | Test (TRD 13) |
+| SC-07 | Accessibility | Automated axe-core checks on the 12 routes of TRD 13 TST-110 | 0 serious or critical violations | Test (TRD 13) |
 | SC-08 | Traceability | Requirements without BR trace | 0 | Inspection |
 
 ### 4.11 Phases and milestones
