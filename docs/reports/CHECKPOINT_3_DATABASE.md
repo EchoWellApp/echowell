@@ -1,6 +1,6 @@
 # Checkpoint 3 Report — Phase 9 Implement Database Layer
 
-Block 3 "Implement Features", checkpoint 3 of 9, its own PR (branch `feat/cp3-database`, created from `main` at fa93306 after GitHub PR #4 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 9: Implement Database Layer" · TRD 25 Phase 4 · Features: FEAT-008..FEAT-017 · Date: 26 October 2026 · Status: ready for review.
+Block 3 "Implement Features", checkpoint 3 of 9, its own PR (branch `feat/cp3-database`, created from `main` at fa93306 after GitHub PR #4 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 9: Implement Database Layer" · TRD 25 Phase 4 · Features: FEAT-008..FEAT-017 · Date: 26 October 2026 · Status: delivered as GitHub PR #17, ready for review.
 
 Build order followed `BACKLOG.md` §9: [FEAT-008] → [FEAT-009, FEAT-010, FEAT-011, FEAT-012] → [FEAT-013, FEAT-015, FEAT-016] → [FEAT-014, FEAT-017]. Reading order: TRD 25, 00, 24; Phase 9 prompt; roadmap §5.3; FEAT-008..FEAT-017; TRDs 20, 06, 12, 15, 21, 23, 13; `docs/design/Database_ERD.md` and `Backend_Architecture.md`.
 

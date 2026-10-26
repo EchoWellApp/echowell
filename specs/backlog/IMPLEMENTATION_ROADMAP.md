@@ -24,7 +24,7 @@ The Instructions document (SRC-20) names its five units "Block 1" to "Block 5" (
 |---|---|---|---|---|---|
 | Block 1 | TRD Generation | GitHub PR #1, `trd-generation` | `TRD_Generation_Prompt.md`; the prompts of `TRD_Implementation_Audit_Checklist.md` one by one | All TRDs and the audit report reviewed | Merged |
 | Block 2 | Feature Backlog | GitHub PR #2, `backlog-generation` | `Generate_Backlog.md` Prompts 1–3 one by one; then `Generate_Documentation_Audit_Prompt.md` | `BACKLOG.md`, the feature files, this roadmap, both checklists; audit pass/fail | Merged |
-| Block 3 | Implement Features | nine PRs, one per checkpoint, each on its own branch created from the latest `main` (branch table below) | `Implement_Feature_Batches.md` Phases 7, 8, 9, 10, 11, 12, 13, 14A and 15: one prompt per checkpoint (section 5) | Each checkpoint PR reviewed, approved and merged before the next prompt runs (section 2.2) | Checkpoints 1 and 2 merged (GitHub PRs #3 and #4); checkpoint 3 in review (`feat/cp3-database`) |
+| Block 3 | Implement Features | nine PRs, one per checkpoint, each on its own branch created from the latest `main` (branch table below) | `Implement_Feature_Batches.md` Phases 7, 8, 9, 10, 11, 12, 13, 14A and 15: one prompt per checkpoint (section 5) | Each checkpoint PR reviewed, approved and merged before the next prompt runs (section 2.2) | Checkpoints 1 and 2 merged (GitHub PRs #3 and #4); checkpoint 3 in review (GitHub PR #17) |
 | Block 4 | Deployment | one PR, a `feat/` branch created from `main` after the checkpoint 9 PR is merged (e.g. `feat/deployment`) | `Implement_Feature_Batches.md` Phase 14B, plus the manual Netlify, Railway and Neon setup of `DEPLOYMENT_CHECKLIST.md` (section 6) | Deployment report, checklist evidence, re-checked audit items | Not started |
 | Block 5 | Test Cases | one PR, a `docs/` branch created from `main` after the Block 4 PR is merged (e.g. `docs/test-cases`) | `Test_Case_Generation_Prompt.md` (section 7) | One test-case file per feature | Not started |
 
@@ -34,7 +34,7 @@ Block 3 checkpoint branches (GIT-011: `feat/` plus a kebab-case name of at most 
 |---|---|---|---|
 | 1 | Phase 7 Generate Design Docs | `feat/implement-features` | GitHub PR #3 |
 | 2 | Phase 8 Generate Project Skeleton | `feat/cp2-project-skeleton` | GitHub PR #4 |
-| 3 | Phase 9 Implement Database Layer | `feat/cp3-database` | the checkpoint 3 PR (number assigned by GitHub when opened) |
+| 3 | Phase 9 Implement Database Layer | `feat/cp3-database` | GitHub PR #17 |
 | 4 | Phase 10 Implement Backend Layer | `feat/cp4-backend-api` | opened when checkpoint 4 is ready |
 | 5 | Phase 11 Implement Analytics Engine | `feat/cp5-analytics-engine` | opened when checkpoint 5 is ready |
 | 6 | Phase 12 Pass R01-R10 Validation Tests | `feat/cp6-validation` | opened when checkpoint 6 is ready |
