@@ -191,7 +191,8 @@ def test_ac_pgs_14_readonly_sees_ten_loaded_rows(fresh_db: PgUrls) -> None:
             onset = None if n % 2 else date(2026, 10, 20)
             conn.execute(
                 "INSERT INTO evaluation_ground_truth "
-                "(resident_code, planted_change, true_onset_date, source_file) VALUES (%s, %s, %s, %s)",
+                "(resident_code, planted_change, true_onset_date, source_file) "
+                "VALUES (%s, %s, %s, %s)",
                 (f"R{n:02d}", "None" if onset is None else "gradual", onset, "fixture.csv"),
             )
     with psycopg.connect(libpq(fresh_db.readonly)) as conn:
@@ -271,9 +272,13 @@ def test_reviews_and_notes_are_append_only(world: World) -> None:
     first = session.execute(text("SELECT id FROM staff_notes")).scalar_one()
     assert note(supersedes_id=first) == "ok"
     assert note(supersedes_id=first) == UNIQUE
-    for table in ("alert_reviews", "staff_notes"):
-        assert outcome(session, f"UPDATE {table} SET created_at = now()") == PRIVILEGE
-        assert outcome(session, f"DELETE FROM {table}") == PRIVILEGE
+    for stmt in (
+        "UPDATE alert_reviews SET created_at = now()",
+        "DELETE FROM alert_reviews",
+        "UPDATE staff_notes SET created_at = now()",
+        "DELETE FROM staff_notes",
+    ):
+        assert outcome(session, stmt) == PRIVILEGE
 
 
 @pytest.mark.req("PGS-044", "FEAT-012-AC-08")
