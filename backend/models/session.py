@@ -254,7 +254,7 @@ class ProcessedSession(Base):
     late_arrival: Mapped[bool] = mapped_column(
         Boolean(), server_default=text("false"), nullable=False
     )
-    adjusted_features: Mapped[Any | None] = mapped_column(JSONB(), nullable=True)
+    adjusted_features: Mapped[Any | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     pipeline_run_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("pipeline_runs.id", ondelete="RESTRICT"), nullable=False
     )
