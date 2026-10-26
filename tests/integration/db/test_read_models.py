@@ -26,6 +26,7 @@ from backend.models import (
     Score,
 )
 from backend.repositories import read_models as rm
+from backend.repositories.epoch_repository import EpochRepository
 from tests.integration.db_support import ROOT
 from tests.integration.world import FEATURES, World
 
@@ -279,3 +280,44 @@ def test_derived_facts_are_not_stored(world: World) -> None:
 )
 def test_seed_values_on_the_full_seed() -> None:  # pragma: no cover - enabled by FEAT-055
     raise AssertionError("replace with the seed-valued FEAT-014 assertions when FEAT-055 lands")
+
+
+@pytest.mark.req("DB-065", "D-64")
+def test_restart_cause_firmware_then_software(world: World) -> None:
+    repo = EpochRepository(world.session)
+    first = world.epoch("R01", "D01", number=1)
+    world.session.execute(update(Epoch).where(Epoch.id == first).values(ended_at=_at(_day(5))))
+    second = world.epoch("R01", "D01", number=2)
+    world.session.execute(
+        update(Epoch)
+        .where(Epoch.id == second)
+        .values(device_firmware_version="fw-1.1.0", ended_at=_at(_day(9)))
+    )
+    third = world.epoch("R01", "D01", number=3)
+    world.session.execute(
+        update(Epoch)
+        .where(Epoch.id == third)
+        .values(device_firmware_version="fw-1.1.0", extraction_software_version="ext-2.0.0")
+    )
+    world.session.expire_all()
+    epochs = {e.epoch_number: e for e in repo.by_resident(world.residents["R01"])}
+    assert rm.restart_cause(world.session, epochs[2]) == rm.RestartCause(
+        "firmware", "D01", "fw-1.0.0", "fw-1.1.0"
+    )
+    assert rm.restart_cause(world.session, epochs[3]) == rm.RestartCause(
+        "software", "D01", "ext-1.0.0", "ext-2.0.0"
+    )
+    assert repo.delete_ids([third]) == 1
+
+
+@pytest.mark.req("TRD-23-4.4.4", "FR-15")
+def test_checkin_event_sources(world: World) -> None:
+    epoch = world.epoch("R08", "D08")
+    _processed(world, "R08", "D08", _day(3), "set_aside", epoch)
+    _processed(world, "R08", "D08", _day(4), "quarantined", epoch)
+    _ledger(world, "R08", _day(5), "missing_resident")
+    events = rm.checkin_event_sources(world.session, _resident(world, "R08"), _day(1), AS_OF, TZ)
+    kinds = sorted((e.local_date.day, e.event_type) for e in events)
+    assert (3, "set_aside") in kinds
+    assert (4, "quarantined") in kinds
+    assert (5, "missed") in kinds
