@@ -9,10 +9,9 @@ from typing import Literal
 from pydantic import Field
 
 from backend.schemas.alerts import UserRef
-from backend.schemas.common import PageMeta, RequestModel, ResponseModel
-from backend.schemas.residents import ResidentCode
+from backend.schemas.common import PageMeta, RequestModel, ResidentCode, ResponseModel
 
-NoteType = Literal["observation", "action_taken", "follow_up"]
+type NoteType = Literal["observation", "action_taken", "follow_up"]
 
 
 class StaffNoteCreate(RequestModel):

@@ -15,16 +15,16 @@ from typing import Annotated, Literal
 from pydantic import ConfigDict, Field
 
 from backend.schemas.common import (
-    CODE_PATTERN,
-    SESSION_ID_PATTERN,
+    DeviceCode,
     ProblemFieldError,
     RequestModel,
+    ResidentCode,
     ResponseModel,
+    SessionId,
 )
 
-IngestOutcome = Literal["usable", "set_aside", "quarantined", "duplicate", "pending"]
-IngestSource = Literal["api_single", "api_batch", "csv_upload", "seed"]
-SessionId = Annotated[str, Field(pattern=SESSION_ID_PATTERN, examples=["R09-20261021-01"])]
+type IngestOutcome = Literal["usable", "set_aside", "quarantined", "duplicate", "pending"]
+type IngestSource = Literal["api_single", "api_batch", "csv_upload", "seed"]
 _Version = Annotated[str, Field(min_length=1, max_length=64)]
 
 
@@ -36,8 +36,8 @@ class IngestRecord(RequestModel):
 
     schema_version: Literal["0.1"]
     session_id: SessionId
-    resident_id: str = Field(pattern=CODE_PATTERN)
-    device_id: str = Field(pattern=CODE_PATTERN)
+    resident_id: ResidentCode
+    device_id: DeviceCode
     timestamp_utc: str = Field(
         pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
         examples=["2026-10-21 19:07:50"],

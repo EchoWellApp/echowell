@@ -7,25 +7,28 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, Field
+from pydantic import AwareDatetime, Field, field_validator
 
 from backend.schemas.common import (
-    CODE_PATTERN,
     ConfigProfile,
+    Omitted,
     PageMeta,
     RequestModel,
+    ResidentCode,
     ResponseModel,
+    reject_null,
 )
 
-PipelineTrigger = Literal["ingest", "nightly", "manual", "test"]
-PipelineStatus = Literal["running", "succeeded", "failed"]
-ResidentCode = Annotated[str, Field(pattern=CODE_PATTERN, examples=["R01"])]
+type PipelineTrigger = Literal["ingest", "nightly", "manual", "test"]
+type PipelineStatus = Literal["running", "succeeded", "failed"]
 
 
 class PipelineRunRequest(RequestModel):
     scope: Literal["all"] | Annotated[list[ResidentCode], Field(min_length=1)]
-    profile: ConfigProfile | None = None
+    profile: ConfigProfile | Omitted = None
     as_of: AwareDatetime | None = None
+
+    _not_null = field_validator("profile", mode="before")(reject_null)
 
 
 class PipelineRunAccepted(ResponseModel):

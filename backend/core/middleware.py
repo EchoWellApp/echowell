@@ -150,6 +150,11 @@ class BodyLimitMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        is_audio = (_header(scope, b"content-type") or "").lower().startswith("audio/")
+        if scope["type"] == "http" and is_audio:
+            # No route accepts audio, whatever the method (TRD 13 TST-133, TRD 12 SEC-121).
+            await _send_problem(send, "UNSUPPORTED_MEDIA_TYPE", "Audio is never accepted.", [])
+            return
         if scope["type"] != "http" or scope.get("method") in ("GET", "HEAD", "OPTIONS"):
             await self.app(scope, receive, send)
             return

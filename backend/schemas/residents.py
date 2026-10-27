@@ -5,20 +5,26 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import Field
 
-from backend.schemas.common import CODE_PATTERN, DateWindow, Meta, PageMeta, ResponseModel
+from backend.schemas.common import (
+    DateWindow,
+    Meta,
+    PageMeta,
+    ResidentCode,
+    ResponseModel,
+    SessionId,
+)
 
-ResidentCode = Annotated[str, Field(pattern=CODE_PATTERN, examples=["R09"])]
-Cohort = Literal["longitudinal", "new_admission"]
-ResidentStatus = Literal["active", "withdrawn"]
-DisplayStatus = Literal["alarm_on", "no_alarm", "baseline_forming"]
-AttentionReason = Literal["baseline_stalled", "high_set_aside"]
-RestartCause = Literal["device", "firmware", "software"] | None
-Sex = Literal["F", "M"] | None
-CheckinEventType = Literal[
+type Cohort = Literal["longitudinal", "new_admission"]
+type ResidentStatus = Literal["active", "withdrawn"]
+type DisplayStatus = Literal["alarm_on", "no_alarm", "baseline_forming"]
+type AttentionReason = Literal["baseline_stalled", "high_set_aside"]
+type RestartCause = Literal["device", "firmware", "software"] | None
+type Sex = Literal["F", "M"] | None
+type CheckinEventType = Literal[
     "alarm_on",
     "watching_started",
     "baseline_complete",
@@ -29,7 +35,7 @@ CheckinEventType = Literal[
     "device_silent",
     "checkins_started",
 ]
-FeatureKey = Literal[
+type FeatureKey = Literal[
     "loudness_dbfs",
     "total_phrase_duration_s",
     "speech_rate_syl_per_s",
@@ -50,7 +56,7 @@ FeatureKey = Literal[
     "mfcc3",
     "mfcc4",
 ]
-ScoredFeatureKey = Literal[
+type ScoredFeatureKey = Literal[
     "loudness_dbfs",
     "total_phrase_duration_s",
     "speech_rate_syl_per_s",
@@ -195,7 +201,7 @@ class CheckinEventList(PageMeta):
 
 
 class FeaturePoint(ResponseModel):
-    session_id: str
+    session_id: SessionId
     local_date: date
     is_morning: bool
     raw_value: float

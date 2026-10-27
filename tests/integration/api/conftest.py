@@ -46,6 +46,7 @@ from backend.repositories.api_key_repository import ApiKeyRepository
 from backend.repositories.resident_repository import ResidentRepository
 from backend.repositories.user_repository import UserRepository
 from tests.conftest import TEST_JWT_SECRET, make_settings
+from tests.contract.response_validation import check_response
 from tests.integration.db_support import PgUrls
 from tests.integration.world import ROSTER, World
 
@@ -140,6 +141,7 @@ def api(
         bind=app_conn, join_transaction_mode="create_savepoint"
     )
     with TestClient(app, raise_server_exceptions=False) as client:
+        client.event_hooks["response"] = [check_response]  # TST-061, TST-064
         yield client
 
 

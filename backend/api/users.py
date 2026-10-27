@@ -18,7 +18,7 @@ from backend.api.deps import (
     get_read_context,
 )
 from backend.api.responses import errors
-from backend.schemas.users import Role, User, UserCreate, UserList, UserUpdate
+from backend.schemas.users import RoleName, User, UserCreate, UserList, UserUpdate
 from backend.services import user_service
 from backend.services.resident_service import ReadContext
 
@@ -31,7 +31,7 @@ def list_users(
     session: Annotated[Session, Depends(get_db)],
     ctx: Annotated[ReadContext, Depends(get_read_context)],
     page: Annotated[Pagination, Depends(get_pagination)],
-    role: Role | None = None,
+    role: RoleName | None = None,
     active: bool | None = None,
 ) -> UserList:
     items, total = user_service.list_users(

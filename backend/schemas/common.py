@@ -7,13 +7,21 @@ the JSON (TRD 19 §8, OAS-011). Request models forbid unknown properties (SEC-08
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.json_schema import SkipJsonSchema
 
-ConfigProfile = Literal["production", "test_v0_1"]
 CODE_PATTERN = r"^[A-Z0-9]{1,16}$"
 SESSION_ID_PATTERN = r"^[A-Z0-9]{1,16}-[0-9]{8}-[0-9]{2}$"
+# `type` aliases become `components/schemas` entries of the same name (TRD 19 §4.5).
+type ConfigProfile = Literal["production", "test_v0_1"]
+type ResidentCode = Annotated[str, Field(pattern=CODE_PATTERN, examples=["R09"])]
+type DeviceCode = Annotated[str, Field(pattern=CODE_PATTERN, examples=["D07B"])]
+type SessionId = Annotated[str, Field(pattern=SESSION_ID_PATTERN, examples=["R09-20261021-01"])]
+# Database enums no DTO property uses; documented for clients (OAS-007).
+type ProcessedStatus = Literal["usable", "set_aside", "quarantined", "duplicate"]
+type DayStatus = Literal["checked_in", "missing_resident", "missing_device_gap"]
 
 
 class ResponseModel(BaseModel):
@@ -24,6 +32,18 @@ class ResponseModel(BaseModel):
 
 class RequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+# An optional request property that may be left out but not sent as null: `X | Omitted` keeps
+# `null` out of its schema, and `reject_null` (a `mode="before"` field validator, which runs only
+# for properties that are sent) makes an explicit null 422 (TRD 19 §4.5).
+Omitted = SkipJsonSchema[None]
+
+
+def reject_null(value: object) -> object:
+    if value is None:
+        raise ValueError("must not be null")
+    return value
 
 
 class Meta(ResponseModel):

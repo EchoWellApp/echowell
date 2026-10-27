@@ -8,23 +8,31 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
-from backend.schemas.common import Meta, PageMeta, RequestModel, ResponseModel
-from backend.schemas.ingest import SessionId
-from backend.schemas.residents import ResidentCode, ScoredFeatureKey
+from backend.schemas.common import (
+    Meta,
+    Omitted,
+    PageMeta,
+    RequestModel,
+    ResidentCode,
+    ResponseModel,
+    SessionId,
+    reject_null,
+)
+from backend.schemas.residents import ScoredFeatureKey
 
-AlertStatus = Literal["open", "acknowledged", "closed"]
-ReviewOutcome = Literal["no_concern", "known_cause", "referred", "data_problem"]
-ReviewExplanationCode = Annotated[str, Field(pattern=r"^[a-z_]{1,40}$")]
-DataAlertKind = Literal[
+type AlertStatus = Literal["open", "acknowledged", "closed"]
+type ReviewOutcome = Literal["no_concern", "known_cause", "referred", "data_problem"]
+type ReviewExplanationCode = Annotated[str, Field(pattern="^[a-z_]{1,40}$")]
+type DataAlertKind = Literal[
     "baseline_stalled",
     "possible_other_speaker",
     "high_set_aside",
     "device_silent",
     "review_flagged_data_problem",
 ]
-DataAlertStatus = Literal["open", "resolved"]
+type DataAlertStatus = Literal["open", "resolved"]
 
 
 class Alert(ResponseModel):
@@ -82,7 +90,11 @@ class AlertReviewList(PageMeta):
 
 
 class SnoozeRequest(RequestModel):
-    hours: int | None = Field(default=None, ge=1, le=168, json_schema_extra={"default": 24})
+    hours: Annotated[int, Field(ge=1, le=168)] | Omitted = Field(
+        default=None, json_schema_extra={"default": 24}, description="default alert_snooze_hours"
+    )
+
+    _not_null = field_validator("hours", mode="before")(reject_null)
 
 
 class DataAlert(ResponseModel):

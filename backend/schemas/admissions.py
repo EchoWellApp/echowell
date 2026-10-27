@@ -9,10 +9,10 @@ from typing import Literal
 
 from pydantic import Field
 
-from backend.schemas.common import Meta, PageMeta, ResponseModel
-from backend.schemas.residents import BaselineProgress, FeatureKey, ResidentCode
+from backend.schemas.common import Meta, PageMeta, ResidentCode, ResponseModel
+from backend.schemas.residents import BaselineProgress, FeatureKey
 
-ComparisonStatus = Literal[
+type ComparisonStatus = Literal[
     "outside_range", "within_range", "not_enough_checkins", "range_not_available"
 ]
 

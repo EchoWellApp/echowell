@@ -8,12 +8,10 @@ from typing import Literal
 
 from pydantic import ConfigDict, Field
 
-from backend.schemas.common import PageMeta, ResponseModel
-from backend.schemas.ingest import SessionId
-from backend.schemas.residents import ResidentCode
+from backend.schemas.common import PageMeta, ResidentCode, ResponseModel, SessionId
 
-AlarmState = Literal["off", "rings", "on"]
-BaselineFeatureKey = Literal[
+type AlarmState = Literal["off", "rings", "on"]
+type BaselineFeatureKey = Literal[
     "loudness_dbfs",
     "total_phrase_duration_s",
     "speech_rate_syl_per_s",

@@ -52,7 +52,8 @@ def offenders(app: FastAPI) -> list[str]:
     return found
 
 
-@pytest.mark.req("SEC-042", "FR-212", "FEAT-021-AC-01", "FEAT-020-FR-17")
+@pytest.mark.req("SEC-042", "FR-212", "FEAT-021-AC-01", "FEAT-020-FR-17", "FEAT-039-FR-02",
+                 "FEAT-039-AC-02")  # fmt: skip
 def test_every_route_has_its_auth_dependency() -> None:
     assert offenders(create_app(make_settings())) == []
 
@@ -70,7 +71,7 @@ def test_production_has_no_docs_route() -> None:
     assert f"{PREFIX}/openapi.json" in paths
 
 
-@pytest.mark.req("SEC-042", "FEAT-021-AC-01")
+@pytest.mark.req("SEC-042", "FEAT-021-AC-01", "FEAT-039-AC-02")
 def test_a_route_without_auth_is_detected() -> None:
     app = create_app(make_settings())
 

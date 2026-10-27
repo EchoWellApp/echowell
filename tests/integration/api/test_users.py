@@ -102,7 +102,7 @@ def test_update_user(api: TestClient, principals: Principals) -> None:
                        json={"password": "short"}), 422, "PASSWORD_POLICY_VIOLATION")  # fmt: skip
 
 
-@pytest.mark.req("SEC-044", "FEAT-037-AC-05", "FEAT-037-FR-06")
+@pytest.mark.req("SEC-044", "FEAT-037-AC-05", "FEAT-037-FR-06", "FEAT-039-FR-09")
 def test_self_changes(api: TestClient, principals: Principals) -> None:
     me = principals.users["admin"]
     admin = principals.bearer("admin")

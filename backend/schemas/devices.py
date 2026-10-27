@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Annotated
 
 from pydantic import Field
 
-from backend.schemas.common import CODE_PATTERN, PageMeta, ResponseModel
-
-DeviceCode = Annotated[str, Field(pattern=CODE_PATTERN, examples=["D07B"])]
+from backend.schemas.common import DeviceCode, PageMeta, ResidentCode, ResponseModel
 
 
 class Device(ResponseModel):
     device_code: DeviceCode
     room_label: str | None = Field(description="non-identifying label only")
     active: bool
-    resident_codes: list[str]
+    resident_codes: list[ResidentCode]
     shared: bool
     replaces_device_code: str | None
     replaced_by_device_code: str | None

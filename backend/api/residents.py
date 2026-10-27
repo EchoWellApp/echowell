@@ -82,7 +82,7 @@ def get_resident(
 @router.get(
     "/{resident_code}/checkins",
     response_model=CheckinEventList,
-    operation_id="listResidentCheckins",
+    operation_id="listCheckinEvents",
     responses=errors(401, 404, 422),
 )
 def list_checkins(
@@ -129,7 +129,7 @@ def get_features(
 @router.get(
     "/{resident_code}/notes",
     response_model=StaffNoteList,
-    operation_id="listStaffNotes",
+    operation_id="listNotes",
     responses=errors(401, 404),
 )
 def list_notes(
@@ -154,7 +154,7 @@ def list_notes(
     "/{resident_code}/notes",
     status_code=status.HTTP_201_CREATED,
     response_model=StaffNote,
-    operation_id="createStaffNote",
+    operation_id="createNote",
     responses=errors(401, 403, 404, 409, 422),
 )
 def create_note(

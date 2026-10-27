@@ -1,10 +1,10 @@
 """Operator command line: `python -m backend.cli <command>` (TRD 15 §4.8; TRD 21 ENV-053).
 
-Commands of FEAT-016 (credentials), FEAT-017 (master data, withdrawal, purge, seed, reset) and
-FEAT-032 (`resolve-data-alert`); `run-pipeline`, `rebuild`, `set-config` and `export-openapi`
-follow with their features. Exit codes (TRD 24 D-86): 0 success; 1 invalid settings (ENV-002,
-checked by `load_settings_or_exit`); 2 a command-specific refusal, which prints the reason and
-writes nothing.
+Commands of FEAT-016 (credentials), FEAT-017 (master data, withdrawal, purge, seed, reset),
+FEAT-032 (`resolve-data-alert`) and FEAT-038 (`export-openapi`); `run-pipeline`, `rebuild` and
+`set-config` follow with their features. Exit codes (TRD 24 D-86): 0 success; 1 invalid settings
+(ENV-002, checked by `load_settings_or_exit`); 2 a command-specific refusal, which prints the
+reason and writes nothing.
 RefusalErrors that depend only on the environment are checked before the settings are built.
 
 Connections: `seed`, `reset-test-db` and `purge-resident` run as `echowell_migrator` through
@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import csv
 import getpass
+import json
 import sys
 import uuid
 from collections.abc import Callable, Iterator, Sequence
@@ -527,6 +528,17 @@ def resolve_data_alert(settings: Settings, args: argparse.Namespace) -> int:
     return 0
 
 
+def export_openapi(settings: Settings, _: argparse.Namespace) -> int:
+    """`export-openapi`: print the TRD 19 document as JSON, without a database connection
+    (FEAT-038-FR-03, D-89)."""
+    from backend.api.openapi import build_openapi
+    from backend.main import create_app
+
+    sys.stdout.write(json.dumps(build_openapi(create_app(settings)), indent=2, sort_keys=True))
+    sys.stdout.write("\n")
+    return 0
+
+
 COMMANDS: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
     "create-user": create_user,
     "create-api-key": create_api_key,
@@ -538,6 +550,7 @@ COMMANDS: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
     "seed": seed,
     "reset-test-db": reset_test_db,
     "resolve-data-alert": resolve_data_alert,
+    "export-openapi": export_openapi,
 }
 
 
@@ -584,6 +597,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("resolve-data-alert", help="resolve a review-flagged data problem")
     p.add_argument("--id", required=True, help="data alert id (uuid)")
     p.add_argument("--reason", required=True)
+
+    sub.add_parser("export-openapi", help="print the OpenAPI document (no database connection)")
     return parser
 
 

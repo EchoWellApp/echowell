@@ -7,10 +7,8 @@ from typing import Literal
 
 from pydantic import Field
 
-from backend.schemas.common import Meta, ResponseModel
-from backend.schemas.devices import DeviceCode
+from backend.schemas.common import DeviceCode, Meta, ResidentCode, ResponseModel
 from backend.schemas.pipeline import PipelineRun
-from backend.schemas.residents import ResidentCode
 
 
 class CountOfExpected(ResponseModel):

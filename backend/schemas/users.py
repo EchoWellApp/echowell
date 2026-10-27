@@ -5,14 +5,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic.config import JsonDict
 
-from backend.schemas.common import PageMeta, RequestModel, ResponseModel
+from backend.schemas.common import Omitted, PageMeta, RequestModel, ResponseModel, reject_null
 
-Role = Literal["admin", "clinician", "researcher"]
+RoleName = Literal["admin", "clinician", "researcher"]
+type Role = RoleName
 _EMAIL: JsonDict = {"format": "email"}
 # The password length is documented here but checked by the SEC-012 policy, so a short password
 # is 422 PASSWORD_POLICY_VIOLATION rather than VALIDATION_ERROR (FEAT-037-FR-04).
@@ -51,10 +52,14 @@ class UserCreate(RequestModel):
 class UserUpdate(RequestModel):
     model_config = RequestModel.model_config | {"json_schema_extra": {"minProperties": 1}}
 
-    display_name: str | None = Field(default=None, min_length=1, max_length=100)
-    role: Role | None = None
-    active: bool | None = None
-    password: str | None = Field(default=None, json_schema_extra=_PASSWORD)
+    display_name: Annotated[str, Field(min_length=1, max_length=100)] | Omitted = None
+    role: Role | Omitted = None
+    active: bool | Omitted = None
+    password: Annotated[str, Field(json_schema_extra=_PASSWORD)] | Omitted = None
+
+    _not_null = field_validator("display_name", "role", "active", "password", mode="before")(
+        reject_null
+    )
 
     @model_validator(mode="after")
     def _at_least_one(self) -> UserUpdate:

@@ -25,6 +25,7 @@ from backend.api import (
     devices,
     health,
     ingest,
+    openapi,
     pipeline,
     residents,
     scores,
@@ -112,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(analytics.router, prefix=API_PREFIX)
     app.include_router(admissions.router, prefix=API_PREFIX)
     app.include_router(users.router, prefix=API_PREFIX)
+    openapi.install(app)
     return app
 
 
