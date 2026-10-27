@@ -10,26 +10,29 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from backend.api.deps import (
+    Clock,
     Pagination,
     Principal,
     authorize,
     check_date_range,
+    get_clock,
     get_db,
     get_pagination,
     get_read_context,
 )
 from backend.api.responses import errors
+from backend.schemas.notes import StaffNote, StaffNoteCreate, StaffNoteList
 from backend.schemas.residents import (
     CheckinEventList,
     FeaturesResponse,
     ResidentDetail,
     ResidentsOverviewResponse,
 )
-from backend.services import checkin_service, feature_service, resident_service
+from backend.services import checkin_service, feature_service, note_service, resident_service
 from backend.services.resident_service import ReadContext, Sort
 
 router = APIRouter(prefix="/residents", tags=["residents"])
@@ -121,3 +124,48 @@ def get_features(
         session, ctx, resident_code, start or default_start, end or default_end
     )
     return FeaturesResponse.model_validate(body)
+
+
+@router.get(
+    "/{resident_code}/notes",
+    response_model=StaffNoteList,
+    operation_id="listStaffNotes",
+    responses=errors(401, 404),
+)
+def list_notes(
+    resident_code: str,
+    _: Annotated[Principal, Depends(authorize("GET /residents/{resident_code}/notes"))],
+    session: Annotated[Session, Depends(get_db)],
+    ctx: Annotated[ReadContext, Depends(get_read_context)],
+    page: Annotated[Pagination, Depends(get_pagination)],
+    include_superseded: bool = False,
+) -> StaffNoteList:
+    items, total = note_service.list_notes(
+        session, resident_code, include_superseded=include_superseded,
+        limit=page.limit, offset=page.offset,
+    )  # fmt: skip
+    return StaffNoteList.model_validate(
+        {"meta": ctx.meta, "items": items, "total": total, "limit": page.limit,
+         "offset": page.offset}
+    )  # fmt: skip
+
+
+@router.post(
+    "/{resident_code}/notes",
+    status_code=status.HTTP_201_CREATED,
+    response_model=StaffNote,
+    operation_id="createStaffNote",
+    responses=errors(401, 403, 404, 409, 422),
+)
+def create_note(
+    resident_code: str,
+    body: StaffNoteCreate,
+    principal: Annotated[Principal, Depends(authorize("POST /residents/{resident_code}/notes"))],
+    session: Annotated[Session, Depends(get_db)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> StaffNote:
+    note = note_service.create(
+        session, resident_code, principal.require_user(), note_type=body.note_type,
+        body=body.body, alert_id=body.alert_id, supersedes_id=body.supersedes_id, now=clock,
+    )  # fmt: skip
+    return StaffNote.model_validate(note)

@@ -13,7 +13,7 @@ import ipaddress
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Annotated, Any, NoReturn
 
 from fastapi import Depends, Request
@@ -47,6 +47,7 @@ __all__ = [
     "check_date_range",
     "client_ip",
     "get_audit_writer",
+    "get_clock",
     "get_db",
     "get_engine",
     "get_ingest_service",
@@ -253,6 +254,15 @@ def check_date_range(start: date | None, end: date | None, max_days: int | None 
         raise InvalidQueryParameterError("'from' must not be later than 'to'")
     if max_days and start is not None and end is not None and (end - start).days + 1 > max_days:
         raise InvalidQueryParameterError(f"'from'..'to' may span at most {max_days} days")
+
+
+Clock = Callable[[], datetime]
+
+
+def get_clock() -> Clock:
+    """The application clock (DME-022, D-37): reviews and snoozes never use database `now()`;
+    tests freeze it with `time-machine` or override this dependency."""
+    return lambda: datetime.now(UTC)
 
 
 def get_read_context(

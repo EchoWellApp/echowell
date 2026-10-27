@@ -1,9 +1,10 @@
 """Operator command line: `python -m backend.cli <command>` (TRD 15 §4.8; TRD 21 ENV-053).
 
-Commands of FEAT-016 (credentials) and FEAT-017 (master data, withdrawal, purge, seed, reset);
-`run-pipeline`, `rebuild`, `set-config`, `resolve-data-alert` and `export-openapi` follow with their
-features. Exit codes (TRD 24 D-86): 0 success; 1 invalid settings (ENV-002, checked by
-`load_settings_or_exit`); 2 a command-specific refusal, which prints the reason and writes nothing.
+Commands of FEAT-016 (credentials), FEAT-017 (master data, withdrawal, purge, seed, reset) and
+FEAT-032 (`resolve-data-alert`); `run-pipeline`, `rebuild`, `set-config` and `export-openapi`
+follow with their features. Exit codes (TRD 24 D-86): 0 success; 1 invalid settings (ENV-002,
+checked by `load_settings_or_exit`); 2 a command-specific refusal, which prints the reason and
+writes nothing.
 RefusalErrors that depend only on the environment are checked before the settings are built.
 
 Connections: `seed`, `reset-test-db` and `purge-resident` run as `echowell_migrator` through
@@ -17,10 +18,11 @@ import argparse
 import csv
 import getpass
 import sys
+import uuid
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from sqlalchemy import ColumnElement, delete, select, text
@@ -62,6 +64,7 @@ from backend.repositories.device_repository import DeviceRepository
 from backend.repositories.facility_repository import FacilityRepository
 from backend.repositories.resident_repository import ResidentRepository
 from backend.repositories.user_repository import UserRepository
+from backend.services import data_alert_service
 from backend.services.audit_service import AuditAction, record_cli
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -504,6 +507,26 @@ def seed(settings: Settings, args: argparse.Namespace) -> int:
 
 # --- argument parsing --------------------------------------------------------------------------
 
+
+def resolve_data_alert(settings: Settings, args: argparse.Namespace) -> int:
+    """`resolve-data-alert --id <uuid> --reason "<text>"`: the only way a review-flagged data
+    problem is resolved (TRD 15 §4.8, FR-297); one id per call, no `--force`."""
+    try:
+        data_alert_id = uuid.UUID(args.id)
+    except ValueError:
+        raise RefusalError(f"{args.id!r} is not a uuid") from None
+    if not args.reason.strip():
+        raise RefusalError("--reason must not be empty")
+    with app_session(settings) as session:
+        try:
+            data_alert_service.resolve(session, data_alert_id, args.reason, datetime.now(UTC))
+        except data_alert_service.DataAlertRefusalError as exc:
+            raise RefusalError(str(exc)) from None
+        session.commit()
+    _say(f"Data alert {data_alert_id} resolved.")
+    return 0
+
+
 COMMANDS: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
     "create-user": create_user,
     "create-api-key": create_api_key,
@@ -514,6 +537,7 @@ COMMANDS: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
     "purge-resident": purge_resident,
     "seed": seed,
     "reset-test-db": reset_test_db,
+    "resolve-data-alert": resolve_data_alert,
 }
 
 
@@ -556,6 +580,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reset", action="store_true", help="run reset-test-db first")
 
     sub.add_parser("reset-test-db", help="drop and recreate the schema (test profile only)")
+
+    p = sub.add_parser("resolve-data-alert", help="resolve a review-flagged data problem")
+    p.add_argument("--id", required=True, help="data alert id (uuid)")
+    p.add_argument("--reason", required=True)
     return parser
 
 
