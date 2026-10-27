@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -24,7 +24,7 @@ contain secrets, personal data or audio.
 
 **Out of scope**
 
-- Clinical alerts (CUSUM alarms) and data alerts (`data_alerts`, contract §19) — TRD 09 / TRD 02; they are research flags shown on `/alerts`, not operational alerts.
+- Clinical alerts (CUSUM alarms) and data alerts (`data_alerts`, contract §19) — TRD 09 / TRD 02; they are research flags shown in the dashboard (change alarms in the Resident list and Resident chart, data alerts on the Study team page `/study`), not operational alerts.
 - The audit log schema and the list of audited actions — TRD 06/TRD 12 (summarised here only for the distinction).
 - Push notification of clinical alarms by SMS/e-mail (OQ-06; not in MVP).
 
@@ -234,7 +234,7 @@ stateDiagram-v2
 | LOG-080 | The frontend shall define `app/(protected)/error.tsx` (route-segment error boundary at the path of TRD 04 §4.2 and FE-145) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
 | LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
 | LOG-082 | The frontend shall not send telemetry, logs or errors to any third-party service; browser console logging in production builds shall be limited to `console.error` for caught errors without response bodies. | Must | BR-16, TRD 22 | Inspection |
-| LOG-083 | Data panels (residents table, chart, check-in log, device panel, alert queues and review panel on `/alerts`, KPI tiles and charts on `/analytics`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
+| LOG-083 | Data panels (residents table, Resident chart panels such as Summary, change score chart, check-in log, Device section, review panel and staff notes, Study team KPI tiles, data problems, charts and Devices section on `/study`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
 
 ### 4.7 Audit logs vs application logs
 
@@ -285,14 +285,14 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | Nightly run missing | nightly job's non-running firing, and `/admin` read-time check: no `pipeline_runs` row with trigger `nightly`, status `succeeded`, `started_at` within the last 26 h | ERROR log `nightly_run_missing` + Sentry + `/admin` banner | high |
 | Deployment failed | Railway/Netlify deploy failure, `deploy-*.yml` failure | GitHub commit status, workflow failure e-mail | medium |
 | CI failure on main | `ci.yml` / `e2e.yml` failure on `main` | `ci-failure` issue (TRD 16 CIC-033) | medium |
-| Data alerts (baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem) | rule-based, recomputed each pipeline run into `data_alerts` (contract §19) | **Dashboard only**: `/alerts` queue "Data alerts · go to the study team", device panel, check-in log — not pushed (OQ-06, OQ-24) | informational (data quality, not health) |
+| Data alerts (baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem) | rule-based, recomputed each pipeline run into `data_alerts` (contract §19) | **Dashboard only**: Study team "Data problems to follow up" and Devices section, the Resident chart's Check-in log and Device section, and the "Needs attention" status for `baseline_stalled` and `high_set_aside` (TRD 24 D-109, OQ-31) — not pushed (OQ-06, OQ-24) | informational (data quality, not health) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-110 | The nightly pipeline run shall be executed by the Railway Cron Job service `nightly` (`python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding the transaction-scoped nightly advisory lock of TRD 06 DB-021 (d); the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-046, TRD 21 | Test |
 | LOG-111 | Each firing of `backend.jobs.nightly_run` that does not start a run shall check the most recent facility-local date whose 02:00 hour has passed and log ERROR `nightly_run_missing` (and report to Sentry when enabled) if no succeeded nightly run exists for it; independently, `/admin` shall show the banner "Nightly run missing for <date>" whenever no succeeded nightly run started within the previous 26 hours (computed at read time). | Must | RSK-05 | Test |
 | LOG-112 | The `/admin` page shall show the latest 50 `pipeline_runs` (TRD 02 FR-225) (trigger, status, started/finished local time, counts, warning count) and a banner while the most recent run of any trigger is `failed`. | Must | TRD 04 | Test |
-| LOG-113 | Device silence and the other data alerts shall be shown only in the dashboard (`/alerts` data-alert queue, device panel, check-in log); the system shall not send e-mail, SMS or push notifications for data alerts or for clinical alarms in the MVP. | Must | BR-12, OQ-06, OQ-24, RSK-05 | Inspection |
+| LOG-113 | Device silence and the other data alerts shall be shown only in the dashboard (Study team "Data problems to follow up" and Devices section, Resident chart Check-in log and Device section); the system shall not send e-mail, SMS or push notifications for data alerts or for clinical alarms in the MVP. | Must | BR-12, OQ-06, OQ-24, RSK-05 | Inspection |
 | LOG-115 | Data alerts (`data_alerts`) are research data-quality flags for the study team and shall not be logged as operational errors; a pipeline run shall log one INFO `data_alerts_updated` with counts per kind (open, resolved). | Must | contract §19 | Test |
 | LOG-114 | Operational alert notifications shall reach at least two team members (the DevOps owner and the algorithm lead) by watching the repository's issues with label `incident`. | Should | RSK-05 | Inspection |
 
@@ -366,3 +366,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-07) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (LOG-080 error boundary path; LOG-063 stage names and AC-LOG-05 (D-80)) | — |
+| 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §2 note, LOG-083, §4.9 data-alert row and LOG-113 name the v0.2 places (Resident chart, Study team `/study`; Alert review page retired) | — |

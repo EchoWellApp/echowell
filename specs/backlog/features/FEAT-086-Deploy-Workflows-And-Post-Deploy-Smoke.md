@@ -17,7 +17,7 @@ Create the staging deployment verification workflow, the manual production relea
 ## Business Context
 
 - BR-17: GitHub → Netlify / Railway deployment with verification (SRC-01; CIC-001).
-- BR-15: staging always reflects the answer key (DEP-074, CIC-041) and the smoke tests check tiles 2 / 7 / 1 / 19, R09 alarm and analytics figures (DEP-080).
+- BR-15: staging always reflects the answer key (DEP-074, CIC-041) and the smoke tests check the resident summary 2 / 2 / 0 / 6 (changed, needs attention, learning, usual), R09 alarm and analytics figures (DEP-080).
 - BR-16: no production database URL or application credential in GitHub, only the two production deploy tokens behind a required reviewer (CIC-050, CIC-090); production smoke tests prove auth, HSTS and no audio route (DEP-081).
 
 ## Referenced TRDs
@@ -33,7 +33,7 @@ Create the staging deployment verification workflow, the manual production relea
 ## Scope
 
 - `tests/smoke/` (marker `smoke`; tests that log in also marked `authenticated`): reading SMOKE_API_BASE_URL, SMOKE_FRONTEND_URL, SMOKE_EXPECTED_SHA, SMOKE_ENV and, for staging only, SMOKE_USER_EMAIL / SMOKE_USER_PASSWORD.
-  - Staging (DEP-080 a–h): health 200, `database: "ok"`, `version` = expected SHA; `/login` 200; login as the seeded `researcher@example.com`; `GET /api/v1/residents` tiles 2 / 7 / 1 / 19; `GET /api/v1/residents/R09` `alarm_on` since Oct 21; `GET /api/v1/alerts` open alarms R09 and R10 and `GET /api/v1/data-alerts` exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; `GET /api/v1/analytics` 281 of 300 received and 267 of 300 used; CORS preflight allowed from the staging frontend origin and refused from `https://example.org`.
+  - Staging (DEP-080 a–h): health 200, `database: "ok"`, `version` = expected SHA; `/login` 200; login as the seeded `researcher@example.com`; `GET /api/v1/residents` summary changed 2, needs_attention 2, learning 0, usual 6 (TRD 24 D-114); `GET /api/v1/residents/R09` `alarm_on` since Oct 21; `GET /api/v1/alerts` open alarms R09 and R10 and `GET /api/v1/data-alerts` exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; `GET /api/v1/analytics` 281 of 300 received and 267 of 300 used; CORS preflight allowed from the staging frontend origin and refused from `https://example.org`.
   - Production (DEP-081 a–f): health 200 with `database: "ok"` and `version` = expected SHA; `/login` 200 over HTTPS; `GET /api/v1/residents` without token 401 with RFC 7807 body; `POST /api/v1/sessions` without API key 401; HSTS on both origins; `GET /api/v1/audio` 404.
   - Both: TLS check from FEAT-083 (`tests/smoke/test_tls.py`) and HSTS (TST-135).
 - `.github/workflows/deploy-staging.yml`: triggers `push` to `main` and `workflow_dispatch` with boolean input `reseed`; GitHub environment `staging` (branch rule `main`); steps 1–6 of TRD 16 §4.4 (wait for backend SHA, wait for frontend build meta or accept the previous build when `frontend/` did not change, conditional re-seed with the operator variable set, smoke tests, upload `build/smoke-junit.xml` as `smoke-report`).

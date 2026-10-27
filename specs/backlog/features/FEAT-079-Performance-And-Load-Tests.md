@@ -16,7 +16,7 @@ Verify the contract R8 performance budgets automatically: generate the determini
 
 ## Business Context
 
-- BR-12, BR-13: overview and detail pages respond within budget (NFR-001..NFR-003, NFR-010).
+- BR-12, BR-13: the Resident list, Resident chart and Study team pages respond within budget (NFR-001..NFR-003, NFR-010).
 - BR-01 and SRC-15 demo step 4: `POST /api/v1/sessions` p95 ≤ 1,000 ms including the pipeline (NFR-004).
 - BR-15: pipeline on the test input ≤ 5 s and full rebuild budgets (NFR-005..NFR-007).
 - ASM-08 (< 25 users, < 100 residents, < 1 session per resident per day) and RSK-07 (free-tier limits).
@@ -60,7 +60,7 @@ Verify the contract R8 performance budgets automatically: generate the determini
 | FEAT-079-FR-07 | A full rebuild of SRC-05 including database writes shall complete in ≤ 30 s. | API-124, NFR-006 |
 | FEAT-079-FR-08 | `GET /api/v1/health` p95 latency shall be ≤ 200 ms. | API-120 |
 | FEAT-079-FR-09 | PR runs shall execute TST-120, TST-121 with 50 requests and TST-124; TST-121 with 200 requests, TST-122 and TST-123 run nightly. | TST-126 |
-| FEAT-079-FR-10 | Lighthouse CI (desktop preset) on `/residents`, `/residents/R09`, `/alerts` and `/analytics` of the seeded Compose `demo` stack built from the PR shall report for each page Performance ≥ 80 and LCP ≤ 2.5 s, after a scripted admin login. | TST-125, NFR-010, CIC-116 |
+| FEAT-079-FR-10 | Lighthouse CI (desktop preset) on `/residents`, `/residents/R09`, `/residents/R09/trends` and `/study` of the seeded Compose `demo` stack built from the PR shall report for each page Performance ≥ 80 and LCP ≤ 2.5 s, after a scripted admin login. | TST-125, NFR-010, CIC-116 |
 | FEAT-079-FR-11 | The performance suite shall write `build/performance.json` with the measured p95 per budget and fail when any budget is exceeded. | CIC-035, TRD 16 §4.10 |
 | FEAT-079-FR-12 | DS-08 and test fixture data shall never be loaded into a database that holds real records. | TDV-007 |
 | FEAT-079-FR-13 | The nightly run shall record the DS-08 database size so the NFR-152 projection (100 residents × 3 years ≤ 2 GB) can be computed from it. | NFR-152, DB-049 |
@@ -156,4 +156,4 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-080.
 - Use one session-scoped PostgreSQL container and load DS-08 once per session; keep DS-08 in a temporary directory.
 - Measure p95 with `statistics.quantiles(samples, n=100)[94]` over the sample list; report milliseconds.
 - TST-121 needs a resident with 120 days of history: pre-load 119 records for that resident, then time the POSTs with fresh session IDs and increasing timestamps.
-- Resolved in the PR #2 consistency fixes (TRD 24 D-98): NFR-151 and NFR-012 are verified by TRD 13 TST-190 and TST-191; TST-125 and CIC-116 cover the four NFR-010 pages; TST-120 and ANL-047 use `ubuntu-24.04` (CIC-027).
+- Resolved in the PR #2 consistency fixes (TRD 24 D-98): NFR-151 and NFR-012 are verified by TRD 13 TST-190 and TST-191; TST-125 and CIC-116 cover the four NFR-010 pages (since wireframe v0.2, TRD 24 D-110: Resident list, chart Summary, chart Voice trends, Study team); TST-120 and ANL-047 use `ubuntu-24.04` (CIC-027).

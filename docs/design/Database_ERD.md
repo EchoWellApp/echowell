@@ -1,6 +1,6 @@
 # EchoWell Database ERD and Data Ownership
 
-Document: docs/design/Database_ERD.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Database_ERD.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Version 0.2 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2)
 
 ## 1. Purpose and sources
 
@@ -493,18 +493,18 @@ Two full rebuilds with unchanged inputs leave every derived table identical exce
 
 ## 9. Indexes and the query each serves
 
-Every index of TRD 20 §4.7 is created with its exact name (PGS-038); new indexes require a documented query pattern (DB-046). The overview, detail and device queries must avoid sequential scans on DS-08 (DB-040, DB-042).
+Every index of TRD 20 §4.7 is created with its exact name (PGS-038); new indexes require a documented query pattern (DB-046). The resident list, resident chart and device queries must avoid sequential scans on DS-08 (DB-040, DB-042).
 
 | Query (endpoint) | Indexes |
 |---|---|
 | Duplicate check at ingest (E-05, E-06) | `raw_sessions_session_id_idx` |
 | Pipeline load per resident | `raw_sessions_resident_ts_idx`, `processed_sessions_epoch_idx` |
-| Overview counts and last check-in (E-08) | `processed_sessions_resident_date_idx`, `processed_sessions_resident_ts_idx`, `day_ledger_missing_idx`, `epochs_current_uq`, `cusum_state_resident_idx` |
-| Detail and check-in log (E-09, E-10) | `scores_epoch_date_idx`, `alerts_resident_triggered_idx`, `day_ledger_missing_idx` |
+| Resident list counts, last check-in and attention flag (E-08) | `processed_sessions_resident_date_idx`, `processed_sessions_resident_ts_idx`, `day_ledger_missing_idx`, `epochs_current_uq`, `cusum_state_resident_idx`, `data_alerts_status_detected_idx` |
+| Resident chart and check-in log incl. `checkins_started` (E-09, E-10) | `scores_epoch_date_idx`, `alerts_resident_triggered_idx`, `day_ledger_missing_idx`, `processed_sessions_resident_ts_idx` |
 | Scores series (E-12) | `scores_resident_date_idx`, `scores_epoch_date_idx` |
-| Alerts queue (E-13) | `alerts_status_triggered_idx`, `alerts_one_active_per_epoch_uq`, `alert_reviews_alert_created_idx` |
-| Data alerts (E-30) | `data_alerts_status_detected_idx`, `data_alerts_open_subject_uq` |
-| Devices panel (E-17) | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
+| Alerts list and nav badge count (E-13) | `alerts_status_triggered_idx`, `alerts_one_active_per_epoch_uq`, `alert_reviews_alert_created_idx` |
+| Data alerts (E-30, Study team "Data problems to follow up") | `data_alerts_status_detected_idx`, `data_alerts_open_subject_uq` |
+| Devices incl. `uploaded_on_as_of_date` (E-17; Study team Devices, chart Device section) | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
 | Notes (E-15) | `staff_notes_resident_created_idx` |
 | Pipeline runs (E-31, nightly dedupe) | `pipeline_runs_started_idx`, `pipeline_runs_status_idx` |
 | Audit search (offline) | `audit_logs_occurred_idx`, `audit_logs_entity_idx`, `audit_logs_actor_idx`, `audit_logs_action_idx` |
@@ -540,3 +540,9 @@ Every index of TRD 20 §4.7 is created with its exact name (PGS-038); new indexe
 | OQ-10 | Late arrivals: frozen baseline kept, `late_arrival` warning in `pipeline_runs.warnings`. |
 | OQ-11 | Withdrawal keeps data; purge only by the IRB-directed CLI command. |
 | OQ-14 | No speaker-verification column in schema 0.1. |
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §9 query list renamed for the Resident list, Resident chart and Study team and extended with the attention-flag, `checkins_started` and `uploaded_on_as_of_date` reads on existing indexes; no table, enum or index change (TRD 06 v0.11, TRD 20 v0.9) | — |

@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Score every usable check-in that arrives after a resident's baseline has frozen: for each of the seven composite voice features compute how far the morning-adjusted value lies from the resident's own baseline in robust standard units (z), combine them with fixed signs into one daily composite score (positive = toward the depression-associated direction), and standardise that against the composite baseline (composite_z). These numbers feed the running change tally and are shown per measurement on the Resident detail page.
+Score every usable check-in that arrives after a resident's baseline has frozen: for each of the seven composite voice features compute how far the morning-adjusted value lies from the resident's own baseline in robust standard units (z), combine them with fixed signs into one daily composite score (positive = toward the depression-associated direction), and standardise that against the composite baseline (composite_z). These numbers feed the running change tally and are shown per measurement on the Resident chart's Voice trends section.
 
 ## Business Context
 

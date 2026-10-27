@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -62,7 +62,7 @@ the AWS target.
 | `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 hex chars from `openssl rand -hex 32` | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
 | `JWT_EXPIRES_MINUTES` | Access token lifetime | No | `60` | `60` | all | No | integer 5–1440 |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated | Yes in staging/production | `http://localhost:3000,http://localhost:3001` (local/test only) | `https://echowell-und.netlify.app` | all | No | each item a valid origin without path; `*` forbidden; `http://` allowed only for `localhost` origins and only when APP_ENV is `local` or `test` |
-| `FACILITY_NAME` | Name used only by `backend.cli bootstrap`/`seed` to create the `facilities` row; the header subline shows `facilities.name` via `meta.facility_name` | Yes in staging/production | `Edgewood` | `Edgewood` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
+| `FACILITY_NAME` | Name used only by `backend.cli bootstrap`/`seed` to create the `facilities` row; the app bar facility line ("<name>, Assisted living", TRD 11 UX-011) shows `facilities.name` via `meta.facility_name` | Yes in staging/production | `Edgewood` | `Edgewood` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
 | `FACILITY_TZ` | Facility IANA time zone (bootstrap facility row, nightly job hour check) | No | `America/Chicago` | `America/Chicago` | all | No | valid `zoneinfo.ZoneInfo` key |
 | `PIPELINE_PROFILE` | Name of `config_parameters` profile used by pipeline runs | No | `production` | `test_v0_1` | all | No | one of `production`, `test_v0_1`; `test_v0_1` refused when APP_ENV=`production` |
 | `NIGHTLY_RUN_HOUR_LOCAL` | Facility-local hour in which `backend.jobs.nightly_run` starts the full nightly run (TRD 15 DEP-047) | No | `2` | `2` | all | No | integer 0–23 |
@@ -269,7 +269,7 @@ NEXT_PUBLIC_APP_ENV=production
 - AC-ENV-03 Starting with APP_ENV=production and JWT_SECRET from `.env.development.example` exits with code 1; the log does not contain the secret value.
 - AC-ENV-04 A JWT_SECRET of 31 bytes is rejected in every APP_ENV.
 - AC-ENV-05 `DATABASE_URL=postgres://u:p@h/db?sslmode=require` yields an engine URL `postgresql+psycopg://u:p@h/db?sslmode=require`.
-- AC-ENV-06 With APP_ENV=production and PIPELINE_AS_OF set, startup fails; with APP_ENV=staging and PIPELINE_AS_OF=2026-10-30T15:00:00-05:00 the residents summary returns tiles 2 / 7 / 1 / 19 on any calendar date.
+- AC-ENV-06 With APP_ENV=production and PIPELINE_AS_OF set, startup fails; with APP_ENV=staging and PIPELINE_AS_OF=2026-10-30T15:00:00-05:00 the residents summary returns changed 2 / needs_attention 2 / learning 0 / usual 6 (TRD 24 D-114) on any calendar date.
 - AC-ENV-07 FACILITY_NAME=`Edge4Care` is rejected.
 - AC-ENV-08 The unit test comparing `Settings` fields with `.env.example` passes; `frontend` build fails when NEXT_PUBLIC_API_BASE_URL is unset.
 - AC-ENV-09 `repr(get_settings())` shows `**********` for DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET and SENTRY_DSN.
@@ -309,3 +309,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (ENV-021 and config ownership: migration 0002 seeds, bootstrap verifies (D-85)) | — |
 | 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.11 | 26 Oct 2026 | Checkpoint 2 review Q-4: ENV-012 refuses LOG_FORMAT=`console` in staging as well as production, matching the §4.2 table and TRD 17 LOG-002 (D-103) | — |
+| 0.12 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): FACILITY_NAME row names the app bar facility line instead of the v0.1 header subline; AC-ENV-06 summary counts | — |
