@@ -839,7 +839,7 @@ components:
         event_type: {$ref: "#/components/schemas/CheckinEventType"}
         epoch_number: {type: [integer, "null"]}
         session_id: {type: [string, "null"]}
-        detail: {type: [string, "null"], description: pipeline reason text or progress, e.g. "16 of 16"}
+        detail: {type: [string, "null"], description: 'pipeline reason text or progress, e.g. "16 of 16"'}
         cusum_tally: {type: [number, "null"]}
         restart_cause: {$ref: "#/components/schemas/RestartCause"}
         previous_device_code: {type: [string, "null"], description: "baseline_restarted only: device of the previous epoch"}

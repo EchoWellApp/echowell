@@ -14,6 +14,7 @@ import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, case, func, or_, select
@@ -26,6 +27,9 @@ from backend.models import (
     AlertStatus,
     Baseline,
     CusumState,
+    DataAlert,
+    DataAlertKind,
+    DataAlertStatus,
     DayLedgerEntry,
     DayStatus,
     Device,
@@ -449,27 +453,35 @@ class CheckinEventSource:
 
     event_type: str
     local_date: date
-    detail: dict[str, object]
+    detail: dict[str, Any]
 
 
 def checkin_event_sources(
     session: Session, resident: Resident, start: date, end: date, timezone: str
 ) -> list[CheckinEventSource]:
-    """Alerts, first scores, baseline completion, set-aside, quarantined, missed, device-silent
-    and restart rows of one resident between `start` and `end` (TRD 23 §4.4.4, FR-15)."""
+    """Alerts, first scores, baseline completion, set-aside, quarantined, missed, device-silent,
+    restart rows and the first check-in of one resident between `start` and `end` (TRD 23 §4.4.4,
+    FR-15; D-113, D-114)."""
     events: list[CheckinEventSource] = []
     for alert in session.scalars(
         select(Alert).where(Alert.resident_id == resident.id, Alert.local_date.between(start, end))
     ):
-        events.append(CheckinEventSource("alarm_on", alert.local_date, {"alert_id": alert.id}))
+        detail = {
+            "alert_id": alert.id, "epoch_id": alert.epoch_id, "session_id": alert.session_id,
+            "cusum_value": alert.cusum_value,
+        }  # fmt: skip
+        events.append(CheckinEventSource("alarm_on", alert.local_date, detail))
     firsts = session.execute(
-        select(Score.epoch_id, func.min(Score.local_date))
+        select(Score.epoch_id, Score.local_date, ProcessedSession.session_id)
+        .join(ProcessedSession, ProcessedSession.id == Score.processed_session_id)
         .where(Score.resident_id == resident.id)
-        .group_by(Score.epoch_id)
+        .distinct(Score.epoch_id)
+        .order_by(Score.epoch_id, Score.local_date, ProcessedSession.timestamp_utc)
     ).all()
-    for epoch_id, first in firsts:
+    for epoch_id, first, session_id in firsts:
         if start <= first <= end:
-            events.append(CheckinEventSource("watching_started", first, {"epoch_id": epoch_id}))
+            detail = {"epoch_id": epoch_id, "session_id": session_id}
+            events.append(CheckinEventSource("watching_started", first, detail))
     for composite in session.scalars(
         select(Baseline).where(
             Baseline.resident_id == resident.id, Baseline.feature_key == "composite"
@@ -477,9 +489,11 @@ def checkin_event_sources(
     ):
         day = _session_local_date(session, composite.epoch_id, composite.frozen_after_session_id)
         if day is not None and start <= day <= end:
-            events.append(
-                CheckinEventSource("baseline_complete", day, {"n_sessions": composite.n_sessions})
-            )
+            detail = {
+                "n_sessions": composite.n_sessions, "epoch_id": composite.epoch_id,
+                "session_id": composite.frozen_after_session_id,
+            }  # fmt: skip
+            events.append(CheckinEventSource("baseline_complete", day, detail))
     for row in session.scalars(
         select(ProcessedSession).where(
             ProcessedSession.resident_id == resident.id,
@@ -491,7 +505,11 @@ def checkin_event_sources(
             CheckinEventSource(
                 str(row.status),
                 row.local_date,
-                {"session_id": row.session_id, "reasons": row.reason_text},
+                {
+                    "session_id": row.session_id,
+                    "reasons": row.reason_text,
+                    "epoch_id": row.epoch_id,
+                },
             )
         )
     for entry in session.scalars(
@@ -502,7 +520,8 @@ def checkin_event_sources(
         )
     ):
         kind = "missed" if entry.status == DayStatus.MISSING_RESIDENT else "device_silent"
-        events.append(CheckinEventSource(kind, entry.local_date, {"device_id": entry.device_id}))
+        detail = {"device_id": entry.device_id, "reason": entry.reason}
+        events.append(CheckinEventSource(kind, entry.local_date, detail))
     for epoch in session.scalars(
         select(Epoch).where(and_(Epoch.resident_id == resident.id, Epoch.epoch_number > 1))
     ):
@@ -513,7 +532,169 @@ def checkin_event_sources(
                 CheckinEventSource(
                     "baseline_restarted",
                     day,
-                    {"epoch_number": epoch.epoch_number, "restart_cause": cause},
-                )
+                    {
+                        "epoch_number": epoch.epoch_number,
+                        "restart_cause": cause,
+                        "epoch_id": epoch.id,
+                        "device_id": epoch.device_id,
+                    },
+                )  # fmt: skip
             )
+    first = session.execute(
+        select(ProcessedSession, RawSession.device_id)
+        .join(RawSession, RawSession.id == ProcessedSession.raw_session_id)
+        .where(
+            ProcessedSession.resident_id == resident.id,
+            ProcessedSession.status != SessionStatus.DUPLICATE,
+        )
+        .order_by(ProcessedSession.timestamp_utc, ProcessedSession.session_id)
+        .limit(1)
+    ).first()
+    if first is not None and start <= first[0].local_date <= end:
+        row, device_id = first
+        detail = {"session_id": row.session_id, "epoch_id": row.epoch_id, "device_id": device_id}
+        events.append(CheckinEventSource("checkins_started", row.local_date, detail))
     return events
+
+
+# --- lookups for the resident and device read endpoints (FEAT-027..FEAT-029) -------------------
+
+ATTENTION_KINDS: tuple[DataAlertKind, ...] = (
+    DataAlertKind.BASELINE_STALLED,
+    DataAlertKind.HIGH_SET_ASIDE,
+)  # the open data-alert kinds that set needs_attention, in output order (D-114, D-115)
+
+
+def open_alerts_by_epoch(
+    session: Session, epoch_ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, Alert]:
+    """The non-closed alert of each epoch (at most one per epoch, `alerts_one_open_ux`)."""
+    rows = session.scalars(
+        select(Alert).where(Alert.epoch_id.in_(list(epoch_ids)), Alert.status != AlertStatus.CLOSED)
+    ).all()
+    return {alert.epoch_id: alert for alert in rows}
+
+
+def attention_kinds(
+    session: Session, resident_ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, list[str]]:
+    """Open `baseline_stalled` / `high_set_aside` data alerts per resident, in D-114 order."""
+    found: dict[uuid.UUID, set[str]] = {}
+    for resident_id, kind in session.execute(
+        select(DataAlert.resident_id, DataAlert.kind).where(
+            DataAlert.resident_id.in_(list(resident_ids)),
+            DataAlert.status == DataAlertStatus.OPEN,
+            DataAlert.kind.in_(ATTENTION_KINDS),
+        )
+    ).all():
+        if resident_id is not None:
+            found.setdefault(resident_id, set()).add(str(kind))
+    return {
+        rid: [str(k) for k in ATTENTION_KINDS if str(k) in kinds] for rid, kinds in found.items()
+    }
+
+
+def epochs_of(session: Session, resident_id: uuid.UUID) -> list[Epoch]:
+    return list(
+        session.scalars(
+            select(Epoch).where(Epoch.resident_id == resident_id).order_by(Epoch.epoch_number)
+        ).all()
+    )
+
+
+def composite_baseline(session: Session, epoch: Epoch | None) -> Baseline | None:
+    if epoch is None:
+        return None
+    return session.scalars(
+        select(Baseline).where(Baseline.epoch_id == epoch.id, Baseline.feature_key == "composite")
+    ).first()
+
+
+def feature_baselines(session: Session, epoch: Epoch | None) -> dict[str, Baseline]:
+    if epoch is None:
+        return {}
+    rows = session.scalars(select(Baseline).where(Baseline.epoch_id == epoch.id)).all()
+    return {row.feature_key: row for row in rows}
+
+
+def current_tally(session: Session, epoch: Epoch | None) -> float | None:
+    """`cusum_state.current_tally` of the epoch (null without an epoch or state row)."""
+    if epoch is None:
+        return None
+    tally: float | None = session.scalar(
+        select(CusumState.current_tally).where(CusumState.epoch_id == epoch.id)
+    )
+    return tally
+
+
+def device_codes(session: Session) -> dict[uuid.UUID, str]:
+    return dict(session.execute(select(Device.id, Device.device_code)).tuples().all())
+
+
+@dataclass(frozen=True)
+class FeatureRow:
+    """One usable, non-duplicate session of an epoch with its raw, adjusted and z values."""
+
+    processed: ProcessedSession
+    raw: RawSession
+    z: dict[str, float] | None
+
+
+def usable_sessions(session: Session, epoch: Epoch, start: date, end: date) -> list[FeatureRow]:
+    """Usable sessions of the epoch in `start..end` with raw row and score (FEAT-028-FR-13)."""
+    rows = session.execute(
+        select(ProcessedSession, RawSession, Score.z)
+        .join(RawSession, RawSession.id == ProcessedSession.raw_session_id)
+        .outerjoin(Score, Score.processed_session_id == ProcessedSession.id)
+        .where(
+            ProcessedSession.epoch_id == epoch.id,
+            ProcessedSession.status == SessionStatus.USABLE,
+            ProcessedSession.local_date.between(start, end),
+        )
+        .order_by(ProcessedSession.local_date, ProcessedSession.timestamp_utc)
+    ).all()
+    return [FeatureRow(p, r, z) for p, r, z in rows]
+
+
+@dataclass(frozen=True)
+class AssignmentRow:
+    resident_code: str
+    device_code: str
+    valid_from: date
+    valid_to: date | None
+
+
+def assignments(session: Session) -> list[AssignmentRow]:
+    """Every assignment with its codes, by resident then `valid_from` (TRD 23 §4.4.2)."""
+    rows = session.execute(
+        select(
+            Resident.resident_code,
+            Device.device_code,
+            DeviceAssignment.valid_from,
+            DeviceAssignment.valid_to,
+        )  # fmt: skip
+        .join(Resident, Resident.id == DeviceAssignment.resident_id)
+        .join(Device, Device.id == DeviceAssignment.device_id)
+        .order_by(Resident.resident_code, DeviceAssignment.valid_from)
+    ).all()
+    return [AssignmentRow(*row) for row in rows]
+
+
+def devices_uploaded_on(
+    session: Session, device_ids: Iterable[uuid.UUID], day: date, timezone: str
+) -> set[uuid.UUID]:
+    """Devices with a record whose facility-local date is `day` (D-114; duplicates repeat their
+    original's timestamp, so they never add a day)."""
+    tz = ZoneInfo(timezone)
+    start = datetime.combine(day, datetime.min.time(), tz)
+    end = datetime.combine(day + timedelta(days=1), datetime.min.time(), tz)
+    rows = session.scalars(
+        select(RawSession.device_id)
+        .where(
+            RawSession.device_id.in_(list(device_ids)),
+            RawSession.timestamp_utc >= start,
+            RawSession.timestamp_utc < end,
+        )
+        .distinct()
+    ).all()
+    return set(rows)

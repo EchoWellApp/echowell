@@ -33,10 +33,11 @@ from backend.core.errors import (
 from backend.core.logging import set_context
 from backend.models import ActorType, ApiKey, User
 from backend.schemas.common import Meta
-from backend.services import audit_service, auth_service, meta_service
+from backend.services import audit_service, auth_service, meta_service, resident_service
 from backend.services.audit_service import AuditAction
 from backend.services.ingestion import Caller, IngestService
 from backend.services.pipeline_runner import Executor, PipelineRunner, SessionFactory
+from backend.services.resident_service import ReadContext
 
 __all__ = [
     "AuditWriter",
@@ -52,6 +53,7 @@ __all__ = [
     "get_meta",
     "get_pagination",
     "get_pipeline_runner",
+    "get_read_context",
     "get_session_factory",
     "get_settings",
 ]
@@ -244,7 +246,18 @@ def get_meta(
     return meta_service.get_meta(session, settings)
 
 
-def check_date_range(start: date | None, end: date | None) -> None:
-    """`from` later than `to` is 422 INVALID_QUERY_PARAMETER (API-093)."""
+def check_date_range(start: date | None, end: date | None, max_days: int | None = None) -> None:
+    """`from` later than `to`, or a span over `max_days` local days (both ends counted), is 422
+    INVALID_QUERY_PARAMETER (API-093, API-077)."""
     if start is not None and end is not None and start > end:
         raise InvalidQueryParameterError("'from' must not be later than 'to'")
+    if max_days and start is not None and end is not None and (end - start).days + 1 > max_days:
+        raise InvalidQueryParameterError(f"'from'..'to' may span at most {max_days} days")
+
+
+def get_read_context(
+    session: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ReadContext:
+    """`meta`, facility zone, as-of local date and active parameters of the read endpoints."""
+    return resident_service.read_context(session, settings)
