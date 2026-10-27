@@ -14,10 +14,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi.middleware import SlowAPIASGIMiddleware
 from starlette.concurrency import run_in_threadpool
 
-from backend.api import alarms, auth, config, devices, health, ingest, pipeline, residents, sessions
+from backend.api import (
+    admissions,
+    alarms,
+    analytics,
+    auth,
+    config,
+    devices,
+    health,
+    ingest,
+    pipeline,
+    residents,
+    scores,
+    sessions,
+    users,
+)
 from backend.api.deps import AuditWriter, client_ip
 from backend.core import db, rate_limit
 from backend.core.config import DEPLOYED_ENVS, Settings, ensure_valid, load_settings_or_exit
@@ -73,7 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(rate_limit.RateLimitExceeded, _rate_limited)
     # Added innermost first, so requests pass RequestContext -> BodyLimit -> CORS -> rate limiter
     # -> routes (TRD 05 §4.11; API-101, API-102, API-104, API-105).
-    app.add_middleware(SlowAPIASGIMiddleware)
+    app.add_middleware(rate_limit.RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -95,6 +108,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(devices.router, prefix=API_PREFIX)
     app.include_router(alarms.router, prefix=API_PREFIX)
     app.include_router(config.router, prefix=API_PREFIX)
+    app.include_router(scores.router, prefix=API_PREFIX)
+    app.include_router(analytics.router, prefix=API_PREFIX)
+    app.include_router(admissions.router, prefix=API_PREFIX)
+    app.include_router(users.router, prefix=API_PREFIX)
     return app
 
 

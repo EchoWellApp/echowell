@@ -18,6 +18,8 @@ import hashlib
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import _find_route_handler, _should_exempt, async_check_limits
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from backend.core.config import Settings
 
@@ -82,6 +84,36 @@ def configure(settings: Settings) -> None:
     _current_settings = settings
 
 
+class RateLimitMiddleware:
+    """The default limit for routes without a decorator, as a pure ASGI middleware.
+
+    slowapi 0.1.9's `SlowAPIASGIMiddleware` re-sends `http.response.start` before every body chunk,
+    which breaks streamed responses (the CSV exports); this does the same check with slowapi's own
+    helpers and passes `send` through unchanged. Rate-limit headers are not enabled, so nothing is
+    lost.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        app = scope["app"]
+        active: Limiter = app.state.limiter
+        handler = _find_route_handler(app.routes, scope)
+        if not active.enabled or _should_exempt(active, handler):
+            await self.app(scope, receive, send)
+            return
+        request = Request(scope, receive=receive, send=send)
+        error_response, _ = await async_check_limits(active, request, handler, app)
+        if error_response is not None:
+            await error_response(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
 def retry_after(exc: RateLimitExceeded) -> int:
     """Seconds until the limit window resets (API-098)."""
     limit = getattr(exc, "limit", None)
@@ -93,6 +125,7 @@ def retry_after(exc: RateLimitExceeded) -> int:
 
 __all__ = [
     "DEFAULT_LIMIT",
+    "RateLimitMiddleware",
     "RateLimitExceeded",
     "client_address",
     "configure",

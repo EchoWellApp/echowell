@@ -10,10 +10,11 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import pytest
-import time_machine
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 
+from backend.api.deps import get_clock
 from backend.models import Alert, DataAlert, Epoch
 from tests.integration.api.conftest import Principals
 from tests.integration.world import World
@@ -29,6 +30,11 @@ def _problem(response: Any, status: int, code: str) -> dict[str, Any]:
     body: dict[str, Any] = response.json()
     assert body["type"] == f"urn:echowell:error:{code}", body
     return body
+
+
+def _app(api: TestClient) -> FastAPI:
+    app: FastAPI = api.app  # type: ignore[assignment]
+    return app
 
 
 def _epoch(scene: World, resident: str) -> uuid.UUID:
@@ -197,14 +203,16 @@ def test_snooze(api: TestClient, scene: World, principals: Principals) -> None:
     alert_id = _r01_alert(scene)
     before = _snapshot(scene)
     frozen = datetime(2026, 10, 30, 21, 0, tzinfo=UTC)
-    with time_machine.travel(frozen, tick=False):
-        default = api.post(f"{ALERTS}/{alert_id}/snooze", headers=principals.bearer("clinician"))
-        assert default.status_code == 200, default.text
-        assert default.json()["snoozed_until"] == "2026-10-31T21:00:00Z"
-        assert default.json()["snoozed_by"] == str(principals.users["clinician"].id)
-        assert default.json()["status"] == "open"
-        four = api.post(f"{ALERTS}/{alert_id}/snooze", json={"hours": 4},
-                        headers=principals.bearer("admin"))  # fmt: skip
+    # Freeze the application clock (DME-022). time-machine is not used: after a travel it leaves
+    # time.monotonic() on another base, which breaks later connect deadlines in this process.
+    _app(api).dependency_overrides[get_clock] = lambda: lambda: frozen
+    default = api.post(f"{ALERTS}/{alert_id}/snooze", headers=principals.bearer("clinician"))
+    assert default.status_code == 200, default.text
+    assert default.json()["snoozed_until"] == "2026-10-31T21:00:00Z"
+    assert default.json()["snoozed_by"] == str(principals.users["clinician"].id)
+    assert default.json()["status"] == "open"
+    four = api.post(f"{ALERTS}/{alert_id}/snooze", json={"hours": 4},
+                    headers=principals.bearer("admin"))  # fmt: skip
     assert datetime.fromisoformat(four.json()["snoozed_until"]) == frozen + timedelta(hours=4)
     assert _snapshot(scene) == before
     for hours in (0, 169):

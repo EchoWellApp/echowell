@@ -44,6 +44,7 @@ __all__ = [
     "Pagination",
     "Principal",
     "authorize",
+    "check_access",
     "check_date_range",
     "client_ip",
     "get_audit_writer",
@@ -185,6 +186,16 @@ def _deny(
         ip=client_ip(request),
     )  # fmt: skip
     raise ForbiddenError(detail)
+
+
+def check_access(principal: Principal, endpoint: str, request: Request, audit: AuditWriter) -> None:
+    """A second matrix row for the same route, e.g. `GET /scores (text/csv)` (TRD 12 §4.6):
+    403 FORBIDDEN with an `access.denied` row when the caller's role is not allowed."""
+    access = PERMISSIONS[endpoint]
+    if principal.role not in access.roles:
+        _deny(
+            audit, request, principal.actor_type, principal.actor_id, "Not allowed for this role."
+        )
 
 
 def authorize(endpoint: str) -> Callable[..., Principal]:

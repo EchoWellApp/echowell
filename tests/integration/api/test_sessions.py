@@ -17,12 +17,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from backend.core.logging import configure_logging
 from backend.models import FEATURE_KEYS, ProcessedSession, RawSession, SessionStatus
 from backend.repositories.device_repository import DeviceRepository
 from backend.repositories.resident_repository import ResidentRepository
 from backend.services.pipeline_runner import ExecutorResult, RunHandle, SessionFactory
-from tests.integration.api.conftest import Principals
+from tests.integration.api.conftest import LogCapture, Principals
 
 pytestmark = pytest.mark.integration
 
@@ -314,17 +313,15 @@ def test_only_an_ingest_key_may_post(
 @pytest.mark.req("LOG-050", "LOG-051", "ING-057", "API-056", "FEAT-025-AC-08", "FEAT-025-FR-16",
                  "FEAT-025-FR-17")  # fmt: skip
 def test_logs_carry_no_feature_value_or_key(
-    capsys: pytest.CaptureFixture[str], api: TestClient, roster: Session, principals: Principals
+    api: TestClient, roster: Session, principals: Principals, log_capture: LogCapture
 ) -> None:
     record = {**src05_record("R09-20261021-01"), "mfcc1": 31.4159265}
     headers = principals.api_key("ingest")
-    configure_logging("INFO", "json", "test", "0123abc")  # bind the handler to this capture
-    capsys.readouterr()
+    log_capture.start()
     api.post(SESSIONS, json=record, headers=headers)
     api.post(SESSIONS, json={**record, "pause_fraction": 1.5}, headers=headers)
     api.post(SESSIONS, json=record, headers=headers)
-    out = capsys.readouterr().out
-    lines = [json.loads(line) for line in out.splitlines() if line.startswith("{")]
+    lines = log_capture.lines()
     events = [line.get("event") for line in lines]
     assert events.count("ingest_request") == 3
     assert events.count("ingest_record_rejected") == 1

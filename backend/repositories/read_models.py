@@ -698,3 +698,170 @@ def devices_uploaded_on(
         .distinct()
     ).all()
     return set(rows)
+
+
+@dataclass(frozen=True)
+class BaselinePeriodRow:
+    """The baseline period of one frozen resident-epoch (`BaselinePeriod`, TRD 19)."""
+
+    resident_code: str
+    epoch_number: int
+    first_local_date: date
+    frozen_after_local_date: date
+    frozen_after_session_id: str
+    n_sessions: int
+
+
+def baseline_periods(session: Session, epoch_ids: Iterable[uuid.UUID]) -> list[BaselinePeriodRow]:
+    """Baseline periods of the frozen epochs among `epoch_ids`, by resident code and epoch."""
+    rows = session.execute(
+        select(Baseline, Resident.resident_code, Epoch.epoch_number)
+        .join(Resident, Resident.id == Baseline.resident_id)
+        .join(Epoch, Epoch.id == Baseline.epoch_id)
+        .where(Baseline.epoch_id.in_(list(epoch_ids)), Baseline.feature_key == "composite")
+    ).all()
+    periods = []
+    for composite, code, number in rows:
+        first = _session_local_date(session, composite.epoch_id, composite.first_session_id)
+        last = _session_local_date(session, composite.epoch_id, composite.frozen_after_session_id)
+        if first is not None and last is not None:
+            periods.append(
+                BaselinePeriodRow(
+                    code, number, first, last, composite.frozen_after_session_id,
+                    composite.n_sessions,
+                )
+            )  # fmt: skip
+    return sorted(periods, key=lambda p: (p.resident_code, p.epoch_number))
+
+
+# --- the study-team summary (FEAT-035; TRD 23 §4.7.3, §4.7.4) -------------------------------
+
+STATUS_KEYS: tuple[str, ...] = (
+    "usable", "set_aside", "quarantined", "duplicate", "missing_resident", "missing_device_gap",
+)  # fmt: skip
+
+
+def status_counts(
+    session: Session, residents: Iterable[Resident], as_of_date: date
+) -> dict[uuid.UUID, dict[str, int]]:
+    """Processed sessions by status and ledger days by status, enrolment to as-of (FR-240)."""
+    people = list(residents)
+    counts: dict[uuid.UUID, dict[str, int]] = {r.id: dict.fromkeys(STATUS_KEYS, 0) for r in people}
+    ids = [r.id for r in people]
+    for resident_id, status, n in session.execute(
+        select(ProcessedSession.resident_id, ProcessedSession.status, func.count())
+        .join(Resident, Resident.id == ProcessedSession.resident_id)
+        .where(
+            ProcessedSession.resident_id.in_(ids),
+            ProcessedSession.local_date.between(Resident.enrolled_on, as_of_date),
+        )
+        .group_by(ProcessedSession.resident_id, ProcessedSession.status)
+    ).all():
+        counts[resident_id][str(status)] = n
+    for resident_id, status, n in session.execute(
+        select(DayLedgerEntry.resident_id, DayLedgerEntry.status, func.count())
+        .join(Resident, Resident.id == DayLedgerEntry.resident_id)
+        .where(
+            DayLedgerEntry.resident_id.in_(ids),
+            DayLedgerEntry.status != DayStatus.CHECKED_IN,
+            DayLedgerEntry.local_date.between(Resident.enrolled_on, as_of_date),
+        )
+        .group_by(DayLedgerEntry.resident_id, DayLedgerEntry.status)
+    ).all():
+        counts[resident_id][str(status)] = n
+    return counts
+
+
+@dataclass(frozen=True)
+class EpochOutcome:
+    """One `ResidentOutcome` (TRD 23 §4.7.4): an epoch with at least one usable session."""
+
+    resident_code: str
+    epoch_number: int
+    device_code: str
+    usable_in_epoch: int
+    baseline_formed: bool
+    baseline_frozen_after: str | None
+    scored_sessions: int
+    first_alarm_session: str | None
+
+
+def epoch_outcomes(session: Session) -> list[EpochOutcome]:
+    usable = (
+        select(ProcessedSession.epoch_id, func.count().label("n"))
+        .where(ProcessedSession.status == SessionStatus.USABLE)
+        .group_by(ProcessedSession.epoch_id)
+        .subquery()
+    )
+    rows = session.execute(
+        select(Epoch, Resident.resident_code, Device.device_code, usable.c.n)
+        .join(usable, usable.c.epoch_id == Epoch.id)
+        .join(Resident, Resident.id == Epoch.resident_id)
+        .join(Device, Device.id == Epoch.device_id)
+    ).all()
+    out = []
+    for epoch, code, device, n in rows:
+        baselines = feature_baselines(session, epoch)
+        composite = baselines.get("composite")
+        scored = session.scalar(
+            select(func.count()).select_from(Score).where(Score.epoch_id == epoch.id)
+        )
+        first_alarm = session.scalar(
+            select(Alert.session_id)
+            .where(Alert.epoch_id == epoch.id)
+            .order_by(Alert.triggered_at)
+            .limit(1)
+        )
+        out.append(
+            EpochOutcome(
+                code, epoch.epoch_number, device, int(n), len(baselines) == FROZEN_BASELINE_ROWS,
+                composite.frozen_after_session_id if composite else None, int(scored or 0),
+                first_alarm,
+            )
+        )  # fmt: skip
+    return out
+
+
+def first_alarm_dates(session: Session) -> dict[str, date]:
+    """The local date of each resident's first alert, any epoch and status (CUS-047)."""
+    rows = session.execute(
+        select(Resident.resident_code, func.min(Alert.local_date))
+        .join(Resident, Resident.id == Alert.resident_id)
+        .group_by(Resident.resident_code)
+    ).all()
+    return {code: day for code, day in rows}
+
+
+@dataclass(frozen=True)
+class ReviewOutcomeCounts:
+    alarms_raised: int
+    reviewed: int
+    by_outcome: dict[str, int]
+
+
+def review_outcome_counts(session: Session, start: date, end: date) -> ReviewOutcomeCounts:
+    """Alerts of the period, those reviewed, and each one's latest outcome (CUS-049)."""
+    alerts = session.scalars(select(Alert.id).where(Alert.local_date.between(start, end))).all()
+    latest = session.execute(
+        select(AlertReview.alert_id, AlertReview.outcome)
+        .where(AlertReview.alert_id.in_(list(alerts)))
+        .distinct(AlertReview.alert_id)
+        .order_by(AlertReview.alert_id, AlertReview.created_at.desc())
+    ).all()
+    by_outcome = {"no_concern": 0, "known_cause": 0, "referred": 0, "data_problem": 0}
+    for _, outcome in latest:
+        by_outcome[str(outcome)] += 1
+    return ReviewOutcomeCounts(len(alerts), len(latest), by_outcome)
+
+
+def usable_since(
+    session: Session, resident_id: uuid.UUID, since: date | None
+) -> list[ProcessedSession]:
+    """The resident's usable sessions on or after `since` (all when None), any epoch (FR-201)."""
+    query = select(ProcessedSession).where(
+        ProcessedSession.resident_id == resident_id,
+        ProcessedSession.status == SessionStatus.USABLE,
+    )
+    if since is not None:
+        query = query.where(ProcessedSession.local_date >= since)
+    return list(session.scalars(query.order_by(ProcessedSession.timestamp_utc)).all())

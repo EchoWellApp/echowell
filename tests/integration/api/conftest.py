@@ -11,6 +11,8 @@ uncommitted users. `principals` holds one user per role and API keys per scope.
 
 from __future__ import annotations
 
+import json
+import logging
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -37,6 +39,7 @@ from backend.api.deps import (
 from backend.cli import load_roster
 from backend.core import security
 from backend.core.config import Settings
+from backend.core.logging import configure_logging
 from backend.main import create_app
 from backend.models import ApiKey, User, UserRole
 from backend.repositories.api_key_repository import ApiKeyRepository
@@ -286,3 +289,33 @@ def scene(world: World) -> World:
     w.succeed(AS_OF)
     w.session.commit()
     return w
+
+
+class LogCapture:
+    """The JSON log lines of a test (LOG-001). `start()` binds the handler to the test's capture
+    once every fixture is set up; the handler is removed at teardown, so later records are never
+    written to a closed capture stream."""
+
+    def __init__(self, capsys: pytest.CaptureFixture[str]) -> None:
+        self.capsys = capsys
+
+    def start(self) -> None:
+        configure_logging("INFO", "json", "test", "0123abc")
+        self.capsys.readouterr()
+
+    def lines(self) -> list[dict[str, Any]]:
+        out = self.capsys.readouterr().out
+        return [json.loads(line) for line in out.splitlines() if line.startswith("{")]
+
+    def text(self) -> str:
+        captured = self.capsys.readouterr()
+        return captured.out + captured.err
+
+
+@pytest.fixture
+def log_capture(capsys: pytest.CaptureFixture[str]) -> Iterator[LogCapture]:
+    yield LogCapture(capsys)
+    root = logging.getLogger()
+    for handler in list(root.handlers):
+        if getattr(handler, "_echowell", False):
+            root.removeHandler(handler)

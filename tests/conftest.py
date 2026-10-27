@@ -88,7 +88,12 @@ def settings_factory() -> Callable[..., Settings]:
 
 @pytest.fixture
 def frozen_clock() -> Iterator[time_machine.Coordinates]:
-    """Wall clock frozen at the test_v0_1 as-of (TST-005)."""
+    """Wall clock frozen at the test_v0_1 as-of (TST-005).
+
+    Not for tests that open new database connections afterwards: after a travel, time-machine
+    leaves `time.monotonic()` on a wall-clock base for the rest of the process, which upsets the
+    connect deadlines of psycopg. API tests freeze the application clock with `get_clock`.
+    """
     with time_machine.travel(FROZEN_NOW, tick=False) as traveller:
         yield traveller
 

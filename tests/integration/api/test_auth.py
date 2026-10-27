@@ -15,12 +15,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from backend.core import security
-from backend.core.logging import configure_logging
 from backend.repositories.api_key_repository import ApiKeyRepository
 from backend.repositories.user_repository import UserRepository
 from backend.services import auth_service
 from tests.conftest import TEST_JWT_SECRET
-from tests.integration.api.conftest import PASSWORD, Principals
+from tests.integration.api.conftest import PASSWORD, LogCapture, Principals
 
 pytestmark = pytest.mark.integration
 
@@ -250,20 +249,18 @@ def test_last_used_at_is_written_at_most_once_a_minute(principals: Principals) -
 
 @pytest.mark.req("AC-LOG-02", "SEC-085", "FEAT-020-AC-08")
 def test_logs_hold_no_password_token_or_email(
-    capsys: pytest.CaptureFixture[str], api: TestClient, principals: Principals
+    api: TestClient, principals: Principals, log_capture: LogCapture
 ) -> None:
     user = principals.users["admin"]
     secret = "Secret-123!"  # noqa: S105 - the AC-08 probe value
     UserRepository(principals.session).update(user, password_hash=security.hash_password(secret))
     principals.session.commit()
-    configure_logging("INFO", "json", "test", "0123abc")  # bind the handler to this capture
-    capsys.readouterr()
+    log_capture.start()
     login = api.post(LOGIN, json={"email": user.email, "password": secret})
     token = login.json()["access_token"]
     assert api.get(ME, headers={"Authorization": f"Bearer {token}"}).status_code == 200
     api.post(LOGIN, json={"email": user.email, "password": secret + "x"})
-    output = capsys.readouterr()
-    logged = output.out + output.err
+    logged = log_capture.text()
     assert "request_completed" in logged
     for value in (secret, token, user.email):
         assert value not in logged
