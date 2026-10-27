@@ -983,7 +983,7 @@ paths:
         - {$ref: "#/components/parameters/Limit"}
         - {$ref: "#/components/parameters/Offset"}
       responses:
-        "200": {description: Scored sessions (JSON) or CSV export when Accept is text/csv (researcher, admin), headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ScoresResponse"}}, text/csv: {schema: {type: string}}}}
+        "200": {description: "Scored sessions (JSON) or CSV export when Accept is text/csv (researcher, admin)", headers: {X-Request-ID: {$ref: "#/components/headers/XRequestID"}}, content: {application/json: {schema: {$ref: "#/components/schemas/ScoresResponse"}}, text/csv: {schema: {type: string}}}}
         "403": {$ref: "#/components/responses/Forbidden"}
         "413": {$ref: "#/components/responses/PayloadTooLarge"}
         "401": {$ref: "#/components/responses/Unauthorized"}
