@@ -25,7 +25,15 @@ from sqlalchemy import Connection
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from backend.api.deps import AuditWriter, Principal, authorize, get_db, get_settings
+from backend.api.deps import (
+    AuditWriter,
+    Principal,
+    authorize,
+    get_db,
+    get_session_factory,
+    get_settings,
+)
+from backend.cli import load_roster
 from backend.core import security
 from backend.core.config import Settings
 from backend.main import create_app
@@ -34,6 +42,7 @@ from backend.repositories.api_key_repository import ApiKeyRepository
 from backend.repositories.user_repository import UserRepository
 from tests.conftest import TEST_JWT_SECRET, make_settings
 from tests.integration.db_support import PgUrls
+from tests.integration.world import ROSTER
 
 
 class StrictBody(BaseModel):
@@ -122,6 +131,9 @@ def api(
                 raise
 
     app.dependency_overrides[get_db] = shared_session
+    app.dependency_overrides[get_session_factory] = lambda: lambda: Session(
+        bind=app_conn, join_transaction_mode="create_savepoint"
+    )
     with TestClient(app, raise_server_exceptions=False) as client:
         yield client
 
@@ -157,11 +169,11 @@ class Principals:
         self.session.commit()
         return user
 
-    def add_key(self, name: str, scopes: list[str]) -> str:
+    def add_key(self, name: str, scopes: list[str], device_id: uuid.UUID | None = None) -> str:
         raw = security.generate_api_key()
         key = ApiKeyRepository(self.session).insert(
             name=f"{name}-{uuid.uuid4().hex[:6]}", key_hash=security.hash_api_key(raw),
-            scopes=scopes,
+            scopes=scopes, device_id=device_id,
         )  # fmt: skip
         self.session.commit()
         self.raw_keys[name], self.keys[name] = raw, key
@@ -186,3 +198,11 @@ def principals(app_session: Session) -> Principals:
     for name, scopes in KEY_SCOPES.items():
         found.add_key(name, scopes)
     return found
+
+
+@pytest.fixture
+def roster(app_session: Session) -> Session:
+    """The test_v0_1 roster (R01-R10, devices, assignments), rolled back after the test."""
+    load_roster(app_session, ROSTER)
+    app_session.commit()
+    return app_session

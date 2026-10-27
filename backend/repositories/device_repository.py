@@ -89,6 +89,12 @@ class DeviceRepository:
             ).all()
         )
 
+    def set_firmware(self, device: Device, version: str) -> None:
+        """`firmware_version_last` from the device's newest record (TRD 23 §4.2.4)."""
+        if device.firmware_version_last != version:
+            device.firmware_version_last = version
+            self.session.flush()
+
     def assignment_on(self, resident_id: uuid.UUID, day: date) -> DeviceAssignment | None:
         """The resident's assignment covering `day` (at most one, by the exclusion constraint)."""
         return self.session.scalars(

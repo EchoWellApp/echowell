@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import exists, insert, select
+from sqlalchemy import exists, func, insert, select
 from sqlalchemy.orm import Session
 
 from backend.models import RawSession
@@ -57,4 +58,18 @@ class RawSessionRepository:
     def exists_session_id(self, session_id: str) -> bool:
         return bool(
             self.session.scalar(select(exists().where(RawSession.session_id == session_id)))
+        )
+
+    def first_payload(self, session_id: str) -> Any | None:
+        """`payload` of the first arrival of a `session_id` (ING-037), else None."""
+        return self.session.scalar(
+            select(RawSession.payload)
+            .where(RawSession.session_id == session_id)
+            .order_by(RawSession.arrival_seq)
+            .limit(1)
+        )
+
+    def latest_timestamp_for_device(self, device_id: uuid.UUID) -> datetime | None:
+        return self.session.scalar(
+            select(func.max(RawSession.timestamp_utc)).where(RawSession.device_id == device_id)
         )

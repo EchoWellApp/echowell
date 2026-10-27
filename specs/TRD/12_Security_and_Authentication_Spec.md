@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 27 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -276,7 +276,7 @@ Audit events (`audit_logs.action`):
 | auth.login.succeeded | user | user / user id | {} |
 | auth.login.failed | system | user / user id or null | {"email": "<as entered, lower-cased>", "reason": "invalid_credentials" \| "locked" \| "rate_limited"} |
 | auth.logout | user | user / user id | {} |
-| ingest.batch.received | api_key or user | ingest_batch / batch id | {"source", "record_count", "accepted", "rejected", "duplicates"} |
+| ingest.batch.received | api_key or user | ingest_batch / batch id | {"source", "record_count", "accepted", "rejected", "duplicates", "pipeline_run_id"} (`pipeline_run_id`: the run started for the batch, null when no first-arrival record was accepted; read back by `GET /ingest/batches/{id}`, TRD 05 API-054) |
 | note.created | user | staff_note / note id | {"resident_code", "note_type", "alert_id", "supersedes_id"} (never the note body) |
 | alert.reviewed | user | alert / alert id | {"resident_code", "review_id", "outcome", "explanation_count", "previous_status"} (never the note text) |
 | alert.snoozed | user | alert / alert id | {"resident_code", "hours", "snoozed_until"} |
@@ -463,3 +463,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (SEC-017 create-user syntax; SEC-055 openssl rand -hex 32; SEC-101 refused-request audit rows (D-87); SEC-110 provisioning step; SEC-154 per CIC-025; SEC-162 refers to DEP-097 (D-77)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.12 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SEC-043 page and control access (Study team `/study` for researcher and admin; review and notes in the Resident chart for clinician and admin); SEC-004 data bar; SEC-072 font Source Sans 3; SRC-21 reference | — |
+| 0.13 | 27 Oct 2026 | Checkpoint 4: `ingest.batch.received` details add `pipeline_run_id`, the link from a batch to its pipeline run for `GET /ingest/batches/{id}` (open question to the reviewer: a nullable `ingest_batches.pipeline_run_id` column instead) | — |

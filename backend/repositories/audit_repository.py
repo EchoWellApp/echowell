@@ -60,3 +60,17 @@ class AuditRepository:
             )
         ).one()
         return int(count), latest
+
+    def details_of(self, action: str, entity_type: str, entity_id: str) -> dict[str, Any] | None:
+        """`details` of the first row of one action on one entity, else None."""
+        details: dict[str, Any] | None = self.session.scalar(
+            select(AuditLog.details)
+            .where(
+                AuditLog.action == action,
+                AuditLog.entity_type == entity_type,
+                AuditLog.entity_id == entity_id,
+            )
+            .order_by(AuditLog.id)
+            .limit(1)
+        )
+        return details

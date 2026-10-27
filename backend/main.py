@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.middleware import SlowAPIASGIMiddleware
 
-from backend.api import auth, health
+from backend.api import auth, health, ingest, pipeline, sessions
 from backend.api.deps import AuditWriter, client_ip
 from backend.core import db, rate_limit
 from backend.core.config import DEPLOYED_ENVS, Settings, ensure_valid, load_settings_or_exit
@@ -66,6 +66,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware, hsts=settings.app_env in DEPLOYED_ENVS)
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(sessions.router, prefix=API_PREFIX)
+    app.include_router(ingest.router, prefix=API_PREFIX)
+    app.include_router(pipeline.router, prefix=API_PREFIX)
     return app
 
 

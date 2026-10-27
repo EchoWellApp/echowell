@@ -111,6 +111,34 @@ class ValidationFailedError(AppError):
     code = "VALIDATION_ERROR"
 
 
+class UnsupportedSchemaVersionError(AppError):
+    code = "UNSUPPORTED_SCHEMA_VERSION"
+
+
+class UnknownResidentError(AppError):
+    code = "UNKNOWN_RESIDENT"
+
+
+class UnknownDeviceError(AppError):
+    code = "UNKNOWN_DEVICE"
+
+
+class ResidentWithdrawnError(AppError):
+    code = "RESIDENT_WITHDRAWN"
+
+
+class SessionIdMismatchError(AppError):
+    code = "SESSION_ID_MISMATCH"
+
+
+class CsvHeaderMismatchError(AppError):
+    code = "CSV_HEADER_MISMATCH"
+
+
+class EmptyBatchError(AppError):
+    code = "EMPTY_BATCH"
+
+
 class NotAuthenticatedError(AppError):
     code = "NOT_AUTHENTICATED"
 

@@ -35,6 +35,8 @@ from backend.models import ActorType, ApiKey, User
 from backend.schemas.common import Meta
 from backend.services import audit_service, auth_service, meta_service
 from backend.services.audit_service import AuditAction
+from backend.services.ingestion import Caller, IngestService
+from backend.services.pipeline_runner import Executor, PipelineRunner, SessionFactory
 
 __all__ = [
     "AuditWriter",
@@ -46,8 +48,11 @@ __all__ = [
     "get_audit_writer",
     "get_db",
     "get_engine",
+    "get_ingest_service",
     "get_meta",
     "get_pagination",
+    "get_pipeline_runner",
+    "get_session_factory",
     "get_settings",
 ]
 
@@ -72,6 +77,30 @@ def get_db(engine: Annotated[Engine, Depends(get_engine)]) -> Iterator[Session]:
         raise
     finally:
         session.close()
+
+
+def get_session_factory(engine: Annotated[Engine, Depends(get_engine)]) -> SessionFactory:
+    """Sessions for work in its own transactions (pipeline runs, API-063)."""
+    return db.session_factory(engine)
+
+
+def get_pipeline_runner(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+    session_factory: Annotated[SessionFactory, Depends(get_session_factory)],
+) -> PipelineRunner:
+    """The runner with `app.state.pipeline_executor` when set (tests), else the interim
+    executor until FEAT-053."""
+    executor: Executor | None = getattr(request.app.state, "pipeline_executor", None)
+    return PipelineRunner(session_factory, settings, executor)
+
+
+def get_ingest_service(
+    session: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    runner: Annotated[PipelineRunner, Depends(get_pipeline_runner)],
+) -> IngestService:
+    return IngestService(session, settings, runner)
 
 
 @dataclass(frozen=True)
@@ -127,6 +156,15 @@ class Principal:
     @property
     def role(self) -> str | None:
         return self.user.role.value if self.user is not None else None
+
+    def caller(self) -> Caller:
+        """The ingest caller (FEAT-020-FR-14, `get_ingest_principal`)."""
+        if self.api_key is not None:
+            key = self.api_key
+            return Caller(ActorType.API_KEY, str(key.id), api_key_id=key.id,
+                          bound_device_id=key.device_id)  # fmt: skip
+        user = self.require_user()
+        return Caller(ActorType.USER, str(user.id), user_id=user.id)
 
     def require_user(self) -> User:
         """The signed-in user of a user-only endpoint."""
