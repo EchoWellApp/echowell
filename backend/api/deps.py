@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import date
 from typing import Annotated
 
 from fastapi import Depends
@@ -17,8 +18,18 @@ from sqlalchemy.orm import Session
 from backend.core import db
 from backend.core.config import Settings, get_settings
 from backend.core.errors import InvalidQueryParameterError
+from backend.schemas.common import Meta
+from backend.services import meta_service
 
-__all__ = ["Pagination", "get_db", "get_engine", "get_pagination", "get_settings"]
+__all__ = [
+    "Pagination",
+    "check_date_range",
+    "get_db",
+    "get_engine",
+    "get_meta",
+    "get_pagination",
+    "get_settings",
+]
 
 
 def get_engine(settings: Annotated[Settings, Depends(get_settings)]) -> Engine:
@@ -52,3 +63,17 @@ def get_pagination(limit: int = 50, offset: int = 0) -> Pagination:
     if offset < 0:
         raise InvalidQueryParameterError("offset must be 0 or greater")
     return Pagination(limit=limit, offset=offset)
+
+
+def get_meta(
+    session: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Meta:
+    """The `meta` block of list, detail and analytics responses (API-057)."""
+    return meta_service.get_meta(session, settings)
+
+
+def check_date_range(start: date | None, end: date | None) -> None:
+    """`from` later than `to` is 422 INVALID_QUERY_PARAMETER (API-093)."""
+    if start is not None and end is not None and start > end:
+        raise InvalidQueryParameterError("'from' must not be later than 'to'")

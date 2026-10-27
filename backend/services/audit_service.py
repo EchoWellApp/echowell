@@ -21,6 +21,7 @@ from typing import Any
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from backend.core.logging import get_request_id
 from backend.models import FEATURE_KEYS, ActorType
 from backend.repositories.audit_repository import AuditRepository
 
@@ -175,6 +176,8 @@ def record(
     """Insert one audit row in the caller's transaction (no commit) and return its id."""
     checked = _action(action)
     clean = sanitise_details(checked, details)
+    if request_id is None:
+        request_id = get_request_id()  # LOG-033: rows written during a request carry its ID
     audit_id = AuditRepository(session).insert(
         actor_type=actor_type,
         actor_id=actor_id,
