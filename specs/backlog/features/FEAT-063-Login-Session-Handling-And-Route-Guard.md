@@ -12,21 +12,23 @@
 
 ## Purpose
 
-Let staff sign in and keep every dashboard page behind a valid session. The feature implements the `/login` page, the token store (`lib/auth.ts`, memory plus `sessionStorage` mirror), `AuthProvider` (restore, `GET /auth/me`, sign-in, sign-out), `AuthGuard` for the protected route group, expiry handling (scheduled sign-out at `exp`, redirect on any 401), safe `next` handling against open redirects, and the role helpers in `lib/roles.ts` that later pages use to show or hide controls.
+Let staff sign in and keep every dashboard page behind a valid session. The feature implements the `/login` page, the token store (`lib/auth.ts`, memory plus `sessionStorage` mirror), `AuthProvider` (restore, `GET /auth/me`, sign-in, sign-out), `AuthGuard` for the protected route group, expiry handling (scheduled sign-out at `exp`, redirect on any 401), safe `next` handling against open redirects, and the role helpers in `lib/roles.ts` that later pages use to show or hide controls. Wireframe v0.2 (SRC-21) does not draw the login page; it keeps its v0.12 content in the v0.2 visual style (TRD 24 D-111): the app bar with the brand only, the yellow data bar (UX-400), a centred panel and the v0.2 primary button.
 
 ## Business Context
 
 - BR-16 (only authorised staff see resident data; audited access): sign-in with e-mail and password, 60-minute JWT, logout audited by the backend.
+- D-111 (wireframe v0.2): login is kept although not drawn in SRC-21, restyled with the v0.2 tokens (D-112).
 - FRs covered (BACKLOG.md): FR-210, FR-211, FR-217.
 
 ## Referenced TRDs
 
 - TRD 04 FE-050..FE-059 (token storage, no persistent storage, exp parsing and scheduled sign-out, restore rule, `GET /auth/me`, guard redirect, 401 handling, safe `next`, sign-out, role helpers), §4.5.1 decision and sequence, FE-066 (input attributes), FE-188 (E2E `auth.spec.ts`).
-- TRD 11 UX-170..UX-176 (login page layout, error copy, 429 copy, expiry copy, busy state, footer, no self-registration).
+- TRD 11 (v0.13) — owned by this feature: UX-170..UX-176 (login panel layout, error copy, 429 copy, expiry copy, busy state, data bar on the login page, no self-registration), §4.9 (app bar with the brand only). Uses: the primary button style of UX-122 (FEAT-062) and the data bar of UX-400 (FEAT-064).
 - TRD 12 SEC-037 (memory + sessionStorage only), SEC-038 (redirect and expiry message).
 - TRD 19 E-02 `POST /auth/login`, E-03 `POST /auth/logout`, E-04 `GET /auth/me`.
 - TRD 02 FR-210, FR-211, FR-217.
 - TRD 13 E2E scenarios E2E-01, E2E-02; TST-094 (page tests incl. 401 → `/login`).
+- TRD 24 D-111, D-112; SRC-21.
 
 ## Scope
 
@@ -35,21 +37,21 @@ Let staff sign in and keep every dashboard page behind a valid session. The feat
 - `frontend/lib/AuthProvider.tsx` (`useAuth()` exposing `{ id, email, displayName, role }`, `signIn`, `signOut`).
 - `frontend/app/(protected)/layout.tsx` rendering `AuthGuard`.
 - 401 handler registered with `api.ts` (FEAT-062): clear token, cancel and clear queries, navigate to `/login?reason=expired&next=<path>`.
-- `frontend/lib/roles.ts`: `canWriteNotes`, `canReviewAlarms`, `isAdmin`, `canSeeAnalytics`.
+- `frontend/lib/roles.ts`: `canWriteNotes`, `canReviewAlarms`, `isAdmin`, `canSeeStudyTeam`.
 - Page tests and `auth.spec.ts`.
 
 ## Out of Scope
 
 - Backend authentication endpoints, JWT issue/verify and rate limiting (FEAT-020, FEAT-022).
-- `AppHeader` with the "Sign out" button and display name (FEAT-064 renders it, calling `signOut` from this feature).
-- Role-based page access-denied states for `/admin` and `/analytics` (FEAT-064).
+- `AppHeader` with the "Sign out" button and display name, and the `DataBar` component (FEAT-064 renders them, calling `signOut` from this feature; the login page uses the brand-only app bar variant and the data bar).
+- Role-based page access-denied states for `/admin` and `/study` (FEAT-064).
 - Password reset or self-registration (not in the MVP, UX-176).
 
 ## Functional Requirements
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-063-FR-01 | `/login` shall show, centred in a white card (max width 400px, padding 24px, 1px `--color-border`), "EchoWell" (28px, 600), "Sign in to see voice check-ins", fields "Email" (`type="email"`, `autocomplete="username"`) and "Password" (`type="password"`, `autocomplete="current-password"`), a full-width primary "Sign in" button, the line "Accounts are created by the EchoWell admin." and the default footer; no self-registration or password reset. | UX-170, UX-175, UX-176, FE-066 |
+| FEAT-063-FR-01 | `/login` shall show the app bar with the brand "EchoWell" only (no facility line, no navigation) and the data bar of UX-400 (before `meta` is available: "No audio is stored or played anywhere in EchoWell."), then, centred in a panel (`--surface`, 1px `--rule` border, radius 6px, max width 400px, padding 24px), the `<h1>` "EchoWell" (26px, weight 700), the line "Sign in to see voice check-ins" (`--muted`), fields "Email" (`type="email"`, `autocomplete="username"`) and "Password" (`type="password"`, `autocomplete="current-password"`), a full-width primary "Sign in" button (UX-122 primary style: `--chrome` background, `--chrome-ink` text, weight 700, min-height 44px) and the line "Accounts are created by the EchoWell admin." (14px, `--muted`); no self-registration or password reset. | UX-170, UX-175, UX-176, FE-066 |
 | FEAT-063-FR-02 | Signing in shall call `POST /api/v1/auth/login`; while pending the button reads "Signing in…" and is disabled. | UX-174, FR-210, E-02 |
 | FEAT-063-FR-03 | A 401 `INVALID_CREDENTIALS` shall show "Email or password is incorrect." above the button in a `role="alert"` region without revealing which field was wrong; a 429 shall show "Too many sign-in attempts. Wait one minute and try again." | UX-171, UX-172 |
 | FEAT-063-FR-04 | After `reason=expired` redirects the page shall show "Your session has ended. Please sign in again." | UX-173, SEC-038 |
@@ -61,7 +63,7 @@ Let staff sign in and keep every dashboard page behind a valid session. The feat
 | FEAT-063-FR-10 | On any 401 response the client shall clear the token (memory and `sessionStorage`), call `queryClient.cancelQueries()` and `queryClient.clear()`, and navigate to `/login?reason=expired&next=<current path>`. | FE-056, FR-211 |
 | FEAT-063-FR-11 | After sign-in the page shall navigate to `next` only if it starts with a single `/` and neither starts with `//` nor contains `://`; otherwise to `/residents`. | FE-057 |
 | FEAT-063-FR-12 | `signOut` shall send `POST /api/v1/auth/logout` best-effort (errors ignored, 3 s timeout), then clear the token and query cache and navigate to `/login`. | FE-058, FR-217, E-03 |
-| FEAT-063-FR-13 | `lib/roles.ts` shall define `canWriteNotes(role)` and `canReviewAlarms(role)` true for admin and clinician, `isAdmin(role)` true for admin, `canSeeAnalytics(role)` true for admin and researcher. | FE-059 |
+| FEAT-063-FR-13 | `lib/roles.ts` shall define `canWriteNotes(role)` and `canReviewAlarms(role)` true for admin and clinician, `isAdmin(role)` true for admin, `canSeeStudyTeam(role)` true for admin and researcher. | FE-059 |
 
 ## Inputs
 
@@ -123,7 +125,7 @@ None.
 ## Testing Requirements
 
 - Unit (`frontend/tests/unit/auth.test.ts`): exp parsing, restore rule (> 30 s), storage fallback, no `localStorage` write.
-- Page (`frontend/tests/pages/login.test.tsx`, MSW): populated form, wrong credentials message, 429 message, `reason=expired` message, busy state, safe/unsafe `next` (TST-094).
+- Page (`frontend/tests/pages/login.test.tsx`, MSW): populated form, brand-only app bar and data bar text, wrong credentials message, 429 message, `reason=expired` message, busy state, safe/unsafe `next` (TST-094).
 - Guard page test: protected route without token → `/login?next=…`; 401 from any call → `/login?reason=expired&next=…` (TST-094).
 - E2E: `auth.spec.ts` (FE-188), E2E-01 login lands on `/residents`, E2E-02 bad login shows error and stores no token.
 - Inspection: built `.next/static` shows only `sessionStorage` usage for the token key (AC-FE-06).
@@ -139,6 +141,7 @@ None.
 | FEAT-063-AC-05 | Searching the built `.next/static` output shows the token key used only with `sessionStorage`; no `localStorage` write of the token exists. Verified by: Inspection (built `.next/static` shows only `sessionStorage` usage for the token key (AC-FE-06)). | AC-FE-06 |
 | FEAT-063-AC-06 | "Sign out" sends `POST /api/v1/auth/logout`, clears the token and navigates to `/login`, also when the logout request fails. Verified by: E2E (`auth.spec.ts`; FE-188, E2E-01, E2E-02). | FE-058; FR-217 |
 | FEAT-063-AC-07 | A mocked 429 on login shows "Too many sign-in attempts. Wait one minute and try again." Verified by: E2E (`auth.spec.ts`; FE-188, E2E-01, E2E-02). | UX-172 |
+| FEAT-063-AC-08 | `/login` shows the brand-only app bar, the data bar "No audio is stored or played anywhere in EchoWell.", the `<h1>` "EchoWell" and the primary "Sign in" button in the v0.2 style, and no navigation links. Verified by: Page test (`frontend/tests/pages/login.test.tsx`; TST-094). | UX-170; UX-175; D-111 |
 
 ## Definition of Done
 
@@ -151,3 +154,4 @@ None.
 - The token is a Bearer header, not a cookie, because frontend and backend are different sites (TRD 04 §4.5.1).
 - Clear the scheduled sign-out timer on manual sign-out and on new sign-in.
 - E2E scenarios other than E2E-01, E2E-02 and FE-188 reuse the per-role sessions stored by `globalSetup` (D-74), so the login form is exercised only by these tests.
+- `canSeeStudyTeam` replaces the v0.1 `canSeeAnalytics` helper (the Analytics page is now the Study team page `/study`, TRD 24 D-110); if TRD 04 FE-059 keeps the old name, TRD 04 wins (AGT-001).

@@ -17,7 +17,7 @@ Let any developer, CI job or demo operator run the whole of EchoWell (PostgreSQL
 ## Business Context
 
 - BR-17: single monorepo stack runnable locally (NFR-087: one command, under 10 minutes on an 8 GB laptop).
-- BR-15: the same stack is seeded with SRC-05 under `test_v0_1` to show the answer-key tiles 2 / 7 / 1 / 19 (DEP-015, DEP-016; seed command delivered by FEAT-017 and FEAT-055).
+- BR-15: the same stack is seeded with SRC-05 under `test_v0_1` to show the answer-key Resident list filters "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" (DEP-015, DEP-016; seed command delivered by FEAT-017 and FEAT-055).
 - BR-16: no real secrets in committed files; synthetic data only; plain HTTP allowed only on localhost (SEC-065, DEP-018).
 - RSK-12: the local stack doubles as the demo fallback (ARC-081).
 
@@ -137,7 +137,7 @@ None. `analytics/` is bind-mounted into the backend container so edits apply on 
 - Unit: `tests/unit/backend/core/test_env_templates.py` asserting every `Settings` field appears in `.env.example` (ENV-040) and that a `local-dev-only` `JWT_SECRET` with `APP_ENV=staging` exits with code 1 (ENV-041, AC-ENV-03).
 - Manual/CI check: `docker compose up -d` then `curl -fsS http://localhost:8000/api/v1/health` returns 200 with `database: "ok"` within 180 s (DEP-014; TRD 25 §4.6 Phase 3 Commands).
 - Inspection: `grep` over `docker-compose.yml` and Dockerfiles finds no production secret and no `neon.tech` host (AC-DEP-10).
-- AC-DEP-01 (full 10-minute tiles check) is verified after FEAT-055 delivers the full seed.
+- AC-DEP-01 (full 10-minute Resident list check) is verified after FEAT-055 delivers the full seed.
 
 ## Acceptance Criteria
 

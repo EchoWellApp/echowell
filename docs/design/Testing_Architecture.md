@@ -1,6 +1,6 @@
 # EchoWell Testing Architecture
 
-Document: docs/design/Testing_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Testing_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1); 26 October 2026 (wireframe v0.2, SRC-21; TRD 24 D-108 to D-114: test routes and fixture values for the Resident list, Resident chart and Study team pages)
 
 ## 1. Purpose and sources
 
@@ -86,7 +86,7 @@ Source: TRD 13 §4.2 (TST-010), TRD 04 §4.14. Test names cite requirement or ca
 | Analytics stages (`analytics/*`) | Table 4.3-A cases per module (TST-020), Hypothesis properties (TST-022), import-lint (TST-021) | pipeline flows (TST-048..TST-051) | — | Tier A and Tier B (TST-080, TST-081) | FEAT-040..FEAT-052 |
 | Ingest and validation | schema rules (TST-030), feature-name mapping (TST-031) | TST-043..TST-047, TST-055 | no-audio (TST-133) | VC-G11 raw store fidelity | FEAT-023, FEAT-025, FEAT-026 |
 | Pipeline runner and triggers | runner, nightly job with DST clock (TST-052, AGT-059) | rebuild idempotency (TST-050, DB-019), one-by-one vs batch (TST-049), concurrent ingest (AC-ARC-06) | — | VC-G12 | FEAT-053..FEAT-055 |
-| Read APIs | display status and sorts (TST-033) | `tests/integration/api/*` with test_v0_1 values (OAS-021..OAS-028) | response validation (TST-061), meta block (TST-064) | E2E-03..E2E-12, E2E-17, E2E-20 | FEAT-027..FEAT-036 |
+| Read APIs | display status, attention flag, summary counts and sorts (TST-033) | `tests/integration/api/*` with test_v0_1 values (OAS-021..OAS-028) | response validation (TST-061), meta block (TST-064) | E2E-03..E2E-12, E2E-17, E2E-20 | FEAT-027..FEAT-036 |
 | Reviews, notes, snooze | — | TST-056..TST-059, TST-065..TST-067, TST-189 | role matrix (TST-130) | E2E-09, E2E-18, E2E-19 (`@mutating`, `@isolated`) | FEAT-031, FEAT-033, FEAT-070, FEAT-071 |
 | Auth and roles | security core (TST-032) | audit rows (TST-053) | TST-130..TST-132, TST-134, TST-135 | E2E-01, E2E-02, E2E-14, E2E-21 | FEAT-020..FEAT-022, FEAT-039 |
 | Database | repositories with mocked session | migrations round trip (TST-040), grants (TST-041), uniques (TST-042), schema reference (PGS-016) | — | — | FEAT-008..FEAT-014 |
@@ -138,10 +138,10 @@ Rules: one module per resident (`test_r01_clean_control.py` … `test_r10_gradua
 | Group | Scenarios | Order and data | Source |
 |---|---|---|---|
 | Read-only | E2E-01..E2E-08, E2E-10..E2E-14, E2E-16, E2E-17, E2E-20, E2E-21, FE-185, FE-186, FE-188..FE-194 | DS-07 on the main E2E database, reset and re-seeded by `global-setup.ts` per browser project; one API login per role reused | TST-100, D-73, D-74 |
-| `@mutating` | E2E-18 (save review), E2E-09 = FE-187 (note and review from detail), FE-193 snooze step | run serially after all read-only scenarios | D-73 |
+| `@mutating` | E2E-18 (save review on R09), FE-193 snooze step (R10), E2E-09 = FE-187 (note and review in R10's "Review and notes" section) | run serially, in this order, after all read-only scenarios | D-73, D-118 |
 | `@isolated` | E2E-15 (new check-in appears), TST-187, E2E-19 (snooze) | Chromium only, database `echowell_demo` | TST-100, CIC-030 |
-| Accessibility | `a11y.spec.ts` on `/login`, `/residents`, `/residents/R09`, `/residents/R08`, `/alerts`, `/analytics`, `/admissions`, `/admin` | zero serious or critical findings | TST-110, FE-190 |
-| Responsive | `/residents`, `/residents/R09` at 320, 360, 375, 390 px wide | no page-level horizontal scroll | FE-191, D-78 |
+| Accessibility | `a11y.spec.ts` on `/login`, `/residents`, `/residents/R09`, `/residents/R09/review`, `/residents/R09/trends`, `/residents/R08`, `/admissions`, `/study`, `/admin`, light and dark colour schemes | zero serious or critical findings | TST-110, FE-190 |
+| Responsive | `/residents`, `/residents/R09`, `/residents/R09/trends` at 320, 360, 375, 390 px wide | no page-level horizontal scroll | FE-191, D-78 |
 | Privacy | every route | no request to other hosts; no `<audio>` or `<video>` | FE-192 |
 
 ## 7. Coverage and CI gates
@@ -176,7 +176,7 @@ Required checks: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contra
 | DS-01 | SRC-05: 283 arrivals (281 unique + 2 duplicates), 10 residents, 30 local days, 30 columns | validation tiers, integration, UI fixtures, E2E | TRD 14 §4.1 |
 | DS-07 | API responses of the test_v0_1 system as of Oct 30 (`frontend/tests/fixtures/ds07/`) | component and page tests, E2E expectations | TRD 04 §4.14, TDV-016 |
 | DS-08 | 100 residents × 120 days, 10,800 records from `tests/performance/make_load_dataset.py` | performance budgets | TST-122, TST-123 |
-| DS-10 | `evaluation_ground_truth_v0_1.csv` (planted change per resident) | ground-truth loader, Analytics alarm timing | D-38, TRD 14 |
+| DS-10 | `evaluation_ground_truth_v0_1.csv` (planted change per resident) | ground-truth loader, Study team alarm timing | D-38, TRD 14 |
 | SRC-06 | legacy mock CSV | negative ingest test only | AGT-025, TST-047 |
 
 Only synthetic and test data are used in every environment of the interim stack (AGT-014, AC-AGT-10); no test reads or requires audio files (TST-007).

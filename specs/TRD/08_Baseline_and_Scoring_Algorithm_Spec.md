@@ -1,6 +1,6 @@
 # 08 Baseline and Scoring Algorithm Spec
 
-Document ID: ECHOWELL-TRD-08 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-08 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -181,7 +181,7 @@ R06 has 10 morning sessions (days 1, 4, …, 28): 6 inside its baseline, 4 score
 |---|---|---|---|---|
 | BSC-025 | For each (resident, epoch) the usable, non-late sessions shall be numbered 1, 2, … in time order (`baseline_ordinal`). | Must | SRC-04 | Test |
 | BSC-026 | The baseline of the epoch shall consist of the sessions with `baseline_ordinal ≤ N` (`in_baseline = true`); it forms when the N-th usable session exists and is then frozen: later sessions never change it. | Must | BR-09, SRC-02 stage 4 | Test |
-| BSC-027 | If an epoch has fewer than N usable sessions, `baseline_formed = false`, no baseline rows are produced, no session of the epoch is scored, and the resident status is "Baseline forming · n of N sessions" (n = usable count of the current epoch); this is not an error. | Must | BR-09, SRC-03 R07 epoch 1, R08 | Test |
+| BSC-027 | If an epoch has fewer than N usable sessions, `baseline_formed = false`, no baseline rows are produced, no session of the epoch is scored, and the resident status is `baseline_forming` with n of N usable sessions (n = usable count of the current epoch), shown in the UI as "Learning" ("Learning their usual: n of N check-ins so far.") or, with an open `baseline_stalled` or `high_set_aside` data alert, as "Needs attention" (TRD 11 §4.3.4, TRD 24 D-109); this is not an error. | Must | BR-09, SRC-03 R07 epoch 1, R08 | Test |
 | BSC-028 | The baseline shall record `n_sessions` (= N), `first_session_id` (ordinal 1), `frozen_after_session_id` (ordinal N) and `frozen_at` (= `timestamp_utc` of the frozen-after session). | Must | SRC-03 Exp_baselines | Test |
 | BSC-029 | Set-aside, quarantined, duplicate and late-arrival records and missing days shall never count toward N; the baseline therefore freezes later in calendar time when such records occur (R02 after R02-20261021-01, R03 after R03-20261023-01, R05 after R05-20261017-01). | Must | BR-04, BR-05, BR-06, SRC-03 | Test |
 | BSC-030 | A baseline once persisted shall never be recomputed or updated (ASM-07), except by the operator rebuild command after an algorithm-key change (TRD 07 ANL-032, TRD 24 D-56); production value N = 30, test N = 16 (ASM-04, OQ-13). | Must | BR-09, ASM-07 | Test |
@@ -218,7 +218,7 @@ for r in usable, non-late sessions of a formed epoch with baseline_ordinal > N, 
 | BSC-036 | Every usable, non-late session with `baseline_ordinal > N` in a formed epoch shall be scored exactly once; no other session shall be scored. | Must | BR-10, SRC-03 Exp_scores (98 rows) | Test |
 | BSC-037 | The stored per-feature values `z_<feature>` shall be the unsigned z `(a_f − median_f)/spread_f` for the 7 composite features (as in Exp_scores); the sign is applied only inside `composite_raw`. | Must | SRC-03 Exp_scores | Test |
 | BSC-038 | `composite_z` shall be `(composite_raw − composite_median)/composite_spread`; positive values mean a change toward the depression-associated direction. | Must | BR-10, SRC-03 Parameters | Test |
-| BSC-039 | Scores of the 12 non-composite features shall not be computed or stored; their adjusted values and baselines are stored for research and display ("stored, not scored"). | Must | BR-10, SRC-10 | Inspection |
+| BSC-039 | Scores of the 12 non-composite features shall not be computed or stored; their adjusted values and baselines are stored for research and display ("stored, not scored"). | Must | BR-10, SRC-21 | Inspection |
 
 ### 4.9 Late arrivals (ASM-07, OQ-10)
 
@@ -337,3 +337,4 @@ in_baseline), all 180 Exp_baselines rows and all 98 Exp_scores rows (maximum abs
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-02, F-03) | — |
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (§4.4 pseudocode stores the full quarantine reason (BSC-016, PGS-012)) | — |
+| 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): BSC-039 traces to SRC-21 instead of the removed SRC-10; BSC-027 names the v0.2 display statuses | — |

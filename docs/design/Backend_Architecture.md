@@ -1,6 +1,6 @@
 # EchoWell Backend Architecture
 
-Document: docs/design/Backend_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Backend_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Version 0.2 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2)
 
 ## 1. Purpose and sources
 
@@ -213,16 +213,16 @@ Full table with roles, tables and features: docs/design/OpenAPI_Spec.md §5. Sum
 | `pipeline_runner.py` | the only caller of `run_pipeline`; run row, config snapshot, as-of resolution, per-resident transactions with advisory locks, natural-key upserts, warnings, audit `pipeline.run.started`/`finished`; interim executor records `failed` "pipeline not available until Phase 6" until FEAT-053 lands | pipeline_run, raw_session, resident, device, baseline, epoch, processed_session, day_ledger, score, alert, data_alert, config, audit | `analytics.pipeline.run_pipeline` | E-05, E-06, E-20, E-21, E-31; nightly job; CLI `run-pipeline`, `rebuild`, `seed` | FEAT-024, FEAT-053, FEAT-054 |
 | `health_service.py` | `get_health()`: `SELECT 1` within 2 s, `Health` with `status`, `database`, `version` (`GIT_SHA`), `time`; 503 shape on failure; no audit row | none (engine probe through `backend/core/db.py`) | none | E-01 | FEAT-003 |
 | `config_service.py` | load profile rows into `PipelineConfig` (defaults with `config_default_used`); `UiConfig` | config, facility | `analytics.config.PipelineConfig.from_mapping` | E-32; `pipeline_runner.py`; `get_meta()` | FEAT-030, FEAT-040 |
-| `resident_service.py` | overview rows, summary tiles, sorts (natural sort), detail with explanation facts | resident, device, read_models, alert, score | none | E-08, E-09 | FEAT-027, FEAT-028 |
-| `checkin_service.py` | check-in events with same-date order and restart cause | read_models, processed_session, day_ledger, epoch, baseline, alert, score | none | E-10 | FEAT-028 |
+| `resident_service.py` | resident list rows, display-status `summary` counts (`changed`, `needs_attention`, `learning`, `usual`), sorts (`alarm` per TRD 24 D-109; natural sort), attention flag, `alarm_reviewed`, `restart_cause` and the detail `window` (API-138), detail with explanation facts | resident, device, read_models, alert, score, data_alert | none | E-08, E-09 | FEAT-027, FEAT-028 |
+| `checkin_service.py` | check-in events with same-date order, restart cause and the derived `checkins_started` event (API-077, D-113) | read_models, processed_session, day_ledger, epoch, baseline, alert, score | none | E-10 | FEAT-028 |
 | `feature_service.py` | 7 scored series with label, unit, sign, baseline, points; 12 stored-only keys | processed_session, raw_session, baseline, score | none (feature metadata from `analytics.config.FEATURES`) | E-11 | FEAT-028 |
 | `scoring.py` (skeleton) | scores list with `cusum_k` and `baseline_periods` | score, baseline, epoch | none | E-12 | FEAT-034 |
 | `export_service.py` | CSV streaming for scores and baselines, row limit, audit `export.csv` | score, baseline, audit | none | E-12, E-19 (`Accept: text/csv`) | FEAT-034 |
 | `alert_service.py` | alert list (open days, current tally, review count, leaning most), snooze | alert, score, audit | `analytics.alert_generator.leaning_most` | E-13, E-29 | FEAT-030, FEAT-031 |
 | `review_service.py` | create review, status acknowledged, data-problem data alert, audit `alert.reviewed`; list reviews | alert, data_alert, user, config, audit | none | E-14, E-28 | FEAT-031 |
-| `data_alert_service.py` | data-alert list ordered by kind then code | data_alert, resident, device | none | E-30; CLI `resolve-data-alert` | FEAT-032 |
+| `data_alert_service.py` | data-alert list ordered by kind then code (Study team "Data problems to follow up"; v0.2 `detail` strings are written by the pipeline and the review service, TRD 09 §4.9) | data_alert, resident, device | none | E-30; CLI `resolve-data-alert` | FEAT-032 |
 | `note_service.py` | append-only notes with supersede rule, audit `note.created` | staff_note, alert, user, audit | none | E-15, E-16 | FEAT-033 |
-| `device_service.py` | device panel items, silent days, device-gap days, in-use dates | device, read_models | none | E-17 | FEAT-029 |
+| `device_service.py` | device items (Study team Devices, chart Device section), silent days, device-gap days, in-use dates, `uploaded_on_as_of_date` (API-086, D-114) | device, read_models | none | E-17 | FEAT-029 |
 | `analytics_service.py` | baselines export rows (Exp_baselines shape, composite last) | baseline, epoch, device, resident | none | E-19 | FEAT-034 |
 | `analytics_summary.py` | `AnalyticsResponse`: aggregates, status counts, outcomes, latest run, `alarm_timing` (test_v0_1, readonly engine) or `review_outcomes` (production) | processed_session, day_ledger, epoch, alert, pipeline_run; own readonly engine for evaluation_ground_truth | `analytics.aggregates.build_analytics_summary` | E-18 | FEAT-035, FEAT-051 |
 | `admission_service.py` | experimental admissions list, comparison, reference ranges (empty in v0.1) | resident, processed_session, reference_range, baseline | none | E-22, E-23, E-24 | FEAT-036 |
@@ -310,3 +310,9 @@ Environment variables are exactly those of TRD 21 §4.2–§4.5 (for example `AP
 | OQ-10 | Late arrivals produce `late_arrival` warnings; frozen baselines unchanged. |
 | OQ-11 | Withdrawal refuses ingest (422 `RESIDENT_WITHDRAWN`); data kept. |
 | OQ-24, OQ-25, OQ-26 | Data-alert thresholds, explanation list and reviewer roles are configuration or interim decisions. |
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §9 service catalogue — `resident_service` summary counts, D-109 default order, attention flag and `alarm_reviewed` (reads `data_alerts`); `checkin_service` `checkins_started`; `device_service` `uploaded_on_as_of_date`; `data_alert_service` consumer is the Study team page | — |

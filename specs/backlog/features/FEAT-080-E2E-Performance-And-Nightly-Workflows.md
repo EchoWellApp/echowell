@@ -16,7 +16,7 @@ Create `.github/workflows/e2e.yml`, the workflow that runs the end-to-end suite 
 
 ## Business Context
 
-- BR-12, BR-13, BR-14, SRC-18, SRC-19: the UI behaviour of every page is a merge gate through the `playwright` check (CIC-031, CIC-032, CIC-070).
+- BR-12, BR-13, BR-14, SRC-21: the UI behaviour of every page is a merge gate through the `playwright` check (CIC-031, CIC-032, CIC-070).
 - BR-15: nightly random-order runs and the multi-seed robustness report watch for hidden order dependence and rule differences (CIC-037, TST-084).
 - RSK-07 / contract R8 budgets: nightly performance job (CIC-035).
 

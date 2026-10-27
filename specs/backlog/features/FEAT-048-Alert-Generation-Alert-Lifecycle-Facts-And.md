@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Create exactly one alarm event when a resident's tally first crosses the alarm line in an epoch, carry the facts the persistence service needs to close it only when the epoch ends or a rebuild no longer produces that crossing (no manual closure in v0.1), and compute "Leaning most" — the up to three measurements that moved most in the direction of change since the alarm — which the Alert review panel shows as plain words ("more pauses, quieter, less voiced sound" for R09). The alert is a prompt for a nurse to check in, delivered only inside the dashboard.
+Create exactly one alarm event when a resident's tally first crosses the alarm line in an epoch, carry the facts the persistence service needs to close it only when the epoch ends or a rebuild no longer produces that crossing (no manual closure in v0.1), and compute "Leaning most" — the up to three measurements that moved most in the direction of change since the alarm — which the Resident chart Summary shows as plain words ("Leaning most: …", TRD 11 UX-312; the v0.1 Alert review panel is retired, TRD 24 D-110) ("more pauses, quieter, less voiced sound" for R09). The alert is a prompt for a nurse to check in, delivered only inside the dashboard.
 
 ## Business Context
 
@@ -79,7 +79,7 @@ Required before implementation (BACKLOG.md): FEAT-047, FEAT-030
 - FEAT-047 (CUSUM engine): tallies and "rings" states.
 - FEAT-030 (Alerts list API): the `leaning_most` provider seam and the `Alert` DTO.
 
-Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052, FEAT-069.
+Features that build directly on this one (BACKLOG.md §4): FEAT-050, FEAT-052, FEAT-066.
 
 ## Database Impact
 

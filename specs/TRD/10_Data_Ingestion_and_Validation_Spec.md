@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.4 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.5 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -149,7 +149,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 |---|---|---|---|---|
 | ING-034 | The duplicate key shall be `session_id` (exact string). Processing all non-rejected arrivals in ascending `arrival_seq`, the first arrival of a `session_id` shall be kept and every later arrival shall get status `duplicate` with reason "session_id already received". | Must | BR-03, SRC-03 Parameters, SRC-04 | Test |
 | ING-035 | Duplicate detection shall run before the quality gate and before any sorting by timestamp; duplicates shall not be gated, screened, given an epoch, counted toward any baseline, scored or counted as a record for the day ledger. | Must | SRC-04, contract §7 | Test |
-| ING-036 | Duplicates shall be logged (processed_sessions row with status `duplicate`, counted in pipeline run counts) but never shown in the resident UI ("Duplicate records are removed quietly and not shown"). | Must | SRC-09, contract §8 | Test |
+| ING-036 | Duplicates shall be logged (processed_sessions row with status `duplicate`, counted in pipeline run counts) but never shown in the resident UI ("Duplicate records are removed quietly and not shown.", TRD 11 UX-148). | Must | SRC-21, contract §8 | Test |
 | ING-037 | A later arrival with the same `session_id` but different field values shall still be a duplicate (first arrival wins) and shall carry the ingest warning `duplicate_payload_differs` (ING-023, stored in `raw_sessions.ingest_warnings` by the ingest service; it is not a pipeline `RunWarning` of TRD 07 ANL-052). | Must | BR-03 | Test |
 | ING-038 | The ingest service shall take the session advisory lock of TRD 06 DB-021 (b) before checking `raw_sessions` for the `session_id` and inserting, so that the duplicate verdict returned to the caller agrees with the arrival-order rule under concurrent requests. | Must | BR-03 | Test |
 | ING-039 | Re-sending a record or re-uploading a file shall be safe: the repeated arrivals are stored as duplicates, change no derived result and return status `duplicate`; no `Idempotency-Key` header is required. | Must | BR-03, SRC-03 R04 | Test |
@@ -318,3 +318,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-01, F-04, F-21, F-22, F-35, F-43, F-44) | — |
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-08) | — |
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (ING-032 row_number for JSON batches (D-84); ING-037 ingest warning, not RunWarning) | — |
+| 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): ING-036 traces to SRC-21 (the duplicate caption is now in the Resident chart's Check-in log) | — |
