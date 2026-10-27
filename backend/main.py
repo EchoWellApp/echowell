@@ -6,14 +6,24 @@ module has no side effects and never connects to the database (TRD 16 §8).
 
 from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import json
 
-from backend.api import health
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.middleware import SlowAPIASGIMiddleware
+
+from backend.api import auth, health
+from backend.api.deps import AuditWriter, client_ip
+from backend.core import db, rate_limit
 from backend.core.config import DEPLOYED_ENVS, Settings, ensure_valid, load_settings_or_exit
-from backend.core.errors import install_handlers
+from backend.core.error_handlers import install_handlers, problem_response
 from backend.core.logging import REQUEST_ID_HEADER, configure_logging
 from backend.core.middleware import BodyLimitMiddleware, RequestContextMiddleware
+from backend.core.security import normalise_email
+from backend.models import ActorType
+from backend.services import audit_service
+from backend.services.audit_service import AuditAction
 
 API_PREFIX = "/api/v1"
 
@@ -34,9 +44,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         swagger_ui_oauth2_redirect_url=f"{API_PREFIX}/docs/oauth2-redirect",
         redoc_url=None,
     )
+    app.state.settings = settings
+    rate_limit.configure(settings)
+    app.state.limiter = rate_limit.limiter
     install_handlers(app)
-    # Added innermost first, so requests pass RequestContext -> BodyLimit -> CORS -> routes
-    # (API-101, API-104, API-105).
+    app.add_exception_handler(rate_limit.RateLimitExceeded, _rate_limited)
+    # Added innermost first, so requests pass RequestContext -> BodyLimit -> CORS -> rate limiter
+    # -> routes (TRD 05 §4.11; API-101, API-102, API-104, API-105).
+    app.add_middleware(SlowAPIASGIMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -50,7 +65,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(BodyLimitMiddleware)
     app.add_middleware(RequestContextMiddleware, hsts=settings.app_env in DEPLOYED_ENVS)
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(auth.router, prefix=API_PREFIX)
     return app
+
+
+def _audit_writer(request: Request) -> AuditWriter:
+    configured: AuditWriter | None = getattr(request.app.state, "audit_writer", None)
+    if configured is not None:
+        return configured
+    settings: Settings = request.app.state.settings
+    engine = db.create_engine_for(settings.database_url, app_env=settings.app_env)
+    return AuditWriter(lambda **kwargs: audit_service.record_committed(engine, **kwargs))
+
+
+async def _rate_limited(request: Request, exc: Exception) -> JSONResponse:
+    """429 RATE_LIMITED with Retry-After (API-098); a limited login is audited (SEC-093)."""
+    assert isinstance(exc, rate_limit.RateLimitExceeded)  # noqa: S101 - handler registration
+    if request.url.path == f"{API_PREFIX}/auth/login":
+        try:
+            email = json.loads(await request.body()).get("email", "")
+        except (ValueError, AttributeError):
+            email = ""
+        _audit_writer(request).committed(
+            action=AuditAction.AUTH_LOGIN_FAILED, actor_type=ActorType.SYSTEM, actor_id=None,
+            entity_type="user", entity_id=None,
+            details={"email": normalise_email(str(email)), "reason": "rate_limited"},
+            ip=client_ip(request),
+        )  # fmt: skip
+    return problem_response(
+        "RATE_LIMITED", "Too many requests. Try again later.",
+        headers={"Retry-After": str(rate_limit.retry_after(exc))},
+    )  # fmt: skip
 
 
 def __getattr__(name: str) -> FastAPI:

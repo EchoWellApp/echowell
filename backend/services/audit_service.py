@@ -15,6 +15,7 @@ from __future__ import annotations
 import getpass
 import logging
 from collections.abc import Mapping
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -233,3 +234,10 @@ def record_committed(engine: Engine, **kwargs: Any) -> int:
         raise ValueError("record_committed() is only for auth.login.failed and access.denied")
     with Session(engine) as session, session.begin():
         return record(session, **kwargs)
+
+
+def login_failures_since(
+    session: Session, email: str, since: datetime
+) -> tuple[int, datetime | None]:
+    """Failed logins for one e-mail since `since`, for the SEC-015 lockout."""
+    return AuditRepository(session).login_failures_since(email, since)

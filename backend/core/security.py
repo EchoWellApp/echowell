@@ -2,20 +2,24 @@
 
 Passwords: argon2id (argon2-cffi 23.x) with the SEC-010 parameters; plaintext is never stored or
 logged. API keys: `ewk_` + `secrets.token_urlsafe(32)`, stored only as the SHA-256 hex digest
-(SEC-020, SEC-021). JWT issuing and verification are added by FEAT-020.
+(SEC-020, SEC-021). Access tokens: HS256 JWTs via PyJWT with the SEC-031 claims (FEAT-020).
 """
 
 from __future__ import annotations
 
 import hashlib
 import secrets
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 
+import jwt
 from argon2 import PasswordHasher, Type
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
-from backend.core.errors import PasswordPolicyError
+from backend.core.errors import PasswordPolicyError, TokenExpiredError, TokenInvalidError
 
 # SEC-010: time_cost 3, memory_cost 65536 KiB, parallelism 4, hash_len 32, salt_len 16.
 _HASHER = PasswordHasher(
@@ -85,3 +89,46 @@ def generate_api_key() -> str:
 def hash_api_key(key: str) -> str:
     """SHA-256 lower-case hex digest stored in `api_keys.key_hash` (SEC-021, PGS-035)."""
     return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+JWT_ALGORITHM = "HS256"
+JWT_ISSUER = "echowell-api"
+JWT_AUDIENCE = "echowell-dashboard"
+
+
+@dataclass(frozen=True)
+class TokenClaims:
+    user_id: uuid.UUID
+    role: str
+    jti: str
+
+
+def create_access_token(
+    user_id: uuid.UUID, role: str, secret: str, expires_minutes: int, now: datetime | None = None
+) -> str:
+    """HS256 JWT with `sub role iat exp jti iss aud` (SEC-030, SEC-031); no refresh token."""
+    issued = now or datetime.now(UTC)
+    claims = {
+        "sub": str(user_id),
+        "role": role,
+        "iat": issued,
+        "exp": issued + timedelta(minutes=expires_minutes),
+        "jti": str(uuid.uuid4()),
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+    }
+    return jwt.encode(claims, secret, algorithm=JWT_ALGORITHM)
+
+
+def decode_access_token(token: str, secret: str) -> TokenClaims:
+    """Verify signature, `alg`, `iss`, `aud` and `exp`; 401 TOKEN_EXPIRED or TOKEN_INVALID."""
+    try:
+        claims = jwt.decode(
+            token, secret, algorithms=[JWT_ALGORITHM], audience=JWT_AUDIENCE, issuer=JWT_ISSUER,
+            options={"require": ["sub", "exp", "iat", "jti", "iss", "aud"]},
+        )  # fmt: skip
+        return TokenClaims(uuid.UUID(claims["sub"]), str(claims.get("role", "")), claims["jti"])
+    except jwt.ExpiredSignatureError:
+        raise TokenExpiredError("The access token has expired.") from None
+    except (jwt.InvalidTokenError, ValueError, TypeError):
+        raise TokenInvalidError("The access token is not valid.") from None

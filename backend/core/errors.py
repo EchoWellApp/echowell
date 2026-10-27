@@ -3,7 +3,8 @@ LOG-040..LOG-044; D-48; FEAT-019).
 
 Every non-2xx response is `application/problem+json` with `type` = `urn:echowell:error:<CODE>`,
 the catalogue title, `status`, `detail`, `request_id` and `errors[]` (`{field, code, message}`).
-Services raise `AppError` subclasses; only codes of `CATALOGUE` can be emitted.
+Services raise `AppError` subclasses; only codes of `CATALOGUE` can be emitted. The HTTP
+handlers live in `backend.core.error_handlers`, so services never import FastAPI.
 """
 
 from __future__ import annotations
@@ -11,13 +12,9 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
-from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from sqlalchemy.exc import DBAPIError, OperationalError
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy.exc import DBAPIError
 
 from backend.core.logging import get_request_id
 
@@ -224,18 +221,6 @@ def problem_body(
     }
 
 
-def problem_response(
-    code: str,
-    detail: str,
-    errors: Sequence[FieldError] = (),
-    headers: dict[str, str] | None = None,
-) -> JSONResponse:
-    body = problem_body(code, detail, errors)
-    return JSONResponse(
-        body, status_code=body["status"], headers=headers, media_type=PROBLEM_MEDIA_TYPE
-    )
-
-
 def _location(loc: Sequence[Any]) -> str:
     parts = [str(p) for p in loc]
     if parts and parts[0] in ("body", "query", "path", "header", "cookie"):
@@ -257,45 +242,6 @@ def validation_field_errors(errors: Sequence[Any]) -> list[FieldError]:
     return items
 
 
-async def _app_error(_: Request, exc: Exception) -> JSONResponse:
-    error = cast(AppError, exc)
-    return problem_response(error.code, error.detail, error.errors, error.headers or None)
-
-
-async def _validation_error(request: Request, exc: Exception) -> JSONResponse:
-    raw = cast(RequestValidationError, exc).errors()
-    items = validation_field_errors(raw)
-    query_only = items and all(str(e.get("loc", ("",))[0]) in ("query", "path") for e in raw)
-    if query_only and request.method == "GET":
-        return problem_response("INVALID_QUERY_PARAMETER", "A query parameter is not valid.", items)
-    return problem_response("VALIDATION_ERROR", "The request is not valid.", items)
-
-
-async def _http_error(request: Request, exc: Exception) -> JSONResponse:
-    if isinstance(exc.__cause__, AppError):  # e.g. a body over the limit while FastAPI reads it
-        return await _app_error(request, exc.__cause__)
-    status = cast(StarletteHTTPException, exc).status_code
-    if status == 400:
-        return problem_response("VALIDATION_ERROR", "The request body could not be read.")
-    if status == 405:
-        return problem_response("METHOD_NOT_ALLOWED", "This method is not allowed on this path.")
-    if status == 404:
-        return problem_response("NOT_FOUND", "The requested resource does not exist.")
-    logger.warning("http_exception", extra={"event": "http_exception", "status": status})
-    return problem_response("INTERNAL_ERROR", INTERNAL_DETAIL)
-
-
-async def _operational_error(_: Request, exc: Exception) -> JSONResponse:
-    logger.error(
-        "database_unavailable",
-        extra={"event": "database_unavailable", "exc_type": type(exc).__name__},
-    )
-    return problem_response(
-        "SERVICE_UNAVAILABLE", "The database is not reachable. Try again shortly.",
-        headers={"Retry-After": "30"},
-    )  # fmt: skip
-
-
 def append_only_table(exc: DBAPIError) -> str | None:
     """The table named by an `EW001` append-only refusal (TRD 20 PGS-028), else None."""
     orig = getattr(exc, "orig", None)
@@ -305,24 +251,6 @@ def append_only_table(exc: DBAPIError) -> str | None:
     message = getattr(diag, "message_primary", "") or str(orig)
     parts = message.split()
     return parts[1] if len(parts) > 1 and parts[0] == "table" else "unknown"
-
-
-async def _database_error(_: Request, exc: Exception) -> JSONResponse:
-    table = append_only_table(cast(DBAPIError, exc))
-    if table is not None:
-        logger.error(
-            "append_only_violation", extra={"event": "append_only_violation", "table": table}
-        )
-    else:
-        logger.error(
-            "database_error", extra={"event": "database_error", "exc_type": type(exc).__name__}
-        )
-    return problem_response("INTERNAL_ERROR", INTERNAL_DETAIL)
-
-
-async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
-    log_unhandled(exc)
-    return problem_response("INTERNAL_ERROR", INTERNAL_DETAIL)
 
 
 def log_unhandled(exc: BaseException) -> None:
@@ -338,13 +266,3 @@ def log_unhandled(exc: BaseException) -> None:
             "stack": format_exception(exc),
         },
     )
-
-
-def install_handlers(app: FastAPI) -> None:
-    """Register the problem+json handlers (API-095)."""
-    app.add_exception_handler(AppError, _app_error)
-    app.add_exception_handler(RequestValidationError, _validation_error)
-    app.add_exception_handler(StarletteHTTPException, _http_error)
-    app.add_exception_handler(OperationalError, _operational_error)
-    app.add_exception_handler(DBAPIError, _database_error)
-    app.add_exception_handler(Exception, _unhandled)

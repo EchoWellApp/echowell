@@ -141,11 +141,8 @@ def client(database_url: str) -> Iterator[TestClient]:
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter() -> Iterator[None]:
-    """Empty the in-memory slowapi storage before each test (TRD 24 D-74); inert before FEAT-022."""
-    try:
-        from backend.core.rate_limit import limiter  # type: ignore[import-not-found]
-    except ImportError:
-        yield
-        return
+    """Empty the in-memory slowapi storage before each test (TRD 24 D-74; FEAT-022-FR-09)."""
+    from backend.core.rate_limit import limiter
+
     limiter.reset()
     yield
