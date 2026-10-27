@@ -71,7 +71,7 @@ async def _csv_upload(request: Request) -> tuple[bytes, str]:
     responses=errors(401, 403, 413, 415, 422, 429),
     openapi_extra=BATCH_BODY,
 )
-@limiter.limit(ingest_limit, key_func=ingest_key)
+@limiter.shared_limit(ingest_limit, scope="ingest", key_func=ingest_key)
 async def ingest_batch(
     request: Request,
     background: BackgroundTasks,

@@ -678,7 +678,7 @@ components:
       properties:
         ingest_batch_id: {type: string, format: uuid}
         source: {$ref: "#/components/schemas/IngestSource"}
-        accepted: {type: integer, minimum: 0, description: stored in raw_sessions, duplicates included}
+        accepted: {type: integer, minimum: 0, description: "stored in raw_sessions, duplicates included"}
         rejected: {type: integer, minimum: 0}
         duplicates: {type: integer, minimum: 0}
         pipeline_run_id: {type: [string, "null"], format: uuid, description: null when no first-arrival record was accepted}

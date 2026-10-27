@@ -22,6 +22,7 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from backend.core import db
@@ -487,3 +488,18 @@ def name_map(session: Session, settings: Settings) -> dict[str, str]:
     """The active profile's validated `feature_name_map` (ING-016, ING-017)."""
     values = ConfigRepository(session).values_for_profile(settings.pipeline_profile)
     return validation.check_name_map(values.get("feature_name_map") or {})
+
+
+def check_startup_name_map(session_factory: Callable[[], Session], settings: Settings) -> bool:
+    """Refuse to start with an invalid `feature_name_map` (ING-017): raises `NameMapError`.
+
+    Returns False when the database cannot be reached; `/health` then reports it and the map
+    is checked again on every ingest request.
+    """
+    try:
+        with session_factory() as session:
+            name_map(session, settings)
+    except OperationalError:
+        logger.warning("name_map_check_skipped", extra={"event": "name_map_check_skipped"})
+        return False
+    return True

@@ -7,11 +7,15 @@ module has no side effects and never connects to the database (TRD 16 §8).
 from __future__ import annotations
 
 import json
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.middleware import SlowAPIASGIMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from backend.api import auth, health, ingest, pipeline, sessions
 from backend.api.deps import AuditWriter, client_ip
@@ -22,10 +26,27 @@ from backend.core.logging import REQUEST_ID_HEADER, configure_logging
 from backend.core.middleware import BodyLimitMiddleware, RequestContextMiddleware
 from backend.core.security import normalise_email
 from backend.models import ActorType
-from backend.services import audit_service
+from backend.services import audit_service, ingestion
 from backend.services.audit_service import AuditAction
+from backend.services.validation import NameMapError
 
 API_PREFIX = "/api/v1"
+logger = logging.getLogger("backend.main")
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Startup check of `feature_name_map`: an invalid map stops the application (ING-017)."""
+    settings: Settings = app.state.settings
+    engine = db.create_engine_for(settings.database_url, app_env=settings.app_env)
+    try:
+        await run_in_threadpool(
+            ingestion.check_startup_name_map, db.session_factory(engine), settings
+        )
+    except NameMapError as exc:
+        logger.critical("invalid_feature_name_map", extra={"event": "invalid_feature_name_map"})
+        raise SystemExit(f"Configuration error: {exc}") from None
+    yield
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -43,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=None if settings.app_env == "production" else f"{API_PREFIX}/docs",
         swagger_ui_oauth2_redirect_url=f"{API_PREFIX}/docs/oauth2-redirect",
         redoc_url=None,
+        lifespan=_lifespan,
     )
     app.state.settings = settings
     rate_limit.configure(settings)

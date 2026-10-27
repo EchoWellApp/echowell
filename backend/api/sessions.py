@@ -40,7 +40,7 @@ RECORD_BODY = {
     },
     openapi_extra=RECORD_BODY,
 )
-@limiter.limit(ingest_limit, key_func=ingest_key)
+@limiter.shared_limit(ingest_limit, scope="ingest", key_func=ingest_key)
 async def ingest_session(
     request: Request,
     response: Response,

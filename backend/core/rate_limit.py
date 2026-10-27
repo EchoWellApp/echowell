@@ -2,11 +2,12 @@
 FEAT-022).
 
 - `POST /auth/login`: RATE_LIMIT_LOGIN per client IP (left-most `X-Forwarded-For`).
-- `POST /sessions`, `POST /ingest`: RATE_LIMIT_INGEST per API-key hash or admin user id.
+- `POST /sessions` and `POST /ingest` together: RATE_LIMIT_INGEST per API-key hash or admin user
+  id (one shared counter, TRD 10 ING-011).
 - every other authenticated endpoint: 300/minute per user id (`DEFAULT_LIMIT`).
 - `GET /health` and the OpenAPI document are exempt (API-112).
 
-Limits read the active settings from `app.state.settings`, so tests can choose them per app.
+The configurable limits read the settings bound by `configure()` when the app is created.
 The test suite empties the storage before every test (`limiter.reset()`, TRD 24 D-74).
 """
 

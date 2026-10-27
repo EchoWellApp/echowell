@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.8 (draft for review) · Date: 18 October 2026, revised 27 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -1451,7 +1451,7 @@ components:
       properties:
         ingest_batch_id: {type: string, format: uuid}
         source: {$ref: "#/components/schemas/IngestSource"}
-        accepted: {type: integer, minimum: 0, description: stored in raw_sessions, duplicates included}
+        accepted: {type: integer, minimum: 0, description: "stored in raw_sessions, duplicates included"}
         rejected: {type: integer, minimum: 0}
         duplicates: {type: integer, minimum: 0}
         pipeline_run_id: {type: [string, "null"], format: uuid, description: null when no first-arrival record was accepted}
@@ -2167,3 +2167,4 @@ components:
 | 0.5 | 20 Oct 2026 | Documentation audit fixes (DA-05: E-10 same-date event order of TRD 11 UX-141) | — |
 | 0.6 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; D-114 additions: `ResidentOverviewRow` and `ResidentDetail` gain `needs_attention`, `attention_reasons` (new `AttentionReason`) and `alarm_reviewed`; `OverviewSummary` becomes `changed`, `needs_attention`, `learning`, `usual` (2/2/0/6); `sort=alarm` order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); `CheckinEventType` gains `checkins_started` and `CheckinEvent` gains `device_code`; `Device` gains `uploaded_on_as_of_date`; restart cause for the v0.2 texts (`restart_cause` on `ResidentOverviewRow` and `ResidentDetail`; `EpochInfo.from_value`, `to_value`); `ResidentDetail.window` and `DateWindow.days`; E-30 examples use the v0.2 data-alert details; consumers redirected from `/alerts` and `/analytics` to the Resident chart, nav badge and Study team page; OAS-021, OAS-027, OAS-028 updated | — |
 | 0.7 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
+| 0.8 | 27 Oct 2026 | Checkpoint 4: two YAML quoting fixes so the §8 skeleton parses as OpenAPI 3.1 (the `/scores` 200 description and `IngestBatchAccepted.accepted.description` contained an unquoted comma); no contract change | — |

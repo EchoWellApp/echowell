@@ -1,7 +1,4 @@
-"""Rate limits (TRD 05 API-098, API-102, API-103, API-112; TRD 12 SEC-090..SEC-093; FEAT-022).
-
-The ingest limit (FEAT-022-AC-02) is tested with `POST /sessions` in `test_ingest_sessions.py`.
-"""
+"""Rate limits (TRD 05 API-098, API-102, API-103, API-112; TRD 12 SEC-090..SEC-093; FEAT-022)."""
 
 from __future__ import annotations
 
@@ -9,8 +6,12 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
+from backend.core import rate_limit
+from tests.conftest import make_settings
 from tests.integration.api.conftest import Principals
+from tests.integration.api.test_sessions import src05_record
 
 pytestmark = pytest.mark.integration
 
@@ -67,4 +68,31 @@ def test_other_endpoints_allow_300_a_minute_per_user(
         assert api.get("/api/v1/auth/me", headers=admin).status_code == 200
     _rate_limited(api.get("/api/v1/auth/me", headers=admin))
     assert api.get("/api/v1/auth/me", headers=clinician).status_code == 200
+    assert audit_rows == []
+
+
+@pytest.mark.req("SEC-090", "SEC-093", "ING-011", "TST-131", "FEAT-022-AC-02", "FEAT-022-AC-03",
+                 "FEAT-022-FR-03")  # fmt: skip
+def test_ingest_limit_is_per_api_key(
+    api: TestClient,
+    roster: Session,
+    principals: Principals,
+    audit_rows: list[dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert make_settings().rate_limit_ingest == "600/minute"
+    # The same limit path with a small value, so the test sends 4 requests instead of 601.
+    monkeypatch.setattr(
+        rate_limit, "_current_settings", make_settings(rate_limit_ingest="3/minute")
+    )
+    record = {**src05_record("R09-20261021-01"), "schema_version": "9.9"}  # rejected: no pipeline
+    ingest = principals.api_key("ingest")
+    for _ in range(3):
+        assert api.post("/api/v1/sessions", json=record, headers=ingest).status_code == 422
+    _rate_limited(api.post("/api/v1/sessions", json=record, headers=ingest))
+    _rate_limited(api.post("/api/v1/ingest", json={"records": [record]}, headers=ingest))
+    other = principals.add_key("other", ["ingest:write"])
+    assert (
+        api.post("/api/v1/sessions", json=record, headers={"X-API-Key": other}).status_code == 422
+    )
     assert audit_rows == []
