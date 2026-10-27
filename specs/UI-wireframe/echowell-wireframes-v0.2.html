@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EchoWell clinical dashboard: wireframe v0.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --chrome:#1F3A52; --chrome-ink:#FFFFFF; --chrome-muted:#B9CADB;
+  --canvas:#EDF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA;
+  --ink:#17232E; --muted:#556677; --rule:#C8D2DB; --link:#1D5F99;
+  --red:#B3261E; --red-bg:#FCE9E7; --yellow:#7A5000; --yellow-bg:#FFF3D1; --yellow-edge:#D9A22B;
+  --green:#22694A; --green-bg:#E3F3EA; --grey:#5C6B78; --grey-bg:#EEF1F4;
+  --c-used:#1D5F99; --c-aside:#9FB0BF; --c-quar:#C98A1A;
+  --note:#4B3F8F; --note-bg:#F1EFFB;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --chrome:#0F2233; --chrome-ink:#EAF1F7; --chrome-muted:#8EA6BC;
+    --canvas:#121A21; --surface:#1A242D; --surface-2:#202C36;
+    --ink:#E6EDF3; --muted:#9DB0C0; --rule:#33424F; --link:#7DB8EC;
+    --red:#FF8A80; --red-bg:#3A1D1B; --yellow:#F2C35B; --yellow-bg:#352A10; --yellow-edge:#A87F22;
+    --green:#7FD3A6; --green-bg:#16301F; --grey:#A7B4C0; --grey-bg:#26313B;
+    --c-used:#5CA3E0; --c-aside:#5E7080; --c-quar:#E0A740;
+    --note:#C2B8F5; --note-bg:#262240;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Source Sans 3",Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+a{color:var(--link)}
+:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+h1,h2,h3{margin:0;line-height:1.2}
+h2{font-size:20px} h3{font-size:16px}
+p{margin:0}
+
+/* App bar */
+.appbar{background:var(--chrome);color:var(--chrome-ink);display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:10px 20px}
+.brand{font-weight:700;font-size:20px;letter-spacing:.2px}
+.facility{color:var(--chrome-muted);font-size:14px}
+.appnav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.appnav a{color:var(--chrome-ink);text-decoration:none;padding:8px 12px;border-radius:4px;font-weight:600;font-size:15px}
+.appnav a[aria-current="page"]{background:rgba(255,255,255,.16)}
+.appnav a:hover{background:rgba(255,255,255,.1)}
+.notes-toggle{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--chrome-muted)}
+.testbar{background:var(--yellow-bg);color:var(--yellow);border-bottom:1px solid var(--yellow-edge);padding:6px 20px;font-size:14px;font-weight:600}
+
+main{max-width:1240px;margin:0 auto;padding:20px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px}
+.pad{padding:16px 18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+/* Status pills: colour plus a shape, so status never relies on colour alone */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:14px;white-space:nowrap;border:1px solid transparent}
+.pill::before{font-size:12px}
+.pill.red{background:var(--red-bg);color:var(--red);border-color:var(--red)} .pill.red::before{content:"▲"}
+.pill.yellow{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow-edge)} .pill.yellow::before{content:"!"; font-weight:800}
+.pill.green{background:var(--green-bg);color:var(--green);border-color:var(--green)} .pill.green::before{content:"●"}
+.pill.grey{background:var(--grey-bg);color:var(--grey);border-color:var(--grey)} .pill.grey::before{content:"○"}
+.pill.neutral{background:var(--surface);color:var(--ink);border-color:var(--ink);font-weight:600}
+.pill.big{font-size:18px;padding:6px 16px}
+
+/* Worklist */
+.listhead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--rule)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{font:inherit;font-size:15px;padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--chrome);color:var(--chrome-ink);border-color:var(--chrome)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:14px;color:var(--muted);font-weight:600;padding:10px 18px;background:var(--surface-2);border-bottom:1px solid var(--rule)}
+td{padding:12px 18px;border-bottom:1px solid var(--rule);vertical-align:middle}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--surface-2)}
+tr.row td:first-child{border-left:5px solid transparent}
+tr.row.red td:first-child{border-left-color:var(--red)}
+tr.row.yellow td:first-child{border-left-color:var(--yellow-edge)}
+.rid{font-weight:700}
+.rid a{color:inherit;text-decoration:none}
+.legend{display:flex;flex-wrap:wrap;gap:10px 20px;padding:12px 18px;font-size:14px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:8px}
+
+/* Patient banner + chart */
+.banner{background:var(--surface);border:1px solid var(--rule);border-radius:6px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 32px;padding:14px 18px}
+.banner .who{font-size:26px;font-weight:700}
+.banner dl{display:flex;flex-wrap:wrap;gap:6px 28px;margin:0}
+.banner dt{font-size:13px;color:var(--muted)}
+.banner dd{margin:0;font-weight:600}
+.banner .pill{margin-left:auto}
+.chart{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.activities{display:flex;flex-direction:column;padding:6px}
+.activities a{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:4px;color:var(--ink);text-decoration:none;font-weight:600}
+.activities a:hover{background:var(--surface-2)}
+.activities a[aria-current="page"]{background:var(--chrome);color:var(--chrome-ink)}
+.badge{background:var(--red);color:#fff;border-radius:999px;padding:0 8px;font-size:13px}
+.back{display:inline-block;margin-bottom:12px;font-weight:600;text-decoration:none}
+
+.statuscard{border-left:6px solid var(--grey)}
+.statuscard.red{border-left-color:var(--red)} .statuscard.yellow{border-left-color:var(--yellow-edge)} .statuscard.green{border-left-color:var(--green)}
+.lead{font-size:20px;font-weight:600;max-width:62ch}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:12px}
+.facts div{display:flex;flex-direction:column}
+.facts b{font-size:18px}
+.facts span{font-size:13px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;font:inherit;font-weight:700;border-radius:4px;border:2px solid var(--chrome);background:var(--chrome);color:var(--chrome-ink);text-decoration:none;cursor:pointer}
+.btn.secondary{background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{padding:14px 16px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+a.tile:hover{border-color:var(--link)}
+.tile .k{font-size:13px;color:var(--muted)}
+.tile .v{font-size:18px;font-weight:700}
+.tile .go{font-size:14px;color:var(--link);font-weight:600;margin-top:4px}
+
+.measures{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.measure{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--rule);border-radius:6px;padding:10px 12px}
+.spark{width:110px;height:28px;border:1px dashed var(--rule);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.counts div{border:1px solid var(--rule);border-radius:6px;padding:10px 12px}
+.counts b{display:block;font-size:24px}
+.events{list-style:none;margin:0;padding:0}
+.events li{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.events li:last-child{border-bottom:0}
+.events.plain li{grid-template-columns:110px minmax(0,1fr)}
+.meter{height:14px;background:var(--grey-bg);border-radius:999px;overflow:hidden;border:1px solid var(--rule)}
+.meter i{display:block;height:100%;background:var(--c-used)}
+fieldset{border:1px solid var(--rule);border-radius:6px;padding:12px 14px;margin:0;display:flex;flex-direction:column;gap:6px}
+legend{font-weight:700;padding:0 6px}
+fieldset label{display:flex;align-items:center;gap:10px;min-height:32px}
+textarea{font:inherit;padding:10px;border:1px solid var(--rule);border-radius:4px;background:var(--surface);color:var(--ink);width:100%;resize:vertical}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+svg text{font-family:inherit;fill:var(--muted)}
+
+/* Designer notes: open questions, hidden with the toggle */
+.q{border:1px dashed var(--note);background:var(--note-bg);color:var(--note);border-radius:6px;padding:8px 12px;font-size:14px}
+.q::before{content:"Open question: ";font-weight:700}
+.q.info::before{content:"Wireframe note: "}
+body.hide-notes .q{display:none}
+
+@media (max-width:760px){
+  .chart{grid-template-columns:1fr}
+  .activities{flex-direction:row;overflow-x:auto}
+  .activities a{white-space:nowrap}
+  .banner .pill{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <span class="brand">EchoWell</span>
+  <span class="facility">[Facility name], Assisted living</span>
+  <nav class="appnav" aria-label="Main">
+    <a href="#list" data-nav="list">Resident list</a>
+    <a href="#admissions" data-nav="admissions">New admissions</a>
+    <a href="#study" data-nav="study">Study team</a>
+  </nav>
+  <label class="notes-toggle"><input type="checkbox" id="notesToggle" checked> Show wireframe notes</label>
+</header>
+<div class="testbar">Test data only (pipeline test v0.1, Oct 1–30, 2026). No real residents. No audio is stored or played anywhere in EchoWell.</div>
+<main id="app" tabindex="-1"></main>
+
+<script>
+/* ---------- Test data (pipeline test v0.1, matches the answer key) ---------- */
+const STATUS = {
+  red:   {label:"Changed",          meaning:"Their voice has moved away from their own usual. Check on them."},
+  yellow:{label:"Needs attention",  meaning:"Not enough good check-ins to judge. Check the device or the routine."},
+  green: {label:"Usual",            meaning:"Within their own usual range."},
+  grey:  {label:"Learning",         meaning:"Still collecting the first 16 check-ins to learn their usual."}
+};
+const ORDER = {red:0, yellow:1, grey:2, green:3};
+
+const R = {
+  R09:{dev:"D09", st:"red", last:"Oct 30, 2:28 PM CT", c:[30,0,0,0], why:"Changed from their usual since Oct 21. Not reviewed yet.",
+       alarm:{since:"Oct 21", open:9, tally:26.8, reviewed:false},
+       base:{n:16, of:16, text:"First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."},
+       tally:[3.1,2.5,1.7,1.6,5.3,7.8,8.1,10.5,12.2,15.0,16.4,18.4,22.8,26.8], tallyStart:17,
+       events:[["Oct 21","Alarm on. Change score crossed 5."],["Oct 17","Comparing with baseline started."],["Oct 16","Baseline complete (16 of 16)."]]},
+  R10:{dev:"D10", st:"red", last:"Oct 30, 2:39 PM CT", c:[30,0,0,0], why:"Changed from their usual since Oct 24. Not reviewed yet.",
+       alarm:{since:"Oct 24", open:6, tally:13.4, reviewed:false},
+       base:{n:16, of:16, text:"First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17."},
+       events:[["Oct 24","Alarm on. Change score crossed 5."],["Oct 17","Comparing with baseline started."],["Oct 16","Baseline complete (16 of 16)."]]},
+  R08:{dev:"D08", st:"yellow", last:"Oct 30, 2:28 PM CT", c:[13,5,0,12], why:"Missing many check-ins. Baseline stuck at 13 of 16.",
+       base:{n:13, of:16, text:"Still forming. 12 missed and 5 set-aside check-ins have slowed it down."},
+       events:[["Oct 30","Baseline at 13 of 16."],["Oct 1","Check-ins started."]]},
+  R03:{dev:"D02", shared:"R02", st:"yellow", last:"Oct 30, 2:19 PM CT", c:[22,7,0,1], why:"7 check-ins too noisy or too short to use.",
+       base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
+       events:[["Oct 12","Shared device D02 silent all day. Check-in missed."],["Oct 1","Check-ins started."]]},
+  R07:{dev:"D07B", was:"D07", st:"green", last:"Oct 30, 2:52 PM CT", c:[30,0,0,0], why:"Usual. Baseline restarted Oct 13 after a new device.",
+       base:{n:16, of:16, text:"Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in."},
+       events:[["Oct 13","New device D07B. Baseline restarted."],["Oct 1","Check-ins started on D07."]]},
+  R05:{dev:"D05", st:"green", last:"Oct 30, 2:40 PM CT", c:[28,0,2,0], why:"Within their usual range.",
+       base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
+       events:[["Oct 22","Check-in held back: possible other voice."],["Oct 8","Check-in held back: possible other voice."]]},
+  R02:{dev:"D02", shared:"R03", st:"green", last:"Oct 30, 2:55 PM CT", c:[24,0,0,6], why:"Within their usual range.",
+       base:{n:16, of:16, text:"Complete. [Date baseline finished]"},
+       events:[["Oct 12","Shared device D02 silent all day. Check-in missed."]]},
+  R01:{dev:"D01", st:"green", last:"Oct 30, 2:07 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
+  R04:{dev:"D04", st:"green", last:"Oct 30, 2:17 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]},
+  R06:{dev:"D06", st:"green", last:"Oct 30, 2:38 PM CT", c:[30,0,0,0], why:"Within their usual range.", base:{n:16,of:16,text:"First 16 usable check-ins, Oct 1–16, then frozen."}, events:[["Oct 16","Baseline complete (16 of 16)."]]}
+};
+const MEASURES = [
+  ["Quieter","loudness"],["Slower to say the phrase","phrase duration"],["Fewer syllables per second","speech rate"],
+  ["Slower while talking","articulation rate"],["More pauses","number of pauses"],["More time in pauses","pause fraction"],["Less voiced sound","voiced fraction"]
+];
+/* per day: [day, used, set aside, possible other voice, missed] */
+const DAYS = [[1,10,0,0,0],[2,9,0,0,1],[3,9,1,0,0],[4,8,0,0,2],[5,9,1,0,0],[6,9,0,0,1],[7,9,1,0,0],[8,8,0,1,1],[9,8,1,0,1],[10,8,1,0,1],[11,9,0,0,1],[12,8,0,0,2],[13,9,0,0,1],[14,9,1,0,0],[15,9,0,0,1],[16,10,0,0,0],[17,8,0,0,2],[18,9,1,0,0],[19,9,0,0,1],[20,9,1,0,0],[21,9,0,0,1],[22,8,1,1,0],[23,9,0,0,1],[24,9,0,0,1],[25,9,1,0,0],[26,9,1,0,0],[27,9,0,0,1],[28,10,0,0,0],[29,9,1,0,0],[30,10,0,0,0]];
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const pill = (st, big) => `<span class="pill ${st}${big?' big':''}">${STATUS[st].label}</span>`;
+const npill = t => `<span class="pill neutral">${t}</span>`; /* neutral: compared with the facility range, not their own usual */
+const q = (t, info) => `<p class="q${info?' info':''}">${t}</p>`;
+const sorted = () => Object.entries(R).sort((a,b)=> ORDER[a[1].st]-ORDER[b[1].st] || a[0].localeCompare(b[0]));
+const alarmCount = () => Object.values(R).filter(r=>r.st==="red" && !r.alarm.reviewed).length;
+const devLabel = r => r.dev + (r.was?` (replaced ${r.was})`:"") + (r.shared?` (shared with ${r.shared})`:"");
+
+/* ---------- Screen 1: Resident list ---------- */
+let filter = "all";
+function listView(){
+  const rows = sorted().filter(([,r]) => filter==="all" || r.st===filter);
+  const n = st => Object.values(R).filter(r=>r.st===st).length;
+  const btn = (f,l) => `<button type="button" data-f="${f}" aria-pressed="${filter===f}">${l}</button>`;
+  return `
+  <div class="stack">
+    <div class="panel">
+      <div class="listhead">
+        <h1 style="font-size:22px">Residents in the study</h1>
+        <div class="filters" role="group" aria-label="Show">
+          ${btn("all",`All (${Object.keys(R).length})`)}${btn("red",`Changed (${n("red")})`)}${btn("yellow",`Needs attention (${n("yellow")})`)}${btn("green",`Usual (${n("green")})`)}
+        </div>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Status</th><th>Resident</th><th>What's happening</th><th>Last check-in</th></tr></thead>
+        <tbody>
+        ${rows.map(([id,r])=>`
+          <tr class="row ${r.st}" data-go="#r/${id}/summary">
+            <td>${pill(r.st)}</td>
+            <td class="rid"><a href="#r/${id}/summary">${id}</a></td>
+            <td>${r.why}</td>
+            <td class="muted">${r.last}</td>
+          </tr>`).join("") || `<tr><td colspan="4" class="muted">No residents with this status.</td></tr>`}
+        </tbody>
+      </table></div>
+      <div class="legend">
+        ${Object.keys(STATUS).map(s=>`<span>${pill(s)} ${STATUS[s].meaning}</span>`).join("")}
+      </div>
+    </div>
+    ${q("Changed residents always sort to the top. No room numbers and no room sort: residents are shown by study ID only (UX-001; decided in the v0.2 review).", true)}
+    ${q("A status is a prompt to check on someone, not a diagnosis. Final clinical wording to be confirmed with the PI.", true)}
+  </div>`;
+}
+
+/* ---------- Screen 2: Resident chart ---------- */
+const TABS = [["summary","Summary"],["review","Review and notes"],["trends","Voice trends"],["baseline","Baseline"],["log","Check-in log"],["device","Device"]];
+function chartView(id, tab){
+  const r = R[id]; if(!r) return listView();
+  const used = r.c[0];
+  const banner = `
+    <a class="back" href="#list">← Resident list</a>
+    <section class="banner" aria-label="Resident">
+      <span class="who">${id}</span>
+      <dl>
+        <div><dt>Device</dt><dd>${devLabel(r)}</dd></div>
+        <div><dt>Last check-in</dt><dd>${r.last}</dd></div>
+        <div><dt>Usable check-ins, last 30 days</dt><dd>${used} of 30</dd></div>
+        <div><dt>Baseline</dt><dd>${r.base.n===r.base.of?"Complete":`${r.base.n} of ${r.base.of}`}</dd></div>
+      </dl>
+      ${pill(r.st,true)}
+    </section>`;
+  const nav = `<nav class="panel activities" aria-label="Resident chart">
+    ${TABS.map(([k,l])=>`<a href="#r/${id}/${k}" ${k===tab?'aria-current="page"':''}>${l}${k==="review"&&r.st==="red"&&!r.alarm.reviewed?'<span class="badge">1</span>':''}</a>`).join("")}
+  </nav>`;
+  const body = {summary, review, trends, baseline, log, device}[tab] || summary;
+  return `${banner}<div class="chart">${nav}<div class="stack">${body(id,r)}</div></div>`;
+}
+
+function summary(id,r){
+  let what, facts = "", action = "";
+  if(r.st==="red"){
+    what = `${id}'s voice has moved away from their own usual pattern, steadily and long enough to set off the alarm on ${r.alarm.since}. It is still changed.`;
+    facts = `<div class="facts"><div><b>${r.alarm.since}</b><span>Alarm started</span></div><div><b>${r.alarm.open} days</b><span>Open</span></div><div><b>Not reviewed</b><span>Review status</span></div></div>`;
+    action = `<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="#r/${id}/review">Review this alert</a><a class="btn secondary" href="#r/${id}/trends">See what changed</a></div>`;
+  } else if(r.st==="yellow"){
+    what = r.why + " EchoWell can't judge their voice well until more good check-ins come in.";
+    action = `<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn secondary" href="#r/${id}/log">See missed and set-aside check-ins</a><a class="btn secondary" href="#r/${id}/device">Check the device</a></div>`;
+  } else {
+    what = `${id}'s voice is within their own usual range. Nothing to do.`;
+  }
+  return `
+  <section class="panel pad statuscard ${r.st}">
+    <h2 style="margin-bottom:8px">Right now</h2>
+    <p class="lead">${what}</p>
+    ${facts}${action}
+  </section>
+  <section class="stack">
+    <h2>More detail</h2>
+    <div class="tiles">
+      <a class="tile" href="#r/${id}/trends"><span class="k">Voice trends</span><span class="v">${r.st==="red"?"Change score "+r.alarm.tally:(r.base.n<r.base.of?"Not scored yet":"No change")}</span><span class="go">Open</span></a>
+      <a class="tile" href="#r/${id}/baseline"><span class="k">Baseline</span><span class="v">${r.base.n} of ${r.base.of} check-ins</span><span class="go">Open</span></a>
+      <a class="tile" href="#r/${id}/log"><span class="k">Check-ins, last 30 days</span><span class="v">${r.c[0]} used, ${r.c[3]} missed</span><span class="go">Open</span></a>
+      <a class="tile" href="#r/${id}/device"><span class="k">Device</span><span class="v">${r.dev} online</span><span class="go">Open</span></a>
+    </div>
+  </section>
+  ${r.st==="red"?q("Show the 2 or 3 measurements leaning most (for example, quieter and more pauses) here, in plain words? Needs Shaba to confirm the pipeline can rank them."):""}`;
+}
+
+function review(id,r){
+  const alertForm = r.st==="red" ? `
+  <section class="panel pad stack">
+    <h2>Review alert: changed since ${r.alarm.since}</h2>
+    <fieldset><legend>Anything that could explain it?</legend>
+      ${["Cold, cough or sore throat","Dental problem or dentures out","New or changed medication","Poor sleep or unusual day","Room or device moved"].map(t=>`<label><input type="checkbox"> ${t}</label>`).join("")}
+    </fieldset>
+    <fieldset><legend>What did you find?</legend>
+      ${["Checked on resident, no concern","Explained by a known cause","Referred to nurse or provider","Looks like a data problem: send to study team"].map(t=>`<label><input type="radio" name="o"> ${t}</label>`).join("")}
+    </fieldset>
+    <label for="rn" class="small muted">Note</label>
+    <textarea id="rn" rows="3" placeholder="What you saw or did"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn">Save review</button><button type="button" class="btn secondary">Remind me in 24 hours</button></div>
+    ${q("Explanation list to be confirmed with the clinical team and the Edgewood interviews.")}
+    ${q("Does a saved review reset the change score or turn the alarm off? Who may review? How soon must an alarm be reviewed? Pipeline v0.1 keeps alarms on.")}
+  </section>` : "";
+  return `${alertForm}
+  <section class="panel pad stack">
+    <h2>Staff notes</h2>
+    <p class="muted">No notes yet. Add what you saw or did, for example "Resident has a cold; nurse notified."</p>
+    <textarea rows="3" aria-label="New note" placeholder="Add a note"></textarea>
+    <div><button type="button" class="btn secondary">Add note</button></div>
+  </section>`;
+}
+
+function tallySVG(r){
+  if(!r.tally) return `<div class="spark" style="width:100%;height:180px">[Change score chart: ${r.st==="red"?"crossed 5 on "+r.alarm.since+", now "+r.alarm.tally:"stays under 5"}]</div>`;
+  const W=720,H=220,L=40,B=30,T=10, max=30, bw=(W-L-10)/r.tally.length;
+  const y = v => H-B-(v/max)*(H-B-T);
+  let bars = r.tally.map((v,i)=>`<rect x="${L+i*bw+3}" y="${y(v)}" width="${bw-6}" height="${H-B-y(v)}" fill="${v>=5?'var(--red)':'var(--c-aside)'}"><title>Oct ${r.tallyStart+i}: ${v}</title></rect>`).join("");
+  let ticks = [0,10,20,30].map(v=>`<text x="${L-8}" y="${y(v)+4}" font-size="12" text-anchor="end">${v}</text>`).join("");
+  let xl = [0,4,r.tally.length-1].map(i=>`<text x="${L+i*bw+bw/2}" y="${H-10}" font-size="12" text-anchor="middle">Oct ${r.tallyStart+i}</text>`).join("");
+  return `<div class="tablewrap"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:520px" role="img" aria-label="Change score by day; alarm line at 5">
+    <line x1="${L}" x2="${W-10}" y1="${H-B}" y2="${H-B}" stroke="var(--rule)"/>${ticks}${bars}
+    <line x1="${L}" x2="${W-10}" y1="${y(5)}" y2="${y(5)}" stroke="var(--red)" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="${L+6}" y="${y(5)-8}" font-size="12" text-anchor="start" style="fill:var(--red)">Alarm line: 5</text>${xl}
+  </svg></div>`;
+}
+function trends(id,r){
+  return `
+  <section class="panel pad stack">
+    <h2>Change score</h2>
+    <p class="muted small">Goes up when check-ins keep leaning away from ${id}'s usual. The alarm turns on at 5. Missed or set-aside days leave it unchanged.</p>
+    ${tallySVG(r)}
+    ${r.tally?q("Bar heights are approximate, drawn from the test answer key.", true):""}
+  </section>
+  <section class="panel pad stack">
+    <h2>The 7 voice measurements behind the score</h2>
+    <p class="muted small">Each is compared with ${id}'s own baseline. The score rises when the voice is:</p>
+    <div class="measures">
+      ${MEASURES.map(([p,t])=>`<div class="measure"><span>${p} <span class="muted small">(${t})</span></span><span class="spark">trend</span></div>`).join("")}
+      <div class="measure" style="background:var(--surface-2)"><span>12 other measurements (pitch, jitter, MFCCs and others)</span><span class="muted small">Stored, not scored</span></div>
+    </div>
+    ${q("Measurement names are placeholders until Team 1 confirms the openSMILE output names. Morning check-ins are adjusted before comparing.", true)}
+  </section>`;
+}
+function baseline(id,r){
+  return `<section class="panel pad stack">
+    <h2>Baseline: ${id}'s usual</h2>
+    <p>${r.base.text}</p>
+    <div><div class="meter" aria-label="${r.base.n} of ${r.base.of} check-ins"><i style="width:${r.base.n/r.base.of*100}%"></i></div>
+    <p class="small muted" style="margin-top:6px">${r.base.n} of ${r.base.of} usable check-ins</p></div>
+    <p class="small muted">The baseline is built from the first 16 usable check-ins, then frozen so slow changes still show up. It restarts if the resident gets a new device.</p>
+  </section>`;
+}
+function log(id,r){
+  const [u,a,qq,m]=r.c;
+  return `<section class="panel pad stack">
+    <h2>Check-ins, last 30 days</h2>
+    <div class="counts">
+      <div><b>${u}</b>Used</div>
+      <div><b>${a}</b>Set aside (noise, poor quality or too short)</div>
+      <div><b>${qq}</b>Held back (possible other voice)</div>
+      <div><b>${m}</b>Missed</div>
+    </div>
+  </section>
+  <section class="panel pad stack">
+    <h2>Events</h2>
+    <ul class="events">${r.events.map(([d,t])=>`<li><span class="muted">${d}</span><span>${t}</span></li>`).join("")}</ul>
+    ${q("Duplicate records are removed quietly and not shown.", true)}
+  </section>`;
+}
+function device(id,r){
+  const hist = [];
+  if(r.shared) hist.push(["Oct 12","Silent all day. Affected "+[id,r.shared].sort().join(" and ")+"."]);
+  if(r.was) hist.push(["Oct 13",`Replaced ${r.was} with ${r.dev}. Baseline restarted.`]);
+  return `<section class="panel pad stack">
+    <h2>Device ${r.dev}</h2>
+    <div class="facts" style="margin-top:0">
+      <div><b style="color:var(--green)">● Online</b><span>Status</span></div>
+      <div><b>${r.last}</b><span>Last upload</span></div>
+      <div><b>fw-1.0.0</b><span>Firmware</span></div>
+      <div><b>${r.shared?"Shared with "+r.shared:"This resident only"}</b><span>Used by</span></div>
+    </div>
+    <h3 style="margin-top:8px">History</h3>
+    ${hist.length?`<ul class="events">${hist.map(([d,t])=>`<li><span class="muted">${d}</span><span>${t}</span></li>`).join("")}</ul>`:`<p class="muted">No problems in the last 30 days.</p>`}
+    ${q("A device that stops uploading is a device problem for the study team. It does not turn the resident yellow (decided in the v0.2 review).", true)}
+    ${q("Audio never leaves the device. Only voice measurements are uploaded.", true)}
+  </section>`;
+}
+
+/* ---------- Screen 3: New admissions ---------- */
+function admissionsView(){
+  return `<div class="stack">
+    ${q("Not in pipeline test v0.1: the test data has no admission group or facility range yet. Open question for Shaba and the PI.")}
+    <section class="panel">
+      <div class="listhead"><h1 style="font-size:22px">New admissions</h1></div>
+      <p class="pad muted" style="padding-bottom:0">New residents don't have their own baseline yet, so their first check-ins are compared with the facility's usual range.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Status</th><th>Resident</th><th>Admitted</th><th>Compared with facility range</th><th>Own baseline</th></tr></thead>
+        <tbody>
+          <tr><td>${npill("Out of range")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Outside facility range</td><td>[n] of 16</td></tr>
+          <tr><td>${npill("In range")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Within facility range</td><td>[n] of 16</td></tr>
+          <tr><td>${pill("grey")}</td><td class="rid">[Study ID]</td><td>[date]</td><td>Not enough check-ins yet</td><td>[n] of 16</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section class="panel pad stack">
+      <h2>[Study ID] compared with facility range</h2>
+      <div class="spark" style="width:100%;height:160px">[Chart: one row per measurement, the resident's value against the grey band of the facility's usual range]</div>
+      <p class="muted small">After 16 usable check-ins, the resident moves to the resident list and is compared with their own baseline instead.</p>
+    </section>
+  </div>`;
+}
+
+/* ---------- Screen 4: Study team ---------- */
+function daysSVG(){
+  const W=760,H=200,L=30,B=28,T=8,bw=(W-L-6)/30,y=v=>H-B-(v/10)*(H-B-T);
+  const cols=["var(--c-used)","var(--c-aside)","var(--c-quar)"];
+  const bars = DAYS.map(([d,u,a,qq,m],i)=>{
+    let acc=0, s="";
+    [u,a,qq].forEach((v,k)=>{ if(v){ s+=`<rect x="${L+i*bw+2}" y="${y(acc+v)}" width="${bw-4}" height="${y(acc)-y(acc+v)}" fill="${cols[k]}"/>`; acc+=v; }});
+    if(m) s+=`<rect x="${L+i*bw+2.5}" y="${y(acc+m)}" width="${bw-5}" height="${y(acc)-y(acc+m)}" fill="none" stroke="var(--muted)" stroke-dasharray="3 2"/>`;
+    return `<g><title>Oct ${d}: ${u} used, ${a} set aside, ${qq} held back, ${m} missed</title>${s}</g>`;
+  }).join("");
+  const xl=[[0,"Oct 1"],[11,"Oct 12: D02 silent"],[29,"Oct 30"]].map(([i,t])=>`<text x="${L+i*bw+bw/2}" y="${H-8}" font-size="12" text-anchor="${i===0?'start':i===29?'end':'middle'}">${t}</text>`).join("");
+  return `<div class="tablewrap"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:560px" role="img" aria-label="Check-ins per day, stacked by outcome">
+    ${[0,5,10].map(v=>`<text x="${L-6}" y="${y(v)+4}" font-size="12" text-anchor="end">${v}</text><line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/>`).join("")}${bars}${xl}</svg></div>`;
+}
+function hbar(label,val,max,note){
+  return `<div style="display:grid;grid-template-columns:170px minmax(0,1fr) 44px;gap:12px;align-items:center">
+    <span>${label}</span><div class="meter"><i style="width:${val/max*100}%"></i></div><b style="text-align:right">${val}</b></div>
+    ${note?`<p class="small muted" style="margin:-4px 0 4px 182px">${note}</p>`:""}`;
+}
+function studyView(){
+  const sw = s => `<span style="display:inline-block;width:12px;height:12px;background:${s};vertical-align:-1px;margin-right:6px"></span>`;
+  const usable = [["R08",43],["R03",73],["R02",80],["R05",93],["R01",100],["R04",100],["R06",100],["R07",100],["R09",100],["R10",100]];
+  return `<div class="stack">
+    <div class="listhead panel"><h1 style="font-size:22px">Study team: how the system is working</h1><span class="muted small">Counts only. No audio, no names.</span></div>
+    <div class="tiles">
+      <div class="tile"><span class="k">Check-ins received</span><span class="v">94%</span><span class="small muted">281 of 300 expected</span></div>
+      <div class="tile"><span class="k">Used for scoring</span><span class="v">89%</span><span class="small muted">267 of 300 expected</span></div>
+      <div class="tile"><span class="k">Baselines formed</span><span class="v">9 of 10</span><span class="small muted">R08 still forming; R07 restarted once</span></div>
+      <div class="tile"><span class="k">Alarms raised</span><span class="v">2</span><span class="small muted">R09, R10; neither reviewed yet</span></div>
+    </div>
+    <section class="panel pad stack">
+      <h2>Data problems to follow up</h2>
+      <ul class="events plain">
+        <li><span class="small" style="color:var(--yellow);font-weight:700">Staff can help</span><span><b>R08:</b> baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.</span></li>
+        <li><span class="small" style="color:var(--yellow);font-weight:700">Staff can help</span><span><b>R03:</b> 7 of 29 received check-ins set aside (noise, quality flag, too short).</span></li>
+        <li><span class="small muted" style="font-weight:700">Study team</span><span><b>R05:</b> 2 check-ins held back as possible other voice (Oct 8, Oct 22).</span></li>
+        <li><span class="small muted" style="font-weight:700">Study team</span><span><b>D02:</b> silent all day Oct 12. Affected R02 and R03.</span></li>
+      </ul>
+    </section>
+    <section class="panel pad stack">
+      <h2>Check-ins per day</h2>
+      <div class="small muted">${sw("var(--c-used)")}Used ${sw("var(--c-aside)")}Set aside ${sw("var(--c-quar)")}Held back (other voice) <span style="display:inline-block;width:12px;height:12px;border:1px dashed var(--muted);vertical-align:-1px;margin:0 6px 0 4px"></span>Missed</div>
+      ${daysSVG()}
+    </section>
+    <div class="cols2">
+      <section class="panel pad stack">
+        <h2>Where check-ins are lost</h2>
+        ${hbar("Expected",300,300,"10 residents × 30 days")}
+        ${hbar("Received",281,300,"19 missed; 2 duplicate copies removed")}
+        ${hbar("Passed quality checks",269,300,"12 set aside: quality flag 5, noise 5, too short 3 (1 had two reasons)")}
+        ${hbar("Same speaker, used",267,300,"2 held back as possible other voice")}
+      </section>
+      <section class="panel pad stack">
+        <h2>Usable check-ins by resident</h2>
+        <p class="small muted">Share of 30 days, lowest first</p>
+        ${usable.map(([id,p])=>`<div style="display:grid;grid-template-columns:44px minmax(0,1fr) 48px;gap:12px;align-items:center"><a href="#r/${id}/log" class="rid">${id}</a><div class="meter"><i style="width:${p}%"></i></div><span style="text-align:right">${p}%</span></div>`).join("")}
+      </section>
+    </div>
+    <section class="panel pad stack">
+      <h2>Alarm timing check</h2>
+      <p class="small muted">Test data only, where the true change date is known.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Resident</th><th>Planted change</th><th>Change began</th><th>Alarm rang</th><th>Delay</th></tr></thead>
+        <tbody>
+          <tr><td class="rid">R09</td><td>Sudden step</td><td>Oct 21</td><td>Oct 21</td><td>0 days</td></tr>
+          <tr><td class="rid">R10</td><td>Slow drift</td><td>Oct 17</td><td>Oct 24</td><td>7 days</td></tr>
+          <tr><td class="rid">Other 8</td><td>None</td><td>None</td><td>No alarm</td><td>Correct</td></tr>
+        </tbody>
+      </table></div>
+      ${q("With real residents the true change date is unknown, so this panel becomes: alarms raised, alarms reviewed, and review outcomes.", true)}
+    </section>
+    <section class="panel pad stack">
+      <h2>Devices</h2>
+      <ul class="events plain">
+        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D01, D04 to D06, D08 to D10:</b> all uploaded Oct 30. Firmware fw-1.0.0.</span></li>
+        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D02</b> (shared by R02 and R03): last upload Oct 30, 2:55 PM CT. Silent all day Oct 12.</span></li>
+        <li><span class="small" style="color:var(--green);font-weight:700">● Online</span><span><b>D07B</b> (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT.</span></li>
+      </ul>
+    </section>
+  </div>`;
+}
+
+/* ---------- router ---------- */
+function render(){
+  const h = location.hash.replace(/^#/,"") || "list";
+  const parts = h.split("/");
+  let html, nav="list";
+  if(parts[0]==="r") html = chartView(parts[1], parts[2]||"summary");
+  else if(parts[0]==="admissions"){ html = admissionsView(); nav="admissions"; }
+  else if(parts[0]==="study"){ html = studyView(); nav="study"; }
+  else html = listView();
+  $("#app").innerHTML = html;
+  document.querySelectorAll("[data-nav]").forEach(a=>{ if(a.dataset.nav!==nav) a.removeAttribute("aria-current"); else a.setAttribute("aria-current","page"); });
+  const listLink = document.querySelector('[data-nav="list"]');
+  listLink.innerHTML = `Resident list${alarmCount()?` <span class="badge">${alarmCount()}</span>`:""}`;
+}
+document.addEventListener("click", e=>{
+  const f = e.target.closest("[data-f]");
+  if(f){ filter=f.dataset.f; render(); return; }
+  const row = e.target.closest("tr[data-go]");
+  if(row && !e.target.closest("a")) location.hash = row.dataset.go;
+});
+$("#notesToggle").addEventListener("change", e=> document.body.classList.toggle("hide-notes", !e.target.checked));
+window.addEventListener("hashchange", ()=>{ render(); window.scrollTo(0,0); });
+render();
+</script>
+</body>
+</html>

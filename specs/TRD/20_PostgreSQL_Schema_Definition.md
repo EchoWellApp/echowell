@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.8 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -40,7 +40,8 @@ Out of scope:
 | SRC-03 | Pipeline test workbook v0.1 (Parameters, Data_dictionary, Annotated_sessions, Exp_baselines, Exp_scores) |
 | SRC-04 | Pipeline test generator v0.1 (feature list, residents and sex, device moves) |
 | SRC-05 | Pipeline test input CSV v0.1 (column order of `raw_sessions`) |
-| SRC-18 / SRC-19 | Wireframes: Alert review (`/alerts`), Analytics (`/analytics`) — alert reviews, snooze, data alerts, alarm timing check |
+| SRC-21 | Clinical dashboard wireframe v0.2 — alarm reviews and snooze (Resident chart "Review and notes"), data problems and alarm timing check (Study team page) |
+| SRC-18 / SRC-19 | Wireframes v0.1 (Alert review, Analytics): superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | TRD 06 | Database Design (DB-xxx) |
 | TRD 07 / 08 / 09 | Analytics Engine, Baseline and Scoring, CUSUM and Alerting (writers of derived tables) |
 | TRD 10 | Data Ingestion and Validation (writer of `raw_sessions`, `ingest_batches`, `ingest_rejections`) |
@@ -1040,7 +1041,7 @@ INSERT INTO config_parameters (profile, key, value, description) VALUES
   ('production', 'baseline_n', '30'::jsonb, 'Usable sessions that form and freeze a baseline (owner decision D-OWNER-2)'),
   ('test_v0_1',  'baseline_n', '16'::jsonb, 'Build/test only: usable sessions that form and freeze a baseline in the 30-day test set (SRC-03)');
 
--- Alert review and data-alert parameters (contract sections 19/20; provisional, OQ-24, OQ-25)
+-- Alarm review and data-alert parameters (contract sections 19/20; provisional, OQ-24, OQ-25)
 INSERT INTO config_parameters (profile, key, value, description)
 SELECT p.profile, v.key, v.value, v.description
 FROM (VALUES ('production'), ('test_v0_1')) AS p(profile)
@@ -1070,7 +1071,7 @@ CROSS JOIN (VALUES
 
 Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The test facility is named "Edgewood"
 (`meta.facility_name` is read from `facilities.name`; `DATA_SOURCE_LABEL` marks the data as test data). The answer-key facts for the
-Analytics "Alarm timing check" (SRC-19) are NOT part of this seed: they are loaded from the CSV fixture
+Study team "Alarm timing check" (SRC-21) are NOT part of this seed: they are loaded from the CSV fixture
 `tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (TRD 14 DS-10) by running
 `python database/seeds/load_evaluation_ground_truth.py <csv_path>` directly (refuses when APP_ENV=production or PIPELINE_PROFILE is not
 `test_v0_1`); the seed CLI does not call it and `backend/cli.py` never references `evaluation_ground_truth`. Sex values are from SRC-04
@@ -1246,3 +1247,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.6 | 19 Oct 2026 | Phase 1 round-5 fixes (R5-01, R5-06, R5-07, R5-08) | — |
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-06) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (PGS-027 non-local (D-88)) | — |
+| 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): references only (SRC-18/19 superseded, alarm timing check on the Study team page); no table, enum, index or constraint change (the D-114 fields `needs_attention`, `attention_reasons`, `alarm_reviewed`, `checkins_started` and `uploaded_on_as_of_date` are derived on read) | — |

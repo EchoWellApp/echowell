@@ -26,7 +26,7 @@ Audit the finished build against the TRDs and decide demo readiness: produce `do
 - TRD 13 TST-013 (requirement trace markers and `tests/trace_report.py`), TST-170 (MVP-01..MVP-15), AC-TST-01..AC-TST-13.
 - TRD 03 NFR-110, NFR-111, NFR-112, NFR-113, NFR-114, NFR-115.
 - TRD 02 (every FR), TRD 00 BR-01..BR-18, SC-01..SC-08.
-- TRD 11 §4.16 wireframe → requirement traceability (UX IDs), §4.17 Alert review, §4.18 Analytics, SRC-09, SRC-10, SRC-11, SRC-18, SRC-19.
+- TRD 11 §4.16 wireframe → requirement traceability (UX IDs), §4.17 alarm review (Resident chart), §4.18 Study team, SRC-21 (wireframe v0.2, which superseded the v0.1 wireframes, TRD 24 D-108).
 - TRD 24 (OQ register and interim decisions; D-21).
 - Prompt files: `specs/prompts/Implement_Feature_Batches.md` Phase 15, `specs/prompts/Implementation_Audit_Checklist.md` Sprint 6, `specs/prompts/Generate_Documentation_Audit_Prompt.md`.
 
@@ -36,7 +36,7 @@ Audit the finished build against the TRDs and decide demo readiness: produce `do
 - `docs/reports/TRD_Implementation_Audit.md`: one row per requirement ID of TRDs 00–25 (BR, VIS, ARC, FR, NFR, FE, API, DB, ANL, BSC, CUS, ING, UX, SEC, TST, TDV, DEP, CIC, LOG, GIT, OAS, PGS, ENV, TPS, DME, AGT) with status PASS/FAIL/NOT APPLICABLE (with reason) and evidence (test ID and file, inspection file and line, report).
 - `docs/reports/FINAL_IMPLEMENTATION_AUDIT.md` with the sections required by the Phase 15 prompt: Requirements Traceability Matrix, Pass/Fail Status, Missing Functionality, Risks, Technical Debt, Overall MVP Readiness Assessment, final line "READY FOR DEMO" or "NOT READY FOR DEMO" with justification.
 - `docs/reports/DOCUMENTATION_COMPLETENESS_AUDIT.md`: the ten checks of the documentation-audit prompt (BR → TRD, TRD → feature, feature → tasks, tables, endpoints, algorithms, AC → tests, deployment steps, conflicts, placeholders) as a pass/fail matrix with issues and recommendations.
-- `docs/reports/UI_REQUIREMENTS_TRACEABILITY_MATRIX.md`: for each wireframe requirement (SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 elements and their UX IDs), the FEAT, component (TRD 04 §4.8 names), endpoint (TRD 19) and test coverage (TST/E2E/FE IDs).
+- `docs/reports/UI_REQUIREMENTS_TRACEABILITY_MATRIX.md`: for each wireframe requirement (SRC-21 elements and their UX IDs, plus the elements kept by TRD 24 D-111), the FEAT, component (TRD 04 §4.8 names), endpoint (TRD 19) and test coverage (TST/E2E/FE IDs).
 - Recording of the grep commands of TRD 25 §4.3 and AC-AGT-02/AC-AGT-03 with their output.
 - List of open OQs with interim decisions (TRD 24) and any new OQ/D raised during the build.
 - Update of `specs/backlog/BACKLOG.md` §10 completion tracking from the audit results.
@@ -133,7 +133,7 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 | FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 Outputs |
 | FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
 | FEAT-091-AC-07 | `git diff --stat` of the commits of the Phase 11 checkpoint PR of Block 3 shows changes only under `docs/reports/` and `specs/backlog/`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 11 Pitfalls |
-| FEAT-091-AC-08 | `UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` has a row for every wireframe element listed in TRD 11 §4.16 (and the SRC-18 and SRC-19 elements of §4.17 and §4.18) with feature, component, endpoint and test columns filled. Verified by: Inspection (the inspection method of NFR-111, applied to the condition stated in the criterion). | Generate_Documentation_Audit_Prompt.md; NFR-111 |
+| FEAT-091-AC-08 | `UI_REQUIREMENTS_TRACEABILITY_MATRIX.md` has a row for every wireframe element listed in TRD 11 §4.16 (and the elements of §4.17 and §4.18 and those kept by TRD 24 D-111) with feature, component, endpoint and test columns filled. Verified by: Inspection (the inspection method of NFR-111, applied to the condition stated in the criterion). | Generate_Documentation_Audit_Prompt.md; NFR-111 |
 
 ## Definition of Done
 

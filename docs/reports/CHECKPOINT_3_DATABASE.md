@@ -109,7 +109,7 @@ None in this PR. GitHub PR #5 (wireframes v0.2, still open) reserves D-108..D-11
 | N-6 | Bug found by the tests: SQLAlchemy stored Python `None` in `processed_sessions.adjusted_features` as JSON `null`, which breaks the duplicate-row CHECK | column declared `JSONB(none_as_null=True)`; `alembic check` unaffected |
 | N-7 | Some CLI refusals must happen before settings are validated (production seed, reset profile) | `environment_value()` added to `backend/core/config.py` for those pre-settings checks (exit 2, TRD 15 §4.8) |
 | N-8 | FEAT-008-AC-03 names `test_roles.py`; FEAT-010-AC-06 names a unit test but needs a database | the AC-03 test lives in `test_roles.py`; AC-06 is split: unit (repository refuses database-assigned columns) and integration (increasing `arrival_seq`) |
-| N-9 | PR #5's D-114 adds fields to the FEAT-014 read models (for example `checkins_started`) | not in this PR, because PR #5 is not merged; they can be added in checkpoint 4 with the endpoints that use them (Q-5) |
+| N-9 | PR #5's D-114 adds fields to the FEAT-014 read models (for example `checkins_started`) and FEAT-014-AC-09 | built in checkpoint 4 with the endpoints that use them, as decided in the PR #5 review (W-5, answering Q-5). PR #5 was merged on 27 Oct 2026 and `main` is merged into this branch |
 | N-10 | `mypy` in CI checks `analytics` and `backend` only; the test folder has type warnings from checkpoint 2 as well | unchanged scope |
 
 ## 8. Questions for the reviewer

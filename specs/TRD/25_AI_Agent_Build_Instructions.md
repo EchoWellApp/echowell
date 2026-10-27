@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.14 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -28,8 +28,9 @@ Out of scope:
 | SRC-04 | specs/algorithm/generate_pipeline_test_v0_1.py |
 | SRC-05 | specs/data-samples/EchoWell_pipeline_test_input_v0_1.csv |
 | SRC-07 | JMIR Preprint 113062, linked from specs/business-requirements/REFERENCES.md (not stored in the repository) |
-| SRC-09 / 10 / 11 | specs/UI-wireframe/Main.dc.html, Resident.dc.html, Admission.dc.html |
-| SRC-18 / 19 | specs/UI-wireframe/Alerts.dc.html (Alert review), Analytics.dc.html (Analytics) |
+| SRC-21 | specs/UI-wireframe/echowell-wireframes-v0.2.html (clinical dashboard wireframe v0.2: Resident list, Resident chart, New admissions, Study team), notes in specs/UI-wireframe/WIREFRAMES.md |
+| SRC-09 / 10 / 11 | Wireframes v0.1 Main, Resident, Admission: superseded by SRC-21 (TRD 24 D-108); removed from the repository |
+| SRC-18 / 19 | Wireframes v0.1 Alert review, Analytics: superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | SRC-12 | specs/prompts/TRD_Generation_Prompt.md |
 | SRC-17 | specs/prompts/Implement_Feature_Batches.md (Block 3 checkpoints and Block 4), TRD_Implementation_Audit_Checklist.md (TRD audit, Block 1), Implementation_Audit_Checklist.md (build and implementation audit, Block 3; its steps duplicate Implement_Feature_Batches.md phases and are not run separately), Generate_Backlog.md and Generate_Documentation_Audit_Prompt.md (Block 2), Test_Case_Generation_Prompt.md (Block 5) |
 | SRC-20 | Team 2 Prompt Instructions (plan Block 1–Block 5, formerly named "PR #1"–"PR #5", D-101), shared Teams folder, provided 19 Oct 2026; not stored in the repository (TRD 24 §3) |
@@ -92,7 +93,7 @@ Rules: IDs are never renumbered or reused. Code, tests and PR descriptions cite 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | AGT-001 | Agents shall treat TRDs 00–24 as the source of truth; where a prompt in specs/prompts/ conflicts with a TRD, the TRD wins and the agent shall note the conflict in its report. | Must | SRC-12 | Inspection |
-| AGT-002 | Agents shall not implement behaviour that contradicts any TRD requirement, source document SRC-01..SRC-19, or any decision D-xx of the TRD 24 §4.6 decision log. | Must | SRC-12 rule 2 | Inspection (audit phase) |
+| AGT-002 | Agents shall not implement behaviour that contradicts any TRD requirement, source document SRC-01..SRC-21 (except the wireframes superseded by SRC-21, TRD 24 D-108), or any decision D-xx of the TRD 24 §4.6 decision log. | Must | SRC-12 rule 2 | Inspection (audit phase) |
 | AGT-003 | Agents shall not invent architecture: the stack is Next.js (App Router, TypeScript) on Netlify, FastAPI on Railway, PostgreSQL 16 on Neon or Railway as the interim stack, AWS as target (D-27), GitHub Actions, single monorepo. | Must | SRC-01; BR-17 | Inspection |
 | AGT-004 | Agents shall not add any large language model feature, dependency, API call, summary or chat interface. | Must | BR-18 | Inspection (`grep -rniE "openai\|anthropic\|langchain\|llama\|gpt" frontend backend analytics` returns nothing) |
 | AGT-005 | Agents shall not add any machine-learning model to the pipeline critical path; the pipeline is deterministic robust statistics plus CUSUM. | Must | BR-18; D-14 | Inspection |
@@ -124,13 +125,13 @@ Always read first: TRD 25 (this), TRD 00, TRD 24. Then:
 | Task | Read in this order |
 |---|---|
 | TRD validation | 00, 02, 03, all 01–23 in numeric order, 24 |
-| Design documents | 01, 02, 06, 20, 23, 05, 19, 07, 08, 09, 10, 04, 11, 13, 15, 16, 21, 22, then SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 |
+| Design documents | 01, 02, 06, 20, 23, 05, 19, 07, 08, 09, 10, 04, 11, 13, 15, 16, 21, 22, then SRC-21 |
 | Skeleton | 01, 18, 21, 16, 15, 13, 04, 05, 07 |
 | Database layer | 06, 20, 23, 12 (grants, immutability), 21 |
-| Backend API | 05, 19, 10, 12, 17, 23, 09 (alerts, reviews, data alerts), then SRC-18, SRC-19 (response shapes) |
+| Backend API | 05, 19, 10, 12, 17, 23, 09 (alerts, reviews, data alerts), then SRC-21 (response shapes) |
 | Analytics engine | 07, 08, 09, 10, then SRC-04 and SRC-03 Parameters sheet |
 | R01–R10 validation | 13, 14, 08, 09, then SRC-03 Exp_ sheets |
-| Frontend | 04, 11, 19, 03 (accessibility), then SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 |
+| Frontend | 04, 11, 19, 03 (accessibility), then SRC-21 |
 | Deployment configuration | 15, 16, 21, 22, 12, 17, SRC-01 |
 | Deploy | 15, 22, 21, 17, 13 |
 | Audits | 13, 02, all others, 24 |
@@ -192,7 +193,7 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 | Definition of done | Every endpoint in TRD 19 maps to a backend service and router file; every table in TRD 20 maps to an API or analytics module; every page in TRD 04 maps to endpoints; Mermaid diagrams for ERD, request flow, pipeline stages and page hierarchy; each document cross-references TRD IDs; no placeholders |
 | Required tests | None |
 | Commands | `grep -rnE "T[B]D\|T[O]DO" docs/design` (must return nothing) |
-| Pitfalls | Pages are exactly `/residents`, `/residents/[residentCode]`, `/admissions`, `/alerts`, `/analytics`, `/login`, `/admin` (D-23). Do not add an EWMA chart (OQ-18). |
+| Pitfalls | Pages are exactly `/residents`, `/residents/[residentCode]` with its sections `/review`, `/trends`, `/baseline`, `/log`, `/device`, `/admissions`, `/study`, `/login`, `/admin` (TRD 24 D-110, superseding D-23); there is no Alert review page and no Analytics page. Do not add an EWMA chart (OQ-18). |
 
 #### Phase 3 — Project skeleton (Block 3 checkpoint 2, its own PR: Implement_Feature_Batches.md Phase 8; the duplicate Implementation_Audit_Checklist.md Phase 3 is not run separately)
 
@@ -231,7 +232,7 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 
 | Item | Content |
 |---|---|
-| Inputs | TRD 07, 08, 09, 10, 06 (persistence, locks, transactions), 20, 23, 24 (decisions D-56, D-57); SRC-04; SRC-03 Parameters sheet; SRC-18 (data alerts); SRC-19 (analytics aggregates) |
+| Inputs | TRD 07, 08, 09, 10, 06 (persistence, locks, transactions), 20, 23, 24 (decisions D-56, D-57); SRC-04; SRC-03 Parameters sheet; SRC-21 (data problems and Study team aggregates) |
 | Outputs | Filled `analytics/` modules (duplicate_detection, quality_screening, epoch_detection, speaker_screen, morning_offset, baseline_builder, robust_stats, zscore_calculator, composite_score, cusum_engine, alert_generator, day_ledger, data_alerts, aggregates, pipeline, config; TRD 07 §4.2); backend services that persist pipeline output, `data_alerts` (D-36) and `pipeline_runs` with natural-key upserts (D-45); nightly job `backend/jobs/nightly_run.py` (`python -m backend.jobs.nightly_run`, runs only when facility-local time is 02:xx and that night has not run; no in-process scheduler, D-47); the Phase 5 read-outs completed: the aggregate blocks of `GET /api/v1/analytics` (`analytics.aggregates.build_analytics_summary`, D-79) and `leaning_most` of `GET /api/v1/alerts` (D-92); the SRC-05 ingest and pipeline-run step of `seed test_v0_1` (D-93); `docs/reports/ANALYTICS_IMPLEMENTATION_REPORT.md` |
 | Definition of done | Stage order matches TRD 07; each stage is a pure function with unit tests; full rebuild from `raw_sessions` reproduces identical derived tables; profiles `production` and `test_v0_1` load from `config_parameters`; each run stores its config snapshot and git SHA; `analytics/` line coverage ≥ 95% (D-39); pipeline on the test input ≤ 5 s (D-40) |
 | Required tests | Unit tests per stage including every pitfall in 4.8; determinism test (two runs, identical output); rebuild idempotency (no duplicate alerts on re-run); late-arrival test (frozen baseline unchanged, `late_arrival` warning); data-alert rules produce exactly R08 baseline stuck, R05 other speaker, R03 set aside, D02 silent Oct 12; reviews and snoozes survive a rebuild |
@@ -253,12 +254,12 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 
 | Item | Content |
 |---|---|
-| Inputs | TRD 04, 11, 19, 03, 05, 12 (CSP, §4.9), 21 (frontend env vars); SRC-09, SRC-10, SRC-11, SRC-18 (Alert review), SRC-19 (Analytics) |
-| Outputs | Pages `/login`, `/residents` (with Devices panel `#devices`), `/residents/[residentCode]`, `/admissions` (experimental banner), `/alerts` (Alert review), `/analytics` (Analytics, researcher and admin), `/admin`; `frontend/lib/wording.ts` (D-18); components, `frontend/services/api.ts` client; loading, error and empty states; `docs/reports/FRONTEND_IMPLEMENTATION_REPORT.md` |
-| Definition of done | With test data as of Oct 30 the overview tiles read 2 / 7 / 1 / 19; R09 detail shows the alarm line labelled "alarm line 5.0", grey baseline bars and accent post-freeze bars; 7 measurement cards plus the "12 other measurements" card; Alert review shows R09 (since Oct 21, open 9 days, tally 26.8) and R10 (since Oct 24, open 6 days, tally 13.4) and the four data alerts; Analytics shows 281 of 300 received (94%), 267 of 300 used (89%), baselines 9 of 10, alarms 2, and the alarm timing table (R09 0 days, R10 7 days); CUSUM bars follow D-30; chrome follows D-31; OQ-05 note and OQ-12 marker present; frontend line coverage ≥ 80% (D-39); WCAG 2.1 AA (status never by colour alone, chart has a text table); no mock values in production builds |
-| Required tests | Vitest + React Testing Library component and page tests (sort orders, badges, 30-day counts, empty states); Playwright E2E: login → overview → R09 detail → add note → "Mark as reviewed" opens the review form → save review → Alerts badge shows "Reviewed" and the tally is unchanged (tagged `@mutating`, the D-73 group E2E-18 → E2E-09/FE-187 → FE-193 snooze step, run after all read-only scenarios on a freshly re-seeded database, TRD 13 §4.10, TRD 24 D-73); researcher opens `/analytics`; clinician is refused `/analytics` |
+| Inputs | TRD 04, 11, 19, 03, 05, 12 (CSP, §4.9), 21 (frontend env vars); SRC-21 (wireframe v0.2) |
+| Outputs | Pages `/login`, `/residents` (Resident list with filters), `/residents/[residentCode]` (Resident chart: Summary and the sections `/review`, `/trends`, `/baseline`, `/log`, `/device`), `/admissions` (experimental note), `/study` (Study team, researcher and admin, with `#devices` and the data problems), `/admin`; `frontend/lib/wording.ts` (D-18); components, `frontend/services/api.ts` client; loading, error and empty states; `docs/reports/FRONTEND_IMPLEMENTATION_REPORT.md` |
+| Definition of done | With test data as of Oct 30 the Resident list shows "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" and the rows R09, R10, R03, R08, R01, R02, R04, R05, R06, R07 (D-109); R09's chart Summary shows "Oct 21" / "9 days" / "Not reviewed" and "Change score 26.8" (R10: Oct 24, 6 days, 13.4), its Voice trends section the alarm line labelled "Alarm line: 5", the baseline slot, grey bars before and red bars from the alarm, 7 measurement cards plus the "12 other measurements" card; the Study team page lists the four data problems and shows 281 of 300 received (94%), 267 of 300 used (89%), baselines 9 of 10, alarms 2, and the alarm timing table (R09 0 days, R10 7 days); change-score bars follow D-30 as amended by D-112; app bar and data bar follow D-110 (D-31 superseded); tokens follow D-112; OQ-05 note and OQ-12 marker present; frontend line coverage ≥ 80% (D-39); WCAG 2.1 AA (status never by colour alone, chart has a text table, light and dark schemes); no mock values in production builds |
+| Required tests | Vitest + React Testing Library component and page tests (display statuses, filters, "What's happening" texts, 30-day counts, empty states); Playwright E2E: login → Resident list → R09 chart → "Review and notes" → add note → save review → review status "Reviewed", nav badge "1" and the change score unchanged (tagged `@mutating`, the D-73 group E2E-18 → FE-193 snooze step → E2E-09/FE-187 on R10 (D-118), run after all read-only scenarios on a freshly re-seeded database, TRD 13 §4.10, TRD 24 D-73); researcher opens `/study`; clinician is refused `/study` |
 | Commands | `cd frontend && npm run lint && npm run build && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium` (the `@isolated` scenarios run in CI via `npm run test:e2e:isolated`, TRD 16 `e2e.yml`, TRD 24 D-73) |
-| Pitfalls | Natural sort of resident codes; never display duplicates; dates shown in facility local time; footer "No audio is stored or played here — only extracted voice measurements." |
+| Pitfalls | The list order comes from the API (D-109), the UI does not re-sort; never display duplicates; dates shown in facility local time; the data bar "No audio is stored or played anywhere in EchoWell." on every page (TRD 11 UX-400); UI words differ from internal codes ("Change score", "held back", "Comparing with baseline started"; D-113); the wireframe's notes toggle and bracketed placeholders are not product content (D-108). |
 
 #### Phase 9 — Deployment configuration (Block 3 checkpoint 8, its own PR: Implement_Feature_Batches.md Phase 14A)
 
@@ -325,16 +326,16 @@ Python 3.12, FastAPI 0.115.x, SQLAlchemy 2.0.x, Alembic 1.13.x, Pydantic 2.x, ps
 | AGT-050 | Adjusted vs raw values | Baselines and scores use morning-adjusted values; the speaker screen uses raw values; offsets come from config. | R06 baseline values; Exp_morning_offset |
 | AGT-051 | Frozen baseline | After baseline_n usable sessions the baseline is frozen; drift and late arrivals never change it. | R10 "baseline unchanged by drift"; late-arrival unit test |
 | AGT-052 | Natural sort of resident codes | Sort `R2` before `R10` (numeric part as integer). | Frontend sort test; `/api/v1/residents?sort=resident_id` test |
-| AGT-053 | Never display duplicates | Duplicates are excluded from 30-day counts, check-in log and charts; they are visible only in admin ingest results. | Overview tiles 2 / 7 / 1 / 19; R04 row counts |
+| AGT-053 | Never display duplicates | Duplicates are excluded from 30-day counts, check-in log and charts; they are visible only in admin ingest results. | Resident list summary 2 / 2 / 0 / 6 (TRD 24 D-114); R04 chart counts 30 / 0 / 0 / 0 |
 | AGT-054 | Internal rounding | Compute in float64 and never round intermediate values; round only for display and in the speaker-screen reason string (F0 z to 2 decimals). | Exp_scores at 1e-6 |
 | AGT-055 | Composite signs | Signed z = sign × z with signs loudness −1, phrase duration +1, speech rate −1, articulation rate −1, pauses +1, pause fraction +1, voiced fraction −1. | Exp_scores composite_raw |
 | AGT-056 | Rebuild idempotency | Re-running the pipeline does not create duplicate alerts, epochs or ledger rows; natural-key upserts keep `alert_reviews`, `staff_notes` and snoozes (D-45). | Run pipeline twice; row counts equal; reviews still linked |
-| AGT-057 | Answer key leaking into the pipeline | The workbook and `evaluation_ground_truth` are never read by any `analytics/` stage or pipeline service; `evaluation_ground_truth` is loaded only in the `test_v0_1` profile and joined only by the Analytics "Alarm timing check" after the run (D-38). | `grep -rn "evaluation_ground_truth" analytics` returns nothing; pipeline run with the table emptied gives identical output |
+| AGT-057 | Answer key leaking into the pipeline | The workbook and `evaluation_ground_truth` are never read by any `analytics/` stage or pipeline service; `evaluation_ground_truth` is loaded only in the `test_v0_1` profile and joined only by the Study team "Alarm timing check" after the run (D-38). | `grep -rn "evaluation_ground_truth" analytics` returns nothing; pipeline run with the table emptied gives identical output |
 | AGT-058 | Reviews resetting CUSUM | In v0.1 a saved review, the `data_problem` outcome, a staff note or a snooze never resets `cusum_tally`, never changes `alarm_state` and never closes the alert; only the pipeline closes it, when a new epoch starts ("epoch ended") or a rebuild supersedes it ("superseded by rebuild"); there is no manual closure in v0.1 (D-03, D-35, D-37; OQ-05). | Save review on R09, re-run pipeline: Exp_scores unchanged, alarm still on |
 | AGT-059 | In-process scheduler for the nightly run | No APScheduler or `NIGHTLY_SCHEDULER_ENABLED`; the nightly run is the separate cron service command `python -m backend.jobs.nightly_run`, triggered at 07:00 and 08:00 UTC and proceeding only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) once per night (D-47). | Unit test with a frozen clock on both sides of the 1 Nov 2026 DST change: exactly one run per night |
 | AGT-060 | Wrong database role | The app connects with `DATABASE_URL` (`echowell_app`); migrations use `DATABASE_MIGRATION_URL` (`echowell_migrator`); researcher CSV exports use the API (`GET /api/v1/scores` and `GET /api/v1/analytics/baselines` with `Accept: text/csv`, app role, TRD 05 API-129) and offline researcher SQL uses `echowell_readonly`; only `analytics_summary.py` opens `DATABASE_READONLY_URL` (R27); the app role cannot UPDATE/DELETE `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes` or SELECT `evaluation_ground_truth` (D-49). | Grant tests in `tests/integration/` |
 | AGT-061 | Stale OpenAPI contract | Regenerate with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` (the command prints to stdout, D-89) and regenerate `frontend/lib/api-types.ts` after any API change; never hand-edit either file (D-51). | CI schema diff |
-| AGT-062 | Role names | User roles are exactly `admin`, `clinician`, `researcher`; API-key scopes are `ingest:write` and `pipeline:run`; reviews: clinician and admin; Analytics: researcher and admin. | Role-check integration tests |
+| AGT-062 | Role names | User roles are exactly `admin`, `clinician`, `researcher`; API-key scopes are `ingest:write` and `pipeline:run`; reviews: clinician and admin; Study team page (`/study`, `GET /api/v1/analytics`): researcher and admin. | Role-check integration tests |
 
 ## 5. Assumptions
 
@@ -394,3 +395,5 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.12 | 20 Oct 2026 | Documentation audit fixes (DA-09: AC-AGT-01 allows Phase 12 before Phase 2 and its re-run after Phase 11; DA-11: Phase 5 router list adds `config.py`) | — |
 | 0.13 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.14 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5; each Block 3 checkpoint is its own PR, merged before the next prompt (D-101): §1 scope, SRC-17, SRC-20, AGT-012, AGT-013, AGT-030, AGT-033, §4.5 diagram and workflow, phase headings, Phase 11 and Phase 12 definitions of done, §6, AC-AGT-01, AC-AGT-04 | — |
+| 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §3 SRC-21 added and SRC-09/10/11/18/19 marked superseded; AGT-002; §4.4 reading order; Phase 2 pitfalls (pages per D-110); Phase 6 inputs; Phase 8 frontend inputs, outputs, definition of done, required tests and pitfalls; AGT-053, AGT-057, AGT-062 | — |
+| 0.16 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): Phase 13 required tests: `@mutating` order follows D-118 | — |

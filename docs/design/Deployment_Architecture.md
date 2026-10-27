@@ -1,6 +1,6 @@
 # EchoWell Deployment Architecture
 
-Document: docs/design/Deployment_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Deployment_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1); 26 October 2026 (wireframe v0.2, SRC-21; TRD 24 D-108 to D-114: smoke and local checks use the Resident list filter counts)
 
 ## 1. Purpose and sources
 
@@ -113,7 +113,7 @@ sequenceDiagram
   GH->>STG: Netlify builds staging, Railway waits for CI, runs alembic upgrade head, starts uvicorn
   GH->>DS: push to main
   DS->>STG: wait for health version = merged SHA, re-seed if migrations or analytics changed, staging smoke tests
-  Lead->>STG: review staging dashboard (tiles 2 / 7 / 1 / 19, R09 alarm)
+  Lead->>STG: review staging dashboard (Resident list 10 / 2 / 2 / 6, R09 Changed)
   Dev->>DP: workflow_dispatch (sha, version)
   DP->>Lead: GitHub environment production waits for a required reviewer
   Lead->>DP: approve
@@ -155,7 +155,7 @@ Railway Cron and FastAPI `BackgroundTasks` are the only schedulers and workers; 
 | `frontend` | Node dev server | 3000 | `next dev` | DEP-010 |
 | `frontend-prod` (profile `demo`) | `frontend/Dockerfile` | 3001 | E2E stack and demo fallback | DEP-017, CIC-030 |
 
-`docker compose up` from a clean clone with `.env` from `.env.development.example` makes `GET /api/v1/health` return 200 with `database` "ok"; `docker compose exec backend python -m backend.cli seed test_v0_1` then shows tiles 2 / 7 / 1 / 19 at `http://localhost:3000/residents` (DEP-014..DEP-016). Compose files contain only `local-dev-only-*` placeholder passwords (DEP-018).
+`docker compose up` from a clean clone with `.env` from `.env.development.example` makes `GET /api/v1/health` return 200 with `database` "ok"; `docker compose exec backend python -m backend.cli seed test_v0_1` then shows the filters "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" at `http://localhost:3000/residents` (DEP-014..DEP-016). Compose files contain only `local-dev-only-*` placeholder passwords (DEP-018).
 
 ## 7. CI/CD workflows
 
@@ -245,4 +245,4 @@ A migration to AWS changes only deployment configuration, never application sour
 |---|---|
 | OQ-07 | AWS budget and account ownership pending; the interim stack stays synthetic-only until then. |
 | OQ-01 | Retention: no deletion jobs; dumps only on UND-approved storage. |
-| OQ-17 | Site access windows do not affect software; the devices panel lists silent days. |
+| OQ-17 | Site access windows do not affect software; the Study team Devices section and each Resident chart's Device section list silent days. |

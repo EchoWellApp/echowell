@@ -32,7 +32,7 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 - TRD 20 PGS-040 (app role has no privilege on `evaluation_ground_truth`; readonly login role).
 - TRD 23 §4.7.3 (Exp_status_counts mapping), §4.7.4 (Exp_resident_outcomes mapping), DME-024.
 - TRD 14 TDV-101..TDV-104; TRD 13 TST-068; TRD 05 AC-API-16 (analytics part); TRD 07 ANL-064.
-- TRD 24 D-38 (ground truth use), D-46 (Analytics page roles); D-92 (aggregates delivered by FEAT-051), D-81 (alarm timing result rule).
+- TRD 24 D-38 (ground truth use), D-46 (Study team page roles, formerly Analytics; D-110); D-92 (aggregates delivered by FEAT-051), D-81 (alarm timing result rule).
 - TRD 01 ARC-035 (production profile: empty `evaluation_ground_truth`, review outcomes instead of alarm timing).
 
 ## Scope
@@ -48,7 +48,7 @@ Deliver `GET /api/v1/analytics` for researchers and admins with everything excep
 - `analytics/aggregates.py` and the four aggregate blocks (FEAT-051, Phase 6).
 - Loading `evaluation_ground_truth` (`database/seeds/load_evaluation_ground_truth.py`, FEAT-057).
 - `GET /analytics/baselines` (FEAT-034).
-- The Analytics page (FEAT-072).
+- The Study team page (`/study`, formerly the Analytics page; FEAT-072).
 
 ## Functional Requirements
 
@@ -105,7 +105,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-038, FEAT-051.
 
 ## Frontend Impact
 
-None in this feature. Consumers: Analytics page `AlarmTimingTable`, `ReviewOutcomesTable` and the page header via `getAnalytics()` (TRD 04 §4.6.2), delivered by FEAT-072.
+None in this feature. Consumers: the Study team page's "Alarm timing check" / "Alarms and review outcomes" panel and its header via `getAnalytics()` (TRD 04), delivered by FEAT-072.
 
 ## Analytics Impact
 
