@@ -1,6 +1,6 @@
 # Checkpoint 3 Report — Phase 9 Implement Database Layer
 
-Block 3 "Implement Features", checkpoint 3 of 9, its own PR (branch `feat/cp3-database`, created from `main` at fa93306 after GitHub PR #4 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 9: Implement Database Layer" · TRD 25 Phase 4 · Features: FEAT-008..FEAT-017 · Date: 26 October 2026 · Status: delivered as GitHub PR #17, ready for review.
+Block 3 "Implement Features", checkpoint 3 of 9, its own PR (branch `feat/cp3-database`, created from `main` at fa93306 after GitHub PR #4 was merged) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 9: Implement Database Layer" · TRD 25 Phase 4 · Features: FEAT-008..FEAT-017 · Date: 26 October 2026 · Status: delivered as GitHub PR #17; review round 1 (algorithm lead, 27 Oct 2026) answered and applied, section 9; ready for re-review.
 
 Build order followed `BACKLOG.md` §9: [FEAT-008] → [FEAT-009, FEAT-010, FEAT-011, FEAT-012] → [FEAT-013, FEAT-015, FEAT-016] → [FEAT-014, FEAT-017]. Reading order: TRD 25, 00, 24; Phase 9 prompt; roadmap §5.3; FEAT-008..FEAT-017; TRDs 20, 06, 12, 15, 21, 23, 13; `docs/design/Database_ERD.md` and `Backend_Architecture.md`.
 
@@ -122,3 +122,19 @@ None in this PR. GitHub PR #5 (wireframes v0.2, still open) reserves D-108..D-11
 | Q-4 | FEAT-014: mark it Complete now (derivations verified on hand-built rows), with the seed-valued numbers checked when FEAT-055 lands, as was done for the deferred parts in checkpoint 2? |
 | Q-5 | PR #5 (D-114) read-model fields: add them in checkpoint 4 with their endpoints, or would you like them in this PR once PR #5 is merged? |
 | Q-6 | Size: about 9,100 lines (3,000 of them tests, 2,100 models generated from the DDL). Accept as one PR, as for checkpoint 2? |
+
+## 9. Review round 1 resolutions (27 October 2026)
+
+The algorithm lead (Shaba) answered Q-1..Q-6 on GitHub PR #17 on 27 Oct 2026 and requested changes. The decisions are recorded in TRD 24 v0.20 (D-120..D-123); GitHub PR #5 had taken D-108..D-119 first, as section 6 planned.
+
+| ID | Reviewer answer | Resolution | Files changed |
+|---|---|---|---|
+| Q-1 | Accept the transaction-scoped lock; add a note to DEP-064 that transaction-scoped advisory locks are preferred. | DEP-064 now requires the transaction-scoped `pg_advisory_xact_lock(0x45434857)` in `env.py` and never a session-level lock (D-120). The `env.py` docstring cites D-120. | TRD 15 DEP-064 (v0.14); TRD 24 D-120; `backend/alembic/env.py` (docstring) |
+| Q-2 | Accept the SecLists list (MIT, attribution kept). | Recorded as D-121. | TRD 24 D-121 |
+| Q-3 | Keep the policy bypass and the audit rows, with a safeguard that seed users cannot be created in production. | The safeguard already exists: `seed` is refused in production with exit 2 before any settings or database access, with no override (DEP-070, DB-059). It is tested by `test_production_refuses_seed_and_reset` (FEAT-017-AC-03), which also checks that no table changes. Recorded as D-122; no code change needed. | TRD 24 D-122 |
+| Q-4 | Mark FEAT-014 Complete now; re-check the seed numbers in checkpoint 5 as an additional validation, not a blocker. | FEAT-014 stays Complete; the BACKLOG §10 note and D-123 say the seed values are an additional validation. | TRD 24 D-123; `BACKLOG.md` §10 |
+| Q-5 | Add the D-114 fields in checkpoint 4 with their endpoints. | Already planned (N-9); recorded in D-123. | TRD 24 D-123 |
+| Q-6 | Keep one PR. | No change. | — |
+
+Verification after review round 1: `pytest -p no:randomly tests/unit tests/integration tests/validation` gives 190 passed, 2 skipped; `ruff check`, `ruff format --check`, `mypy analytics backend` and `lint-imports` are clean; D-120..D-123 are defined in TRD 24; Markdown tables of the changed files have consistent column counts.
+

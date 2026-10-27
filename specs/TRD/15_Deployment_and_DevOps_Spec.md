@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -369,7 +369,7 @@ Two Netlify sites are built from the same repository, one per environment (D-99)
 | DEP-061 | Every migration merged to `main` shall be backward compatible with the previous release (expand/contract: add columns/tables first, remove in a later release), so that the previous backend deployment keeps working if the new deployment fails its healthcheck. | Must | DEP-041 | Inspection (PR review) |
 | DEP-062 | Every migration shall be applied to the Neon `staging` database branch by the staging deploy that follows its merge to `main`, and pass the staging smoke tests, before a release containing it is deployed to production; `deploy-production.yml` refuses a commit whose `deploy-staging.yml` run did not succeed (TRD 16 CIC-053). | Must | BR-17, D-99 | Inspection |
 | DEP-063 | Before a release that contains a migration is deployed to production, the DevOps owner shall create a Neon branch `pre-<short-sha>` from `main` as a restore point and delete it after 7 days if unused. | Must | BR-02 | Inspection |
-| DEP-064 | Alembic shall use a PostgreSQL advisory lock (key `0x45434857`, "ECHW") during upgrade so two concurrent starts cannot apply migrations twice. | Should | TRD 06 | Test |
+| DEP-064 | Alembic shall use a PostgreSQL advisory lock (key `0x45434857`, "ECHW") during upgrade so two concurrent starts cannot apply migrations twice. The lock shall be transaction-scoped (`pg_advisory_xact_lock(0x45434857)` taken at the start of the migration transaction in `backend/alembic/env.py`, released at commit or rollback), never session-level, as TRD 06 DB-021 requires for all advisory locks (TRD 24 D-120). | Should | TRD 06, D-120 | Test |
 | DEP-065 | If `alembic upgrade head` fails, the process shall exit non-zero so the Railway deployment fails and the previous deployment stays live. | Must | DEP-041 | Test |
 
 ### 4.8 Seeding and bootstrap rules
@@ -597,3 +597,4 @@ Mapping from the current interim stack:
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-10): one uvicorn command with `--proxy-headers --forwarded-allow-ips="*"` in DEP-022 (image default), DEP-040 (Railway start command), §4.5 step 2 and the `railway.toml` outline, matching TRD 05 API-001 and API-103 | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): DEP-016 Resident list filter counts and order; DEP-080 (d) summary counts 2 / 2 / 0 / 6; local procedure step 6 and 8, release step 6, AC-DEP-01 | — |
+| 0.14 | 27 Oct 2026 | Checkpoint 3 review (GitHub PR #17, Q-1): DEP-064 lock is transaction-scoped (TRD 24 D-120) | — |

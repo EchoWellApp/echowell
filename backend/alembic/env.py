@@ -4,7 +4,7 @@ Connects only with DATABASE_MIGRATION_URL, runs `SET ROLE echowell_migrator` and
 timeouts (`backend.core.db.MIGRATOR_SETUP`), and holds advisory lock 0x45434857 for the whole
 upgrade so concurrent starts cannot apply a migration twice (DEP-064). The lock is taken with
 `pg_advisory_xact_lock` inside the single migration transaction, so it is released at commit and
-no session-level lock is held (DB-021).
+no session-level lock is held (DB-021, TRD 24 D-120).
 """
 
 from __future__ import annotations
