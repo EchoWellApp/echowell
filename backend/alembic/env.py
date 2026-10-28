@@ -1,8 +1,10 @@
-"""Alembic environment (TRD 06, TRD 20 §4.3, TRD 15 DEP-024; TRD 24 D-72, D-90).
+"""Alembic environment (TRD 06 DB-027, DB-028; TRD 20 §4.3; TRD 15 DEP-024, DEP-064; D-72, D-90).
 
-Connects with DATABASE_MIGRATION_URL (role echowell_migrator) and runs `SET ROLE echowell_migrator`
-so that every object is owned by the group role. The migrations themselves start in FEAT-008; until
-then `alembic upgrade head` is a no-op that proves the migrator login works.
+Connects only with DATABASE_MIGRATION_URL, runs `SET ROLE echowell_migrator` and the DB-028
+timeouts (`backend.core.db.MIGRATOR_SETUP`), and holds advisory lock 0x45434857 for the whole
+upgrade so concurrent starts cannot apply a migration twice (DEP-064). The lock is taken with
+`pg_advisory_xact_lock` inside the single migration transaction, so it is released at commit and
+no session-level lock is held (DB-021, TRD 24 D-120).
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ from alembic import context
 from sqlalchemy import text
 
 from backend.core.config import load_settings_or_exit
-from backend.core.db import get_engine
+from backend.core.db import MIGRATION_LOCK_KEY, migrator_connection
 from backend.models import Base
 
 target_metadata = Base.metadata
@@ -34,10 +36,12 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     settings = load_settings_or_exit(operator=True)
-    with get_engine(settings.migration_url).connect() as connection:
-        connection.execute(text("SET ROLE echowell_migrator"))
+    with migrator_connection(settings) as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
+            connection.execute(
+                text("SELECT pg_advisory_xact_lock(:key)"), {"key": MIGRATION_LOCK_KEY}
+            )
             context.run_migrations()
         connection.commit()
 

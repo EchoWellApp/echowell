@@ -23,12 +23,12 @@ __all__ = ["Pagination", "get_db", "get_engine", "get_pagination", "get_settings
 
 def get_engine(settings: Annotated[Settings, Depends(get_settings)]) -> Engine:
     """Engine of the app role (`DATABASE_URL`); never the migrator URL (ARC-015)."""
-    return db.get_engine(settings.database_url)
+    return db.create_engine_for(settings.database_url, app_env=settings.app_env)
 
 
 def get_db(engine: Annotated[Engine, Depends(get_engine)]) -> Iterator[Session]:
     """One session per request: commit on success, roll back on any exception, always close."""
-    session = Session(engine)
+    session = db.session_factory(engine)()
     try:
         yield session
         session.commit()
