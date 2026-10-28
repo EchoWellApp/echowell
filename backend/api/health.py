@@ -20,7 +20,7 @@ router = APIRouter(tags=["health"])
 @router.get(
     "/health", response_model=Health, operation_id="getHealth", responses={503: {"model": Health}}
 )
-@limiter.exempt  # type: ignore[misc]  # slowapi is untyped
+@limiter.exempt  # type: ignore[untyped-decorator]  # slowapi is untyped
 def health(
     response: Response,
     settings: Annotated[Settings, Depends(get_settings)],
