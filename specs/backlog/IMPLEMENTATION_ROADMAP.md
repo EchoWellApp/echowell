@@ -35,7 +35,7 @@ Block 3 checkpoint branches (GIT-011: `feat/` plus a kebab-case name of at most 
 | 1 | Phase 7 Generate Design Docs | `feat/implement-features` | GitHub PR #3 |
 | 2 | Phase 8 Generate Project Skeleton | `feat/cp2-project-skeleton` | GitHub PR #4 |
 | 3 | Phase 9 Implement Database Layer | `feat/cp3-database` | GitHub PR #17 |
-| 4 | Phase 10 Implement Backend Layer | `feat/cp4-backend-api` | opened when checkpoint 4 is ready |
+| 4 | Phase 10 Implement Backend Layer | `feat/cp4-backend-api` | GitHub PR #18 |
 | 5 | Phase 11 Implement Analytics Engine | `feat/cp5-analytics-engine` | opened when checkpoint 5 is ready |
 | 6 | Phase 12 Pass R01-R10 Validation Tests | `feat/cp6-validation` | opened when checkpoint 6 is ready |
 | 7 | Phase 13 Implement Frontend | `feat/cp7-frontend` | opened when checkpoint 7 is ready |
