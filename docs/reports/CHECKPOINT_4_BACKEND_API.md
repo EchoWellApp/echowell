@@ -1,6 +1,6 @@
 # Checkpoint 4 Report — Phase 10 Implement Backend Layer
 
-Block 3 "Implement Features", checkpoint 4 of 9, its own PR (branch `feat/cp4-backend-api`, built on `feat/cp3-database` while GitHub PR #17 is in review; `main` is merged in before the PR is opened) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 10: Implement Backend Layer" · TRD 25 Phase 5 · Features: FEAT-018..FEAT-039 · Date: 27 October 2026 · Status: ready for review.
+Block 3 "Implement Features", checkpoint 4 of 9, its own PR (branch `feat/cp4-backend-api`, built on `feat/cp3-database` while GitHub PR #17 was in review; `main` merged in after PR #17 was merged on 28 October 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 10: Implement Backend Layer" · TRD 25 Phase 5 · Features: FEAT-018..FEAT-039 · Date: 27 October 2026 · Status: ready for review.
 
 Build order followed roadmap §5.4: [FEAT-018, FEAT-019] → [FEAT-020, FEAT-021, FEAT-022] → [FEAT-023..FEAT-026] → [FEAT-027..FEAT-029] → [FEAT-030..FEAT-033] → [FEAT-034..FEAT-037] → [FEAT-038, FEAT-039], one commit (or two) per group. TRDs read in the roadmap order: 05, 19, 10, 12, 17, 23, 09, then SRC-21 and `docs/design/`.
 
