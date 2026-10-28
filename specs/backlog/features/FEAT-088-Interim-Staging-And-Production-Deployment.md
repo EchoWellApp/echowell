@@ -82,7 +82,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 
 ## Data Flow
 
-Merge to `main` → Railway staging pre-deploy migration → backend start → healthcheck → Netlify staging-site deploy → `deploy-staging.yml` re-seed and smoke → algorithm lead reviews staging (tiles 2 / 7 / 1 / 19, R09 alarm). Manual `deploy-production.yml` run for that commit, approved by the required reviewer → `railway up` and Netlify CLI production deploy → smoke and tag → `bootstrap`, `create-user`, demo roster → manual authenticated check → report.
+Merge to `main` → Railway staging pre-deploy migration → backend start → healthcheck → Netlify staging-site deploy → `deploy-staging.yml` re-seed and smoke → algorithm lead reviews staging (Resident list All 10 / Changed 2 / Needs attention 2 / Usual 6, R09 Changed). Manual `deploy-production.yml` run for that commit, approved by the required reviewer → `railway up` and Netlify CLI production deploy → smoke and tag → `bootstrap`, `create-user`, demo roster → manual authenticated check → report.
 
 ## Dependencies
 
@@ -161,4 +161,4 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 - Read TRD 15, 22, 21, 17, 13 in that order before starting (TRD 25 §4.4 "Deploy").
 - Disable Railway app sleeping on demo days (DEP-042).
 - If default domain names are taken, record the generated names in `docs/deployment.md` and the repository variables, and raise a TRD 12 §4.9 change for `connect-src` (FEAT-082 note).
-- The demo check-in on production uses the production profile (baseline_n 30), so the demo resident shows "Baseline forming · 1 of 30 sessions" (TST-184).
+- The demo check-in on production uses the production profile (baseline_n 30), so the demo resident shows the pill "○ Learning" with "Learning their usual: 1 of 30 check-ins so far." (TST-184).

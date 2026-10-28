@@ -8,16 +8,16 @@
 | Complexity | Medium |
 | MVP status | Required |
 | Dependencies | FEAT-013 |
-| Status | Not Started |
+| Status | Complete |
 
 ## Purpose
 
-Implement, once and in the repository layer, every value that the dashboard shows but the database never stores: the 30-day window and its used / set aside / quarantined / missed counts, last check-in, baseline progress and dates, watching-since and alarm-since, device silent days and device-gap days, an epoch's restart cause and a device's `in_use_until`. Centralising these derivations keeps the overview, detail, devices and analytics APIs consistent with each other and with the answer-key tiles 2 / 7 / 1 / 19.
+Implement, once and in the repository layer, every value that the dashboard shows but the database never stores: the 30-day window and its used / set aside / quarantined / missed counts, last check-in, baseline progress and dates, watching-since and alarm-since, device silent days and device-gap days, an epoch's restart cause and a device's `in_use_until`. It also derives the wireframe v0.2 additions (SRC-21; TRD 24 D-114): the attention flag from open `baseline_stalled` / `high_set_aside` data alerts, the alarm-reviewed state, the restart cause of the current epoch, the `checkins_started` event source and a device's upload on the as-of date. Centralising these derivations keeps the resident list, resident chart, devices and analytics APIs consistent with each other and with the answer key (missed sum 19; display summary 2 / 2 / 0 / 6).
 
 ## Business Context
 
-- BR-12: overview rows show "Last 30 days: used · set aside · quarantined · missed" with duplicates never counted (FR-135, DB-041); devices report silent days (FR-154, DB-044).
-- BR-13: the detail page shows baseline progress and dates, watching-since, alarm-since and the scores series with the baseline period (DB-043, DME-012).
+- BR-12: the resident chart shows the last-30-day used · set aside · held back · missed counts with duplicates never counted (FR-135, DB-041); the resident list shows the status and attention flag (FR-131, FR-302); devices report silent days and the upload state (FR-152, FR-154, DB-044).
+- BR-13: the resident chart shows baseline progress and dates, watching-since, alarm-since and the scores series with the baseline period (DB-043, DME-012).
 - BR-06 and BR-08: missed days and device gaps are reported honestly; epoch restarts explain their cause (DB-065) and retired devices their last use (DB-066).
 - D-41, D-42, D-64: the exact definitions of watching-since, last check-in, the 30-day window, restart cause and `in_use_until`.
 
@@ -68,9 +68,10 @@ Implement, once and in the repository layer, every value that the dashboard show
 | FEAT-014-FR-10 | The restart cause of epoch e > 1 shall be the first differing part, in the order device, firmware, software, versus epoch e − 1, with `previous_device_code` and `from_value`/`to_value`; epoch 1 has none. | DB-065, D-64 |
 | FEAT-014-FR-11 | A device's `in_use_until` shall be NULL when it has an assignment covering the as-of local date, otherwise the latest `valid_to` of its assignments. | DB-066, D-64 |
 | FEAT-014-FR-12 | Device values shall include residents assigned on the as-of date, shared flag (≥ 2 residents), replaced-by/was devices, last upload (max `raw_sessions.timestamp_utc`) and firmware (`devices.firmware_version_last`). | TRD 23 §4.4.2 |
-| FEAT-014-FR-13 | The display-status inputs (non-closed alert in the current epoch; frozen baseline in the current epoch; epoch number) shall be derived on read and never stored. | DME-011 |
+| FEAT-014-FR-13 | The status inputs (non-closed alert in the current epoch and its status, for `alarm_reviewed`; frozen baseline in the current epoch; epoch number and restart cause; open data alerts of kind `baseline_stalled` or `high_set_aside` per resident, for the attention flag) shall be derived on read and never stored. | DME-011, TRD 23 §4.4.3, D-114 |
 | FEAT-014-FR-14 | None of these values shall be persisted; all are computed per request from stored rows and the as-of instant. | DME-012 |
-| FEAT-014-FR-15 | The check-in log source rows of TRD 23 §4.4.4 (alerts, first scores row per epoch, composite baseline row, set-aside and quarantined sessions, missing ledger days, epochs with number > 1) shall be retrievable by resident and date range for FEAT-028. | TRD 23 §4.4.4 |
+| FEAT-014-FR-15 | The check-in log source rows of TRD 23 §4.4.4 (alerts, first scores row per epoch, composite baseline row, set-aside and quarantined sessions, missing ledger days, epochs with number > 1, and the resident's first non-duplicate processed session with its device for `checkins_started`) shall be retrievable by resident and date range for FEAT-028. | TRD 23 §4.4.4, D-113 |
+| FEAT-014-FR-16 | A device's upload on the as-of date shall be true when it has a non-duplicate record whose facility-local date is the as-of local date (API `uploaded_on_as_of_date`). | TRD 23 §4.4.2, D-114 |
 
 ## Inputs
 
@@ -104,7 +105,7 @@ None exposed. Consumed by E-08 `/residents`, E-09 `/residents/{resident_code}`, 
 
 ## Frontend Impact
 
-None directly; the values feed the Residents overview tiles and rows, the Devices panel and the Resident detail header (TRD 11) through the APIs.
+None directly; the values feed the Resident list, the Resident chart (banner, Summary, Baseline, Check-in log, Device sections) and the Study team Devices section (TRD 11) through the APIs.
 
 ## Analytics Impact
 
@@ -130,7 +131,7 @@ None. Read paths are covered by the `request_completed` access log (FEAT-018). N
 ## Testing Requirements
 
 - Integration (`tests/integration/db/test_read_models.py`, marker `integration`), against the `test_v0_1` seed as of 2026-10-30 15:00 America/Chicago:
-  - DB-041: R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12; missed tile sum 19 (AC-DB-05).
+  - DB-041: R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12; missed sum 19 (AC-DB-05).
   - DB-045: R09 last check-in 2026-10-30 14:28 local.
   - DB-044: D02 silent on 2026-10-12 only; D08 silent on R08's 12 missing days.
   - DB-065: R07 epoch 2 restart cause `device`, D07 → D07B.
@@ -151,11 +152,12 @@ None. Read paths are covered by the `request_completed` access log (FEAT-018). N
 | FEAT-014-AC-05 | D07 `in_use_until` is 2026-10-12; D07B `in_use_until` is NULL. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-066 |
 | FEAT-014-AC-06 | R08 baseline progress is 13 of 16; R09 watching-since is 2026-10-17 and alarm-since 2026-10-21; R10 alarm-since 2026-10-24. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DME-012, D-41 |
 | FEAT-014-AC-07 | The R09 scores series returns 14 rows in ascending `local_date` with the baseline period Oct 1–Oct 16, in ≤ 50 ms database time on the seeded database. Verified by: Integration (`tests/integration/db/test_read_models.py`). | DB-043 |
-| FEAT-014-AC-08 | No table or column stores any of these values (schema review: no column named `last_checkin`, `silent_days`, `in_use_until`, `restart_cause`, `watching_since`). Verified by: Integration (`tests/integration/db/test_read_models.py`). | DME-012 |
+| FEAT-014-AC-08 | No table or column stores any of these values (schema review: no column named `last_checkin`, `silent_days`, `in_use_until`, `restart_cause`, `watching_since`, `needs_attention`, `uploaded_on_as_of_date`). Verified by: Integration (`tests/integration/db/test_read_models.py`). | DME-012 |
+| FEAT-014-AC-09 | With the `test_v0_1` seed as of 2026-10-30 15:00 CT, the attention-flag query returns R03 [high_set_aside] and R08 [baseline_stalled] only; the first non-duplicate record of every resident is on 2026-10-01 (R07 on D07); D07 has no upload on 2026-10-30 and the nine active devices have one. Verified by: Integration (`tests/integration/db/test_read_models.py`). | TRD 23 §4.4.2–§4.4.4, D-114 |
 
 ## Definition of Done
 
-- All FEAT-014 acceptance criteria pass (FEAT-014-AC-01 to FEAT-014-AC-07 against the seed as soon as FEAT-055 provides it; fixture-based equivalents pass in Phase 4).
+- All FEAT-014 acceptance criteria pass (FEAT-014-AC-01 to FEAT-014-AC-07 and FEAT-014-AC-09 against the seed as soon as FEAT-055 provides it; fixture-based equivalents pass in Phase 4).
 - No HTTP code in the module (TRD 25 §4.6 Phase 4 Pitfalls "Do not implement APIs"); docstrings cite DB/DME IDs; delivered in the Phase 4 checkpoint PR of Block 3.
 
 ## Implementation Notes

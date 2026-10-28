@@ -117,7 +117,7 @@ Features that build directly on this one (BACKLOG.md §4): none.
 
 ## Frontend Impact
 
-None. The Analytics page already shows the active settings; no detection-performance claim is added.
+None. The Study team page (`/study`, formerly Analytics, TRD 24 D-110) already shows the active settings; no detection-performance claim is added.
 
 ## Analytics Impact
 

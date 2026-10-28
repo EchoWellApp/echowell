@@ -17,9 +17,9 @@ Provide the "EWMA trend shown against baseline band" that the final box of the S
 
 ## Business Context
 
-- SRC-02 mentions the EWMA trend; no wireframe (SRC-09, SRC-10) shows it, so it is deferred (DSC-02, TRD 00 X-15, OQ-18).
+- SRC-02 mentions the EWMA trend; no wireframe (SRC-21, nor the superseded v0.1 wireframes) shows it, so it is deferred (DSC-02, TRD 00 X-15, OQ-18).
 - BR-11 and BR-15: alarms come only from CUSUM; the answer key (Exp_scores) must stay identical (CUS-036, AGT-008).
-- BR-13 (Resident detail): a possible extra visual aid for staff, subject to the plain-language and "not a diagnosis" wording rules (AGT-018).
+- BR-13 (Resident chart): a possible extra visual aid for staff, subject to the plain-language and "not a diagnosis" wording rules (AGT-018).
 
 ## Referenced TRDs
 
@@ -39,13 +39,13 @@ Decided by the TRDs:
 
 - Computation as an additional field on `ScoreRow` (frozen dataclass of TRD 07 §4.3) computed after the scoring step, in a pure function, with all parameters from `PipelineConfig` (no hard-coded constant).
 - Display-only: no effect on `cusum_tally`, `alarm_state`, alerts, data alerts or any expected value of `test_v0_1`.
-- Not built in v0.1; the Resident detail page keeps the CUSUM chart of D-30 unchanged.
+- Not built in v0.1; the Resident chart's Voice trends section keeps the change score (CUSUM) chart of D-30 unchanged.
 
 Blocked on OQ-18 (not decided here):
 
 - Whether an EWMA trend is displayed at all.
 - The EWMA input (composite z or individual features), the smoothing weight λ and its initial value, and the "baseline band" definition; the TRDs give none of these.
-- Where it is shown (Resident detail below or beside the tally chart, Alert review mini chart, Analytics) and its wording; no wireframe exists, so a wireframe and TRD 04/TRD 11 requirements are needed first.
+- Where it is shown (Resident chart Voice trends, below or beside the change score chart, or the Study team page) and its wording; no wireframe exists, so a wireframe and TRD 04/TRD 11 requirements are needed first.
 - Persistence and API: TRD 20 `scores` has no EWMA column and TRD 19 `ScoreRow`/score DTOs have no EWMA field; adding them requires TRD 20/TRD 19 changes (Alembic migration, OpenAPI regeneration, D-51) decided with OQ-18.
 - Stage placement: TRD 07 ANL-056 now says "after step 10 of the §4.5 algorithm (`run_cusum`; stage 8 in the ANL-006 numbering)", stored through a new `scores` column and `ScoreRow` field added with OQ-18 (aligned in the PR #2 consistency fixes). It must not change CUSUM.
 
@@ -87,7 +87,7 @@ Scored sessions (`composite_z` and/or feature z) → EWMA function (pure, config
 Required before implementation (BACKLOG.md): FEAT-046, FEAT-067
 
 - [FEAT-046](FEAT-046-Z-Score-And-Composite-Scoring-Stage.md) Z-score and composite scoring stage (produces the `ScoreRow` values the EWMA would smooth).
-- [FEAT-067](FEAT-067-Running-Change-Tally-Chart-And-Text.md) Running change tally chart and text table (the existing chart the display would sit beside).
+- [FEAT-067](FEAT-067-Running-Change-Tally-Chart-And-Text.md) Change score (CUSUM) chart and text table (the existing chart the display would sit beside).
 
 Gate: OQ-18 (whether to display EWMA).
 
@@ -115,7 +115,7 @@ Features that build directly on this one (BACKLOG.md §4): none.
 
 ## Error Handling
 
-- Residents without a frozen baseline have no scored sessions and therefore no EWMA values (empty state as the tally chart, UX-104 pattern); other conditions follow the OQ-18 decision.
+- Residents without a frozen baseline have no scored sessions and therefore no EWMA values (empty state as the change score chart, UX-089 and UX-104 pattern); other conditions follow the OQ-18 decision.
 
 ## Logging Requirements
 

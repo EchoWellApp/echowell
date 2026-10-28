@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.5 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -26,10 +26,11 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
 |---|---|
 | SRC-03 | Pipeline test workbook v0.1 (Exp_scores, Exp_baselines, Exp_status_counts, Exp_resident_outcomes used in examples) |
 | SRC-05 | Pipeline test input CSV v0.1 (field order of `IngestRecord`; CSV header for `POST /ingest`) |
-| SRC-09, SRC-10, SRC-11 | UI wireframes (fields the dashboard needs) |
+| SRC-21 | Clinical dashboard wireframe v0.2 (specs/UI-wireframe/echowell-wireframes-v0.2.html; fields the dashboard needs: Resident list, Resident chart, New admissions, Study team) |
+| SRC-09, SRC-10, SRC-11, SRC-18, SRC-19 | Wireframes v0.1 (Main, Resident, Admission, Alerts, Analytics): superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | SRC-17 | Implement_Feature_Batches.md ("Match OpenAPI specification exactly") |
-| SRC-18 | Alert review wireframe (specs/UI-wireframe/Alerts.dc.html) |
-| SRC-19 | Analytics wireframe (specs/UI-wireframe/Analytics.dc.html) |
+| TRD 11 | UI/UX specification (consumer of every field; expected test-data rendering §4.13, §4.18.8) |
+| TRD 24 | D-109 (display statuses and default order), D-113 (`checkins_started`), D-114 (v0.2 API additions) |
 | TRD 05 | Backend API TRD (behaviour, error catalogue, pagination, rate limits) |
 | TRD 06 / TRD 20 / TRD 23 | Database design, PostgreSQL schema, entity definitions (enum sources) |
 | TRD 08 / TRD 09 | Baseline/scoring and CUSUM/alerting (meaning of z, composite, tally) |
@@ -225,48 +226,73 @@ Response 422 (unknown resident):
 - Auth: bearer (A, C, Rs).
 - Query: `sort` enum [alarm, resident_id, last_checkin] default alarm; `cohort` enum [longitudinal, new_admission]
   default longitudinal; `include_withdrawn` boolean default false; `limit`, `offset`.
+- `sort=alarm` (default; TRD 24 D-109, amending D-17): Changed (`status` `alarm_on`; `alarm_since` oldest first, then
+  natural resident-code order) → Needs attention (`needs_attention` true and not `alarm_on`) → Learning
+  (`baseline_forming`, no attention flag) → Usual (`no_alarm`, no attention flag), each of the last three in natural
+  resident-code order. `resident_id` and `last_checkin` keep their v0.1 rules (TRD 05 API-072); they stay in the API
+  but are not offered by the v0.2 UI, which shows rows in the default order and filters them in the browser (TRD 11 UX-408).
+- `summary` (`OverviewSummary`, over all residents matching the filters, independent of `limit`/`offset`) counts the
+  residents per display status with the same precedence (Changed, Needs attention, Learning, Usual); the four counts
+  sum to `total`.
 - 200 `ResidentsOverviewResponse`. Errors: 422 `INVALID_QUERY_PARAMETER`.
 
-Example (test_v0_1, as of 2026-10-30 15:00 CDT; first rows shown, `total` 10):
+Example (test_v0_1, as of 2026-10-30 15:00 CDT; rows R09, R03, R08 and R07 shown, `total` 10):
 
 ```json
 {
   "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
-  "window": {"from": "2026-10-01", "to": "2026-10-30"},
-  "summary": {"alarm_on": 2, "no_alarm": 7, "baseline_forming": 1, "missed_last_30_days": 19},
+  "window": {"from": "2026-10-01", "to": "2026-10-30", "days": 30},
+  "summary": {"changed": 2, "needs_attention": 2, "learning": 0, "usual": 6},
   "items": [
     {"resident_code": "R09", "cohort": "longitudinal", "resident_status": "active", "device_code": "D09",
-     "device_shared": false, "previous_device_code": null, "status": "alarm_on", "alarm_since": "2026-10-21",
-     "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "current_epoch": 1, "baseline_restarted_on": null,
+     "device_shared": false, "previous_device_code": null, "status": "alarm_on",
+     "needs_attention": false, "attention_reasons": [], "alarm_since": "2026-10-21",
+     "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "alarm_reviewed": false, "current_epoch": 1,
+     "baseline_restarted_on": null, "restart_cause": null,
      "baseline_progress": {"n_usable": 16, "n_required": 16},
      "last_checkin_at": "2026-10-30T19:28:04Z", "last_checkin_local": "2026-10-30T14:28:04-05:00",
      "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0}},
+    {"resident_code": "R03", "cohort": "longitudinal", "resident_status": "active", "device_code": "D02",
+     "device_shared": true, "previous_device_code": null, "status": "no_alarm",
+     "needs_attention": true, "attention_reasons": ["high_set_aside"], "alarm_since": null,
+     "open_alert_id": null, "alarm_reviewed": null, "current_epoch": 1,
+     "baseline_restarted_on": null, "restart_cause": null,
+     "baseline_progress": {"n_usable": 16, "n_required": 16},
+     "last_checkin_at": "2026-10-30T19:19:17Z", "last_checkin_local": "2026-10-30T14:19:17-05:00",
+     "last_30_days": {"used": 22, "set_aside": 7, "quarantined": 0, "missed": 1}},
     {"resident_code": "R08", "cohort": "longitudinal", "resident_status": "active", "device_code": "D08",
-     "device_shared": false, "previous_device_code": null, "status": "baseline_forming", "alarm_since": null,
-     "open_alert_id": null, "current_epoch": 1, "baseline_restarted_on": null,
+     "device_shared": false, "previous_device_code": null, "status": "baseline_forming",
+     "needs_attention": true, "attention_reasons": ["baseline_stalled"], "alarm_since": null,
+     "open_alert_id": null, "alarm_reviewed": null, "current_epoch": 1,
+     "baseline_restarted_on": null, "restart_cause": null,
      "baseline_progress": {"n_usable": 13, "n_required": 16},
      "last_checkin_at": "2026-10-30T19:28:26Z", "last_checkin_local": "2026-10-30T14:28:26-05:00",
      "last_30_days": {"used": 13, "set_aside": 5, "quarantined": 0, "missed": 12}},
     {"resident_code": "R07", "cohort": "longitudinal", "resident_status": "active", "device_code": "D07B",
-     "device_shared": false, "previous_device_code": "D07", "status": "no_alarm", "alarm_since": null,
-     "open_alert_id": null, "current_epoch": 2, "baseline_restarted_on": "2026-10-13",
+     "device_shared": false, "previous_device_code": "D07", "status": "no_alarm",
+     "needs_attention": false, "attention_reasons": [], "alarm_since": null,
+     "open_alert_id": null, "alarm_reviewed": null, "current_epoch": 2,
+     "baseline_restarted_on": "2026-10-13", "restart_cause": "device",
      "baseline_progress": {"n_usable": 16, "n_required": 16},
      "last_checkin_at": "2026-10-30T19:52:57Z", "last_checkin_local": "2026-10-30T14:52:57-05:00",
-     "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0}},
-    {"resident_code": "R02", "cohort": "longitudinal", "resident_status": "active", "device_code": "D02",
-     "device_shared": true, "previous_device_code": null, "status": "no_alarm", "alarm_since": null,
-     "open_alert_id": null, "current_epoch": 1, "baseline_restarted_on": null,
-     "baseline_progress": {"n_usable": 16, "n_required": 16},
-     "last_checkin_at": "2026-10-30T19:55:23Z", "last_checkin_local": "2026-10-30T14:55:23-05:00",
-     "last_30_days": {"used": 24, "set_aside": 0, "quarantined": 0, "missed": 6}}
+     "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0}}
   ],
   "total": 10, "limit": 50, "offset": 0
 }
 ```
 
-Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example abbreviated; R10 row has
-`alarm_since` 2026-10-24).
+Full default order: R09, R10, R03, R08, R01, R02, R04, R05, R06, R07 (Changed R09 Oct 21, R10 Oct 24; Needs attention
+R03, R08; no Learning resident; Usual R01, R02, R04, R05, R06, R07). The R10 row has `alarm_since` 2026-10-24 and
+`alarm_reviewed` false; R05 has `needs_attention` false although it has an open `possible_other_speaker` data alert,
+and R02 and R03 are unaffected in status by the D02 `device_silent` alert (TRD 24 D-109, OQ-31). After a review of the
+R09 alert, R09's `alarm_reviewed` is true and its `status` stays `alarm_on`.
+`needs_attention` is true when the resident has at least one open data alert of kind `baseline_stalled` or
+`high_set_aside` (independent of `status`; the display status gives Changed precedence); `attention_reasons` lists those
+kinds in the order baseline_stalled, high_set_aside (empty when `needs_attention` is false); `alarm_reviewed` is null
+without a non-closed alert in the current epoch, otherwise true when that alert's status is `acknowledged` and false when
+it is `open`; `restart_cause` is the restart cause of the current epoch (TRD 06 DB-065) when
+`current_epoch` > 1, otherwise null (TRD 23 §4.4.3).
 
 #### E-09 GET /api/v1/residents/{resident_code}
 - Auth: bearer (A, C, Rs). Path `resident_code` string pattern `^[A-Z0-9]{1,16}$`.
@@ -279,10 +305,12 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
   "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
   "status": "alarm_on",
+  "needs_attention": false, "attention_reasons": [], "alarm_reviewed": false,
   "device": {"device_code": "D09", "shared": false, "shared_with": [], "previous_device_code": null},
   "current_epoch": {"epoch_number": 1, "device_code": "D09", "device_firmware_version": "fw-1.0.0",
                     "extraction_software_version": "openSMILE 3.0.2", "started_at": "2026-10-01T19:40:50Z",
-                    "started_on": "2026-10-01"},
+                    "started_on": "2026-10-01", "from_value": null, "to_value": null},
+  "restart_cause": null,
   "epoch_count": 1,
   "baseline": {"state": "frozen", "n_usable": 16, "n_required": 16,
                "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
@@ -293,15 +321,23 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
   "current_tally": 26.830256,
   "last_checkin_at": "2026-10-30T19:28:04Z",
   "last_checkin_local": "2026-10-30T14:28:04-05:00",
+  "window": {"from": "2026-10-01", "to": "2026-10-30", "days": 30},
   "last_30_days": {"used": 30, "set_aside": 0, "quarantined": 0, "missed": 0},
   "explanation": {"compared_with": "own_baseline", "alarm_crossed_on": "2026-10-21", "still_above_line": true,
                   "baseline_restarted_on": null, "baseline_n_usable": 16, "baseline_n_required": 16}
 }
 ```
 
+`needs_attention`, `attention_reasons`, `alarm_reviewed` and `restart_cause` follow the E-08 rules (TRD 24 D-114).
+`window` is the resident's 30-day window (`DateWindow`, the same window as `last_30_days`, starting no earlier than
+`enrolled_on`); the chart banner shows "Usable check-ins, last 30 days" as "<used> of <window.days>" ("30 of 30").
+R07 has `restart_cause` "device" and `current_epoch` epoch 2 on D07B with `from_value` "D07", `to_value` "D07B" (derived
+as for the `baseline_restarted` event, TRD 06 DB-065); R08 has `needs_attention` true, `attention_reasons`
+["baseline_stalled"]; R03 has `needs_attention` true, `attention_reasons` ["high_set_aside"].
+
 #### E-10 GET /api/v1/residents/{resident_code}/checkins
 - Auth: bearer (A, C, Rs). Query `from`, `to` (date, optional, from ≤ to, span ≤ 366 days), `limit`, `offset`.
-- 200 `CheckinEventList` (newest first; events on the same local date in the order `alarm_on`, `watching_started`, `baseline_complete`, `baseline_restarted`, `quarantined`, `set_aside`, `device_silent`, `missed`, TRD 11 UX-141). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
+- 200 `CheckinEventList` (newest first; events on the same local date in the order `alarm_on`, `watching_started`, `baseline_complete`, `baseline_restarted`, `quarantined`, `set_aside`, `device_silent`, `missed`, `checkins_started`, TRD 11 UX-141). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
 {"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
@@ -313,8 +349,12 @@ Full default order: R09, R10, R08, R07, R03, R02, R05, R01, R04, R06 (example ab
    "detail": null, "cusum_tally": null},
   {"local_date": "2026-10-16", "event_type": "baseline_complete", "epoch_number": 1, "session_id": "R09-20261016-01",
    "detail": "16 of 16", "cusum_tally": null}
- ], "total": 3, "limit": 50, "offset": 0}
+ ], "total": 4, "limit": 50, "offset": 0}
 ```
+
+(The first three items are shown; the fourth and oldest is R09's `checkins_started` event on 2026-10-01. The restart
+fields and `device_code`, null on these events, are omitted for brevity; in responses every `CheckinEvent` property is
+present, OAS-012.)
 
 Other event examples: R03 2026-10-18 `set_aside` detail "quality flag poor; noise above limit"; R05 2026-10-08
 `quarantined` detail "possible other speaker (F0 z=-8.61; composite features with |z|>=3: 4)"; R02 2026-10-04
@@ -324,6 +364,14 @@ have no record"; R07 2026-10-13 `baseline_restarted` detail "new epoch 2 on devi
 `previous_device_code`, `from_value` and `to_value` are null. When several parts of the epoch key change at once,
 `restart_cause` is the first changed part in the order device, firmware, software, derived from the epoch and the
 resident's previous epoch (TRD 06 DB-065). `Device.in_use_until` is derived per TRD 06 DB-066.
+
+`checkins_started` (TRD 24 D-113, D-114; derived on read, no table or database enum): exactly one per resident, dated the
+facility-local date of the resident's first non-duplicate record of the enrolment (any status, any epoch), with
+`session_id` and `epoch_number` of that record and `device_code` = the device of that record; `detail`, `cusum_tally`
+and the restart fields are null. `device_code` is null on every other event type. Test data: every resident
+2026-10-01; R07 `{"local_date": "2026-10-01", "event_type": "checkins_started", "epoch_number": 1, "session_id":
+"R07-20261001-01", "device_code": "D07"}`, which the UI shows as "Check-ins started on D07." because R07's current device
+is D07B (TRD 11 §4.5.6).
 
 #### E-11 GET /api/v1/residents/{resident_code}/features
 - Auth: bearer (A, C, Rs). Query `from`, `to` (date, optional; default 30 local days ending at as-of).
@@ -395,8 +443,9 @@ Oct 29 23.126702, Oct 30 26.830256 (all `on` after Oct 21).
 #### E-13 GET /api/v1/alerts
 - Auth: bearer (A, C, Rs). Query `status` enum [open, acknowledged, closed] (optional), `resident_code` (optional), `limit`, `offset`.
 - 200 `AlertList` (ordered by `triggered_at` ascending). Errors: 422 `INVALID_QUERY_PARAMETER`.
-- `status` `open` = "Not reviewed", `acknowledged` = "Reviewed" (alarm still on; OQ-05). The nav count "Alerts (<n>)" is
-  `total` of `GET /alerts?status=open`.
+- `status` `open` = "Not reviewed", `acknowledged` = "Reviewed" (alarm still on; OQ-05). The red badge on the "Resident
+  list" navigation link (TRD 11 UX-018) is `total` of `GET /alerts?status=open`; the chart's "Review and notes" section
+  and Summary read the resident's alert with `GET /alerts?resident_code=<R>`.
 
 ```json
 {"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
@@ -424,7 +473,7 @@ labels ("more pauses, quieter, less voiced sound"). `current_tally` is shown to 
 #### E-14 POST /api/v1/alerts/{id}/reviews
 - Auth: bearer (A, C). Path `id` uuid. Body `AlertReviewCreate`.
 - 201 `AlertReview`; side effects: alert status `open` → `acknowledged`; outcome `data_problem` also creates or links a `DataAlert`
-  of kind `review_flagged_data_problem` (TRD 02 FR-273; strings TRD 11 §4.17.2). CUSUM tally, alarm state and resident display status are unchanged (OQ-05).
+  of kind `review_flagged_data_problem` (TRD 02 FR-273; title and detail strings TRD 09 CUS-040). CUSUM tally, alarm state and resident `status` are unchanged (OQ-05); the resident's `alarm_reviewed` becomes true.
 - Errors: 404 `ALERT_NOT_FOUND`, 409 `ALERT_CLOSED`, 422 `VALIDATION_ERROR` (missing outcome, unknown explanation code,
   duplicate codes, note > 2000 characters).
 
@@ -453,31 +502,37 @@ Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_so
 #### E-30 GET /api/v1/data-alerts
 - Auth: bearer (A, C, Rs). Query `status` enum [open, resolved] default open; `kind` (optional `DataAlertKind`); `limit`, `offset`.
 - 200 `DataAlertList` ordered by kind (enum order) then resident/device code. Errors: 422 `INVALID_QUERY_PARAMETER`.
+- Consumer: the Study team page "Data problems to follow up" (TRD 11 §4.18.2), which renders "**<code>:** <detail>"
+  with `title` as the code link's accessible name and groups the rows by the TRD 11 UX-307 kind order (R08, R03, R05,
+  D02 for the test data); open `baseline_stalled` and `high_set_aside` alerts also drive `needs_attention` on E-08/E-09.
 
 ```json
 {"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "kind": "baseline_stalled", "resident_code": "R08", "device_code": null,
-   "title": "R08 · baseline stuck at 13 of 16", "detail": "12 missed and 5 set aside in 30 days", "status": "open",
+   "title": "R08 · baseline stuck at 13 of 16", "detail": "baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.",
+   "status": "open",
    "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e", "kind": "possible_other_speaker", "resident_code": "R05", "device_code": null,
-   "title": "R05 · possible other speaker", "detail": "2 check-ins quarantined: Oct 8, Oct 22", "status": "open",
+   "title": "R05 · possible other speaker", "detail": "2 check-ins held back as possible other voice (Oct 8, Oct 22).",
+   "status": "open",
    "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "8c3d4e5f-6a7b-4c8d-ae9f-1a2b3c4d5e6f", "kind": "high_set_aside", "resident_code": "R03", "device_code": null,
-   "title": "R03 · many check-ins set aside", "detail": "7 of 29 received: noise, quality flag, too short", "status": "open",
+   "title": "R03 · many check-ins set aside", "detail": "7 of 29 received check-ins set aside (noise, quality flag, too short).",
+   "status": "open",
    "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"},
   {"id": "9d4e5f6a-7b8c-4d9e-bf0a-2b3c4d5e6f7a", "kind": "device_silent", "resident_code": null, "device_code": "D02",
-   "title": "D02 · device silent all day", "detail": "Oct 12 · affects R02 and R03", "status": "open",
+   "title": "D02 · device silent all day", "detail": "silent all day Oct 12. Affected R02 and R03.", "status": "open",
    "first_detected_at": "2026-10-30T20:00:00Z", "last_detected_at": "2026-10-30T20:00:00Z",
    "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"}
  ], "total": 4, "limit": 50, "offset": 0}
 ```
 
-(ids illustrative; `first_detected_at`/`last_detected_at` are the run's `as_of` 2026-10-30T20:00:00Z (TRD 06 DB-036); titles, details and the list are the SRC-18 expected test values.)
+(ids illustrative; `first_detected_at`/`last_detected_at` are the run's `as_of` 2026-10-30T20:00:00Z (TRD 06 DB-036); titles are the v0.1 titles, details the v0.2 texts of TRD 09 §4.9 (TRD 24 D-114), and the list is the expected test-data result of TRD 11 §4.18.8.)
 
 #### E-15 GET /api/v1/residents/{resident_code}/notes
 - Auth: bearer (A, C, Rs). Query `include_superseded` boolean default false, `limit`, `offset`.
@@ -511,17 +566,24 @@ Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_so
   {"device_code": "D02", "room_label": null, "active": true, "resident_codes": ["R02", "R03"], "shared": true,
    "replaces_device_code": null, "replaced_by_device_code": null, "in_use_since": "2026-10-01", "in_use_until": null,
    "last_upload_at": "2026-10-30T19:55:23Z", "last_upload_local": "2026-10-30T14:55:23-05:00",
-   "firmware_version": "fw-1.0.0", "silent_days_last_30": ["2026-10-12"], "device_gap_days_last_30": ["2026-10-12"]},
+   "firmware_version": "fw-1.0.0", "uploaded_on_as_of_date": true, "silent_days_last_30": ["2026-10-12"],
+   "device_gap_days_last_30": ["2026-10-12"]},
   {"device_code": "D07B", "room_label": null, "active": true, "resident_codes": ["R07"], "shared": false,
    "replaces_device_code": "D07", "replaced_by_device_code": null, "in_use_since": "2026-10-13", "in_use_until": null,
    "last_upload_at": "2026-10-30T19:52:57Z", "last_upload_local": "2026-10-30T14:52:57-05:00",
-   "firmware_version": "fw-1.0.0", "silent_days_last_30": [], "device_gap_days_last_30": []}
+   "firmware_version": "fw-1.0.0", "uploaded_on_as_of_date": true, "silent_days_last_30": [],
+   "device_gap_days_last_30": []}
  ], "total": 10, "limit": 50, "offset": 0}
 ```
 
 `total` is 10 for the test data (D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10). D07 (retired) reports `active`
 false, `in_use_since` "2026-10-01", `in_use_until` "2026-10-12" (last day of its last assignment; null while the device
-has a current assignment) and `replaced_by_device_code` "D07B".
+has a current assignment), `replaced_by_device_code` "D07B" and `uploaded_on_as_of_date` false.
+
+`uploaded_on_as_of_date` (TRD 24 D-114) is true when the device has at least one non-duplicate record whose
+facility-local date is the as-of local date, otherwise false; the UI shows "● Online" / "○ No upload today" from it
+(TRD 11 UX-050, UX-078, UX-430). For the test data it is true for the nine active devices and false for D07. Whether a
+device without upload changes a resident's status was OQ-31; it does not (TRD 24 D-115).
 
 Day definitions (TRD 02 §4.1 glossary is the single definition): `silent_days_last_30` = the device's **silent days**,
 `device_gap_days_last_30` = its **device-gap days**. `silent_days_last_30` lists local dates in the 30-day window, on or after `in_use_since`, with zero arrivals from
@@ -682,11 +744,11 @@ In production `alarm_timing` is null and `review_outcomes` is
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | OAS-020 | Each endpoint E-01..E-32 shall return exactly the success status codes listed in the endpoint/role summary and only error codes from the TRD 05 catalogue. | Must | TRD 05 | Test |
-| OAS-021 | The E-08 example values (summary 2/7/1/19, order R09, R10, R08, R07, R03, R02, R05, R01, R04, R06, R08 13 of 16 with 13·5·0·12) shall be asserted by an integration test on the test_v0_1 data. | Must | BR-12, SRC-09 | Test |
+| OAS-021 | The E-08 example values (summary changed 2, needs_attention 2, learning 0, usual 6; default order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07; `needs_attention` true only for R03 [high_set_aside] and R08 [baseline_stalled]; `alarm_reviewed` false for R09 and R10 and null for the others; R08 13 of 16 with 13·5·0·12; R07 `restart_cause` device) shall be asserted by an integration test on the test_v0_1 data, together with E-10 `checkins_started` on 2026-10-01 for every resident (R07 `device_code` D07) and E-17 `uploaded_on_as_of_date` true for the nine active devices and false for D07. | Must | BR-12, SRC-21, D-109, D-114 | Test |
 | OAS-022 | The E-12 R09 series (14 rows, Oct 21 tally 5.431965 `rings`, Oct 30 tally 26.830256 `on`) shall be asserted with absolute tolerance 1e-6. | Must | BR-15, SRC-03 | Test |
 | OAS-023 | The E-19 response for the test data shall contain 180 rows whose values equal SRC-03 Exp_baselines within 1e-6, with Exp_baselines feature "COMPOSITE (raw signed mean of 7 z)" mapped to `feature_key`="composite". | Must | BR-09, BR-15 | Test |
-| OAS-027 | On the test data, E-30 shall return exactly the four data alerts shown (kinds, codes, titles, details) and E-13 shall return R09 (open_days 9, current_tally 26.830256, leaning_most [number_of_pauses, loudness_dbfs, voiced_fraction]) and R10 (open_days 6, current_tally 13.418183). | Must | SRC-18 | Test |
-| OAS-028 | On the test data, E-18 `kpis`, `funnel`, `by_resident` and `alarm_timing` shall equal the values in the E-18 example and notes. | Must | SRC-19, BR-15 | Test |
+| OAS-027 | On the test data, E-30 shall return exactly the four data alerts shown (kinds, codes, titles and the v0.2 details, in the order R08, R05, R03, D02) and E-13 shall return R09 (open_days 9, current_tally 26.830256, leaning_most [number_of_pauses, loudness_dbfs, voiced_fraction]) and R10 (open_days 6, current_tally 13.418183). | Must | SRC-21, D-114 | Test |
+| OAS-028 | On the test data, E-18 `kpis`, `funnel`, `by_resident` and `alarm_timing` shall equal the values in the E-18 example and notes. | Must | SRC-21, BR-15 | Test |
 | OAS-024 | The E-18 `status_totals` for the test data shall be usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2 | Must | BR-15 | Test |
 | OAS-025 | `IngestRecord` property order in the YAML shall equal the SRC-05 CSV header order. | Must | SRC-05 | Inspection |
 | OAS-026 | `ScoredFeatureKey` shall list the 7 composite features in contract §6 order and `FeatureKey` all 19; `BaselineFeatureKey` shall be `FeatureKey` plus `composite`. | Must | contract §6 | Test |
@@ -832,7 +894,7 @@ paths:
       operationId: listResidents
       security: [{bearerAuth: []}]
       parameters:
-        - {name: sort, in: query, schema: {type: string, enum: [alarm, resident_id, last_checkin], default: alarm}}
+        - {name: sort, in: query, description: "alarm = Changed (alarm date oldest first), Needs attention, Learning, Usual, each then natural resident code (TRD 24 D-109); resident_id and last_checkin are not used by the v0.2 UI", schema: {type: string, enum: [alarm, resident_id, last_checkin], default: alarm}}
         - {name: cohort, in: query, schema: {$ref: "#/components/schemas/Cohort"}}
         - {name: include_withdrawn, in: query, schema: {type: boolean, default: false}}
         - {$ref: "#/components/parameters/Limit"}
@@ -1169,7 +1231,8 @@ components:
     ProcessedStatus: {type: string, enum: [usable, set_aside, quarantined, duplicate]}
     IngestOutcome: {type: string, enum: [usable, set_aside, quarantined, duplicate, pending]}
     DayStatus: {type: string, enum: [checked_in, missing_resident, missing_device_gap]}
-    DisplayStatus: {type: string, enum: [alarm_on, no_alarm, baseline_forming]}
+    DisplayStatus: {type: string, enum: [alarm_on, no_alarm, baseline_forming], description: "pipeline status (TRD 23 §4.4.3); the UI maps status + needs_attention to Changed / Needs attention / Learning / Usual (TRD 24 D-109)"}
+    AttentionReason: {type: string, enum: [baseline_stalled, high_set_aside], description: "subset of DataAlertKind that sets needs_attention (TRD 24 D-109, D-114; OQ-31)"}
     AlarmState: {type: string, enum: ["off", rings, "on"]}
     AlertStatus: {type: string, enum: [open, acknowledged, closed]}
     NoteType: {type: string, enum: [observation, action_taken, follow_up]}
@@ -1181,7 +1244,7 @@ components:
     PipelineStatus: {type: string, enum: [running, succeeded, failed]}
     ConfigProfile: {type: string, enum: [production, test_v0_1]}
     IngestSource: {type: string, enum: [api_single, api_batch, csv_upload, seed]}
-    CheckinEventType: {type: string, enum: [alarm_on, watching_started, baseline_complete, baseline_restarted, set_aside, quarantined, missed, device_silent]}
+    CheckinEventType: {type: string, enum: [alarm_on, watching_started, baseline_complete, baseline_restarted, set_aside, quarantined, missed, device_silent, checkins_started], description: "API-only enum, derived on read (TRD 23 §4.4.4); no database enum (OAS-007). checkins_started added by TRD 24 D-113/D-114"}
     ComparisonStatus: {type: string, enum: [outside_range, within_range, not_enough_checkins, range_not_available], description: "range_not_available = no facility reference range exists (TRD 02 FR-202, OQ-08), UI 'Facility range not available yet'"}
     RestartCause: {type: [string, "null"], enum: [device, firmware, software, null]}
     ReviewOutcome: {type: string, enum: [no_concern, known_cause, referred, data_problem]}
@@ -1244,8 +1307,11 @@ components:
         missed: {type: integer, minimum: 0, description: missing_resident + missing_device_gap}
     DateWindow:
       type: object
-      required: [from, to]
-      properties: {from: {type: string, format: date}, to: {type: string, format: date}}
+      required: [from, to, days]
+      properties:
+        from: {type: string, format: date, description: "first local date; not before the resident's enrolled_on in ResidentDetail"}
+        to: {type: string, format: date, description: as-of local date}
+        days: {type: integer, minimum: 0, description: "local days from..to inclusive (TRD 24 D-114)"}
 
     # ---------- errors, health, auth ----------
     ProblemFieldError:
@@ -1422,32 +1488,38 @@ components:
         n_required: {type: integer, minimum: 1, description: baseline_n of the active profile}
     ResidentOverviewRow:
       type: object
-      required: [resident_code, cohort, resident_status, device_code, device_shared, previous_device_code, status, alarm_since,
-                 open_alert_id, current_epoch, baseline_restarted_on, baseline_progress, last_checkin_at, last_checkin_local, last_30_days]
+      required: [resident_code, cohort, resident_status, device_code, device_shared, previous_device_code, status, needs_attention,
+                 attention_reasons, alarm_since, open_alert_id, alarm_reviewed, current_epoch, baseline_restarted_on,
+                 restart_cause, baseline_progress, last_checkin_at, last_checkin_local, last_30_days]
       properties:
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
         cohort: {$ref: "#/components/schemas/Cohort"}
         resident_status: {$ref: "#/components/schemas/ResidentStatus"}
         device_code: {type: [string, "null"]}
         device_shared: {type: boolean}
-        previous_device_code: {type: [string, "null"], description: "rendered as '(was D07)'"}
+        previous_device_code: {type: [string, "null"], description: "rendered as '(replaced D07)' in the chart banner (TRD 11 UX-063)"}
         status: {$ref: "#/components/schemas/DisplayStatus"}
+        needs_attention: {type: boolean, description: "true when the resident has an open data alert of kind baseline_stalled or high_set_aside (TRD 24 D-114)"}
+        attention_reasons: {type: array, uniqueItems: true, items: {$ref: "#/components/schemas/AttentionReason"}, description: "kinds behind needs_attention in the order baseline_stalled, high_set_aside; empty when needs_attention is false"}
         alarm_since: {type: [string, "null"], format: date}
         open_alert_id: {type: [string, "null"], format: uuid}
+        alarm_reviewed: {type: [boolean, "null"], description: "null without a non-closed alert in the current epoch; true when that alert is acknowledged, false when open (TRD 24 D-114)"}
         current_epoch: {type: [integer, "null"], minimum: 1}
         baseline_restarted_on: {type: [string, "null"], format: date, description: start date of current epoch when epoch > 1}
+        restart_cause: {$ref: "#/components/schemas/RestartCause", description: "restart cause of the current epoch when current_epoch > 1 (TRD 06 DB-065); null when current_epoch is 1 or null (TRD 24 D-114)"}
         baseline_progress: {$ref: "#/components/schemas/BaselineProgress"}
         last_checkin_at: {type: [string, "null"], format: date-time}
         last_checkin_local: {type: [string, "null"], format: date-time}
         last_30_days: {$ref: "#/components/schemas/Last30Days"}
     OverviewSummary:
       type: object
-      required: [alarm_on, no_alarm, baseline_forming, missed_last_30_days]
+      description: "residents per display status, first match Changed, Needs attention, Learning, Usual (TRD 24 D-109, D-114); the four counts sum to total"
+      required: [changed, needs_attention, learning, usual]
       properties:
-        alarm_on: {type: integer}
-        no_alarm: {type: integer}
-        baseline_forming: {type: integer}
-        missed_last_30_days: {type: integer}
+        changed: {type: integer, minimum: 0, description: "status alarm_on"}
+        needs_attention: {type: integer, minimum: 0, description: "needs_attention true and status not alarm_on"}
+        learning: {type: integer, minimum: 0, description: "status baseline_forming and needs_attention false"}
+        usual: {type: integer, minimum: 0, description: "status no_alarm and needs_attention false"}
     ResidentsOverviewResponse:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
@@ -1459,7 +1531,8 @@ components:
             items: {type: array, items: {$ref: "#/components/schemas/ResidentOverviewRow"}}
     EpochInfo:
       type: object
-      required: [epoch_number, device_code, device_firmware_version, extraction_software_version, started_at, started_on]
+      required: [epoch_number, device_code, device_firmware_version, extraction_software_version, started_at, started_on,
+                 from_value, to_value]
       properties:
         epoch_number: {type: integer, minimum: 1}
         device_code: {type: string}
@@ -1467,6 +1540,8 @@ components:
         extraction_software_version: {type: string}
         started_at: {type: string, format: date-time}
         started_on: {type: string, format: date}
+        from_value: {type: [string, "null"], description: "previous value of the part named by ResidentDetail.restart_cause (derived as for the baseline_restarted event, TRD 06 DB-065); null for epoch 1"}
+        to_value: {type: [string, "null"], description: "new value of that part; null for epoch 1"}
     BaselineInfo:
       type: object
       required: [state, n_usable, n_required, first_session_id, frozen_after_session_id, first_local_date, frozen_after_local_date]
@@ -1499,9 +1574,9 @@ components:
         baseline_n_required: {type: integer}
     ResidentDetail:
       type: object
-      required: [meta, resident_code, cohort, resident_status, sex, enrolled_on, admitted_on, withdrawn_on, status, device,
-                 current_epoch, epoch_count, baseline, watching_since, alarm_since, open_alert_id, current_tally,
-                 last_checkin_at, last_checkin_local, last_30_days, explanation]
+      required: [meta, resident_code, cohort, resident_status, sex, enrolled_on, admitted_on, withdrawn_on, status, needs_attention,
+                 attention_reasons, alarm_reviewed, restart_cause, device, current_epoch, epoch_count, baseline, watching_since,
+                 alarm_since, open_alert_id, current_tally, last_checkin_at, last_checkin_local, window, last_30_days, explanation]
       properties:
         resident_code: {$ref: "#/components/schemas/ResidentCode"}
         cohort: {$ref: "#/components/schemas/Cohort"}
@@ -1512,6 +1587,10 @@ components:
         withdrawn_on: {type: [string, "null"], format: date}
         meta: {$ref: "#/components/schemas/Meta"}
         status: {$ref: "#/components/schemas/DisplayStatus"}
+        needs_attention: {type: boolean, description: "as ResidentOverviewRow (TRD 24 D-114)"}
+        attention_reasons: {type: array, uniqueItems: true, items: {$ref: "#/components/schemas/AttentionReason"}}
+        alarm_reviewed: {type: [boolean, "null"], description: "as ResidentOverviewRow"}
+        restart_cause: {$ref: "#/components/schemas/RestartCause", description: "as ResidentOverviewRow"}
         device: {$ref: "#/components/schemas/DeviceRef"}
         current_epoch: {oneOf: [{$ref: "#/components/schemas/EpochInfo"}, {type: "null"}]}
         epoch_count: {type: integer, minimum: 0}
@@ -1522,11 +1601,12 @@ components:
         current_tally: {type: [number, "null"]}
         last_checkin_at: {type: [string, "null"], format: date-time, description: latest non-duplicate record of any status}
         last_checkin_local: {type: [string, "null"], format: date-time}
+        window: {$ref: "#/components/schemas/DateWindow", description: "the resident's 30-day window of last_30_days (TRD 24 D-114)"}
         last_30_days: {$ref: "#/components/schemas/Last30Days"}
         explanation: {$ref: "#/components/schemas/Explanation"}
     CheckinEvent:
       type: object
-      required: [local_date, event_type, epoch_number, session_id, detail, cusum_tally, restart_cause, previous_device_code, from_value, to_value]
+      required: [local_date, event_type, epoch_number, session_id, detail, cusum_tally, restart_cause, previous_device_code, from_value, to_value, device_code]
       properties:
         local_date: {type: string, format: date}
         event_type: {$ref: "#/components/schemas/CheckinEventType"}
@@ -1538,6 +1618,7 @@ components:
         previous_device_code: {type: [string, "null"], description: "baseline_restarted only: device of the previous epoch"}
         from_value: {type: [string, "null"], description: "baseline_restarted only: previous value of the restart_cause part"}
         to_value: {type: [string, "null"], description: "baseline_restarted only: new value of the restart_cause part"}
+        device_code: {type: [string, "null"], description: "checkins_started only: device of the resident's first non-duplicate record (TRD 24 D-114); null on other events"}
     CheckinEventList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
@@ -1687,7 +1768,7 @@ components:
         resident_code: {type: [string, "null"]}
         device_code: {type: [string, "null"]}
         title: {type: string, examples: ["R08 · baseline stuck at 13 of 16"]}
-        detail: {type: string, examples: ["12 missed and 5 set aside in 30 days"]}
+        detail: {type: string, examples: ["baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days."], description: "v0.2 text without the leading code (TRD 09 §4.9, TRD 24 D-114); the UI renders '<code>: <detail>'"}
         status: {$ref: "#/components/schemas/DataAlertStatus"}
         first_detected_at: {type: string, format: date-time}
         last_detected_at: {type: string, format: date-time}
@@ -1729,7 +1810,8 @@ components:
     Device:
       type: object
       required: [device_code, room_label, active, resident_codes, shared, replaces_device_code, replaced_by_device_code, in_use_since,
-                 in_use_until, last_upload_at, last_upload_local, firmware_version, silent_days_last_30, device_gap_days_last_30]
+                 in_use_until, last_upload_at, last_upload_local, firmware_version, uploaded_on_as_of_date, silent_days_last_30,
+                 device_gap_days_last_30]
       properties:
         device_code: {$ref: "#/components/schemas/DeviceCode"}
         room_label: {type: [string, "null"], description: non-identifying label only}
@@ -1743,6 +1825,7 @@ components:
         last_upload_at: {type: [string, "null"], format: date-time}
         last_upload_local: {type: [string, "null"], format: date-time}
         firmware_version: {type: [string, "null"]}
+        uploaded_on_as_of_date: {type: boolean, description: "true when the device has a non-duplicate record on the as-of local date ('● Online'), else false ('○ No upload today'); TRD 24 D-114"}
         silent_days_last_30: {type: array, items: {type: string, format: date}}
         device_gap_days_last_30: {type: array, items: {type: string, format: date}}
     DeviceList:
@@ -2068,7 +2151,8 @@ components:
 - OQ-05 Review/tally reset: `POST /alerts/{id}/reviews` documents that tally and alarm are unchanged.
 - OQ-24 Data-alert thresholds; OQ-25 review explanation list (`ReviewExplanationCode` is config-driven); OQ-26 who may review and how soon.
 - OQ-08 Facility norm definition (`ReferenceRange.method`, `ComparisonStatus` thresholds).
-- OQ-12 Final "What this means" wording (only structured `Explanation` facts are returned).
+- OQ-12 Final chart Summary ("Right now") wording (only structured `Explanation` facts are returned).
+- OQ-31 (answered 26 Oct 2026, TRD 24 D-115) Only `baseline_stalled` and `high_set_aside` set `needs_attention` (changing it would change `AttentionReason`); `uploaded_on_as_of_date` false never sets it.
 - OQ-14 Speaker verification confidence field (not in schema v0.1; adding it is a schema_version change).
 
 ## Revision History
@@ -2081,3 +2165,5 @@ components:
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-11) | — |
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (BaselineRow.robust_spread minimum 0; still_above_line and restart detail (D-82); AlarmTimingRow.result (D-81); E-18 latest succeeded run) | — |
 | 0.5 | 20 Oct 2026 | Documentation audit fixes (DA-05: E-10 same-date event order of TRD 11 UX-141) | — |
+| 0.6 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; D-114 additions: `ResidentOverviewRow` and `ResidentDetail` gain `needs_attention`, `attention_reasons` (new `AttentionReason`) and `alarm_reviewed`; `OverviewSummary` becomes `changed`, `needs_attention`, `learning`, `usual` (2/2/0/6); `sort=alarm` order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); `CheckinEventType` gains `checkins_started` and `CheckinEvent` gains `device_code`; `Device` gains `uploaded_on_as_of_date`; restart cause for the v0.2 texts (`restart_cause` on `ResidentOverviewRow` and `ResidentDetail`; `EpochInfo.from_value`, `to_value`); `ResidentDetail.window` and `DateWindow.days`; E-30 examples use the v0.2 data-alert details; consumers redirected from `/alerts` and `/analytics` to the Resident chart, nav badge and Study team page; OAS-021, OAS-027, OAS-028 updated | — |
+| 0.7 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |

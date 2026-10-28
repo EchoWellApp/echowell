@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -52,14 +52,15 @@ jobs:
       DATABASE_URL: postgresql+psycopg://echowell_app_login:ci-only-app@localhost:5432/echowell_test
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
+      TEST_SUPERUSER_URL: postgresql+psycopg://echowell:ci-only-postgres@localhost:5432/echowell_test # throwaway databases (TST-040, PGS-002)
       FACILITY_NAME: Edgewood
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
       CORS_ORIGINS: http://localhost:3000
       LOG_FORMAT: json
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -67,13 +68,14 @@ jobs:
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
       - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql # as superuser: extensions + timezone UTC (D-72), then roles
-      - run: alembic upgrade head # empty environment until FEAT-008 (D-90); proves the migrator login
+      - run: alembic upgrade head && alembic downgrade base && alembic upgrade head # TST-040 round trip (FEAT-008-AC-01)
+      - run: alembic check # models match migrations (PGS-023)
       - run: >
           pytest -p no:randomly tests/unit tests/integration tests/validation
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
           --junitxml=build/junit.xml
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-reports
           path: build/
@@ -84,8 +86,8 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     env: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000", NEXT_PUBLIC_APP_ENV: local, NEXT_TELEMETRY_DISABLED: "1" }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci
       - run: npm run lint
@@ -93,5 +95,5 @@ jobs:
       - run: npm run format:check # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
       - run: npm run test:coverage # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }

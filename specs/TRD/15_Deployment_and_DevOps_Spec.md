@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.12 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -129,7 +129,7 @@ flowchart LR
 | DEP-119 | The `backend` service shall also bind-mount `database/` and `tests/fixtures/` read-only at `/app/database` and `/app/tests/fixtures`, so that `backend.cli seed test_v0_1` (roster CSVs `database/seeds/test_v0_1/`, input `tests/fixtures/pipeline_input/`; TRD 24 D-68) and `database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/…` find their files locally and in E2E CI (TRD 16 §4.3); the image itself stays free of `tests/` (DEP-021). Staging re-seeding runs from the CI checkout, which has these files (TRD 16 §4.4). | Must | BR-15, SRC-05 | Test (E2E job seeds successfully) |
 | DEP-014 | `docker compose up` from a clean clone with `.env` copied from `.env.development.example` shall make `http://localhost:8000/api/v1/health` return HTTP 200 with `database: "ok"` within 180 s on a machine with Docker 24+. | Must | BR-17 | Test |
 | DEP-015 | The local test data shall be loaded by `docker compose exec backend python -m backend.cli seed test_v0_1` (no option; TRD 06 DB-056/DB-058), which shall load the roster CSVs, ingest the `test_v0_1` dataset defined in TRD 14 and run the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00` (America/Chicago). | Must | BR-15, SRC-03, SRC-05 | Test |
-| DEP-016 | After DEP-015, the Residents overview at `http://localhost:3000/residents` shall show summary tiles 2 / 7 / 1 / 19 (Alarm on / Being watched, no alarm / Baseline still forming / Missed check-ins last 30 days). | Must | BR-12, BR-15, SRC-09 | Test (E2E) |
+| DEP-016 | After DEP-015, the Resident list at `http://localhost:3000/residents` shall show the filter buttons "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" and the rows in the order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07 (TRD 11 §4.13.1). | Must | BR-12, BR-15, SRC-21 | Test (E2E) |
 | DEP-017 | A `demo` Compose profile shall add the service `frontend-prod`, built from `frontend/Dockerfile` (`next build` then `next start`), on port 3001, for E2E tests (TRD 16) and the demo fallback (DEP-090). | Must | RSK-12, SRC-17 | Test |
 | DEP-018 | The Compose file shall not contain any secret other than local-only placeholder passwords matching `local-dev-only-*` (the Postgres superuser password `local-dev-only-postgres` and the login-role passwords `local-dev-only-migrator`, `local-dev-only-app`, `local-dev-only-readonly`, the last three also in the `.env.development.example` URLs; TRD 06 DB-057 exception, TRD 21 ENV-041); staging and production secrets shall never be referenced. | Must | BR-16, TRD 12 | Inspection |
 
@@ -140,9 +140,9 @@ Local setup procedure (to be reproduced verbatim in `docs/deployment.md` and `do
 3. `cp .env.development.example .env` (values in TRD 21 §4.6). Do not edit `JWT_SECRET` for local use unless sharing the stack on a network.
 4. `docker compose up --build -d`
 5. Wait until `docker compose ps` shows `db` healthy and `curl -s http://localhost:8000/api/v1/health` returns `"status":"ok"`.
-6. `docker compose exec backend python -m backend.cli seed test_v0_1`, then `docker compose exec backend python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (Analytics alarm timing check; test_v0_1 only).
+6. `docker compose exec backend python -m backend.cli seed test_v0_1`, then `docker compose exec backend python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (Study team alarm timing check; test_v0_1 only).
 7. The seed has created `admin@example.com`, `clinician@example.com` and `researcher@example.com` with the local values of SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD and SEED_RESEARCHER_PASSWORD from `.env` (TRD 21; never printed, TRD 06 DB-057).
-8. Open `http://localhost:3000`, sign in as `admin@example.com`, confirm tiles 2 / 7 / 1 / 19.
+8. Open `http://localhost:3000`, sign in as `admin@example.com`, confirm the Resident list filters "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)".
 9. Reset: `docker compose down -v` deletes the `pgdata` volume; repeat from step 4.
 
 Database login roles (local and CI): `database/roles/provision_login_roles.sql` runs as the PostgreSQL superuser right after the
@@ -369,7 +369,7 @@ Two Netlify sites are built from the same repository, one per environment (D-99)
 | DEP-061 | Every migration merged to `main` shall be backward compatible with the previous release (expand/contract: add columns/tables first, remove in a later release), so that the previous backend deployment keeps working if the new deployment fails its healthcheck. | Must | DEP-041 | Inspection (PR review) |
 | DEP-062 | Every migration shall be applied to the Neon `staging` database branch by the staging deploy that follows its merge to `main`, and pass the staging smoke tests, before a release containing it is deployed to production; `deploy-production.yml` refuses a commit whose `deploy-staging.yml` run did not succeed (TRD 16 CIC-053). | Must | BR-17, D-99 | Inspection |
 | DEP-063 | Before a release that contains a migration is deployed to production, the DevOps owner shall create a Neon branch `pre-<short-sha>` from `main` as a restore point and delete it after 7 days if unused. | Must | BR-02 | Inspection |
-| DEP-064 | Alembic shall use a PostgreSQL advisory lock (key `0x45434857`, "ECHW") during upgrade so two concurrent starts cannot apply migrations twice. | Should | TRD 06 | Test |
+| DEP-064 | Alembic shall use a PostgreSQL advisory lock (key `0x45434857`, "ECHW") during upgrade so two concurrent starts cannot apply migrations twice. The lock shall be transaction-scoped (`pg_advisory_xact_lock(0x45434857)` taken at the start of the migration transaction in `backend/alembic/env.py`, released at commit or rollback), never session-level, as TRD 06 DB-021 requires for all advisory locks (TRD 24 D-120). | Should | TRD 06, D-120 | Test |
 | DEP-065 | If `alembic upgrade head` fails, the process shall exit non-zero so the Railway deployment fails and the previous deployment stays live. | Must | DEP-041 | Test |
 
 ### 4.8 Seeding and bootstrap rules
@@ -409,7 +409,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 3. Railway `staging` waits for CI, builds `backend/Dockerfile`, runs the pre-deploy command `alembic upgrade head`, starts uvicorn, passes the healthcheck.
 4. Netlify builds and publishes the staging site `echowell-und-staging` from `main`.
 5. GitHub Actions `deploy-staging.yml` (TRD 16 §4.4, triggered by the push to `main`) waits until `GET /api/v1/health` reports `version` = merged SHA, re-seeds the staging database if DEP-074 applies, and runs the staging smoke tests (DEP-080).
-6. The algorithm lead reviews the staging dashboard (tiles 2 / 7 / 1 / 19, R09 detail with alarm) before that commit is chosen for a production release.
+6. The algorithm lead reviews the staging dashboard (Resident list filters 10 / 2 / 2 / 6, R09 chart with the alarm) before that commit is chosen for a production release.
 
 Production is not touched by any of these steps.
 
@@ -427,7 +427,7 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DEP-080 | Staging smoke tests shall verify: (a) health 200 with `database: "ok"` and `version` = expected SHA; (b) frontend `/login` returns 200; (c) login with the staging smoke user (the seeded `researcher@example.com`, password from the GitHub secret `STAGING_SEED_RESEARCHER_PASSWORD`, TRD 16 §4.4; D-71) succeeds; (d) `GET /api/v1/residents` summary tiles equal 2 / 7 / 1 / 19; (e) `GET /api/v1/residents/R09` reports `alarm_on` with alarm since Oct 21; (f) `GET /api/v1/alerts` lists open alarms R09 and R10 and `GET /api/v1/data-alerts` lists exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; (g) `GET /api/v1/analytics` reports 281 of 300 received and 267 of 300 used; (h) a CORS preflight from the staging frontend origin is allowed and one from `https://example.org` is refused; (i) `Strict-Transport-Security` is present on API responses and an `http://` request is redirected to `https://` (TRD 13 TST-135); (j) the TLS check of TRD 12 SEC-066 (TLS 1.1 refused, TLS 1.2 accepted) passes on both origins. | Must | BR-12, BR-15, TRD 12 | Test |
+| DEP-080 | Staging smoke tests shall verify: (a) health 200 with `database: "ok"` and `version` = expected SHA; (b) frontend `/login` returns 200; (c) login with the staging smoke user (the seeded `researcher@example.com`, password from the GitHub secret `STAGING_SEED_RESEARCHER_PASSWORD`, TRD 16 §4.4; D-71) succeeds; (d) `GET /api/v1/residents` summary equals changed 2 / needs_attention 2 / learning 0 / usual 6 (TRD 24 D-114); (e) `GET /api/v1/residents/R09` reports `alarm_on` with alarm since Oct 21; (f) `GET /api/v1/alerts` lists open alarms R09 and R10 and `GET /api/v1/data-alerts` lists exactly R08 baseline stuck, R05 possible other speaker, R03 many set aside, D02 silent Oct 12; (g) `GET /api/v1/analytics` reports 281 of 300 received and 267 of 300 used; (h) a CORS preflight from the staging frontend origin is allowed and one from `https://example.org` is refused; (i) `Strict-Transport-Security` is present on API responses and an `http://` request is redirected to `https://` (TRD 13 TST-135); (j) the TLS check of TRD 12 SEC-066 (TLS 1.1 refused, TLS 1.2 accepted) passes on both origins. | Must | BR-12, BR-15, TRD 12 | Test |
 | DEP-081 | Production smoke tests shall be unauthenticated and read-only: (a) health 200, `database: "ok"`, `version` = expected SHA; (b) frontend `/login` returns 200 over HTTPS; (c) `GET /api/v1/residents` without token returns 401 with an RFC 7807 body; (d) `POST /api/v1/sessions` without API key returns 401; (e) HSTS header present on both origins and an `http://` request redirected to `https://` (TRD 13 TST-135); (f) `GET /api/v1/audio` returns 404; (g) the TLS check of TRD 12 SEC-066 (TLS 1.1 refused, TLS 1.2 accepted) passes on both origins. | Must | BR-16, TRD 12, TRD 17 | Test |
 | DEP-082 | A smoke test run shall finish within 5 minutes, including the wait for the new version (polling every 15 s, timeout 15 min counted separately). | Should | TRD 16 | Test |
 | DEP-083 | After a production deploy, a team member shall complete a manual authenticated check (log in, open Residents, open one resident, sign out) and record the result in the GitHub Release notes. | Should | BR-12 | Demo |
@@ -549,7 +549,7 @@ Mapping from the current interim stack:
 
 ## 7. Acceptance Criteria
 
-- AC-DEP-01 On a laptop with 8 GB RAM and Docker already installed, steps 2–8 of the local procedure produce a dashboard with tiles 2 / 7 / 1 / 19 and R09 "Alarm on" in under 10 minutes (TRD 03 NFR-087).
+- AC-DEP-01 On a laptop with 8 GB RAM and Docker already installed, steps 2–8 of the local procedure produce a dashboard with the Resident list filters "All (10)", "Changed (2)", "Needs attention (2)", "Usual (6)" and R09 "▲ Changed" in under 10 minutes (TRD 03 NFR-087).
 - AC-DEP-02 `docker compose exec backend python -m backend.cli seed test_v0_1` with APP_ENV=production exits with code 2 and leaves `raw_sessions` row count unchanged.
 - AC-DEP-03 A merge to `main` results, without manual steps, in a Railway staging deployment whose health `version` equals the merge SHA and a Netlify staging-site deploy, followed by a green `deploy-staging.yml` run; production is unchanged.
 - AC-DEP-04 An approved manual `deploy-production.yml` run for a `main` commit results in production health `version` equal to that SHA, a green run and tag `vX.Y.Z`; a merge to `main` alone never changes production.
@@ -596,3 +596,5 @@ Mapping from the current interim stack:
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (§4.8 bootstrap (D-85), create-user/create-api-key/revoke-api-key refusals (D-86), export-openapi (D-89); DEP-047 NIGHTLY_RUN_HOUR_LOCAL; DEP-075 syntax; DEP-080/DEP-081 redirect and TLS checks; DEP-096 OQ-01 interim; DEP-097 single drill (D-77); guide path; alembic.ini Phase 3 (D-90)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-10): one uvicorn command with `--proxy-headers --forwarded-allow-ips="*"` in DEP-022 (image default), DEP-040 (Railway start command), §4.5 step 2 and the `railway.toml` outline, matching TRD 05 API-001 and API-103 | — |
+| 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): DEP-016 Resident list filter counts and order; DEP-080 (d) summary counts 2 / 2 / 0 / 6; local procedure step 6 and 8, release step 6, AC-DEP-01 | — |
+| 0.14 | 27 Oct 2026 | Checkpoint 3 review (GitHub PR #17, Q-1): DEP-064 lock is transaction-scoped (TRD 24 D-120) | — |

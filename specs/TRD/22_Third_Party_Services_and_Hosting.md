@@ -1,6 +1,6 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.3 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.4 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -17,7 +17,7 @@ the services that are explicitly excluded.
 
 - Current interim stack: Netlify, Railway, Neon (with Railway PostgreSQL as alternative).
 - Development and delivery: GitHub (repository, Actions, Dependabot, secret scanning).
-- Fonts: IBM Plex via `next/font` self-hosting (Google Fonts at build time only).
+- Fonts: "Source Sans 3" via `next/font` self-hosting (Google Fonts at build time only; TRD 24 D-112).
 - Optional: Sentry error tracking.
 - AWS target: Amplify Hosting, App Runner, ECR, RDS for PostgreSQL, KMS, Secrets Manager, CloudWatch, EventBridge Scheduler, SNS, CloudTrail, under an AWS BAA.
 - Explicit exclusions.
@@ -53,7 +53,7 @@ the services that are explicitly excluded.
 | Railway | Backend hosting (FastAPI + analytics) | current interim | Never (D-OWNER-4) |
 | Neon | PostgreSQL 16 database | current interim | Never (D-OWNER-4) |
 | Railway PostgreSQL | Alternative database if Neon unavailable | contingency | Never (D-OWNER-4) |
-| Google Fonts (via `next/font`) | IBM Plex Sans / Mono font files, fetched at build time | current + target | No data |
+| Google Fonts (via `next/font`) | "Source Sans 3" font files, fetched at build time | current + target | No data |
 | Sentry (optional) | Backend exception tracking | optional | Never on interim stack; on AWS only after re-approval (TPS-061) |
 | AWS (Amplify, App Runner, ECR, RDS, KMS, Secrets Manager, CloudWatch, EventBridge, SNS, CloudTrail) | Target production platform | target | Yes, after go-live |
 
@@ -137,19 +137,19 @@ the services that are explicitly excluded.
 | TPS-040 | The `EchoWellApp` organisation shall require two-factor authentication for all members. | Must | BR-16 | Inspection |
 | TPS-041 | Because the repository is public, nothing in it, its issues, PRs, Actions logs or artifacts shall contain real resident data, secrets or third-party-licensed documents (TRD 18 GIT-073, GIT-080, GIT-093). | Must | BR-16, D-OWNER-1 | Inspection |
 
-### 4.6 Fonts: IBM Plex via `next/font`
+### 4.6 Fonts: Source Sans 3 via `next/font`
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Design tokens require IBM Plex Sans (body) and IBM Plex Mono (footnotes/captions) (contract §11) |
-| Decision | Self-host through `next/font/google` (`IBM_Plex_Sans` weights 400/600, `IBM_Plex_Mono` weight 400 (TRD 04 FE-004), subset `latin`, `display: "swap"`). Font files are downloaded once at build time and served from the EchoWell frontend origin. |
+| Purpose | The v0.2 design tokens require "Source Sans 3" for all text (TRD 11 §4.15, TRD 24 D-112; replaces IBM Plex Sans and Mono of contract §11); request IDs use the system monospace stack, no second web font |
+| Decision | Self-host through `next/font/google` (`Source_Sans_3` weights 400/600/700 (TRD 04 FE-004), subset `latin`, `display: "swap"`). Font files are downloaded once at build time and served from the EchoWell frontend origin. |
 | Data stored | None; browsers never contact Google; no user data reaches Google |
-| Limits / caveat | Build machines (Netlify, CI, Docker build) need outbound access to Google Fonts at build time; if unavailable, the build falls back to the CSS fallback stack (`system-ui, -apple-system, "Segoe UI", sans-serif` / `ui-monospace, Menlo, monospace`). |
-| Exit path | Switch to `next/font/local` with the OFL-licensed IBM Plex files if build-time network access is restricted (e.g. on AWS with no egress); fonts are not committed unless this switch happens (TRD 18 GIT-097) |
+| Limits / caveat | Build machines (Netlify, CI, Docker build) need outbound access to Google Fonts at build time; if unavailable, the build falls back to the CSS fallback stack (`"Segoe UI", Helvetica, Arial, sans-serif`; monospace `ui-monospace, Menlo, monospace`). The checkpoint 2 skeleton still loads IBM Plex until FEAT-062 switches it in checkpoint 7 (D-112). |
+| Exit path | Switch to `next/font/local` with the OFL-licensed Source Sans 3 files if build-time network access is restricted (e.g. on AWS with no egress); fonts are not committed unless this switch happens (TRD 18 GIT-097) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TPS-050 | The frontend shall load IBM Plex Sans and IBM Plex Mono only through `next/font` self-hosting; no `<link>` to `fonts.googleapis.com` or `fonts.gstatic.com` shall exist in rendered HTML or CSS. | Must | BR-16, contract §11 | Test (E2E asserts no request to Google domains) |
+| TPS-050 | The frontend shall load "Source Sans 3" only through `next/font` self-hosting and no other web font; no `<link>` to `fonts.googleapis.com` or `fonts.gstatic.com` shall exist in rendered HTML or CSS. | Must | BR-16, contract §11, SRC-21 | Test (E2E asserts no request to Google domains) |
 | TPS-051 | The frontend shall make network requests only to its own origin and to NEXT_PUBLIC_API_BASE_URL; the Content-Security-Policy of TRD 12 §4.9 (SEC-070; `connect-src 'self'` plus the API origins) shall enforce this. | Must | BR-16, TRD 12 | Test |
 
 ### 4.7 Sentry (optional)
@@ -234,7 +234,7 @@ the services that are explicitly excluded.
 
 ## 8. Implementation Notes
 
-- `frontend/app/layout.tsx`: `import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google"`; expose them as CSS variables `--font-sans` and `--font-mono` and reference them in the design tokens.
+- `frontend/app/layout.tsx`: `import { Source_Sans_3 } from "next/font/google"`; expose it as the CSS variable `--font-source-sans-3`, used by `--font-sans` in the design tokens (TRD 04 FE-004); `--font-mono` is the system monospace stack.
 - Do not add `@sentry/nextjs`; only the Python `sentry-sdk` (optional import guarded by SENTRY_DSN).
 - When creating accounts, use the project mailbox as the owner and invite individuals as members; never transfer ownership to a student's personal account, because accounts must survive team changes at semester end.
 - Keep a single page in `docs/deployment.md` titled "Service accounts" for TPS-006; it must never contain passwords or tokens.
@@ -255,3 +255,4 @@ the services that are explicitly excluded.
 | 0.1 | 18 Oct 2026 | Cross-TRD consistency review | — |
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-14, F-23, F-45) | — |
 | 0.3 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.4 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): fonts: Source Sans 3 replaces IBM Plex Sans and Mono (§2, §4.1 table, §4.6, TPS-050, §8; D-112) | — |

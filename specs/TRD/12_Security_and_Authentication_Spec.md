@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.11 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -33,7 +33,8 @@ not defined); the offline mixed-effects research analysis environment (governed 
 | SRC-05 | Pipeline test input CSV (synthetic data permitted on the interim stack) |
 | SRC-07 | Preprint (https://preprints.jmir.org/preprint/113062): device captures a short fixed phrase; features only |
 | SRC-14 | Team 2 PRD Guide Part B (raw audio never leaves the room; no LLMs) |
-| Contract §12, §18–§21 | Security baseline; owner decisions D-OWNER-1..4; wireframe additions (SRC-18 Alert review, SRC-19 Analytics); reconciliation R1–R27 |
+| Contract §12, §18–§21 | Security baseline; owner decisions D-OWNER-1..4; wireframe additions (SRC-18 Alert review, SRC-19 Analytics; both superseded by SRC-21, TRD 24 D-108, and removed from the repository); reconciliation R1–R27 |
+| SRC-21 | Clinical dashboard wireframe v0.2 (Resident list, Resident chart, New admissions, Study team): pages and role-dependent controls (TRD 24 D-110) |
 | TRD 05 | Backend API (dependencies, error codes, rate limits, middleware) |
 | TRD 06 / TRD 20 | Database design and DDL (roles, triggers) |
 | TRD 15 / TRD 16 | Deployment and CI/CD (secrets, scanning jobs) |
@@ -85,7 +86,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | SEC-001 | The interim stack (Netlify + Railway + Neon, all environments including the one named `production`) shall hold synthetic and test data only; no real resident data shall be loaded, ingested or entered into it. | Must | D-OWNER-4, BR-16 | Inspection |
 | SEC-002 | EchoWell shall not go live with real resident data until the AWS target platform is approved; go-live shall happen on AWS only. | Must | D-OWNER-4, D-OWNER-3 | Inspection |
 | SEC-003 | Team 2 shall not issue interim-stack API keys to devices deployed at Edgewood; interim-stack API keys shall be bound to test devices or used only by test harnesses. | Must | D-OWNER-4 | Inspection |
-| SEC-004 | On the interim stack, DATA_SOURCE_LABEL shall name the synthetic/test source (for example "pipeline test data v0.1") and the frontend header shall display it on every page. | Must | D-OWNER-4, contract §11 | Demo |
+| SEC-004 | On the interim stack, DATA_SOURCE_LABEL shall name the synthetic/test source (for example "pipeline test data v0.1") and the frontend data bar (TRD 11 UX-400) shall display it on every page. | Must | D-OWNER-4, contract §11 | Demo |
 | SEC-005 | The go-live checklist (TRD 15) shall include a signed-off item "hosting approved for PHI-derived data (AWS)" by the PI and UND IT before any live device is pointed at the API. | Must | D-OWNER-3, D-OWNER-4 | Inspection |
 | SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Railway US East, AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
 | SEC-006 | Application code shall remain portable to AWS (App Runner, Amplify, RDS PostgreSQL, KMS, Secrets Manager, CloudWatch) with configuration changes only: no Railway-, Netlify- or Neon-specific SDKs in application code. | Must | D-OWNER-3, SRC-01 | Inspection |
@@ -179,7 +180,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 | SEC-040 | Every endpoint shall enforce the role matrix above on the server through the TRD 05 dependencies; frontend hiding of controls is a convenience, not a control. | Must | BR-16, T-14 | Test |
 | SEC-041 | An automated test shall exercise every (endpoint × credential type) cell of the matrix and assert the allowed status or 401/403. | Must | BR-16 | Test |
 | SEC-042 | A route without an explicit auth dependency shall fail the test `tests/integration/test_auth_coverage.py`, which enumerates `app.routes` and allows only `/health`, `/auth/login` and `/openapi.json` (plus `/docs` outside production) to be anonymous. | Must | T-14 | Test |
-| SEC-043 | The frontend shall show the `/admin` route only to admins, the "Analytics" navigation and `/analytics` page only to researchers and admins, and the alarm review form ("Save review", "Remind me in 24 h", Resident detail "Mark as reviewed") and the staff-note form only to clinicians and admins. | Must | TRD 04, SRC-18, SRC-19 | Test |
+| SEC-043 | The frontend shall show the "Admin" navigation link and the `/admin` page only to admins, the "Study team" navigation link and the `/study` page only to researchers and admins (clinicians get the access-denied state), and the alarm review form of the Resident chart's "Review and notes" section ("Save review", "Remind me in 24 hours") and the staff-note form only to clinicians and admins (researchers see "Only clinicians and admins can review alarms." and "Only clinicians and admins can add notes."); the Resident list, Resident chart and New admissions pages are open to all three roles (TRD 11 UX-014, UX-018, UX-132, UX-322, UX-350). | Must | TRD 04, SRC-21 | Test |
 | SEC-044 | Users shall not be able to change their own role or deactivate themselves via `PATCH /users/{id}`; the request returns 403 `FORBIDDEN`. | Must | T-14 | Test |
 | SEC-045 | Researchers shall have read-only access in the API (including CSV export); no researcher action shall create, update, review or snooze any record. | Must | BR-16 | Test |
 | SEC-046 | Accounts shall be granted only to personnel listed on the IRB-approved protocol (verified by the admin before `POST /users`), and accounts of people leaving the study shall be deactivated within 1 working day of notice. | Must | BR-16, OQ-11 | Inspection |
@@ -238,7 +239,7 @@ AWS API origin replaces these entries in the same change that switches NEXT_PUBL
 |---|---|---|---|---|
 | SEC-070 | The frontend shall be served with the headers in the netlify.toml excerpt above; `connect-src` shall list exactly the API origins of the deployed environments and no wildcard, and the Netlify build command shall be `node scripts/check-csp.mjs && npm run build` (base directory `frontend/`, TRD 15), where `check-csp.mjs` fails the build when NEXT_PUBLIC_API_BASE_URL is not listed in `connect-src`. The frontend shall set no other CSP (no middleware CSP in the MVP; TRD 04 FE-060). | Must | T-12 | Test |
 | SEC-071 | `Permissions-Policy` shall deny `microphone` and `camera`: the dashboard never accesses audio or video devices. | Must | BR-01, T-16 | Test |
-| SEC-072 | IBM Plex Sans and IBM Plex Mono shall be self-hosted via `next/font` so that no third-party font or script origin is required by the CSP. | Must | T-12, contract §11 | Inspection |
+| SEC-072 | The web font "Source Sans 3" (TRD 24 D-112; replaces IBM Plex Sans and Mono) shall be self-hosted via `next/font` so that no third-party font or script origin is required by the CSP. | Must | T-12, contract §11 | Inspection |
 | SEC-073 | The frontend shall load no third-party scripts, analytics, trackers or tag managers. | Must | BR-16 | Inspection |
 | SEC-074 | React components shall not use `dangerouslySetInnerHTML`; an ESLint rule (`react/no-danger`) shall enforce this. | Must | T-12 | Test |
 | SEC-075 | `script-src 'unsafe-inline'` is accepted for the MVP because Next.js App Router emits inline hydration scripts; a nonce-based CSP shall be adopted when the frontend moves to AWS Amplify. | Should | T-12, RSK-07 | Inspection |
@@ -461,3 +462,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-06) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (SEC-017 create-user syntax; SEC-055 openssl rand -hex 32; SEC-101 refused-request audit rows (D-87); SEC-110 provisioning step; SEC-154 per CIC-025; SEC-162 refers to DEP-097 (D-77)) | — |
 | 0.11 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.12 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SEC-043 page and control access (Study team `/study` for researcher and admin; review and notes in the Resident chart for clinician and admin); SEC-004 data bar; SEC-072 font Source Sans 3; SRC-21 reference | — |

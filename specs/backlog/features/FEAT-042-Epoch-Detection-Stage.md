@@ -91,7 +91,7 @@ None directly; epochs surface through `current_epoch`, `epoch_count` and `baseli
 
 ## Frontend Impact
 
-None directly (badge "No alarm · baseline restarted Oct 13" and the log entry are FEAT-065/FEAT-068).
+None directly (the list text "Usual. Baseline restarted Oct 13 after a new device." and the log entry "New device D07B. Baseline restarted." are FEAT-065/FEAT-068).
 
 ## Analytics Impact
 

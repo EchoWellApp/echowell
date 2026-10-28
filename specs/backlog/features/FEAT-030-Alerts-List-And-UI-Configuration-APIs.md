@@ -12,22 +12,23 @@
 
 ## Purpose
 
-Serve the change-alarm list that drives the Alert review page queue, the "Alerts (<n>)" navigation count and the overview badges (`GET /api/v1/alerts`), and the operational UI configuration the review form needs — the explanation checklist and the snooze hours (`GET /api/v1/config/ui`). Alerts appear only inside the dashboard; there is no outbound notification channel in the MVP.
+Serve the change-alarm list (`GET /api/v1/alerts`) that drives, in wireframe v0.2 (SRC-21; TRD 24 D-110), the red badge on the "Resident list" navigation link, the Resident chart's Summary alarm facts ("Alarm started", "Open", "Review status", "Leaning most", change score) and its "Review and notes" panel, and the operational UI configuration the review form needs — the explanation checklist and the snooze hours (`GET /api/v1/config/ui`). Alerts appear only inside the dashboard; there is no outbound notification channel in the MVP.
 
 ## Business Context
 
 - BR-11 (alarm when the tally crosses the line, reviewed by staff): list of alarms with device, current tally, open days, review and snooze state.
 - BR-13 (staff review workflow): the review checklist and the "Remind me in <h> h" value come only from configuration.
-- BR-12: the nav count "Alerts (<n>)" is the total of not-yet-reviewed alarms.
-- FRs covered (BACKLOG.md): FR-108, FR-109, FR-261, FR-262.
+- BR-12: the "Resident list" nav badge is the total of not-yet-reviewed alarms.
+- FRs covered (BACKLOG.md): FR-108, FR-109, FR-261 (retired by D-110; no queue), FR-262, FR-266 ("Leaning most" slot).
 
 ## Referenced TRDs
 
 - TRD 05 API-080 (alerts list), API-137 (UI configuration), API-057, API-069, API-100, API-121.
 - TRD 19 §4.3 E-13, E-32; schemas `Alert`, `AlertList`, `UiConfig`, `ReviewExplanation`, `ReviewExplanationCode`, `AlertStatus`.
-- TRD 09 CUS-022 (dashboard-only surfacing, nav count), CUS-023, CUS-024 (chart data contract the page combines with this list), CUS-025 (list fields and order), CUS-026 (wording), CUS-037 (one card per non-closed alarm), CUS-041 ("Leaning most" returned with each alarm), §4.8 (card texts).
+- TRD 09 CUS-022 (dashboard-only surfacing, nav badge), CUS-023, CUS-024 (change-score chart data contract), CUS-025 (list fields and order), CUS-026 (wording), CUS-041 ("Leaning most" returned with each alarm), §4.8 (alert facts used by the chart; CUS-037 retired).
+- TRD 11 UX-018 (nav badge), UX-076 and UX-312 (Summary alarm facts and "Leaning most"), UX-310 to UX-322 (review panel), UX-411 (section badge).
 - TRD 07 §4.7 `OperationalConfig` (`alert_snooze_hours`, `review_explanations`); TRD 21 ENV-020 (config keys, not env vars).
-- TRD 23 §4.2.17 (alerts), §4.4.1 (open days, alert tally, reviewed badge).
+- TRD 23 §4.2.17 (alerts), §4.4.1 (open days, alert tally, alarm reviewed).
 - TRD 14 TDV-067; TRD 19 OAS-027; AC-API-14 (alerts half).
 - TRD 24 D-05 (dashboard only), D-64 (`GET /config/ui`); D-92 (phase split of `leaning_most`), D-79 (read-side call of `alert_generator.leaning_most`).
 
@@ -42,7 +43,7 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 
 - Computing `leaning_most` values: owned by `analytics/alert_generator.leaning_most` and wired into this endpoint by FEAT-048 (Phase 6, TRD 24 D-92).
 - Creating, closing or reconciling alerts (pipeline, FEAT-048 and FEAT-053); reviews and snooze (FEAT-031); data alerts (FEAT-032).
-- The queue's three-group ordering (not reviewed and not snoozed, snoozed, reviewed) and card texts, which the frontend applies (FR-261, FEAT-069).
+- The v0.1 alarm queue and its card texts (retired by D-110; Changed residents sort first on the Resident list, FEAT-027); the Summary and review-panel wording, which the frontend renders.
 - Any SMS, e-mail or push channel (FR-109, OQ-06).
 
 ## Functional Requirements
@@ -50,13 +51,13 @@ Serve the change-alarm list that drives the Alert review page queue, the "Alerts
 | ID | Requirement | Trace |
 |---|---|---|
 | FEAT-030-FR-01 | `GET /api/v1/alerts` shall accept optional `status` ∈ {open, acknowledged, closed} and `resident_code` plus `limit`/`offset`; any other value returns 422 `INVALID_QUERY_PARAMETER`. | API-080; TRD 19 E-13; FR-108 |
-| FEAT-030-FR-02 | Items shall be ordered by `triggered_at` ascending and returned in the `AlertList` envelope with `meta`; `total` of `?status=open` is the nav count "Alerts (<n>)" (data alerts are never counted). | API-080, CUS-025, CUS-022; TRD 19 E-13 |
+| FEAT-030-FR-02 | Items shall be ordered by `triggered_at` ascending and returned in the `AlertList` envelope with `meta`; `total` of `?status=open` is the "Resident list" nav badge count (data alerts are never counted); `?resident_code=<R>` gives the chart its alert. | API-080, CUS-025, CUS-022; TRD 19 E-13 |
 | FEAT-030-FR-03 | Each `Alert` shall carry `id`, `resident_code`, `device_code` (device of the alert's epoch), `epoch_number`, `session_id`, `triggered_at`, `local_date`, `cusum_value`, `current_tally` (= `cusum_state.current_tally` of the alert's epoch), `open_days` (= as-of local date − `local_date` in days), `status`, `reviewed` (true when status is `acknowledged`), `review_count` and `last_reviewed_at` (from `alert_reviews`), `snoozed_until`, `snoozed_by`, `leaning_most` and `closed_reason`. | API-080, CUS-025; TRD 23 §4.4.1; FR-262 |
 | FEAT-030-FR-04 | `leaning_most` shall always be present as an array of at most 3 `ScoredFeatureKey` values; its values are supplied by the `leaning_most` provider delivered in FEAT-048 (an empty list when no feature has a positive mean, CUS-041). | API-080, CUS-041; D-92 |
 | FEAT-030-FR-05 | Alerts shall be surfaced only through the authenticated API and dashboard; no code path in this feature shall send e-mail, SMS or push messages. | FR-109, CUS-022, D-05 |
 | FEAT-030-FR-06 | `GET /api/v1/config/ui` (all user roles) shall return `UiConfig` `{meta, alert_snooze_hours, review_explanations}` read from the `config_parameters` rows of the active profile on every request, with `review_explanations` as `{code, label}` items in configured order. | API-137; TRD 19 E-32; TRD 07 §4.7; ENV-020 |
-| FEAT-030-FR-07 | API responses shall return facts only; wording such as "Alarm since", "open <n> days" and the tally to 1 decimal is rendered by the frontend. | CUS-026, OAS-011 |
-| FEAT-030-FR-08 | Every non-closed alert shall carry `status`, `reviewed`, `snoozed_until`, `local_date` and `resident_code`, which are the inputs of the change-alarm queue order (not reviewed and not snoozed, snoozed, reviewed; then alarm date, then resident code) that the frontend applies; the API order itself stays `triggered_at` ascending. | FR-261, CUS-037; TRD 09 §4.8 |
+| FEAT-030-FR-07 | API responses shall return facts only; wording such as "Alarm started", "<n> days", "Changed from their usual since <Mon D>" and the change score to 1 decimal is rendered by the frontend. | CUS-026, OAS-011, D-113 |
+| FEAT-030-FR-08 | Every non-closed alert shall carry `status`, `reviewed`, `snoozed_until`, `local_date` and `resident_code`, which the chart uses for "Review status", the "Reminder set for …" line and the section badge; the API order stays `triggered_at` ascending (the v0.1 queue order is retired, D-110). | FR-262, FR-274, TRD 09 §4.8, D-110 |
 
 ## Inputs
 
@@ -95,7 +96,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-031, FEAT-048, F
 
 ## Frontend Impact
 
-None in this feature. Consumers: `AppHeader` (open count), `AlertQueue`, `AlertCard`, `ResidentHeader` via `getAlerts({status, residentCode})`; `AlertReviewForm` via `getUiConfig()` (TRD 04 §4.6.2), delivered by FEAT-064, FEAT-069, FEAT-070.
+None in this feature. Consumers: the app bar's "Resident list" badge (open count), the chart Summary, section badge and "Review and notes" panel via `getAlerts({status, residentCode})`; the review form via `getUiConfig()` (TRD 04), delivered by FEAT-064 and the chart features (FEAT-066, FEAT-069 to FEAT-071 as re-scoped for wireframe v0.2).
 
 ## Analytics Impact
 

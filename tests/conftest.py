@@ -110,7 +110,7 @@ def database_url() -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def engine(database_url: str) -> Engine:
-    return db.get_engine(make_settings(database_url=database_url).database_url)
+    return db.create_engine_for(database_url, app_env="test")
 
 
 @pytest.fixture
@@ -132,7 +132,9 @@ def client(database_url: str) -> Iterator[TestClient]:
     settings = make_settings(database_url=database_url, database_readonly_url=database_url)
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
-    app.dependency_overrides[get_engine] = lambda: db.get_engine(settings.database_url)
+    app.dependency_overrides[get_engine] = lambda: db.create_engine_for(
+        settings.database_url, app_env="test"
+    )
     with TestClient(app) as test_client:
         yield test_client
 

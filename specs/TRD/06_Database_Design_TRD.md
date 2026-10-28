@@ -1,6 +1,6 @@
 # 06 Database Design TRD
 
-Document ID: ECHOWELL-TRD-06 · Version 0.10 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-06 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -42,8 +42,8 @@ Out of scope:
 | SRC-03 | Pipeline test workbook v0.1 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes, Exp_baselines, Exp_scores) |
 | SRC-04 | Pipeline test generator v0.1 (residents, sex, devices, D02 sharing, R07 move) |
 | SRC-05 | Pipeline test input CSV v0.1 (283 arrivals) |
-| SRC-09 / SRC-10 | Wireframes: Residents overview, Resident detail (query patterns) |
-| SRC-18 / SRC-19 | Wireframes: Alert review (`/alerts`), Analytics (`/analytics`) |
+| SRC-21 | Clinical dashboard wireframe v0.2: Resident list, Resident chart, Study team (query patterns) |
+| SRC-09 / SRC-10 / SRC-18 / SRC-19 | Wireframes v0.1 (Residents overview, Resident detail, Alert review, Analytics): superseded by SRC-21 (TRD 24 D-108); removed from the repository |
 | TRD 05 / TRD 19 | Backend API, OpenAPI contracts (endpoints whose queries the indexes serve) |
 | TRD 07 / 08 / 09 / 10 | Analytics engine, Baseline and Scoring, CUSUM and Alerting, Ingestion (table writers) |
 | TRD 12 | Security (roles, audit actions, API keys) |
@@ -513,24 +513,25 @@ lookup indexes for `resident_code`, `device_code`, `(resident_id, local_date)` o
 
 | Query pattern (endpoint) | SQL shape | Index(es) |
 |---|---|---|
-| Overview: current epoch per resident (`GET /residents`) | `epochs WHERE resident_id = ANY(:ids) AND ended_at IS NULL` | `epochs_current_uq` |
-| Overview: open alarm and alarm date | `alerts WHERE resident_id = ANY(:ids) AND status <> 'closed'` | `alerts_resident_triggered_idx`, `alerts_one_active_per_epoch_uq` |
-| Overview: last check-in | `SELECT DISTINCT ON (resident_id) … FROM processed_sessions WHERE status <> 'duplicate' ORDER BY resident_id, timestamp_utc DESC` | `processed_sessions_resident_ts_idx` (partial) |
-| Overview: 30-day used/set aside/quarantined | `processed_sessions WHERE resident_id = ANY(:ids) AND local_date BETWEEN :d-29 AND :d GROUP BY resident_id, status` | `processed_sessions_resident_date_idx` (INCLUDE status, index-only) |
-| Overview: 30-day missed | `day_ledger WHERE local_date BETWEEN :d-29 AND :d AND status <> 'checked_in'` | `day_ledger_missing_idx` (partial) |
-| Overview: baseline progress n of N | `count(*) FROM processed_sessions WHERE epoch_id = :current AND status = 'usable'` | `processed_sessions_epoch_idx` |
-| Detail header and baseline line (`GET /residents/{code}`) | `baselines WHERE epoch_id = :e AND feature_key = 'composite'` | `baselines_epoch_feature_uq` |
-| Scores series / tally chart (`GET /scores`) | `scores WHERE epoch_id = :e ORDER BY local_date` or `WHERE resident_id = :r AND local_date BETWEEN :from AND :to` | `scores_epoch_date_idx`, `scores_resident_date_idx` |
-| Check-in log (`GET /residents/{code}/checkins`) | union of `processed_sessions` (non-duplicate, non-usable), `day_ledger` (missing), `alerts`, `epochs`, `baselines` by resident and date range | `processed_sessions_resident_date_idx`, `day_ledger_missing_idx`, `alerts_resident_triggered_idx` |
+| Resident list: current epoch per resident (`GET /residents`) | `epochs WHERE resident_id = ANY(:ids) AND ended_at IS NULL` | `epochs_current_uq` |
+| Resident list: open alarm, alarm date and `alarm_reviewed` (alert status) | `alerts WHERE resident_id = ANY(:ids) AND status <> 'closed'` | `alerts_resident_triggered_idx`, `alerts_one_active_per_epoch_uq` |
+| Resident list: last check-in | `SELECT DISTINCT ON (resident_id) … FROM processed_sessions WHERE status <> 'duplicate' ORDER BY resident_id, timestamp_utc DESC` | `processed_sessions_resident_ts_idx` (partial) |
+| Resident list: 30-day used/set aside/quarantined | `processed_sessions WHERE resident_id = ANY(:ids) AND local_date BETWEEN :d-29 AND :d GROUP BY resident_id, status` | `processed_sessions_resident_date_idx` (INCLUDE status, index-only) |
+| Resident list: 30-day missed | `day_ledger WHERE local_date BETWEEN :d-29 AND :d AND status <> 'checked_in'` | `day_ledger_missing_idx` (partial) |
+| Resident list: baseline progress n of N | `count(*) FROM processed_sessions WHERE epoch_id = :current AND status = 'usable'` | `processed_sessions_epoch_idx` |
+| Resident list and chart: attention flag (`needs_attention`, TRD 23 §4.4.3; TRD 24 D-114) | `data_alerts WHERE status = 'open' AND kind IN ('baseline_stalled', 'high_set_aside') AND resident_id = ANY(:ids)` | `data_alerts_status_detected_idx` |
+| Chart banner, Summary and Baseline section (`GET /residents/{code}`) | `baselines WHERE epoch_id = :e AND feature_key = 'composite'` | `baselines_epoch_feature_uq` |
+| Scores series / change-score chart (`GET /scores`) | `scores WHERE epoch_id = :e ORDER BY local_date` or `WHERE resident_id = :r AND local_date BETWEEN :from AND :to` | `scores_epoch_date_idx`, `scores_resident_date_idx` |
+| Check-in log (`GET /residents/{code}/checkins`) | union of `processed_sessions` (non-duplicate, non-usable), `day_ledger` (missing), `alerts`, `epochs`, `baselines` by resident and date range, plus `checkins_started` = the resident's first non-duplicate `processed_sessions` row (`ORDER BY timestamp_utc LIMIT 1`, device via `raw_sessions`; derived on read, TRD 24 D-113) | `processed_sessions_resident_date_idx`, `processed_sessions_resident_ts_idx`, `day_ledger_missing_idx`, `alerts_resident_triggered_idx` |
 | Features sparklines (`GET /residents/{code}/features`) | `processed_sessions WHERE epoch_id = :e AND status = 'usable' ORDER BY timestamp_utc` + `scores` | `processed_sessions_epoch_idx` |
-| Alerts list and nav count "Alerts (<n>)" (`GET /alerts?status=`) | `alerts WHERE status = :s ORDER BY triggered_at ASC` (TRD 19 order; the DESC index is scanned backwards); `count(*) WHERE status = 'open'` (nav counts not-yet-reviewed alarms only) | `alerts_status_triggered_idx` |
-| Review history / "Reviewed" badge (`GET /alerts/{id}/reviews`) | `alert_reviews WHERE alert_id = :a ORDER BY created_at DESC` | `alert_reviews_alert_created_idx` |
-| Data alerts queue (`GET /data-alerts`) | `data_alerts WHERE status = 'open' ORDER BY last_detected_at DESC` | `data_alerts_status_detected_idx` |
+| Alerts list and the "Resident list" nav badge count (`GET /alerts?status=`) | `alerts WHERE status = :s ORDER BY triggered_at ASC` (TRD 19 order; the DESC index is scanned backwards); `count(*) WHERE status = 'open'` (nav counts not-yet-reviewed alarms only) | `alerts_status_triggered_idx` |
+| Review history / "Previous reviews" (`GET /alerts/{id}/reviews`) | `alert_reviews WHERE alert_id = :a ORDER BY created_at DESC` | `alert_reviews_alert_created_idx` |
+| Study team "Data problems to follow up" (`GET /data-alerts`) | `data_alerts WHERE status = 'open' ORDER BY last_detected_at DESC` | `data_alerts_status_detected_idx` |
 | Data alert reconciliation | `data_alerts WHERE kind = :k AND resident_id = :r AND status = 'open'` | `data_alerts_open_subject_uq` |
-| Analytics review outcomes (production) | `alert_reviews GROUP BY outcome` | `alert_reviews_outcome_idx` |
-| Analytics alarm timing (test_v0_1) | `evaluation_ground_truth` (10 rows, via `DATABASE_READONLY_URL`) joined in Python with `alerts` | `evaluation_ground_truth_resident_code_uq` |
+| Study team review outcomes (production) | `alert_reviews GROUP BY outcome` | `alert_reviews_outcome_idx` |
+| Study team alarm timing (test_v0_1) | `evaluation_ground_truth` (10 rows, via `DATABASE_READONLY_URL`) joined in Python with `alerts` | `evaluation_ground_truth_resident_code_uq` |
 | Staff notes (`GET /residents/{code}/notes`) | `staff_notes WHERE resident_id = :r ORDER BY created_at DESC` | `staff_notes_resident_created_idx` |
-| Device panel (`GET /devices`) | assignments by device; last upload `max(timestamp_utc) FROM raw_sessions WHERE device_id = :d`; silent days from `day_ledger` by `(device_id, local_date)` | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
+| Devices (`GET /devices`; Study team "Devices", chart Device section) | assignments by device; last upload `max(timestamp_utc) FROM raw_sessions WHERE device_id = :d`; `uploaded_on_as_of_date` = `EXISTS raw_sessions WHERE device_id = :d AND timestamp_utc` within the as-of local date (a duplicate arrival repeats the timestamp of its original, so the result equals the non-duplicate rule of TRD 23 §4.4.2); silent days from `day_ledger` by `(device_id, local_date)` | `device_assignments_device_idx`, `raw_sessions_device_ts_idx`, `day_ledger_device_date_idx` |
 | Ingest duplicate check (`POST /sessions`) | `EXISTS raw_sessions WHERE session_id = :s` | `raw_sessions_session_id_idx` |
 | Pipeline input | `raw_sessions WHERE resident_id = :r ORDER BY timestamp_utc, arrival_seq` (arrival order recovered by arrival_seq) | `raw_sessions_resident_ts_idx` |
 | Batch report (`GET /ingest/batches/{id}`) | `ingest_rejections WHERE ingest_batch_id = :b` | `ingest_rejections_batch_idx` |
@@ -538,14 +539,14 @@ lookup indexes for `resident_code`, `device_code`, `(resident_id, local_date)` o
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| DB-040 | The overview queries (current epoch, open alerts, last check-in, 30-day counts, baseline progress) shall be served by the indexes listed above and shall complete in ≤ 150 ms total database time on scale dataset DS-08 (100 residents, 10,800 records, `tests/performance/make_load_dataset.py`), leaving the remainder of the read-endpoint budget p95 ≤ 500 ms (contract R8). | Must | BR-12, ASM-08, R8 | Test (`tests/performance/test_overview_queries.py`) |
-| DB-041 | The 30-day window shall be the 30 local calendar days ending on the as-of local date inclusive (`as_of_date − 29` … `as_of_date`), never starting before the resident's `enrolled_on` (contract R10); "used", "set aside" and "quarantined" counts shall come from `processed_sessions` by `local_date` and status, and "missed" from `day_ledger` statuses `missing_resident` + `missing_device_gap`; duplicates are never counted. | Must | BR-12, SRC-09 | Test (as of 2026-10-30: R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12; tile sum 19) |
+| DB-040 | The resident list queries (current epoch, open alerts, last check-in, 30-day counts, baseline progress, attention flag) shall be served by the indexes listed above and shall complete in ≤ 150 ms total database time on scale dataset DS-08 (100 residents, 10,800 records, `tests/performance/make_load_dataset.py`), leaving the remainder of the read-endpoint budget p95 ≤ 500 ms (contract R8). | Must | BR-12, ASM-08, R8 | Test (`tests/performance/test_overview_queries.py`) |
+| DB-041 | The 30-day window shall be the 30 local calendar days ending on the as-of local date inclusive (`as_of_date − 29` … `as_of_date`), never starting before the resident's `enrolled_on` (contract R10); "used", "set aside" and "quarantined" counts shall come from `processed_sessions` by `local_date` and status, and "missed" from `day_ledger` statuses `missing_resident` + `missing_device_gap`; duplicates are never counted. | Must | BR-12, SRC-21 | Test (as of 2026-10-30: R02 24·0·0·6, R03 22·7·0·1, R08 13·5·0·12; missed sum 19) |
 | DB-042 | Resident-scoped queries on `raw_sessions`, `processed_sessions`, `scores` and `day_ledger` shall not use a sequential scan on DS-08. | Should | NFR | Test (EXPLAIN in performance test asserts no `Seq Scan` on those tables) |
 | DB-043 | The scores series for one epoch shall be returned in `local_date` order with `cusum_tally` and `alarm_state`, plus the baseline period derived from `baselines.first_session_id`/`frozen_after_session_id`, in ≤ 50 ms database time. | Must | BR-13 | Test |
-| DB-044 | A device silent day (TRD 02 §4.1 "Silent day"; TRD 19 `silent_days_last_30`) shall be derived, not stored: device D is silent on local day d when at least one `day_ledger` row has `device_id = D` and `local_date = d`, and none of those rows has status `checked_in`. | Must | BR-12, SRC-09 | Test (as of 2026-10-30: D02 silent on 2026-10-12 only; D08 silent on R08's 12 missing days) |
-| DB-045 | "Last check-in" shall be the `timestamp_utc` of the resident's latest non-duplicate `processed_sessions` row (any of usable, set_aside, quarantined), presented in facility local time. | Must | BR-12, SRC-09, R10 | Test (R09 → 2026-10-30 14:28 local) |
-| DB-065 | The restart cause of an epoch shall be derived, not stored: for epoch e > 1 of a resident, compare its (`device_id`, `device_firmware_version`, `extraction_software_version`) with epoch e − 1 of the same resident; `restart_cause` is the first differing part in the order device, firmware, software, `previous_device_code` is the device of epoch e − 1, and `from_value`/`to_value` are the previous and new values of that part (device codes for `device`). Epoch 1 has no restart cause. | Must | BR-08, SRC-10 | Test (R07 epoch 2: device, D07 → D07B) |
-| DB-066 | A device's `in_use_until` shall be derived, not stored: null when the device has a `device_assignments` row covering the as-of local date, otherwise the latest `valid_to` of its assignments (D07: 2026-10-12); `in_use_since` shall likewise be derived as the earliest `valid_from` of its assignments, null when it has none (D02 and D07: 2026-10-01; D07B: 2026-10-13; TRD 24 D-82). | Must | BR-08, SRC-09 | Test |
+| DB-044 | A device silent day (TRD 02 §4.1 "Silent day"; TRD 19 `silent_days_last_30`) shall be derived, not stored: device D is silent on local day d when at least one `day_ledger` row has `device_id = D` and `local_date = d`, and none of those rows has status `checked_in`. | Must | BR-12, SRC-21 | Test (as of 2026-10-30: D02 silent on 2026-10-12 only; D08 silent on R08's 12 missing days) |
+| DB-045 | "Last check-in" shall be the `timestamp_utc` of the resident's latest non-duplicate `processed_sessions` row (any of usable, set_aside, quarantined), presented in facility local time. | Must | BR-12, SRC-21, R10 | Test (R09 → 2026-10-30 14:28 local) |
+| DB-065 | The restart cause of an epoch shall be derived, not stored: for epoch e > 1 of a resident, compare its (`device_id`, `device_firmware_version`, `extraction_software_version`) with epoch e − 1 of the same resident; `restart_cause` is the first differing part in the order device, firmware, software, `previous_device_code` is the device of epoch e − 1, and `from_value`/`to_value` are the previous and new values of that part (device codes for `device`). Epoch 1 has no restart cause. | Must | BR-08, SRC-21 | Test (R07 epoch 2: device, D07 → D07B) |
+| DB-066 | A device's `in_use_until` shall be derived, not stored: null when the device has a `device_assignments` row covering the as-of local date, otherwise the latest `valid_to` of its assignments (D07: 2026-10-12); `in_use_since` shall likewise be derived as the earliest `valid_from` of its assignments, null when it has none (D02 and D07: 2026-10-01; D07B: 2026-10-13; TRD 24 D-82). | Must | BR-08, SRC-21 | Test |
 | DB-046 | New indexes shall be added only with a documented query pattern in this section and created with `CREATE INDEX CONCURRENTLY` in staging/production migrations (in an Alembic `autocommit_block`). | Should | — | Inspection |
 | DB-047 | Foreign-key columns used in deletes or joins (`pipeline_run_id`, `ingest_batch_id`, `api_key_id`, `acknowledged_by`, `author_user_id`, `alert_id`, `device_id`) shall be indexed (TRD 20 section 4.7). | Should | — | Test (catalog query: every FK column is the leading column of some index) |
 
@@ -632,7 +633,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 2a. AC-DB-02a: After a review of R09's alert (outcome `known_cause`) and a snooze, a full rebuild keeps the alert `id`, `status = acknowledged`, `snoozed_until` and the `alert_reviews` row unchanged (R15).
 3. AC-DB-03: Running the full pipeline a second time changes no derived value (DB-019) and adds no baseline or alert row.
 4. AC-DB-04: As `echowell_app`, UPDATE/DELETE/TRUNCATE on `raw_sessions` and `audit_logs` fail; as owner they fail with SQLSTATE EW001.
-5. AC-DB-05: Overview queries return, as of 2026-10-30 15:00 CT, the 30-day counts of DB-041 and tile values 2 / 7 / 1 / 19.
+5. AC-DB-05: Resident list queries return, as of 2026-10-30 15:00 CT, the 30-day counts of DB-041 (missed sum 19), open `baseline_stalled`/`high_set_aside` data alerts for R08 and R03 only (summary changed 2, needs attention 2, learning 0, usual 6; TRD 05 API-073), and no schema change is needed for the v0.2 fields (TRD 24 D-114).
 6. AC-DB-06: Inserting a late record R01-20261005-02 (timestamp 2026-10-05 12:00 local, arriving after the baseline froze) leaves all R01 `baselines` rows byte-identical and adds a `late_arrival` warning to the run.
 7. AC-DB-07: `alembic upgrade head` on an empty database followed by the schema diff test passes; `alembic heads` shows one head.
 8. AC-DB-08: `seed test_v0_1` and `reset-test-db` exit with code 2 and write nothing when `APP_ENV=production`, and `reset-test-db` also when `PIPELINE_PROFILE` is not `test_v0_1`; `seed test_v0_1 --reset` succeeds twice in a row on a populated staging-like database (D-71).
@@ -695,3 +696,4 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | 0.8 | 19 Oct 2026 | Phase 1 round-7 fixes (R7-04) | — |
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (DB-016 baseline_mismatch; DB-051 refers to DEP-097 (D-77); DB-053 non-local (D-88); DB-066 in_use_since (D-82)) | — |
 | 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
+| 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/18/19 superseded; §4.7 query patterns renamed for the Resident list, Resident chart and Study team and extended with the attention-flag, `checkins_started` and `uploaded_on_as_of_date` reads (existing indexes; no table, enum or index change); DB-040 (attention flag), DB-041, DB-044, DB-045, DB-065, DB-066 traces and AC-DB-05 updated | — |

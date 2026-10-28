@@ -1,6 +1,6 @@
 # EchoWell Repository Structure
 
-Document: docs/design/Repository_Structure.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Repository_Structure.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Version 0.2 · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2 frontend routes)
 
 ## 1. Purpose and sources
 
@@ -92,12 +92,13 @@ frontend/
 ├── package.json, next.config.js                                                               [skeletons, kept]
 ├── services/api.ts             the only HTTP client                                           [skeleton, kept]
 ├── app/                        layout, providers, page (redirect), not-found, global-error, login/,
-│                               (protected)/{layout,error, residents, residents/[residentCode], alerts,
-│                               analytics, admissions, admin}
+│                               (protected)/{layout, error, residents, residents/[residentCode] (layout, page,
+│                               review/, trends/, baseline/, log/, device/), admissions, study, admin}
+│                               (wireframe v0.2 routes, TRD 04 §4.2, TRD 24 D-110; no alerts/ or analytics/)
 ├── components/<Name>/          <Name>.tsx, <Name>.module.css, <Name>.test.tsx
-├── lib/                        auth.ts, AuthProvider.tsx, config.ts, format.ts, wording.ts, queryKeys.ts,
+├── lib/                        auth.ts, AuthProvider.tsx, config.ts, format.ts, wording.ts, status.ts, queryKeys.ts,
 │                               deviceGroups.ts, roles.ts, api-types.ts (generated)
-├── styles/                     tokens.css, globals.css
+├── styles/                     tokens.css (v0.2 tokens, light and dark; TRD 04 §4.12), globals.css
 ├── middleware.ts, scripts/check-csp.mjs, Dockerfile
 ├── tests/                      unit/, pages/, fixtures/ds07/, msw/handlers.ts, e2e/
 └── vitest.config.ts, vitest.setup.ts, playwright.config.ts, playwright.isolated.config.ts,
@@ -140,7 +141,7 @@ No existing file is renamed, moved or deleted (AGT-010, GIT-003, AC-AGT-06).
 flowchart TB
   subgraph FE["frontend/"]
     APPR["app/ (routes)"] --> COMP["components/"]
-    APPR --> LIB["lib/ (format, wording, auth, roles, queryKeys)"]
+    APPR --> LIB["lib/ (format, wording, status, auth, roles, queryKeys)"]
     COMP --> LIB
     APPR --> SVCAPI["services/api.ts"]
     SVCAPI --> TYPES["lib/api-types.ts (generated)"]
@@ -202,3 +203,9 @@ flowchart TB
 | ID | Question and resolution |
 |---|---|
 | Q-4 | Should root `scripts/` (named by ANL-007 and PGS-017) be added to the TRD 18 §4.1 and TRD 01 §4.6 layouts (GIT-002)? Resolved (PR #3 review, 23 Oct 2026): yes; both layouts and §2 above list `scripts/`. |
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend route folders `residents/[residentCode]/{layout, review, trends, baseline, log, device}` and `study/` replace `alerts/` and `analytics/`; `lib/status.ts` added; tokens note | — |

@@ -1,6 +1,6 @@
 # EchoWell Analytics Architecture
 
-Document: docs/design/Analytics_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1)
+Document: docs/design/Analytics_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Version 0.2 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2)
 
 ## 1. Purpose and sources
 
@@ -54,7 +54,7 @@ Exactly these modules (ANL-004, TRD 07 §8); the existing empty files are filled
 | `alert_generator.py` | skeleton | alarm events, epoch-end facts, Leaning most | `generate_alerts(scores, epochs, config) -> list[AlertEvent]`; `leaning_most(scores, alert, config) -> tuple[str, ...]` | TRD 09 | FEAT-048 |
 | `day_ledger.py` | create | resident-day ledger and missing-day classes | `build_ledger(rows, residents, assignments, config, as_of) -> list[LedgerDay]` | TRD 10 | FEAT-049 |
 | `data_alerts.py` | create | four data-quality rules | `generate_data_alerts(sessions, ledger, epochs, residents, assignments, config, as_of) -> list[DataAlert]` | TRD 09 §4.9 | FEAT-050 |
-| `aggregates.py` | create | Analytics page aggregates over the 30-day window | `build_analytics_summary(sessions, ledger, epochs, alerts, data_alerts, residents, config, as_of) -> AnalyticsSummary` | TRD 07 §4.13 | FEAT-051 |
+| `aggregates.py` | create | Study team page aggregates over the 30-day window | `build_analytics_summary(sessions, ledger, epochs, alerts, data_alerts, residents, config, as_of) -> AnalyticsSummary` | TRD 07 §4.13 | FEAT-051 |
 | `pipeline.py` | create | orchestration, late-arrival detection, as-of filter, result assembly | `run_pipeline(...)` (§5) | TRD 07 §4.5 | FEAT-052 |
 
 The file-based engine command line lives outside the package as `scripts/run_engine.py` (ANL-007), so every module under `analytics/` stays free of file I/O. The future modules `analytics/facility_norms.py` (OQ-08, ANL-057) and an EWMA output (OQ-18, ANL-056) are not part of v0.1.
@@ -97,8 +97,8 @@ flowchart TB
 | 6 Persistence rule | 8 CUSUM | `cusum_engine.py` | `scores.cusum_tally`, `cusum_state` |
 | Flag for clinician review | 9 Alert generation | `alert_generator.py` | `alerts` |
 | Missing days | 10 Day ledger | `day_ledger.py` | `day_ledger` |
-| Data-quality flags (SRC-18) | 11 Data alerts | `data_alerts.py` | `data_alerts` |
-| Study-team analytics (SRC-19) | 12 Analytics aggregates | `aggregates.py` | `GET /api/v1/analytics` (computed, not stored) |
+| Data-quality flags (Study team "Data problems to follow up", SRC-21; open `baseline_stalled`/`high_set_aside` also set the API attention flag) | 11 Data alerts | `data_alerts.py` | `data_alerts` |
+| Study-team analytics (Study team page, SRC-21) | 12 Analytics aggregates | `aggregates.py` | `GET /api/v1/analytics` (computed, not stored) |
 
 SRC-02's final box mentions an EWMA trend against a baseline band; it is deferred (OQ-18, CUS-036) and no EWMA is computed or displayed in the MVP.
 
@@ -274,9 +274,9 @@ Expected values for SRC-05 with profile `test_v0_1`, as-of 2026-10-30 15:00 Amer
 
 | Output | Expected |
 |---|---|
-| Data alerts (in order) | R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "12 missed and 5 set aside in 30 days"; R05 possible_other_speaker "2 check-ins quarantined: Oct 8, Oct 22"; R03 high_set_aside "7 of 29 received: noise, quality flag, too short"; D02 device_silent "Oct 12 · affects R02 and R03" |
+| Data alerts (in order) | R08 baseline_stalled "R08 · baseline stuck at 13 of 16" / "baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days."; R05 possible_other_speaker "2 check-ins held back as possible other voice (Oct 8, Oct 22)."; R03 high_set_aside "7 of 29 received check-ins set aside (noise, quality flag, too short)."; D02 device_silent "silent all day Oct 12. Affected R02 and R03." (v0.2 details, titles unchanged; TRD 09 §4.9, D-114) |
 | KPIs | received 281 of 300 (94%); used 267 of 300 (89%); baselines 9 of 10 (R08 forming, R07 restarted once); alarms 2 (R09, R10) |
-| Funnel | 300 → 281 (19 missed, 2 duplicates) → 269 (12 set aside: quality flag 5, noise 5, too short 3, 1 with two reasons) → 267 (2 quarantined) |
+| Funnel | 300 → 281 (19 missed, 2 duplicates) → 269 (12 set aside: quality flag 5, noise 5, too short 3, 1 with two reasons) → 267 (2 held back as possible other voice) |
 | By resident | R08 43%, R03 73%, R02 80%, R05 93%, the others 100% |
 | Status totals | usable 267, set_aside 12, quarantined 2, duplicate 2, missing_resident 17, missing_device_gap 2 |
 | Run counts | arrivals 283, scored 98, alerts_opened 2, residents 10, baselines 180 rows |
@@ -318,3 +318,10 @@ Expected values for SRC-05 with profile `test_v0_1`, as-of 2026-10-30 15:00 Amer
 | OQ-13 | Production `cusum_k`, `cusum_h` uncalibrated (0.5, 5.0). |
 | OQ-18 | No EWMA. |
 | OQ-24 | Provisional data-alert thresholds. |
+| OQ-31 | Answered (D-115). The engine's data-alert rules are unchanged; only the read side decides that open `baseline_stalled` and `high_set_aside` alerts mean "Needs attention". |
+
+## Revision History
+
+| Version | Date | Change | Author |
+|---|---|---|---|
+| 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 references replaced by the Study team page; §11 data-alert details use the v0.2 texts and the funnel the "held back" wording; OQ-31; PR #5 review round 1: OQ-31 answered (D-115) | — |

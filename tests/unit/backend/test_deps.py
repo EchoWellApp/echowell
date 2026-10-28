@@ -25,7 +25,7 @@ def test_pagination_defaults_and_bounds() -> None:
 @pytest.mark.req("API-011")
 def test_get_db_commits_on_success_and_closes() -> None:
     session = MagicMock()
-    with patch.object(deps, "Session", return_value=session):
+    with patch.object(deps.db, "session_factory", return_value=MagicMock(return_value=session)):
         gen = deps.get_db(MagicMock())
         assert next(gen) is session
         with pytest.raises(StopIteration):
@@ -38,7 +38,7 @@ def test_get_db_commits_on_success_and_closes() -> None:
 @pytest.mark.req("API-011")
 def test_get_db_rolls_back_on_exception_and_closes() -> None:
     session = MagicMock()
-    with patch.object(deps, "Session", return_value=session):
+    with patch.object(deps.db, "session_factory", return_value=MagicMock(return_value=session)):
         gen = deps.get_db(MagicMock())
         next(gen)
         with pytest.raises(RuntimeError):
