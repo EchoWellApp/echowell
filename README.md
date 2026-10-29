@@ -14,6 +14,18 @@ docker compose up --build -d
 curl -fsS http://localhost:8000/api/v1/health   # {"status":"ok","database":"ok",...}
 ```
 
+### Run Backend
+
+```sh
+Add .env local file with minimum variables
+.\.venv\Scripts\Activate.ps1
+uvicorn backend.main:app --reload
+```
+
+The backend swagger can be accesed at:
+- Local: http://127.0.0.1:8000/api/v1/docs
+- Deployed: https://echowell-api.onrender.com/api/v1/docs
+
 The frontend runs at http://localhost:3000. Tools outside containers: Python 3.12 (`pip install -r backend/requirements.txt -r backend/requirements-dev.txt`, then `pytest -q`) and Node.js 20 (`cd frontend && npm ci && npm run test`).
 
 ## Documentation
