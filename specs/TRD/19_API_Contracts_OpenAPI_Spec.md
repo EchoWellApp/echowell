@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.8 (draft for review) · Date: 18 October 2026, revised 27 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -83,7 +83,12 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
   `text/csv; charset=utf-8`, header row = DTO field names (`z` flattened to `z_<feature>` columns), all matching rows.
 - Error codes listed per endpoint are in addition to the universal ones: 401 `NOT_AUTHENTICATED`/`TOKEN_EXPIRED`/
   `TOKEN_INVALID` (bearer endpoints) or `API_KEY_INVALID` (key endpoints), 403 `FORBIDDEN`, 413 `PAYLOAD_TOO_LARGE`,
-  429 `RATE_LIMITED`, 500 `INTERNAL_ERROR`, 503 `SERVICE_UNAVAILABLE`.
+  415 `UNSUPPORTED_MEDIA_TYPE`, 429 `RATE_LIMITED`, 500 `INTERNAL_ERROR`, 503 `SERVICE_UNAVAILABLE`. The universal
+  413, 415, 429, 500 and 503 responses are documented here once and need not be repeated on each operation in §4.5;
+  only endpoint-specific conditions are listed per endpoint (for example the 5 MB body limit of `POST /ingest` and the
+  login and ingest rate limits) (TRD 24 D-126).
+- Global content-type rule: any request whose `Content-Type` is `audio/*` returns 415 `UNSUPPORTED_MEDIA_TYPE`,
+  whatever the method, GET included (TRD 05 API-139, TRD 24 D-126).
 
 Problem example (all errors):
 
@@ -2168,3 +2173,4 @@ components:
 | 0.6 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; D-114 additions: `ResidentOverviewRow` and `ResidentDetail` gain `needs_attention`, `attention_reasons` (new `AttentionReason`) and `alarm_reviewed`; `OverviewSummary` becomes `changed`, `needs_attention`, `learning`, `usual` (2/2/0/6); `sort=alarm` order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); `CheckinEventType` gains `checkins_started` and `CheckinEvent` gains `device_code`; `Device` gains `uploaded_on_as_of_date`; restart cause for the v0.2 texts (`restart_cause` on `ResidentOverviewRow` and `ResidentDetail`; `EpochInfo.from_value`, `to_value`); `ResidentDetail.window` and `DateWindow.days`; E-30 examples use the v0.2 data-alert details; consumers redirected from `/alerts` and `/analytics` to the Resident chart, nav badge and Study team page; OAS-021, OAS-027, OAS-028 updated | — |
 | 0.7 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
 | 0.8 | 27 Oct 2026 | Checkpoint 4: three YAML quoting fixes so the §8 skeleton parses as intended (the `/scores` 200 description, `IngestBatchAccepted.accepted.description` and `CheckinEvent.detail.description` contained an unquoted comma); no contract change | — |
+| 0.9 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-9, Q-11; TRD 24 D-126): §4.2 universal responses add 415 and are documented once rather than per operation; global `audio/*` content-type rule | — |

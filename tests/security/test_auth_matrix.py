@@ -4,8 +4,8 @@ SEC-041, SEC-045, AC-SEC-01; FEAT-039-FR-01, FEAT-039-FR-09, FEAT-039-AC-01, FEA
 `MATRIX` mirrors Table 4.13-A row by row (grouped rows split per endpoint). Every call is a valid
 request on the `scene` data, so an allowed caller gets the endpoint's success status and a refused
 one 401 or 403. "key" is an API key with `ingest:write`; `POST /pipeline/run` is also called with a
-`pipeline:run` key (contract R18). `POST /auth/login`, `GET /config/ui` and `GET /openapi.json` are
-not in the table; their rows follow the TRD 12 §4.6 matrix.
+`pipeline:run` key (contract R18). The rows `POST /auth/login`, `GET /config/ui` and
+`GET /openapi.json` were added to Table 4.13-A in TRD 13 v0.15 (TRD 24 D-128).
 """
 
 from __future__ import annotations

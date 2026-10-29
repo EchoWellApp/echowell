@@ -51,6 +51,12 @@ class IngestRepository:
         self.session.flush()
         return batch
 
+    def link_run(self, batch: IngestBatch, pipeline_run_id: uuid.UUID) -> IngestBatch:
+        """Record the run the batch started (TRD 20 §4.13, D-124)."""
+        batch.pipeline_run_id = pipeline_run_id
+        self.session.flush()
+        return batch
+
     def get_batch(self, batch_id: uuid.UUID) -> IngestBatch | None:
         return self.session.get(IngestBatch, batch_id)
 

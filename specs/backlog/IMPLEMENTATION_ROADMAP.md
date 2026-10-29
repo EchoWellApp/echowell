@@ -387,6 +387,7 @@ Deliverables:
 - Filled `analytics/` modules (TRD 07 §4.2): `duplicate_detection`, `quality_screening`, `epoch_detection`, `speaker_screen`, `morning_offset`, `baseline_builder`, `robust_stats`, `zscore_calculator`, `composite_score`, `cusum_engine`, `alert_generator`, `day_ledger`, `data_alerts`, `aggregates`, `pipeline`, `config`.
 - Backend services that persist pipeline output, `data_alerts` (D-36) and `pipeline_runs` with natural-key upserts (D-45); `backend/jobs/nightly_run.py` (`python -m backend.jobs.nightly_run`, no in-process scheduler, D-47).
 - `analytics.aggregates.build_analytics_summary` wired into `GET /api/v1/analytics` (D-79) and `leaning_most` in `GET /api/v1/alerts` (D-92); the SRC-05 ingest and pipeline-run step of `seed test_v0_1` (D-93); `run-pipeline`, `rebuild`, `set-config` CLI commands.
+- Carried over from checkpoint 4 (TRD 24 D-128): FEAT-038-FR-10, the TRD 19 §4.3 JSON examples attached as OpenAPI `examples` and validated by the contract test (OAS-015).
 - `docs/reports/ANALYTICS_IMPLEMENTATION_REPORT.md`.
 
 Required tests and commands:
@@ -727,4 +728,4 @@ New questions raised by this roadmap (not answered here; to be decided by the al
 | 0.6 | 26 Oct 2026 | Checkpoint 2 review round 2: completion-tracking rule sets a PR's own features to Complete before merge (D-104) | — |
 | 0.7 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 replaced by SRC-21 in the reading lists; §5.1 pitfall pages per D-110; §5.4 D-114 API additions; §5.7 checkpoint 7 feature table (new titles and dependencies of FEAT-062..FEAT-076, FEAT-070 reused for the chart Device section), deliverables, tests, exit criteria and pitfalls for the Resident list, Resident chart, Study team and v0.2 tokens; PR #5 review round 1: `@mutating` order E2E-18 → FE-193 snooze → E2E-09 on R10 (D-118) | — |
 | 0.8 | 26 Oct 2026 | Block 3 checkpoint 3: §2.1 status cell (checkpoints 1 and 2 merged; checkpoint 3 in review) and checkpoint 3 PR row (D-104) | — |
-| 0.9 | 28 Oct 2026 | Block 3 checkpoint 4: §2.1 status cell (checkpoint 3 merged with GitHub PR #17; checkpoint 4 in review) and checkpoint 4 PR row (D-104) | — |
+| 0.9 | 28 Oct 2026 | Block 3 checkpoint 4: §2.1 status cell (checkpoint 3 merged with GitHub PR #17; checkpoint 4 in review) and checkpoint 4 PR row (D-104); checkpoint 4 review (29 Oct): §5.5 carries FEAT-038-FR-10 over to checkpoint 5 (D-128) | — |

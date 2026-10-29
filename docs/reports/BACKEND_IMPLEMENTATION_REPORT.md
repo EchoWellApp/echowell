@@ -82,6 +82,7 @@ The analytics pipeline is not part of this checkpoint. `POST /sessions`, `POST /
 | Audio | Any request with an `audio/*` content type is refused with 415 before routing, including GETs | TST-133 asks for 415 or 422 on every endpoint |
 | Rate-limit middleware | Own ASGI middleware instead of slowapi's, which re-sent the response start for each streamed chunk (CSV export) | streaming exports work and 429 is problem+json |
 | CSV export | `Accept: text/csv` on `GET /scores` and `GET /analytics/baselines`; 100,000-row limit (413); one `export.csv` audit row | API-129, OAS-018 |
+| Batch → pipeline run | `ingest_batches.pipeline_run_id` (migration 0003), written when a batch starts a run and read by `GET /ingest/batches/{id}`; the `ingest.batch.received` audit row keeps the id too | TRD 24 D-124 (review round 1) |
 | Answer key | Read only by `analytics_summary.py`, only under profile `test_v0_1`, through a separate read-only engine; never in production | API-136, TST-068 |
 
 ## 5. Tests

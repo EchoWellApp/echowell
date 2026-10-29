@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -437,6 +437,9 @@ Table 4.13-A Authorization matrix (contract §10 as amended by §19 and R4; expe
 | Endpoint | anon | key | admin | clinician | researcher |
 |---|---|---|---|---|---|
 | GET /api/v1/health | 200 | 200 | 200 | 200 | 200 |
+| GET /api/v1/openapi.json | 200 | 200 | 200 | 200 | 200 |
+| POST /api/v1/auth/login (valid credentials; TRD 12 §4.6: no auth required) | 200 | 200 | 200 | 200 | 200 |
+| GET /api/v1/config/ui | 401 | 401 | 200 | 200 | 200 |
 | GET /api/v1/auth/me | 401 | 401 | 200 | 200 | 200 |
 | POST /api/v1/auth/logout | 401 | 401 | 204 | 204 | 204 |
 | POST /api/v1/sessions | 401 | 201 | 401 | 401 | 401 |
@@ -601,3 +604,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.12 | 23 Oct 2026 | PR #3 review: TST-170 evidence goes to the Block 4 PR (SRC-20 units named Block 1–Block 5, D-101) | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): E2E-01, E2E-03..E2E-13, E2E-16..E2E-21 rewritten for the Resident list (filters, D-109 order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07), Resident chart sections (review flow in "Review and notes") and Study team (`/study`; Alert review page retired); TST-033, TST-090..TST-094, TST-096, TST-097, TST-100, TST-110 (9 routes, light and dark), TST-111, TST-112, TST-125 (four pages of NFR-010), TST-184, TST-185, TST-191; DA-01, DA-03, DA-04, DA-07 v0.2 details; §9 OQ-31; MVP-03..MVP-05, MVP-13, MVP-14; SRC-21 replaces SRC-09/10/11/18/19 | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): E2E-09 on R10, 3rd in the `@mutating` group after the FE-193 reminder step (D-118); date-time expectations with "CT" (D-119); OQ-31 note answered (D-115) | — |
+| 0.15 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-12, TRD 24 D-128): Table 4.13-A adds the rows `GET /openapi.json`, `POST /auth/login` and `GET /config/ui` (statuses as in the TRD 12 §4.6 matrix), so the table lists every endpoint | — |

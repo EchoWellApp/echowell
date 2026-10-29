@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -351,6 +351,7 @@ Error code catalogue (complete; no other codes may be emitted):
 | API-103 | The client IP for rate limiting and audit shall be the left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040); locally the Compose command (DEP-012) omits these flags and it is the socket peer. | Must | TRD 12 | Inspection |
 | API-104 | A request-size middleware shall reject bodies larger than 64 KB on all endpoints except `POST /ingest` (limit 5 MB) with 413 `PAYLOAD_TOO_LARGE`, checking `Content-Length` and the streamed byte count. | Must | TRD 12 | Test |
 | API-105 | A request-ID middleware shall reuse an incoming `X-Request-ID` matching `^[A-Za-z0-9-]{8,64}$`, otherwise generate a UUID4, store it in a context variable used by logging and audit, and set `X-Request-ID` on every response including errors and 429s. | Must | contract §10, TRD 17 | Test |
+| API-139 | Any request whose `Content-Type` is `audio/*` shall be refused with 415 `UNSUPPORTED_MEDIA_TYPE` before routing, whatever the method (GET included); no endpoint accepts audio (TRD 12 SEC-121, TRD 13 TST-133, TRD 19 §4.2, TRD 24 D-126). | Must | BR-01 | Test |
 | API-106 | A security-header middleware shall add `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store` to every response, and `Strict-Transport-Security: max-age=31536000; includeSubDomains` when APP_ENV is `staging` or `production`. | Must | TRD 12 | Test |
 | API-107 | One structured JSON access-log line per request shall be written with `request_id`, method, route template, status, duration_ms, actor_type and actor_id, and without query values of `from`/`to` beyond dates, request bodies or credential headers. | Must | TRD 17, TRD 12 | Inspection |
 
@@ -568,3 +569,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-1, Q-2, Q-5, Q-8, Q-10): `health_service.get_health` for GET /health (§4.1, §4.12); `health_service.py` and `config_service.py` added to the §4.1 service list; repository names from docs/design/Database_ERD.md §5; API-005 names the `analytics_summary.py` read of `evaluation_ground_truth` as its one exception; API-001 and API-103 use the uvicorn flags of TRD 15 DEP-022 and DEP-040 | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; API-071 default order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); API-073 summary `changed`/`needs_attention`/`learning`/`usual` (2/2/0/6); API-075, API-077 (`checkins_started`), API-086 (`uploaded_on_as_of_date`), API-133 (v0.2 data-alert details) updated; new API-138 (attention flag, `alarm_reviewed`, `restart_cause`, detail `window`); endpoint summary UI consumers moved from `/alerts` and `/analytics` to the Resident list, Resident chart and Study team page; AC-API-02, -03, -15 updated | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
+| 0.15 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-11, TRD 24 D-126): API-139 global `audio/*` content-type rule (415 on any method) | — |

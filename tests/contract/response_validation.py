@@ -26,9 +26,9 @@ from backend.api.openapi import build_openapi
 from backend.main import create_app
 from tests.conftest import make_settings
 
-# Returned by any operation through the body-limit middleware (413, 415), the default rate limit
-# (429) and the global handlers (500, 503), although TRD 19 declares 413, 415 and 429 only on a few
-# operations (API-095..API-097, API-104).
+# Universal responses, documented once in TRD 19 §4.2 rather than per operation (TRD 24 D-126):
+# the body-limit middleware (413, 415), the default rate limit (429) and the global handlers
+# (500, 503) can return them on any operation (API-095..API-097, API-104, API-139).
 GLOBAL_STATUSES = (413, 415, 429, 500, 503)
 META_FIELDS = {"facility_name", "facility_tz", "data_source_label", "as_of", "baseline_n",
                "cusum_h", "pipeline_profile"}  # fmt: skip

@@ -75,10 +75,11 @@ def test_src05_upload(api: TestClient, roster: Session, principals: Principals) 
     assert stored == expected
     batch = roster.execute(
         text("SELECT source, filename, record_count, accepted_count, rejected_count, "
-             "duplicate_count, uploaded_by, api_key_id FROM ingest_batches")
+             "duplicate_count, uploaded_by, api_key_id, pipeline_run_id FROM ingest_batches")
     ).one()  # fmt: skip
-    assert tuple(batch) == ("csv_upload", "input.csv", 283, 283, 0, 2,
-                            principals.users["admin"].id, None)  # fmt: skip
+    assert tuple(batch[:8]) == ("csv_upload", "input.csv", 283, 283, 0, 2,
+                                principals.users["admin"].id, None)  # fmt: skip
+    assert str(batch.pipeline_run_id) == body["pipeline_run_id"]  # D-124
     runs = roster.execute(text("SELECT id, trigger, status FROM pipeline_runs")).all()
     assert [(str(r.id), r.trigger, r.status) for r in runs] == [
         (body["pipeline_run_id"], "ingest", "failed")  # executed in the background (interim)

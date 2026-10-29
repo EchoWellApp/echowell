@@ -1,6 +1,6 @@
 # Checkpoint 4 Report — Phase 10 Implement Backend Layer
 
-Block 3 "Implement Features", checkpoint 4 of 9, its own PR (branch `feat/cp4-backend-api`, built on `feat/cp3-database` while GitHub PR #17 was in review; `main` merged in after PR #17 was merged on 28 October 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 10: Implement Backend Layer" · TRD 25 Phase 5 · Features: FEAT-018..FEAT-039 · Date: 27 October 2026 · Status: ready for review.
+Block 3 "Implement Features", checkpoint 4 of 9, its own PR (branch `feat/cp4-backend-api`, built on `feat/cp3-database` while GitHub PR #17 was in review; `main` merged in after PR #17 was merged on 28 October 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 10: Implement Backend Layer" · TRD 25 Phase 5 · Features: FEAT-018..FEAT-039 · Date: 27 October 2026 · Status: in review (GitHub PR #18); review round 1 answered and applied, section 9.
 
 Build order followed roadmap §5.4: [FEAT-018, FEAT-019] → [FEAT-020, FEAT-021, FEAT-022] → [FEAT-023..FEAT-026] → [FEAT-027..FEAT-029] → [FEAT-030..FEAT-033] → [FEAT-034..FEAT-037] → [FEAT-038, FEAT-039], one commit (or two) per group. TRDs read in the roadmap order: 05, 19, 10, 12, 17, 23, 09, then SRC-21 and `docs/design/`.
 
@@ -109,3 +109,25 @@ None. Decisions from this review will be recorded in TRD 24 with the next free n
 | Q-12 | TRD 13 Table 4.13-A has no rows for `POST /auth/login`, `GET /config/ui` and `GET /openapi.json`; the matrix test covers them from the TRD 12 §4.6 matrix. Add the three rows to Table 4.13-A? |
 | Q-13 | FEAT-038-FR-10 (Should): the TRD 19 §4.3 JSON examples are not yet attached as OpenAPI `examples`. Add them in checkpoint 5, or drop the item? |
 | Q-14 | Size: about 13,500 hand-written lines (7,800 backend, 5,700 tests) for 22 features. Accept as one PR, as for checkpoints 2 and 3? |
+
+## 9. Review round 1 resolutions (29 October 2026)
+
+The algorithm lead (Shaba) answered Q-1..Q-14 on GitHub PR #18 on 29 Oct 2026 and requested changes. The decisions are recorded in TRD 24 v0.21 (D-124..D-128).
+
+| ID | Reviewer answer | Resolution | Files changed |
+|---|---|---|---|
+| Q-1 | Add the column if application logic relies on the link; keep recording it in the audit event. | `GET /ingest/batches/{id}` relies on it, so migration 0003 adds `ingest_batches.pipeline_run_id` (nullable FK to `pipeline_runs`, with its index). Batch ingest writes it when it starts a run; the batch detail reads it; the audit row keeps the id. The audit-details lookup it replaces is removed (D-124). | `backend/alembic/versions/0003_ingest_batch_pipeline_run.py`, `backend/models/ingest_batch.py`, `backend/repositories/{ingest,audit}_repository.py`, `backend/services/{ingestion,audit_service}.py`, `database/schema.sql` (regenerated); TRD 20 §4.10, §4.13 (v0.10), TRD 23 §4.2.7 (v0.12), TRD 12 §4.12 (v0.14), `docs/design/Database_ERD.md` (v0.3) |
+| Q-2 | Follow FEAT-026-FR-16; fix TRD 10. | TRD 10 moves `device_assignment_mismatch` from the ingest warnings to the pipeline run warnings (D-125). No code change. | TRD 10 (v0.6) |
+| Q-3 | Add `device_key_mismatch` to ING-023. | Added to the ING-023 field codes (D-125). | TRD 10 (v0.6) |
+| Q-4, Q-5, Q-7, Q-8, Q-10 | Confirmed. | Recorded as D-127; no code change. | TRD 24 D-127 |
+| Q-6 | Keep `password1234` as an "EchoWell addition". | Recorded as D-127, extending D-121. | TRD 24 D-127, TRD 12 (v0.14) |
+| Q-9 | Global documentation is enough; document endpoint-specific limits separately. | TRD 19 §4.2 lists 413, 415, 429, 500 and 503 once as universal responses; the 5 MB ingest limit and the login and ingest rate limits stay on their endpoints (D-126). The generated document is unchanged. | TRD 19 (v0.9) |
+| Q-11 | Agree; document as one global content-type rule. | TRD 05 API-139 and TRD 19 §4.2 (D-126). | TRD 05 (v0.15), TRD 19 (v0.9) |
+| Q-12 | Add the three rows. | Table 4.13-A gains `GET /openapi.json`, `POST /auth/login` and `GET /config/ui` (D-128); the matrix test already covers them. | TRD 13 (v0.15) |
+| Q-13 | Add the examples in checkpoint 5; don't drop FEAT-038-FR-10. | Carried over in roadmap §5.5 and noted on FEAT-038 in `BACKLOG.md` §10 (D-128). | `IMPLEMENTATION_ROADMAP.md`, `BACKLOG.md` |
+| Q-14 | Accept as one PR. | No change (D-128). | — |
+
+Also changed: `tests/integration/db/test_migrations.py` derives the expected head from the migration files instead of a fixed `0002`, and checks the round trip runs 0003; `tests/integration/api/test_ingest.py` checks that the stored `pipeline_run_id` matches the response.
+
+Verification after review round 1: `alembic upgrade head`, `downgrade 0002`, `upgrade head` and `alembic check` are clean, and `scripts/dump_schema.sh` regenerated `database/schema.sql`; `pytest tests/unit tests/integration tests/contract tests/security tests/validation` gives 450 passed, 2 skipped; `ruff check`, `ruff format --check`, `mypy analytics backend` and `lint-imports` are clean.
+

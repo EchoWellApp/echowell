@@ -47,6 +47,7 @@ class IngestBatch(Base):
         Index("ingest_batches_received_idx", text("received_at DESC")),
         Index("ingest_batches_uploaded_by_idx", "uploaded_by"),
         Index("ingest_batches_api_key_idx", "api_key_id"),
+        Index("ingest_batches_pipeline_run_idx", "pipeline_run_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -68,6 +69,10 @@ class IngestBatch(Base):
     )
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()"), nullable=False
+    )
+    # The run this batch started (migration 0003, TRD 20 §4.13, D-124); null when none was.
+    pipeline_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pipeline_runs.id", ondelete="RESTRICT"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()"), nullable=False

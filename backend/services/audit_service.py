@@ -241,12 +241,3 @@ def login_failures_since(
 ) -> tuple[int, datetime | None]:
     """Failed logins for one e-mail since `since`, for the SEC-015 lockout."""
     return AuditRepository(session).login_failures_since(email, since)
-
-
-def batch_pipeline_run_id(session: Session, batch_id: str) -> str | None:
-    """The run started for an ingest batch, kept in its `ingest.batch.received` row (API-054)."""
-    details = AuditRepository(session).details_of(
-        AuditAction.INGEST_BATCH_RECEIVED.value, "ingest_batch", batch_id
-    )
-    value = (details or {}).get("pipeline_run_id")
-    return value if isinstance(value, str) else None

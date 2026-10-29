@@ -379,6 +379,7 @@ class IngestService:
                     sorted(tally.first_arrival_scope), PipelineTrigger.INGEST,
                     actor=caller.actor, session=self.session,
                 )  # fmt: skip
+                ingest.link_run(batch, handle.id)
             audit_service.record(
                 self.session, action=AuditAction.INGEST_BATCH_RECEIVED,
                 actor_type=caller.actor_type, actor_id=caller.actor_id,
@@ -473,7 +474,7 @@ def batch_detail(session: Session, batch_id: uuid.UUID) -> dict[str, Any] | None
         "record_count": batch.record_count, "accepted_count": batch.accepted_count,
         "rejected_count": batch.rejected_count, "duplicate_count": batch.duplicate_count,
         "uploaded_by": batch.uploaded_by, "received_at": batch.received_at,
-        "pipeline_run_id": audit_service.batch_pipeline_run_id(session, str(batch.id)),
+        "pipeline_run_id": batch.pipeline_run_id,
         "rejections": [
             {
                 "row_number": r.row_number, "session_id": _code(r.raw_body, "session_id"),
