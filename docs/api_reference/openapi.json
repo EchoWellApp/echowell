@@ -1,0 +1,5948 @@
+{
+  "components": {
+    "headers": {
+      "RetryAfter": {
+        "description": "Seconds to wait",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "XExperimental": {
+        "description": "Future / experimental study arm",
+        "schema": {
+          "const": "true",
+          "type": "string"
+        }
+      },
+      "XRequestID": {
+        "description": "Request correlation ID",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "parameters": {
+      "FromDate": {
+        "in": "query",
+        "name": "from",
+        "schema": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "IdPath": {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "schema": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "Limit": {
+        "in": "query",
+        "name": "limit",
+        "schema": {
+          "default": 50,
+          "maximum": 500,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "Offset": {
+        "in": "query",
+        "name": "offset",
+        "schema": {
+          "default": 0,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "ResidentCodePath": {
+        "in": "path",
+        "name": "resident_code",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/ResidentCode"
+        }
+      },
+      "ToDate": {
+        "in": "query",
+        "name": "to",
+        "schema": {
+          "format": "date",
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "Conflict": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "ALERT_CLOSED | EMAIL_ALREADY_EXISTS | LAST_ADMIN | PIPELINE_RUN_IN_PROGRESS",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "Forbidden": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "FORBIDDEN | DEVICE_KEY_MISMATCH",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "NotFound": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "*_NOT_FOUND",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "PAYLOAD_TOO_LARGE",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "TooManyRequests": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "RATE_LIMITED | ACCOUNT_TEMPORARILY_LOCKED",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
+          },
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "Unauthorized": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "NOT_AUTHENTICATED | INVALID_CREDENTIALS | TOKEN_EXPIRED | TOKEN_INVALID | API_KEY_INVALID",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "Unprocessable": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "VALIDATION_ERROR and the other 422 codes of TRD 05 \u00a74.7",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "UNSUPPORTED_MEDIA_TYPE",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AdmissionComparison": {
+        "properties": {
+          "comparison_status": {
+            "$ref": "#/components/schemas/ComparisonStatus"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonFeature"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          }
+        },
+        "required": [
+          "meta",
+          "resident_code",
+          "comparison_status",
+          "features"
+        ],
+        "type": "object"
+      },
+      "AdmissionList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/AdmissionRow"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "AdmissionRow": {
+        "properties": {
+          "admitted_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkins_so_far": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "comparison_status": {
+            "$ref": "#/components/schemas/ComparisonStatus"
+          },
+          "own_baseline_progress": {
+            "$ref": "#/components/schemas/BaselineProgress"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          }
+        },
+        "required": [
+          "resident_code",
+          "admitted_on",
+          "checkins_so_far",
+          "comparison_status",
+          "own_baseline_progress"
+        ],
+        "type": "object"
+      },
+      "AlarmState": {
+        "enum": [
+          "off",
+          "rings",
+          "on"
+        ],
+        "type": "string"
+      },
+      "AlarmTimingRow": {
+        "properties": {
+          "alarm_rang": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "change_began": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delay_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planted_change": {
+            "examples": [
+              "Sudden step",
+              "Slow drift",
+              "None"
+            ],
+            "type": "string"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "result": {
+            "enum": [
+              "detected",
+              "missed",
+              "correct_no_alarm",
+              "false_alarm"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "resident_code",
+          "planted_change",
+          "change_began",
+          "alarm_rang",
+          "delay_days",
+          "result"
+        ],
+        "type": "object"
+      },
+      "AlarmsRaised": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "not_reviewed_count": {
+            "type": "integer"
+          },
+          "resident_codes": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentCode"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "resident_codes",
+          "not_reviewed_count"
+        ],
+        "type": "object"
+      },
+      "Alert": {
+        "properties": {
+          "closed_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "epoch ended"
+            ]
+          },
+          "current_tally": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "cusum_state.current_tally of the alert's epoch"
+          },
+          "cusum_value": {
+            "description": "tally at first crossing",
+            "type": "number"
+          },
+          "device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "epoch_number": {
+            "type": "integer"
+          },
+          "id": {
+            "description": "stable across rebuilds (upsert key epoch_id + session_id)",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "leaning_most": {
+            "items": {
+              "$ref": "#/components/schemas/ScoredFeatureKey"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "open_days": {
+            "description": "as-of local date minus local_date",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "review_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reviewed": {
+            "description": "true when status is acknowledged",
+            "type": "boolean"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "snoozed_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snoozed_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "triggered_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "resident_code",
+          "device_code",
+          "epoch_number",
+          "session_id",
+          "triggered_at",
+          "local_date",
+          "cusum_value",
+          "current_tally",
+          "open_days",
+          "status",
+          "reviewed",
+          "review_count",
+          "last_reviewed_at",
+          "snoozed_until",
+          "snoozed_by",
+          "leaning_most",
+          "closed_reason"
+        ],
+        "type": "object"
+      },
+      "AlertList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/Alert"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "AlertReview": {
+        "properties": {
+          "alert_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "explanations": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewExplanationCode"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ReviewOutcome"
+          },
+          "reviewer": {
+            "$ref": "#/components/schemas/UserRef"
+          }
+        },
+        "required": [
+          "id",
+          "alert_id",
+          "reviewer",
+          "explanations",
+          "outcome",
+          "note",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "AlertReviewCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "explanations": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewExplanationCode"
+            },
+            "maxItems": 5,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ReviewOutcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "AlertReviewList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/AlertReview"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "AlertStatus": {
+        "enum": [
+          "open",
+          "acknowledged",
+          "closed"
+        ],
+        "type": "string"
+      },
+      "AnalyticsKpis": {
+        "properties": {
+          "alarms_raised": {
+            "$ref": "#/components/schemas/AlarmsRaised"
+          },
+          "baselines_formed": {
+            "$ref": "#/components/schemas/BaselinesFormed"
+          },
+          "checkins_received": {
+            "$ref": "#/components/schemas/CountOfExpected"
+          },
+          "used_for_scoring": {
+            "$ref": "#/components/schemas/CountOfExpected"
+          }
+        },
+        "required": [
+          "checkins_received",
+          "used_for_scoring",
+          "baselines_formed",
+          "alarms_raised"
+        ],
+        "type": "object"
+      },
+      "AnalyticsResponse": {
+        "properties": {
+          "alarm_timing": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AlarmTimingRow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "test_v0_1 profile only"
+          },
+          "by_resident": {
+            "items": {
+              "$ref": "#/components/schemas/ByResidentRow"
+            },
+            "type": "array"
+          },
+          "daily_series": {
+            "items": {
+              "$ref": "#/components/schemas/DailySeriesPoint"
+            },
+            "type": "array"
+          },
+          "funnel": {
+            "$ref": "#/components/schemas/Funnel"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/AnalyticsKpis"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "pipeline_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentOutcome"
+            },
+            "type": "array"
+          },
+          "review_outcomes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewOutcomes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "production profile only"
+          },
+          "status_counts": {
+            "items": {
+              "$ref": "#/components/schemas/StatusCountsRow"
+            },
+            "type": "array"
+          },
+          "status_totals": {
+            "$ref": "#/components/schemas/StatusTotals"
+          }
+        },
+        "required": [
+          "meta",
+          "period",
+          "kpis",
+          "daily_series",
+          "funnel",
+          "by_resident",
+          "alarm_timing",
+          "review_outcomes",
+          "status_totals",
+          "status_counts",
+          "resident_outcomes",
+          "pipeline_run"
+        ],
+        "type": "object"
+      },
+      "AttentionReason": {
+        "enum": [
+          "baseline_stalled",
+          "high_set_aside"
+        ],
+        "type": "string"
+      },
+      "BaselineFeatureKey": {
+        "enum": [
+          "loudness_dbfs",
+          "total_phrase_duration_s",
+          "speech_rate_syl_per_s",
+          "articulation_rate_syl_per_s",
+          "number_of_pauses",
+          "pause_fraction",
+          "voiced_fraction",
+          "mean_f0_hz",
+          "f0_variability_st",
+          "jitter_local_pct",
+          "shimmer_local_pct",
+          "hnr_db",
+          "cpps_db",
+          "alpha_ratio_db",
+          "hammarberg_index_db",
+          "mfcc1",
+          "mfcc2",
+          "mfcc3",
+          "mfcc4",
+          "composite"
+        ],
+        "type": "string"
+      },
+      "BaselineInfo": {
+        "properties": {
+          "first_local_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "frozen_after_local_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "frozen_after_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "n_required": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "n_usable": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "forming",
+              "frozen"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "n_usable",
+          "n_required",
+          "first_session_id",
+          "frozen_after_session_id",
+          "first_local_date",
+          "frozen_after_local_date"
+        ],
+        "type": "object"
+      },
+      "BaselinePeriod": {
+        "properties": {
+          "epoch_number": {
+            "type": "integer"
+          },
+          "first_local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "frozen_after_local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "frozen_after_session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "n_sessions": {
+            "type": "integer"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          }
+        },
+        "required": [
+          "resident_code",
+          "epoch_number",
+          "first_local_date",
+          "frozen_after_local_date",
+          "frozen_after_session_id",
+          "n_sessions"
+        ],
+        "type": "object"
+      },
+      "BaselineProgress": {
+        "properties": {
+          "n_required": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "n_usable": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "n_usable",
+          "n_required"
+        ],
+        "type": "object"
+      },
+      "BaselineRow": {
+        "properties": {
+          "device_code": {
+            "type": "string"
+          },
+          "epoch_number": {
+            "type": "integer"
+          },
+          "feature_key": {
+            "$ref": "#/components/schemas/BaselineFeatureKey"
+          },
+          "first_session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "floor_applied": {
+            "type": "boolean"
+          },
+          "frozen_after_session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "mad": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "median": {
+            "type": "number"
+          },
+          "n_sessions": {
+            "type": "integer"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "robust_spread": {
+            "description": "0 is possible only for a non-composite feature with floor 0 (TRD 08 BSC-035, TRD 20 baselines_spread_ck)",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "resident_code",
+          "epoch_number",
+          "device_code",
+          "feature_key",
+          "n_sessions",
+          "first_session_id",
+          "frozen_after_session_id",
+          "median",
+          "mad",
+          "robust_spread",
+          "floor_applied"
+        ],
+        "type": "object"
+      },
+      "BaselineRowList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/BaselineRow"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "BaselinesFormed": {
+        "properties": {
+          "formed": {
+            "type": "integer"
+          },
+          "forming_resident_codes": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentCode"
+            },
+            "type": "array"
+          },
+          "residents": {
+            "type": "integer"
+          },
+          "restarts": {
+            "items": {
+              "$ref": "#/components/schemas/BaselinesFormedRestart"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "formed",
+          "residents",
+          "forming_resident_codes",
+          "restarts"
+        ],
+        "type": "object"
+      },
+      "BaselinesFormedRestart": {
+        "properties": {
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "restart_count": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resident_code",
+          "restart_count"
+        ],
+        "type": "object"
+      },
+      "ByOutcome": {
+        "properties": {
+          "data_problem": {
+            "type": "integer"
+          },
+          "known_cause": {
+            "type": "integer"
+          },
+          "no_concern": {
+            "type": "integer"
+          },
+          "referred": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "no_concern",
+          "known_cause",
+          "referred",
+          "data_problem"
+        ],
+        "type": "object"
+      },
+      "ByResidentRow": {
+        "properties": {
+          "days": {
+            "type": "integer"
+          },
+          "missed_days": {
+            "type": "integer"
+          },
+          "quarantined_days": {
+            "description": "days with a quarantined record and no usable or set-aside record",
+            "type": "integer"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "set_aside_days": {
+            "description": "days with a set-aside record and no usable record",
+            "type": "integer"
+          },
+          "used_days": {
+            "type": "integer"
+          },
+          "used_percent": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resident_code",
+          "days",
+          "used_days",
+          "set_aside_days",
+          "quarantined_days",
+          "missed_days",
+          "used_percent"
+        ],
+        "type": "object"
+      },
+      "CheckinEvent": {
+        "properties": {
+          "cusum_tally": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "pipeline reason text or progress, e.g. \"16 of 16\""
+          },
+          "device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "epoch_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/CheckinEventType"
+          },
+          "from_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "previous_device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restart_cause": {
+            "$ref": "#/components/schemas/RestartCause"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "local_date",
+          "event_type",
+          "epoch_number",
+          "session_id",
+          "detail",
+          "cusum_tally",
+          "restart_cause",
+          "previous_device_code",
+          "from_value",
+          "to_value",
+          "device_code"
+        ],
+        "type": "object"
+      },
+      "CheckinEventList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/CheckinEvent"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "CheckinEventType": {
+        "enum": [
+          "alarm_on",
+          "watching_started",
+          "baseline_complete",
+          "baseline_restarted",
+          "set_aside",
+          "quarantined",
+          "missed",
+          "device_silent",
+          "checkins_started"
+        ],
+        "type": "string"
+      },
+      "Cohort": {
+        "enum": [
+          "longitudinal",
+          "new_admission"
+        ],
+        "type": "string"
+      },
+      "ComparisonFeature": {
+        "properties": {
+          "feature_key": {
+            "$ref": "#/components/schemas/FeatureKey"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outside_range": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "median of the resident's usable check-ins so far"
+          }
+        },
+        "required": [
+          "feature_key",
+          "resident_value",
+          "low",
+          "high",
+          "outside_range"
+        ],
+        "type": "object"
+      },
+      "ComparisonStatus": {
+        "enum": [
+          "outside_range",
+          "within_range",
+          "not_enough_checkins",
+          "range_not_available"
+        ],
+        "type": "string"
+      },
+      "ConfigProfile": {
+        "enum": [
+          "production",
+          "test_v0_1"
+        ],
+        "type": "string"
+      },
+      "CountOfExpected": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "expected": {
+            "type": "integer"
+          },
+          "percent": {
+            "description": "rounded half-up",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "expected",
+          "percent"
+        ],
+        "type": "object"
+      },
+      "DailySeriesPoint": {
+        "properties": {
+          "local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "missed": {
+            "type": "integer"
+          },
+          "quarantined": {
+            "type": "integer"
+          },
+          "set_aside": {
+            "type": "integer"
+          },
+          "silent_device_codes": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceCode"
+            },
+            "type": "array"
+          },
+          "used": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "local_date",
+          "used",
+          "set_aside",
+          "quarantined",
+          "missed",
+          "silent_device_codes"
+        ],
+        "type": "object"
+      },
+      "DataAlert": {
+        "properties": {
+          "detail": {
+            "description": "v0.2 text without the leading code (TRD 09 \u00a74.9, TRD 24 D-114); the UI renders '<code>: <detail>'",
+            "type": "string"
+          },
+          "device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_detected_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DataAlertKind"
+          },
+          "last_detected_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pipeline_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataAlertStatus"
+          },
+          "title": {
+            "examples": [
+              "R08 \u00b7 baseline stuck at 13 of 16"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "resident_code",
+          "device_code",
+          "title",
+          "detail",
+          "status",
+          "first_detected_at",
+          "last_detected_at",
+          "pipeline_run_id"
+        ],
+        "type": "object"
+      },
+      "DataAlertKind": {
+        "enum": [
+          "baseline_stalled",
+          "possible_other_speaker",
+          "high_set_aside",
+          "device_silent",
+          "review_flagged_data_problem"
+        ],
+        "type": "string"
+      },
+      "DataAlertList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/DataAlert"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "DataAlertStatus": {
+        "enum": [
+          "open",
+          "resolved"
+        ],
+        "type": "string"
+      },
+      "DateWindow": {
+        "properties": {
+          "days": {
+            "description": "local days from..to inclusive (TRD 24 D-114)",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "from": {
+            "description": "first local date; not before the resident's enrolled_on in ResidentDetail",
+            "format": "date",
+            "type": "string"
+          },
+          "to": {
+            "description": "as-of local date",
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "days"
+        ],
+        "type": "object"
+      },
+      "DayStatus": {
+        "enum": [
+          "checked_in",
+          "missing_resident",
+          "missing_device_gap"
+        ],
+        "type": "string"
+      },
+      "Device": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "device_code": {
+            "$ref": "#/components/schemas/DeviceCode"
+          },
+          "device_gap_days_last_30": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "firmware_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "in_use_since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "in_use_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "last local day of the device's last assignment; null while it has a current assignment"
+          },
+          "last_upload_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_upload_local": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replaced_by_device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replaces_device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_codes": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentCode"
+            },
+            "type": "array"
+          },
+          "room_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "non-identifying label only"
+          },
+          "shared": {
+            "type": "boolean"
+          },
+          "silent_days_last_30": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "uploaded_on_as_of_date": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "device_code",
+          "room_label",
+          "active",
+          "resident_codes",
+          "shared",
+          "replaces_device_code",
+          "replaced_by_device_code",
+          "in_use_since",
+          "in_use_until",
+          "last_upload_at",
+          "last_upload_local",
+          "firmware_version",
+          "uploaded_on_as_of_date",
+          "silent_days_last_30",
+          "device_gap_days_last_30"
+        ],
+        "type": "object"
+      },
+      "DeviceCode": {
+        "pattern": "^[A-Z0-9]{1,16}$",
+        "type": "string"
+      },
+      "DeviceList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/Device"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "DeviceRef": {
+        "properties": {
+          "device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous_device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shared": {
+            "type": "boolean"
+          },
+          "shared_with": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentCode"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "device_code",
+          "shared",
+          "shared_with",
+          "previous_device_code"
+        ],
+        "type": "object"
+      },
+      "DisplayStatus": {
+        "enum": [
+          "alarm_on",
+          "no_alarm",
+          "baseline_forming"
+        ],
+        "type": "string"
+      },
+      "EpochInfo": {
+        "properties": {
+          "device_code": {
+            "type": "string"
+          },
+          "device_firmware_version": {
+            "type": "string"
+          },
+          "epoch_number": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "extraction_software_version": {
+            "type": "string"
+          },
+          "from_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "started_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "to_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "epoch_number",
+          "device_code",
+          "device_firmware_version",
+          "extraction_software_version",
+          "started_at",
+          "started_on",
+          "from_value",
+          "to_value"
+        ],
+        "type": "object"
+      },
+      "Explanation": {
+        "description": "Structured facts only; wording is rendered by the frontend (OQ-12).",
+        "properties": {
+          "alarm_crossed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_n_required": {
+            "type": "integer"
+          },
+          "baseline_n_usable": {
+            "type": "integer"
+          },
+          "baseline_restarted_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "compared_with": {
+            "const": "own_baseline",
+            "type": "string"
+          },
+          "still_above_line": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "compared_with",
+          "alarm_crossed_on",
+          "still_above_line",
+          "baseline_restarted_on",
+          "baseline_n_usable",
+          "baseline_n_required"
+        ],
+        "type": "object"
+      },
+      "FeatureKey": {
+        "enum": [
+          "loudness_dbfs",
+          "total_phrase_duration_s",
+          "speech_rate_syl_per_s",
+          "articulation_rate_syl_per_s",
+          "number_of_pauses",
+          "pause_fraction",
+          "voiced_fraction",
+          "mean_f0_hz",
+          "f0_variability_st",
+          "jitter_local_pct",
+          "shimmer_local_pct",
+          "hnr_db",
+          "cpps_db",
+          "alpha_ratio_db",
+          "hammarberg_index_db",
+          "mfcc1",
+          "mfcc2",
+          "mfcc3",
+          "mfcc4"
+        ],
+        "type": "string"
+      },
+      "FeaturePoint": {
+        "properties": {
+          "adjusted_value": {
+            "type": "number"
+          },
+          "in_baseline": {
+            "type": "boolean"
+          },
+          "is_morning": {
+            "type": "boolean"
+          },
+          "local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "raw_value": {
+            "type": "number"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "z": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null for sessions not scored"
+          }
+        },
+        "required": [
+          "session_id",
+          "local_date",
+          "is_morning",
+          "raw_value",
+          "adjusted_value",
+          "z",
+          "in_baseline"
+        ],
+        "type": "object"
+      },
+      "FeatureSeries": {
+        "properties": {
+          "baseline_median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_robust_spread": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "composite_sign": {
+            "enum": [
+              -1,
+              1
+            ],
+            "type": "integer"
+          },
+          "feature_key": {
+            "$ref": "#/components/schemas/ScoredFeatureKey"
+          },
+          "label": {
+            "examples": [
+              "Quieter (loudness)"
+            ],
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/FeaturePoint"
+            },
+            "type": "array"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_key",
+          "label",
+          "unit",
+          "composite_sign",
+          "baseline_median",
+          "baseline_robust_spread",
+          "points"
+        ],
+        "type": "object"
+      },
+      "FeaturesResponse": {
+        "properties": {
+          "epoch_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "scored_features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureSeries"
+            },
+            "maxItems": 7,
+            "minItems": 7,
+            "type": "array"
+          },
+          "stored_feature_keys": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureKey"
+            },
+            "maxItems": 12,
+            "minItems": 12,
+            "type": "array"
+          }
+        },
+        "required": [
+          "meta",
+          "resident_code",
+          "epoch_number",
+          "scored_features",
+          "stored_feature_keys"
+        ],
+        "type": "object"
+      },
+      "Funnel": {
+        "properties": {
+          "days": {
+            "type": "integer"
+          },
+          "duplicates_removed": {
+            "type": "integer"
+          },
+          "expected": {
+            "description": "sum over residents of enrolled days in period",
+            "type": "integer"
+          },
+          "missed": {
+            "type": "integer"
+          },
+          "passed_quality": {
+            "type": "integer"
+          },
+          "quarantined": {
+            "type": "integer"
+          },
+          "received": {
+            "description": "non-duplicate records",
+            "type": "integer"
+          },
+          "residents": {
+            "type": "integer"
+          },
+          "set_aside": {
+            "type": "integer"
+          },
+          "set_aside_multi_reason": {
+            "description": "set-aside sessions with more than one reason",
+            "type": "integer"
+          },
+          "set_aside_reasons": {
+            "$ref": "#/components/schemas/SetAsideReasons"
+          },
+          "used": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected",
+          "residents",
+          "days",
+          "received",
+          "missed",
+          "duplicates_removed",
+          "passed_quality",
+          "set_aside",
+          "set_aside_reasons",
+          "set_aside_multi_reason",
+          "quarantined",
+          "used"
+        ],
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "database": {
+            "enum": [
+              "ok",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "type": "string"
+          },
+          "time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "version",
+          "time"
+        ],
+        "type": "object"
+      },
+      "IngestBatch": {
+        "properties": {
+          "accepted_count": {
+            "type": "integer"
+          },
+          "duplicate_count": {
+            "type": "integer"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pipeline_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "received_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "record_count": {
+            "type": "integer"
+          },
+          "rejected_count": {
+            "type": "integer"
+          },
+          "rejections": {
+            "items": {
+              "$ref": "#/components/schemas/IngestRejection"
+            },
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/IngestSource"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "filename",
+          "record_count",
+          "accepted_count",
+          "rejected_count",
+          "duplicate_count",
+          "uploaded_by",
+          "received_at",
+          "pipeline_run_id",
+          "rejections"
+        ],
+        "type": "object"
+      },
+      "IngestBatchAccepted": {
+        "properties": {
+          "accepted": {
+            "description": "stored in raw_sessions, duplicates included",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "duplicates": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ingest_batch_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pipeline_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when no first-arrival record was accepted"
+          },
+          "rejected": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/IngestSource"
+          }
+        },
+        "required": [
+          "ingest_batch_id",
+          "source",
+          "accepted",
+          "rejected",
+          "duplicates",
+          "pipeline_run_id"
+        ],
+        "type": "object"
+      },
+      "IngestBatchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/IngestRecord"
+            },
+            "maxItems": 5000,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "type": "object"
+      },
+      "IngestOutcome": {
+        "enum": [
+          "usable",
+          "set_aside",
+          "quarantined",
+          "duplicate",
+          "pending"
+        ],
+        "type": "string"
+      },
+      "IngestRecord": {
+        "additionalProperties": false,
+        "description": "Schema v0.1; property order equals the SRC-05 CSV header. Feature names are placeholders\n(OQ-03) mapped by configuration.",
+        "properties": {
+          "alpha_ratio_db": {
+            "type": "number"
+          },
+          "articulation_rate_syl_per_s": {
+            "type": "number"
+          },
+          "audio_quality_flag": {
+            "enum": [
+              "ok",
+              "poor"
+            ],
+            "type": "string"
+          },
+          "cpps_db": {
+            "type": "number"
+          },
+          "device_firmware_version": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "device_id": {
+            "$ref": "#/components/schemas/DeviceCode"
+          },
+          "extraction_software_version": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "f0_variability_st": {
+            "type": "number"
+          },
+          "hammarberg_index_db": {
+            "type": "number"
+          },
+          "hnr_db": {
+            "type": "number"
+          },
+          "jitter_local_pct": {
+            "type": "number"
+          },
+          "loudness_dbfs": {
+            "type": "number"
+          },
+          "mean_f0_hz": {
+            "type": "number"
+          },
+          "mfcc1": {
+            "type": "number"
+          },
+          "mfcc2": {
+            "type": "number"
+          },
+          "mfcc3": {
+            "type": "number"
+          },
+          "mfcc4": {
+            "type": "number"
+          },
+          "mic_noise_level_dbfs": {
+            "type": "number"
+          },
+          "number_of_pauses": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pause_fraction": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "phrase_id": {
+            "maxLength": 16,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resident_id": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "schema_version": {
+            "const": "0.1",
+            "type": "string"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "shimmer_local_pct": {
+            "type": "number"
+          },
+          "speech_duration_s": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "speech_rate_syl_per_s": {
+            "type": "number"
+          },
+          "timestamp_utc": {
+            "examples": [
+              "2026-10-21 19:07:50"
+            ],
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
+            "type": "string"
+          },
+          "total_phrase_duration_s": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "voiced_fraction": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "schema_version",
+          "session_id",
+          "resident_id",
+          "device_id",
+          "timestamp_utc",
+          "mic_noise_level_dbfs",
+          "audio_quality_flag",
+          "extraction_software_version",
+          "device_firmware_version",
+          "speech_duration_s",
+          "phrase_id",
+          "loudness_dbfs",
+          "total_phrase_duration_s",
+          "speech_rate_syl_per_s",
+          "articulation_rate_syl_per_s",
+          "number_of_pauses",
+          "pause_fraction",
+          "voiced_fraction",
+          "mean_f0_hz",
+          "f0_variability_st",
+          "jitter_local_pct",
+          "shimmer_local_pct",
+          "hnr_db",
+          "cpps_db",
+          "alpha_ratio_db",
+          "hammarberg_index_db",
+          "mfcc1",
+          "mfcc2",
+          "mfcc3",
+          "mfcc4"
+        ],
+        "type": "object"
+      },
+      "IngestRejection": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ProblemFieldError"
+            },
+            "type": "array"
+          },
+          "received_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "row_number": {
+            "description": "1-based position in the batch (CSV excludes header)",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "row_number",
+          "session_id",
+          "received_at",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "IngestResult": {
+        "properties": {
+          "arrival_seq": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pipeline_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "raw_session_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "status_after_processing": {
+            "$ref": "#/components/schemas/IngestOutcome"
+          }
+        },
+        "required": [
+          "raw_session_id",
+          "arrival_seq",
+          "session_id",
+          "status_after_processing",
+          "reasons",
+          "pipeline_run_id"
+        ],
+        "type": "object"
+      },
+      "IngestSource": {
+        "enum": [
+          "api_single",
+          "api_batch",
+          "csv_upload",
+          "seed"
+        ],
+        "type": "string"
+      },
+      "Last30Days": {
+        "properties": {
+          "missed": {
+            "description": "missing_resident + missing_device_gap",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quarantined": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "set_aside": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "used": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "used",
+          "set_aside",
+          "quarantined",
+          "missed"
+        ],
+        "type": "object"
+      },
+      "LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "Meta": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "as-of of the latest succeeded pipeline run"
+          },
+          "baseline_n": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "cusum_h": {
+            "type": "number"
+          },
+          "data_source_label": {
+            "examples": [
+              "pipeline test data v0.1"
+            ],
+            "type": "string"
+          },
+          "facility_name": {
+            "examples": [
+              "Edgewood"
+            ],
+            "type": "string"
+          },
+          "facility_tz": {
+            "examples": [
+              "America/Chicago"
+            ],
+            "type": "string"
+          },
+          "pipeline_profile": {
+            "$ref": "#/components/schemas/ConfigProfile"
+          }
+        },
+        "required": [
+          "facility_name",
+          "facility_tz",
+          "data_source_label",
+          "as_of",
+          "baseline_n",
+          "cusum_h",
+          "pipeline_profile"
+        ],
+        "type": "object"
+      },
+      "NoteType": {
+        "enum": [
+          "observation",
+          "action_taken",
+          "follow_up"
+        ],
+        "type": "string"
+      },
+      "OverviewSummary": {
+        "properties": {
+          "changed": {
+            "description": "status alarm_on",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "learning": {
+            "description": "status baseline_forming and needs_attention false",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "needs_attention": {
+            "description": "needs_attention true and status not alarm_on",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "usual": {
+            "description": "status no_alarm and needs_attention false",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "changed",
+          "needs_attention",
+          "learning",
+          "usual"
+        ],
+        "type": "object"
+      },
+      "PageMeta": {
+        "properties": {
+          "limit": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "offset": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "meta",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "type": "object"
+      },
+      "Period": {
+        "properties": {
+          "days": {
+            "type": "integer"
+          },
+          "from": {
+            "format": "date",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "days"
+        ],
+        "type": "object"
+      },
+      "PipelineRun": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "code_version": {
+            "type": "string"
+          },
+          "config_profile": {
+            "$ref": "#/components/schemas/ConfigProfile"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "const": "all",
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResidentCode"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PipelineStatus"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/PipelineTrigger"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineRunWarning"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "trigger",
+          "scope",
+          "config_profile",
+          "code_version",
+          "as_of",
+          "started_at",
+          "finished_at",
+          "status",
+          "counts",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "PipelineRunAccepted": {
+        "properties": {
+          "pipeline_run_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pipeline_run_id"
+        ],
+        "type": "object"
+      },
+      "PipelineRunList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/PipelineRun"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "PipelineRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ConfigProfile"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "const": "all",
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResidentCode"
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "type": "object"
+      },
+      "PipelineRunWarning": {
+        "properties": {
+          "code": {
+            "examples": [
+              "late_arrival",
+              "device_assignment_mismatch",
+              "run_abandoned"
+            ],
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "resident_code",
+          "session_id",
+          "detail"
+        ],
+        "type": "object"
+      },
+      "PipelineStatus": {
+        "enum": [
+          "running",
+          "succeeded",
+          "failed"
+        ],
+        "type": "string"
+      },
+      "PipelineTrigger": {
+        "enum": [
+          "ingest",
+          "nightly",
+          "manual",
+          "test"
+        ],
+        "type": "string"
+      },
+      "Problem": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ProblemFieldError"
+            },
+            "type": "array"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "status": {
+            "maximum": 599,
+            "minimum": 400,
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "pattern": "^urn:echowell:error:[A-Z_]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "request_id",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "ProblemFieldError": {
+        "properties": {
+          "code": {
+            "description": "ingest endpoints: TRD 10 ING-023 field codes; other endpoints: Pydantic error type",
+            "examples": [
+              "invalid_type",
+              "unknown_resident",
+              "float_parsing"
+            ],
+            "type": "string"
+          },
+          "field": {
+            "examples": [
+              "records.3.loudness_dbfs"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ProcessedStatus": {
+        "enum": [
+          "usable",
+          "set_aside",
+          "quarantined",
+          "duplicate"
+        ],
+        "type": "string"
+      },
+      "ReferenceRange": {
+        "properties": {
+          "computed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "feature_key": {
+            "$ref": "#/components/schemas/FeatureKey"
+          },
+          "high": {
+            "type": "number"
+          },
+          "low": {
+            "type": "number"
+          },
+          "method": {
+            "description": "definition pending OQ-08",
+            "type": "string"
+          },
+          "n_residents": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pipeline_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "feature_key",
+          "low",
+          "high",
+          "method",
+          "n_residents",
+          "computed_at",
+          "pipeline_run_id"
+        ],
+        "type": "object"
+      },
+      "ReferenceRangeList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/ReferenceRange"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ResidentCode": {
+        "pattern": "^[A-Z0-9]{1,16}$",
+        "type": "string"
+      },
+      "ResidentDetail": {
+        "properties": {
+          "admitted_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alarm_reviewed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alarm_since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attention_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/AttentionReason"
+            },
+            "type": "array"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/BaselineInfo"
+          },
+          "cohort": {
+            "$ref": "#/components/schemas/Cohort"
+          },
+          "current_epoch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EpochInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_tally": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceRef"
+          },
+          "enrolled_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "epoch_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/Explanation"
+          },
+          "last_30_days": {
+            "$ref": "#/components/schemas/Last30Days"
+          },
+          "last_checkin_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_checkin_local": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "needs_attention": {
+            "type": "boolean"
+          },
+          "open_alert_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "resident_status": {
+            "$ref": "#/components/schemas/ResidentStatus"
+          },
+          "restart_cause": {
+            "$ref": "#/components/schemas/RestartCause"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisplayStatus"
+          },
+          "watching_since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window": {
+            "$ref": "#/components/schemas/DateWindow"
+          },
+          "withdrawn_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "meta",
+          "resident_code",
+          "cohort",
+          "resident_status",
+          "sex",
+          "enrolled_on",
+          "admitted_on",
+          "withdrawn_on",
+          "status",
+          "needs_attention",
+          "attention_reasons",
+          "alarm_reviewed",
+          "restart_cause",
+          "device",
+          "current_epoch",
+          "epoch_count",
+          "baseline",
+          "watching_since",
+          "alarm_since",
+          "open_alert_id",
+          "current_tally",
+          "last_checkin_at",
+          "last_checkin_local",
+          "window",
+          "last_30_days",
+          "explanation"
+        ],
+        "type": "object"
+      },
+      "ResidentOutcome": {
+        "properties": {
+          "baseline_formed": {
+            "type": "boolean"
+          },
+          "baseline_frozen_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "device_code": {
+            "type": "string"
+          },
+          "epoch_number": {
+            "type": "integer"
+          },
+          "first_alarm_session": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "scored_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usable_in_epoch": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resident_code",
+          "epoch_number",
+          "device_code",
+          "usable_in_epoch",
+          "baseline_formed",
+          "baseline_frozen_after",
+          "scored_sessions",
+          "first_alarm_session",
+          "note"
+        ],
+        "type": "object"
+      },
+      "ResidentOverviewRow": {
+        "properties": {
+          "alarm_reviewed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alarm_since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attention_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/AttentionReason"
+            },
+            "type": "array"
+          },
+          "baseline_progress": {
+            "$ref": "#/components/schemas/BaselineProgress"
+          },
+          "baseline_restarted_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cohort": {
+            "$ref": "#/components/schemas/Cohort"
+          },
+          "current_epoch": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "device_shared": {
+            "type": "boolean"
+          },
+          "last_30_days": {
+            "$ref": "#/components/schemas/Last30Days"
+          },
+          "last_checkin_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_checkin_local": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needs_attention": {
+            "type": "boolean"
+          },
+          "open_alert_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous_device_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "resident_status": {
+            "$ref": "#/components/schemas/ResidentStatus"
+          },
+          "restart_cause": {
+            "$ref": "#/components/schemas/RestartCause"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisplayStatus"
+          }
+        },
+        "required": [
+          "resident_code",
+          "cohort",
+          "resident_status",
+          "device_code",
+          "device_shared",
+          "previous_device_code",
+          "status",
+          "needs_attention",
+          "attention_reasons",
+          "alarm_since",
+          "open_alert_id",
+          "alarm_reviewed",
+          "current_epoch",
+          "baseline_restarted_on",
+          "restart_cause",
+          "baseline_progress",
+          "last_checkin_at",
+          "last_checkin_local",
+          "last_30_days"
+        ],
+        "type": "object"
+      },
+      "ResidentStatus": {
+        "enum": [
+          "active",
+          "withdrawn"
+        ],
+        "type": "string"
+      },
+      "ResidentsOverviewResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/ResidentOverviewRow"
+                },
+                "type": "array"
+              },
+              "summary": {
+                "$ref": "#/components/schemas/OverviewSummary"
+              },
+              "window": {
+                "$ref": "#/components/schemas/DateWindow"
+              }
+            },
+            "required": [
+              "window",
+              "summary",
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "RestartCause": {
+        "anyOf": [
+          {
+            "enum": [
+              "device",
+              "firmware",
+              "software"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ReviewExplanation": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ReviewExplanationCode"
+          },
+          "label": {
+            "examples": [
+              "Cold, cough or sore throat"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "type": "object"
+      },
+      "ReviewExplanationCode": {
+        "pattern": "^[a-z_]{1,40}$",
+        "type": "string"
+      },
+      "ReviewOutcome": {
+        "enum": [
+          "no_concern",
+          "known_cause",
+          "referred",
+          "data_problem"
+        ],
+        "type": "string"
+      },
+      "ReviewOutcomes": {
+        "properties": {
+          "alarms_raised": {
+            "type": "integer"
+          },
+          "by_outcome": {
+            "$ref": "#/components/schemas/ByOutcome"
+          },
+          "reviewed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "alarms_raised",
+          "reviewed",
+          "by_outcome"
+        ],
+        "type": "object"
+      },
+      "Role": {
+        "enum": [
+          "admin",
+          "clinician",
+          "researcher"
+        ],
+        "type": "string"
+      },
+      "ScoreRow": {
+        "properties": {
+          "alarm_state": {
+            "$ref": "#/components/schemas/AlarmState"
+          },
+          "composite_raw": {
+            "type": "number"
+          },
+          "composite_z": {
+            "type": "number"
+          },
+          "cusum_tally": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "epoch_number": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "is_morning": {
+            "type": "boolean"
+          },
+          "local_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/SessionId"
+          },
+          "z": {
+            "$ref": "#/components/schemas/ZValues"
+          }
+        },
+        "required": [
+          "session_id",
+          "resident_code",
+          "epoch_number",
+          "local_date",
+          "is_morning",
+          "z",
+          "composite_raw",
+          "composite_z",
+          "cusum_tally",
+          "alarm_state"
+        ],
+        "type": "object"
+      },
+      "ScoredFeatureKey": {
+        "enum": [
+          "loudness_dbfs",
+          "total_phrase_duration_s",
+          "speech_rate_syl_per_s",
+          "articulation_rate_syl_per_s",
+          "number_of_pauses",
+          "pause_fraction",
+          "voiced_fraction"
+        ],
+        "type": "string"
+      },
+      "ScoresResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "baseline_periods": {
+                "items": {
+                  "$ref": "#/components/schemas/BaselinePeriod"
+                },
+                "type": "array"
+              },
+              "cusum_k": {
+                "examples": [
+                  0.5
+                ],
+                "type": "number"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/ScoreRow"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "cusum_k",
+              "baseline_periods",
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "SessionId": {
+        "pattern": "^[A-Z0-9]{1,16}-[0-9]{8}-[0-9]{2}$",
+        "type": "string"
+      },
+      "SetAsideReasons": {
+        "properties": {
+          "noise_above_limit": {
+            "type": "integer"
+          },
+          "quality_flag_poor": {
+            "type": "integer"
+          },
+          "speech_too_short": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quality_flag_poor",
+          "noise_above_limit",
+          "speech_too_short"
+        ],
+        "type": "object"
+      },
+      "Sex": {
+        "anyOf": [
+          {
+            "enum": [
+              "F",
+              "M"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "SnoozeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "hours": {
+            "default": 24,
+            "description": "default alert_snooze_hours",
+            "maximum": 168,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "StaffNote": {
+        "properties": {
+          "alert_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef"
+          },
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/NoteType"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "resident_code",
+          "alert_id",
+          "author",
+          "note_type",
+          "body",
+          "supersedes_id",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "StaffNoteCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "alert_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/NoteType"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "note_type",
+          "body"
+        ],
+        "type": "object"
+      },
+      "StaffNoteList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/StaffNote"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "StatusCountsRow": {
+        "properties": {
+          "duplicate": {
+            "type": "integer"
+          },
+          "missing_device_gap": {
+            "type": "integer"
+          },
+          "missing_resident": {
+            "type": "integer"
+          },
+          "quarantined": {
+            "type": "integer"
+          },
+          "resident_code": {
+            "$ref": "#/components/schemas/ResidentCode"
+          },
+          "set_aside": {
+            "type": "integer"
+          },
+          "usable": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usable",
+          "set_aside",
+          "quarantined",
+          "duplicate",
+          "missing_resident",
+          "missing_device_gap",
+          "resident_code"
+        ],
+        "type": "object"
+      },
+      "StatusTotals": {
+        "properties": {
+          "duplicate": {
+            "type": "integer"
+          },
+          "missing_device_gap": {
+            "type": "integer"
+          },
+          "missing_resident": {
+            "type": "integer"
+          },
+          "quarantined": {
+            "type": "integer"
+          },
+          "set_aside": {
+            "type": "integer"
+          },
+          "usable": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usable",
+          "set_aside",
+          "quarantined",
+          "duplicate",
+          "missing_resident",
+          "missing_device_gap"
+        ],
+        "type": "object"
+      },
+      "Token": {
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "examples": [
+              3600
+            ],
+            "type": "integer"
+          },
+          "token_type": {
+            "const": "bearer",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "user"
+        ],
+        "type": "object"
+      },
+      "UiConfig": {
+        "properties": {
+          "alert_snooze_hours": {
+            "examples": [
+              24
+            ],
+            "maximum": 168,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "review_explanations": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewExplanation"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "meta",
+          "alert_snooze_hours",
+          "review_explanations"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "role",
+          "active",
+          "last_login_at",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "UserCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        },
+        "required": [
+          "email",
+          "display_name",
+          "role",
+          "password"
+        ],
+        "type": "object"
+      },
+      "UserList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageMeta"
+          },
+          {
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "UserRef": {
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "type": "object"
+      },
+      "UserUpdate": {
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        },
+        "type": "object"
+      },
+      "ZValues": {
+        "additionalProperties": false,
+        "description": "The 7 unsigned z values of the scored features (contract \u00a76 order).",
+        "properties": {
+          "z_articulation_rate_syl_per_s": {
+            "type": "number"
+          },
+          "z_loudness_dbfs": {
+            "type": "number"
+          },
+          "z_number_of_pauses": {
+            "type": "number"
+          },
+          "z_pause_fraction": {
+            "type": "number"
+          },
+          "z_speech_rate_syl_per_s": {
+            "type": "number"
+          },
+          "z_total_phrase_duration_s": {
+            "type": "number"
+          },
+          "z_voiced_fraction": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "z_loudness_dbfs",
+          "z_total_phrase_duration_s",
+          "z_speech_rate_syl_per_s",
+          "z_articulation_rate_syl_per_s",
+          "z_number_of_pauses",
+          "z_pause_fraction",
+          "z_voiced_fraction"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      },
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "EchoWell research system API. Detects a change in a resident's voice measurements relative to their own frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.\n",
+    "title": "EchoWell API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/admissions": {
+      "get": {
+        "operationId": "listAdmissions",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdmissionList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-EchoWell-Experimental": {
+                "$ref": "#/components/headers/XExperimental"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Admissions",
+        "tags": [
+          "admissions"
+        ]
+      }
+    },
+    "/admissions/{resident_code}/comparison": {
+      "get": {
+        "operationId": "getAdmissionComparison",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdmissionComparison"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-EchoWell-Experimental": {
+                "$ref": "#/components/headers/XExperimental"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Comparison",
+        "tags": [
+          "admissions"
+        ]
+      }
+    },
+    "/alerts": {
+      "get": {
+        "operationId": "listAlerts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AlertStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resident_code",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z0-9]{1,16}$",
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Alerts",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/alerts/{id}/reviews": {
+      "get": {
+        "operationId": "listAlertReviews",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertReviewList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Reviews",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "post": {
+        "operationId": "createAlertReview",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertReviewCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertReview"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Create Review",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/alerts/{id}/snooze": {
+      "post": {
+        "operationId": "snoozeAlert",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnoozeRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Snooze Alert",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/analytics": {
+      "get": {
+        "operationId": "getAnalytics",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Analytics",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/analytics/baselines": {
+      "get": {
+        "operationId": "listBaselines",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "resident_code",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z0-9]{1,16}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "epoch",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineRowList"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Baselines (JSON) or CSV export when Accept is text/csv",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Baselines",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/config/ui": {
+      "get": {
+        "operationId": "getUiConfig",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UiConfig"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Ui Config",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/data-alerts": {
+      "get": {
+        "operationId": "listDataAlerts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DataAlertStatus",
+              "default": "open"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DataAlertKind"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataAlertList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Data Alerts",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Devices",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/facility/reference-ranges": {
+      "get": {
+        "operationId": "listReferenceRanges",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceRangeList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-EchoWell-Experimental": {
+                "$ref": "#/components/headers/XExperimental"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Reference Ranges",
+        "tags": [
+          "admissions"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Service Unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/ingest": {
+      "post": {
+        "operationId": "ingestBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestBatchRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentMediaType": "text/csv",
+                    "description": "UTF-8 CSV with the SRC-05 header, max 5 MB",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestBatchAccepted"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Ingest Batch",
+        "tags": [
+          "ingest"
+        ]
+      }
+    },
+    "/ingest/batches/{id}": {
+      "get": {
+        "operationId": "getIngestBatch",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestBatch"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Ingest Batch",
+        "tags": [
+          "ingest"
+        ]
+      }
+    },
+    "/pipeline/run": {
+      "post": {
+        "operationId": "startPipelineRun",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PipelineRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRunAccepted"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "summary": "Start Pipeline Run",
+        "tags": [
+          "pipeline"
+        ]
+      }
+    },
+    "/pipeline/runs": {
+      "get": {
+        "operationId": "listPipelineRuns",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trigger",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PipelineTrigger"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PipelineStatus"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRunList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Pipeline Runs",
+        "tags": [
+          "pipeline"
+        ]
+      }
+    },
+    "/pipeline/runs/{id}": {
+      "get": {
+        "operationId": "getPipelineRun",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRun"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Pipeline Run",
+        "tags": [
+          "pipeline"
+        ]
+      }
+    },
+    "/residents": {
+      "get": {
+        "operationId": "listResidents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "alarm",
+              "enum": [
+                "alarm",
+                "resident_id",
+                "last_checkin"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort",
+            "required": false,
+            "schema": {
+              "default": "longitudinal",
+              "enum": [
+                "longitudinal",
+                "new_admission"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_withdrawn",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentsOverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Residents",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/residents/{resident_code}": {
+      "get": {
+        "operationId": "getResident",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentDetail"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Resident",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/residents/{resident_code}/checkins": {
+      "get": {
+        "operationId": "listCheckinEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          },
+          {
+            "$ref": "#/components/parameters/FromDate"
+          },
+          {
+            "$ref": "#/components/parameters/ToDate"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinEventList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Checkins",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/residents/{resident_code}/features": {
+      "get": {
+        "operationId": "getResidentFeatures",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          },
+          {
+            "$ref": "#/components/parameters/FromDate"
+          },
+          {
+            "$ref": "#/components/parameters/ToDate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeaturesResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get Features",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/residents/{resident_code}/notes": {
+      "get": {
+        "operationId": "listNotes",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          },
+          {
+            "in": "query",
+            "name": "include_superseded",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffNoteList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Notes",
+        "tags": [
+          "residents"
+        ]
+      },
+      "post": {
+        "operationId": "createNote",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResidentCodePath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffNoteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffNote"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Create Note",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/scores": {
+      "get": {
+        "operationId": "listScores",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "resident_code",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z0-9]{1,16}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "epoch",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/FromDate"
+          },
+          {
+            "$ref": "#/components/parameters/ToDate"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoresResponse"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Scored sessions (JSON) or CSV export when Accept is text/csv (researcher, admin)",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Scores",
+        "tags": [
+          "scores"
+        ]
+      }
+    },
+    "/sessions": {
+      "post": {
+        "operationId": "ingestSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestRecord"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResult"
+                }
+              }
+            },
+            "description": "Duplicate session_id stored and dropped",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResult"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "summary": "Ingest Session",
+        "tags": [
+          "ingest"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "enum": [
+                "admin",
+                "clinician",
+                "researcher"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "active",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserList"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Users",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Create User",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Update User",
+        "tags": [
+          "users"
+        ]
+      }
+    }
+  },
+  "security": [],
+  "servers": [
+    {
+      "description": "local (docker-compose)",
+      "url": "http://localhost:8000/api/v1"
+    },
+    {
+      "description": "relative to the deployed Railway API origin (staging, production)",
+      "url": "/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health"
+    },
+    {
+      "name": "auth"
+    },
+    {
+      "name": "ingest"
+    },
+    {
+      "name": "residents"
+    },
+    {
+      "name": "scores"
+    },
+    {
+      "name": "alerts"
+    },
+    {
+      "name": "devices"
+    },
+    {
+      "name": "analytics"
+    },
+    {
+      "name": "pipeline"
+    },
+    {
+      "description": "Future / experimental study arm",
+      "name": "admissions"
+    },
+    {
+      "name": "users"
+    },
+    {
+      "name": "config"
+    }
+  ]
+}

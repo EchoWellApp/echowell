@@ -7,11 +7,12 @@ points to the corrected note; the current notes are those no other note supersed
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session, aliased
 
-from backend.models import NoteType, StaffNote
+from backend.models import NoteType, StaffNote, User
 
 
 class StaffNoteRepository:
@@ -27,7 +28,9 @@ class StaffNoteRepository:
         body: str,
         alert_id: uuid.UUID | None = None,
         supersedes_id: uuid.UUID | None = None,
+        created_at: datetime | None = None,
     ) -> StaffNote:
+        """`created_at` defaults to the database clock; the API passes the application clock."""
         note = StaffNote(
             resident_id=resident_id,
             author_user_id=author_user_id,
@@ -36,6 +39,8 @@ class StaffNoteRepository:
             alert_id=alert_id,
             supersedes_id=supersedes_id,
         )
+        if created_at is not None:
+            note.created_at = created_at
         self.session.add(note)
         self.session.flush()
         return note
@@ -51,3 +56,33 @@ class StaffNoteRepository:
                 .order_by(StaffNote.created_at.desc())
             ).all()
         )
+
+    def get(self, note_id: uuid.UUID) -> StaffNote | None:
+        return self.session.get(StaffNote, note_id)
+
+    def is_superseded(self, note_id: uuid.UUID) -> bool:
+        return bool(self.session.scalar(select(exists().where(StaffNote.supersedes_id == note_id))))
+
+    def page(
+        self,
+        resident_id: uuid.UUID,
+        *,
+        include_superseded: bool = False,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[tuple[StaffNote, str]], int]:
+        """Notes newest first with the author's display name (API-083)."""
+        query = (
+            select(StaffNote, User.display_name)
+            .join(User, User.id == StaffNote.author_user_id)
+            .where(StaffNote.resident_id == resident_id)
+        )
+        if not include_superseded:
+            newer = aliased(StaffNote)
+            superseded = select(newer.supersedes_id).where(newer.supersedes_id.is_not(None))
+            query = query.where(StaffNote.id.not_in(superseded))
+        total = self.session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        rows = self.session.execute(
+            query.order_by(StaffNote.created_at.desc(), StaffNote.id).limit(limit).offset(offset)
+        ).all()
+        return [(note, name) for note, name in rows], total

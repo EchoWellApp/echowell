@@ -15,12 +15,14 @@ from __future__ import annotations
 import getpass
 import logging
 from collections.abc import Mapping
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from backend.core.logging import get_request_id
 from backend.models import FEATURE_KEYS, ActorType
 from backend.repositories.audit_repository import AuditRepository
 
@@ -62,7 +64,7 @@ DETAIL_KEYS: dict[AuditAction, frozenset[str]] = {
     AuditAction.AUTH_LOGIN_FAILED: frozenset({"email", "reason"}),
     AuditAction.AUTH_LOGOUT: frozenset(),
     AuditAction.INGEST_BATCH_RECEIVED: frozenset(
-        {"source", "record_count", "accepted", "rejected", "duplicates"}
+        {"source", "record_count", "accepted", "rejected", "duplicates", "pipeline_run_id"}
     ),
     AuditAction.NOTE_CREATED: frozenset(
         {"resident_code", "note_type", "alert_id", "supersedes_id"}
@@ -175,6 +177,8 @@ def record(
     """Insert one audit row in the caller's transaction (no commit) and return its id."""
     checked = _action(action)
     clean = sanitise_details(checked, details)
+    if request_id is None:
+        request_id = get_request_id()  # LOG-033: rows written during a request carry its ID
     audit_id = AuditRepository(session).insert(
         actor_type=actor_type,
         actor_id=actor_id,
@@ -230,3 +234,10 @@ def record_committed(engine: Engine, **kwargs: Any) -> int:
         raise ValueError("record_committed() is only for auth.login.failed and access.denied")
     with Session(engine) as session, session.begin():
         return record(session, **kwargs)
+
+
+def login_failures_since(
+    session: Session, email: str, since: datetime
+) -> tuple[int, datetime | None]:
+    """Failed logins for one e-mail since `since`, for the SEC-015 lockout."""
+    return AuditRepository(session).login_failures_since(email, since)

@@ -71,7 +71,7 @@ jobs:
       - run: alembic upgrade head && alembic downgrade base && alembic upgrade head # TST-040 round trip (FEAT-008-AC-01)
       - run: alembic check # models match migrations (PGS-023)
       - run: >
-          pytest -p no:randomly tests/unit tests/integration tests/validation
+          pytest -p no:randomly tests/unit tests/integration tests/contract tests/security tests/validation
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
           --junitxml=build/junit.xml
       - if: always()

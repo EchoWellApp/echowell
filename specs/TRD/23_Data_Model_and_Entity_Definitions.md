@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -183,6 +183,7 @@ One per batch request or CSV upload (`api_single` single POSTs have no batch row
 | `uploaded_by` | uuid | yes | User who uploaded (admin) or NULL | Ingestion |
 | `api_key_id` | uuid | yes | API key that submitted, or NULL | Ingestion |
 | `received_at` | timestamptz | no | Instant the request arrived | Ingestion |
+| `pipeline_run_id` | uuid | yes | Pipeline run the batch started; NULL when no run was started (TRD 20 §4.13, D-124) | Ingestion |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |
 
@@ -958,3 +959,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.9 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-8): §4.6 states that the `analytics_summary.py` read of `evaluation_ground_truth` through the read-only engine is the one exception to TRD 05 API-005 | — |
 | 0.10 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; §4.4.3 keeps the pipeline `status` and adds the derived `needs_attention`, `attention_reasons`, `alarm_reviewed`, `restart_cause` and the detail `window` with the four display statuses (D-109); §4.4.4 adds the `checkins_started` event and the same-date order; §4.4.2 adds upload on the as-of date; §4.3.7 and `data_alerts.detail` use the v0.2 detail texts; entity read-by notes, DME-011, DME-012, DME-024 and AC-DME-05, -08, -09 follow the v0.2 pages | — |
 | 0.11 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115); last check-in example with "CT" (D-119) | — |
+| 0.12 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.2.7 `ingest_batches.pipeline_run_id` | — |

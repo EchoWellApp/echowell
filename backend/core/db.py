@@ -74,6 +74,30 @@ def create_engine_for(url: SecretStr | str, *, app_env: str) -> Engine:
     return _engine(raw)
 
 
+@lru_cache(maxsize=2)
+def _read_only_engine(url: str) -> Engine:
+    return create_engine(
+        url,
+        pool_size=1,
+        max_overflow=0,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={"prepare_threshold": None, "connect_timeout": 5},
+        execution_options={"postgresql_readonly": True},
+    )
+
+
+def create_read_only_engine(url: SecretStr | str, *, app_env: str) -> Engine:
+    """A second engine whose transactions are read-only (`pool_size=1`, API-136, ARC-015).
+
+    Used only by the analytics summary for the evaluation answer key; created on first use, never
+    at startup, and never in the production profile.
+    """
+    raw = url.get_secret_value() if isinstance(url, SecretStr) else url
+    require_tls(raw, app_env)
+    return _read_only_engine(raw)
+
+
 @lru_cache(maxsize=8)
 def session_factory(engine: Engine) -> sessionmaker[Session]:
     """The `SessionLocal` factory of an engine; `get_db()` opens one session per request."""

@@ -88,7 +88,12 @@ def settings_factory() -> Callable[..., Settings]:
 
 @pytest.fixture
 def frozen_clock() -> Iterator[time_machine.Coordinates]:
-    """Wall clock frozen at the test_v0_1 as-of (TST-005)."""
+    """Wall clock frozen at the test_v0_1 as-of (TST-005).
+
+    Not for tests that open new database connections afterwards: after a travel, time-machine
+    leaves `time.monotonic()` on a wall-clock base for the rest of the process, which upsets the
+    connect deadlines of psycopg. API tests freeze the application clock with `get_clock`.
+    """
     with time_machine.travel(FROZEN_NOW, tick=False) as traveller:
         yield traveller
 
@@ -140,12 +145,8 @@ def client(database_url: str) -> Iterator[TestClient]:
 
 
 @pytest.fixture(autouse=True)
-def _reset_rate_limiter() -> Iterator[None]:
-    """Empty the in-memory slowapi storage before each test (TRD 24 D-74); inert before FEAT-022."""
-    try:
-        from backend.core.rate_limit import limiter  # type: ignore[import-not-found]
-    except ImportError:
-        yield
-        return
+def _reset_rate_limiter() -> None:
+    """Empty the in-memory slowapi storage before each test (TRD 24 D-74; FEAT-022-FR-09)."""
+    from backend.core.rate_limit import limiter
+
     limiter.reset()
-    yield

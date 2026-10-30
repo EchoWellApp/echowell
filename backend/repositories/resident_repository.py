@@ -24,6 +24,9 @@ class ResidentRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    def get_by_id(self, resident_id: uuid.UUID) -> Resident | None:
+        return self.session.get(Resident, resident_id)
+
     def get_by_code(self, resident_code: str) -> Resident | None:
         return self.session.scalars(
             select(Resident).where(Resident.resident_code == resident_code)

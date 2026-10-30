@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -992,7 +992,7 @@ The contract lists key columns; the following columns were added in this TRD set
 | all mutable tables | `created_at`, `updated_at` | contract §9 rule "created_at/updated_at on mutable tables" |
 | facilities | `created_at`, `updated_at` only | — |
 | api_keys | `updated_at` | mutable (active, last_used_at) |
-| ingest_batches | `duplicate_count`, `api_key_id`, `created_at`, `updated_at` | `POST /api/v1/ingest` returns `duplicates`; provenance of key-authenticated batches |
+| ingest_batches | `duplicate_count`, `api_key_id`, `created_at`, `updated_at`; `pipeline_run_id` (migration 0003, §4.13) | `POST /api/v1/ingest` returns `duplicates`; provenance of key-authenticated batches; the run a batch started, read by `GET /api/v1/ingest/batches/{id}` (TRD 24 D-124) |
 | ingest_rejections | `api_key_id`, `row_number` | provenance of single-record rejections; CSV row number for the batch report |
 | raw_sessions | `resident_id uuid`, `device_id uuid` (resolved FKs), `resident_code`, `device_code` (typed copies of the ingest fields `resident_id`, `device_id`), `api_key_id`, `ingest_warnings` (jsonb array, TRD 10 §4.4) | in the database `resident_id`/`device_id` are UUID FKs; the received study codes are kept verbatim in `*_code` and in `payload` |
 | pipeline_runs | `as_of`, `error_message`, `created_at`, `updated_at` | reproducible ledger end date (test as-of 2026-10-30 15:00 America/Chicago); failure detail |
@@ -1156,6 +1156,16 @@ R09,Sudden step,2026-10-21,EchoWell_pipeline_test_v0_1.xlsx
 R10,Slow drift,2026-10-17,EchoWell_pipeline_test_v0_1.xlsx
 ```
 
+### 4.13 Migration 0003: batch to pipeline-run link
+
+`ingest_batches.pipeline_run_id` names the pipeline run that a batch started (NULL when the batch held no first arrival, so no run was started). `GET /api/v1/ingest/batches/{id}` reads it; the `ingest.batch.received` audit row keeps recording the same id for traceability (TRD 12 §4.12, TRD 24 D-124). The column is added by its own migration because `pipeline_runs` is created after `ingest_batches` in §4.6; the app role's existing table-level `UPDATE` on `ingest_batches` (§4.8) covers it.
+
+```sql
+ALTER TABLE ingest_batches
+  ADD COLUMN pipeline_run_id uuid NULL REFERENCES pipeline_runs (id) ON DELETE RESTRICT;
+CREATE INDEX ingest_batches_pipeline_run_idx ON ingest_batches (pipeline_run_id);
+```
+
 ## 5. Assumptions
 
 - ASM-01 Facility time zone America/Chicago (default of `facilities.timezone` and `config_parameters.facility_tz`).
@@ -1248,3 +1258,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.7 | 19 Oct 2026 | Phase 1 round-6 fixes (R6-06) | — |
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (PGS-027 non-local (D-88)) | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): references only (SRC-18/19 superseded, alarm timing check on the Study team page); no table, enum, index or constraint change (the D-114 fields `needs_attention`, `attention_reasons`, `alarm_reviewed`, `checkins_started` and `uploaded_on_as_of_date` are derived on read) | — |
+| 0.10 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.13 migration 0003 adds `ingest_batches.pipeline_run_id` (nullable FK to `pipeline_runs`, index `ingest_batches_pipeline_run_idx`); §4.10 row updated | — |

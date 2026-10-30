@@ -32,13 +32,33 @@ class UserRepository:
             select(User).where(User.email == normalise_email(email))
         ).first()
 
-    def list_page(self, *, limit: int = 50, offset: int = 0) -> tuple[list[User], int]:
-        """Users ordered by e-mail with the total count (API-016 paging)."""
-        total = self.session.scalar(select(func.count()).select_from(User)) or 0
-        rows = self.session.scalars(
-            select(User).order_by(User.email).limit(limit).offset(offset)
-        ).all()
+    def list_page(
+        self,
+        *,
+        role: UserRole | None = None,
+        active: bool | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[User], int]:
+        """Users ordered by e-mail with the total count (API-016 paging, API-091 filters)."""
+        query = select(User)
+        if role is not None:
+            query = query.where(User.role == role)
+        if active is not None:
+            query = query.where(User.active.is_(active))
+        total = self.session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        rows = self.session.scalars(query.order_by(User.email).limit(limit).offset(offset)).all()
         return list(rows), total
+
+    def active_admins_for_update(self) -> list[User]:
+        """Active admins, locked, for the last-admin check (API-092)."""
+        return list(
+            self.session.scalars(
+                select(User)
+                .where(User.role == UserRole.ADMIN, User.active.is_(True))
+                .with_for_update()
+            ).all()
+        )
 
     def insert(self, *, email: str, display_name: str, password_hash: str, role: UserRole) -> User:
         user = User(

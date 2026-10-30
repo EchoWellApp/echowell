@@ -531,6 +531,7 @@ CREATE TABLE public.ingest_batches (
     received_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    pipeline_run_id uuid,
     CONSTRAINT ingest_batches_actor_ck CHECK (((source = 'seed'::public.ingest_source) OR (uploaded_by IS NOT NULL) OR (api_key_id IS NOT NULL))),
     CONSTRAINT ingest_batches_counts_ck CHECK (((record_count >= 0) AND (accepted_count >= 0) AND (rejected_count >= 0) AND (duplicate_count >= 0) AND ((accepted_count + rejected_count) <= record_count) AND (duplicate_count <= accepted_count))),
     CONSTRAINT ingest_batches_filename_ck CHECK (((source = 'csv_upload'::public.ingest_source) <= (filename IS NOT NULL)))
@@ -1296,6 +1297,12 @@ CREATE INDEX facility_reference_ranges_run_idx ON public.facility_reference_rang
 CREATE INDEX ingest_batches_api_key_idx ON public.ingest_batches USING btree (api_key_id);
 
 --
+-- Name: ingest_batches_pipeline_run_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ingest_batches_pipeline_run_idx ON public.ingest_batches USING btree (pipeline_run_id);
+
+--
 -- Name: ingest_batches_received_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1763,6 +1770,13 @@ ALTER TABLE ONLY public.facility_reference_ranges
 
 ALTER TABLE ONLY public.ingest_batches
     ADD CONSTRAINT ingest_batches_api_key_id_fkey FOREIGN KEY (api_key_id) REFERENCES public.api_keys(id) ON DELETE RESTRICT;
+
+--
+-- Name: ingest_batches ingest_batches_pipeline_run_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ingest_batches
+    ADD CONSTRAINT ingest_batches_pipeline_run_id_fkey FOREIGN KEY (pipeline_run_id) REFERENCES public.pipeline_runs(id) ON DELETE RESTRICT;
 
 --
 -- Name: ingest_batches ingest_batches_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

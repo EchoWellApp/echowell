@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.5 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -89,7 +89,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | schema_version | string | missing; not a string; not in `supported_schema_versions` | — |
 | session_id | string ≤ 64 chars matching `^([A-Z0-9]{1,16})-(\d{8})-(\d{2})$` (group 1 uses the resident-code pattern of TRD 19/20) | missing; no match; group 1 ≠ `resident_id` (code `session_id_mismatch`) | group 2 ≠ local date (FACILITY_TZ) of `timestamp_utc` as YYYYMMDD (`session_id_date_mismatch`) |
 | resident_id | string ≤ 16 chars | missing; no `residents.resident_code` equal to it (`unknown_resident`); resident `status = withdrawn` (`resident_withdrawn`, detail "resident withdrawn") | `timestamp_utc` local date before `enrolled_on` (`before_enrollment`) |
-| device_id | string ≤ 16 chars | missing; no `devices.device_code` equal to it (`unknown_device`) | device `active = false` (`device_inactive`); device differs from the resident's assigned device on the local date (`device_assignment_mismatch`) |
+| device_id | string ≤ 16 chars | missing; no `devices.device_code` equal to it (`unknown_device`) | device `active = false` (`device_inactive`). A device that differs from the resident's assigned device on the local date is accepted without an ingest warning; the pipeline run adds `device_assignment_mismatch` to `pipeline_runs.warnings` (TRD 05 API-055, FEAT-026-FR-16, TRD 24 D-125) |
 | timestamp_utc | string `YYYY-MM-DD HH:MM:SS` (UTC) | missing; format mismatch; invalid calendar date/time | later than `received_at` + 24 h (`timestamp_in_future`) |
 | mic_noise_level_dbfs | number | missing; non-finite; > 0 | — (noise above limit is handled by the quality gate) |
 | audio_quality_flag | string enum | missing; not exactly `ok` or `poor` | — |
@@ -121,7 +121,7 @@ Reject = record rejected (422 / ingest_rejections). Warn = record accepted; warn
 | ING-020 | Plausibility ranges (Warn column) shall never cause rejection; they are placeholders until measured on the v1 rig (SRC-13 §2, RSK-02). Warnings of one record shall be aggregated into one `ingest_warnings` array; plausibility warnings use code `implausible_value` with the field name. | Must | SRC-13 §2, RSK-02 | Test |
 | ING-021 | In JSON, numeric fields shall be JSON numbers (a numeric string is rejected with `invalid_type`) and text fields JSON strings; in CSV every cell is text and numeric cells shall be parsed with Python `float()` after confirming the cell is non-empty; the literals `nan`, `inf`, `-inf` (any case) shall be rejected as `non_finite`. | Must | contract §5 | Test |
 | ING-022 | Text values shall be stored exactly as received (no trimming, no case change); this keeps epoch keys exact (TRD 08 BSC-007). | Must | BR-02, BR-08 | Test |
-| ING-023 | Field-level codes in `errors[].code` shall be exactly: `missing_field`, `invalid_type`, `invalid_format`, `invalid_enum`, `out_of_range`, `not_integer`, `non_finite`, `extra_forbidden`, `unsupported_schema_version`, `session_id_mismatch`, `unknown_resident`, `resident_withdrawn`, `unknown_device`; request-level problems use the TRD 05 codes `VALIDATION_ERROR`, `EMPTY_BATCH`, `CSV_HEADER_MISMATCH`. Warning codes shall be exactly: `implausible_value`, `session_id_date_mismatch`, `before_enrollment`, `device_inactive`, `device_assignment_mismatch`, `timestamp_in_future`, `duplicate_payload_differs`. | Must | TRD 17, TRD 05 §4.7, §21 R19 | Test |
+| ING-023 | Field-level codes in `errors[].code` shall be exactly: `missing_field`, `invalid_type`, `invalid_format`, `invalid_enum`, `out_of_range`, `not_integer`, `non_finite`, `extra_forbidden`, `unsupported_schema_version`, `session_id_mismatch`, `unknown_resident`, `resident_withdrawn`, `unknown_device`, `device_key_mismatch` (the record's `device_id` is not the device the API key is bound to; TRD 24 D-125); request-level problems use the TRD 05 codes `VALIDATION_ERROR`, `EMPTY_BATCH`, `CSV_HEADER_MISMATCH`. Warning codes shall be exactly: `implausible_value`, `session_id_date_mismatch`, `before_enrollment`, `device_inactive`, `timestamp_in_future`, `duplicate_payload_differs`. `device_assignment_mismatch` is a pipeline run warning (`pipeline_runs.warnings`, TRD 05 API-055), not an ingest warning (D-125). | Must | TRD 17, TRD 05 §4.7, §21 R19 | Test |
 | ING-024 | All 283 records of SRC-05 shall pass validation (no rejection) when the R01–R10 residents and devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 of section 4.9 exist. | Must | BR-15, SRC-05 | Test |
 
 ### 4.5 Timestamp parsing and local time
@@ -319,3 +319,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-08) | — |
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (ING-032 row_number for JSON batches (D-84); ING-037 ingest warning, not RunWarning) | — |
 | 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): ING-036 traces to SRC-21 (the duplicate caption is now in the Resident chart's Check-in log) | — |
+| 0.6 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-2, Q-3; TRD 24 D-125): `device_assignment_mismatch` moved from the ingest warnings to the pipeline run warnings, matching TRD 05 API-055 and FEAT-026-FR-16; ING-023 adds the field code `device_key_mismatch` | — |
