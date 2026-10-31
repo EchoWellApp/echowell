@@ -2,12 +2,14 @@
 FEAT-052-FR-16).
 
     python scripts/run_engine.py --input <csv> --profile test_v0_1 --as-of "2026-10-30 15:00" \\
-        --assignments <json> --residents <json> --out <dir>
+        --assignments <json|csv> --residents <json|csv> --out <dir>
 
 The CSV holds records with the canonical field names (SRC-05 header). `--as-of` is facility-local
-time in the profile's time zone. `--residents` is a JSON list of {resident_code, enrolled_on,
-withdrawn_on?, status?}; `--assignments` a JSON list of {resident_code, device_code, valid_from,
-valid_to?}. File I/O lives here so that every module under `analytics/` stays pure (ARC-041).
+time in the profile's time zone. `--residents` is a list of {resident_code, enrolled_on,
+withdrawn_on?, status?}; `--assignments` a list of {resident_code, device_code, valid_from,
+valid_to?}; each is a JSON list or a CSV file with those columns (the `database/seeds/test_v0_1`
+files work as they are; empty cells are absent values). File I/O lives here so that every module
+under `analytics/` stays pure (ARC-041).
 """
 
 from __future__ import annotations
@@ -39,6 +41,14 @@ PROFILES = {"production": PRODUCTION, "test_v0_1": TEST_V0_1}
 
 def _date(value: str | None) -> date | None:
     return date.fromisoformat(value) if value else None
+
+
+def read_rows(path: Path) -> list[dict[str, Any]]:
+    if path.suffix == ".csv":
+        with path.open(newline="", encoding="utf-8") as handle:
+            return [{k: v for k, v in row.items() if v} for row in csv.DictReader(handle)]
+    rows: list[dict[str, Any]] = json.loads(path.read_text(encoding="utf-8"))
+    return rows
 
 
 def read_records(path: Path, received_at: datetime) -> list[RawRecord]:
@@ -88,12 +98,12 @@ def main(argv: list[str] | None = None) -> int:
     residents = [
         ResidentInfo(r["resident_code"], date.fromisoformat(r["enrolled_on"]),
                      _date(r.get("withdrawn_on")), r.get("status", "active"))
-        for r in json.loads(args.residents.read_text(encoding="utf-8"))
+        for r in read_rows(args.residents)
     ]  # fmt: skip
     assignments = [
         DeviceAssignment(a["resident_code"], a["device_code"], date.fromisoformat(a["valid_from"]),
                          _date(a.get("valid_to")))
-        for a in json.loads(args.assignments.read_text(encoding="utf-8"))
+        for a in read_rows(args.assignments)
     ]  # fmt: skip
     result = run_pipeline(read_records(args.input, as_of.astimezone(UTC)), residents, assignments,
                           config, as_of)  # fmt: skip
