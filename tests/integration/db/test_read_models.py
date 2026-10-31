@@ -4,7 +4,7 @@ FEAT-014).
 The FEAT-014 acceptance values are stated on the full test_v0_1 seed as of 2026-10-30, which
 FEAT-055 loads; until then each derivation is checked here on a small hand-built scenario that
 follows the same rules (and reuses the seed roster). The seed-valued assertions are in
-`test_seed_values_*`, skipped until the seed exists (FEAT-055).
+`test_seed_values_on_the_full_seed`, which seeds a throwaway database (FEAT-055).
 """
 
 from __future__ import annotations
@@ -14,12 +14,15 @@ from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import create_engine, insert, select, text, update
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
 from backend.models import (
     Alert,
     Baseline,
     DayLedgerEntry,
+    Device,
     Epoch,
     ProcessedSession,
     Resident,
@@ -27,14 +30,13 @@ from backend.models import (
 )
 from backend.repositories import read_models as rm
 from backend.repositories.epoch_repository import EpochRepository
-from tests.integration.db_support import ROOT
+from tests.integration.conftest import SEED_SECRETS, Cli
 from tests.integration.world import FEATURES, World
 
 pytestmark = pytest.mark.integration
 
 TZ = "America/Chicago"
 AS_OF = date(2026, 10, 30)
-SEED_SESSIONS = ROOT / "database" / "seeds" / "test_v0_1" / "sessions.csv"
 
 
 def _day(n: int) -> date:
@@ -274,12 +276,77 @@ def test_derived_facts_are_not_stored(world: World) -> None:
     assert columns == []
 
 
-@pytest.mark.req("FEAT-014-AC-01", "FEAT-014-AC-07")
-@pytest.mark.skipif(
-    not SEED_SESSIONS.exists(), reason="needs the test_v0_1 session seed (FEAT-055)"
-)
-def test_seed_values_on_the_full_seed() -> None:  # pragma: no cover - enabled by FEAT-055
-    raise AssertionError("replace with the seed-valued FEAT-014 assertions when FEAT-055 lands")
+@pytest.mark.req(
+    "DB-041", "DB-043", "DB-044", "DB-045", "DB-065", "DB-066", "AC-DB-05", "FEAT-014-AC-01",
+    "FEAT-014-AC-02", "FEAT-014-AC-03", "FEAT-014-AC-04", "FEAT-014-AC-05", "FEAT-014-AC-06",
+    "FEAT-014-AC-07", "FEAT-014-AC-09",
+)  # fmt: skip
+def test_seed_values_on_the_full_seed(cli: Cli) -> None:
+    """The FEAT-014 values on the full test_v0_1 seed (FEAT-055), as of 2026-10-30."""
+    cli.env(**SEED_SECRETS)
+    assert cli("seed", "test_v0_1").code == 0
+    engine = create_engine(cli.urls.migrator, poolclass=NullPool)
+    try:
+        with Session(engine) as session:
+            _check_seed_values(session)
+    finally:
+        engine.dispose()
+
+
+def _check_seed_values(session: Session) -> None:
+    residents = {r.resident_code: r for r in session.scalars(select(Resident))}
+    devices = {d.device_code: d.id for d in session.scalars(select(Device))}
+    counts = rm.activity_counts(session, residents.values(), AS_OF)
+    by_code = {code: counts[r.id] for code, r in residents.items()}
+    assert by_code["R02"] == rm.ActivityCounts(24, 0, 0, 6)
+    assert by_code["R03"] == rm.ActivityCounts(22, 7, 0, 1)
+    assert by_code["R08"] == rm.ActivityCounts(13, 5, 0, 12)
+    assert sum(c.missed for c in by_code.values()) == 19
+    last = rm.last_checkin(session, [residents["R09"].id])[residents["R09"].id]
+    assert f"{last.astimezone(ZoneInfo(TZ)):%Y-%m-%d %H:%M}" == "2026-10-30 14:28"
+    window = rm.Window(AS_OF - timedelta(days=29), AS_OF)
+    assert rm.device_silent_days(session, devices["D02"], window) == [date(2026, 10, 12)]
+    assert rm.device_gap_days(session, devices["D02"], window) == [date(2026, 10, 12)]
+    r08_missed = session.scalars(
+        select(DayLedgerEntry.local_date)
+        .where(DayLedgerEntry.resident_id == residents["R08"].id,
+               DayLedgerEntry.status == "missing_resident")
+        .order_by(DayLedgerEntry.local_date)
+    ).all()  # fmt: skip
+    assert len(r08_missed) == 12
+    assert rm.device_silent_days(session, devices["D08"], window) == list(r08_missed)
+    r07 = {e.epoch_number: e for e in rm.epochs_of(session, residents["R07"].id)}
+    assert rm.restart_cause(session, r07[1]) is None
+    assert rm.restart_cause(session, r07[2]) == rm.RestartCause("device", "D07", "D07", "D07B")
+    assert rm.device_use(session, devices["D07"], AS_OF).in_use_until == date(2026, 10, 12)
+    assert rm.device_use(session, devices["D07B"], AS_OF).in_use_until is None
+    current = rm.current_epochs(session, [r.id for r in residents.values()])
+    r08 = rm.baseline_progress(session, current[residents["R08"].id], 16)
+    assert (r08.n, r08.of, r08.frozen) == (13, 16, False)
+    r09_epoch = current[residents["R09"].id]
+    assert rm.watching_since(session, r09_epoch, 16) == _day(17)
+    r09_alarm = rm.alarm_facts(session, r09_epoch, AS_OF)
+    r10_alarm = rm.alarm_facts(session, current[residents["R10"].id], AS_OF)
+    assert r09_alarm is not None
+    assert r10_alarm is not None
+    assert (r09_alarm.alarm_since, r09_alarm.open_days) == (_day(21), 9)
+    assert (r10_alarm.alarm_since, r10_alarm.open_days) == (_day(24), 6)
+    assert (round(r09_alarm.tally or 0, 1), round(r10_alarm.tally or 0, 1)) == (26.8, 13.4)
+    session.execute(text("SET LOCAL statement_timeout = 0"))
+    started = session.execute(text("SELECT clock_timestamp()")).scalar_one()
+    series = rm.scores_series(session, r09_epoch, 16)
+    elapsed = session.execute(text("SELECT clock_timestamp()")).scalar_one() - started
+    assert len(series.points) == 14
+    assert [p.local_date for p in series.points] == sorted(p.local_date for p in series.points)
+    assert (series.baseline_first_date, series.baseline_frozen_after_date) == (_day(1), _day(16))
+    assert elapsed < timedelta(milliseconds=50)
+    flags = {residents_code: kinds for residents_code, r in residents.items()
+             if (kinds := rm.attention_kinds(session, [r.id]).get(r.id))}  # fmt: skip
+    assert flags == {"R03": ["high_set_aside"], "R08": ["baseline_stalled"]}
+    active = {code: devices[code] for code in devices if code != "D07"}
+    uploaded = rm.devices_uploaded_on(session, devices.values(), AS_OF, TZ)
+    assert devices["D07"] not in uploaded
+    assert set(active.values()) <= uploaded
 
 
 @pytest.mark.req("DB-065", "D-64")

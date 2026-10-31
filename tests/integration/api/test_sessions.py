@@ -20,7 +20,12 @@ from sqlalchemy.orm import Session
 from backend.models import FEATURE_KEYS, ProcessedSession, RawSession, SessionStatus
 from backend.repositories.device_repository import DeviceRepository
 from backend.repositories.resident_repository import ResidentRepository
-from backend.services.pipeline_runner import ExecutorResult, RunHandle, SessionFactory
+from backend.services.pipeline_runner import (
+    ExecutorResult,
+    InterimExecutor,
+    RunHandle,
+    SessionFactory,
+)
 from tests.integration.api.conftest import LogCapture, Principals
 
 pytestmark = pytest.mark.integration
@@ -155,6 +160,7 @@ def test_valid_record_is_stored_and_processed(
 def test_failed_run_answers_pending(
     api: TestClient, roster: Session, principals: Principals
 ) -> None:
+    _app(api).state.pipeline_executor = InterimExecutor()  # a run that fails
     response = api.post(SESSIONS, json=src05_record("R09-20261021-01"),
                         headers=principals.api_key("ingest"))  # fmt: skip
     assert response.status_code == 201, response.text

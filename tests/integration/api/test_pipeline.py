@@ -115,7 +115,7 @@ def test_admin_starts_a_manual_run(
         text("SELECT trigger, status, error_message FROM pipeline_runs WHERE id = :i"),
         {"i": run_id},
     ).one()
-    assert tuple(run) == ("manual", "failed", "pipeline not available until Phase 6")
+    assert tuple(run) == ("manual", "succeeded", None)
     actions = roster.execute(
         text("SELECT action, actor_type FROM audit_logs WHERE entity_id = :i ORDER BY id"),
         {"i": run_id},

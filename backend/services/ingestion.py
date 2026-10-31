@@ -342,8 +342,10 @@ class IngestService:
         records: Sequence[Any],
         source: IngestSource,
         filename: str | None = None,
+        start_run: bool = True,
     ) -> tuple[dict[str, Any], RunHandle | None]:
-        """Store a batch; the caller schedules `runner.execute(handle)` after commit (API-053)."""
+        """Store a batch; the caller schedules `runner.execute(handle)` after commit (API-053).
+        The seed passes `start_run=False` and runs the pipeline at the test as-of (DB-058)."""
         tally = Tally(records=len(records))
         endpoint = "seed" if source == IngestSource.SEED else "POST /api/v1/ingest"
         with self._request_event(endpoint, caller, tally):
@@ -374,7 +376,7 @@ class IngestService:
                 duplicates=tally.duplicates,
             )  # fmt: skip
             handle = None
-            if tally.first_arrival_scope:
+            if tally.first_arrival_scope and start_run:
                 handle = self.runner.start(
                     sorted(tally.first_arrival_scope), PipelineTrigger.INGEST,
                     actor=caller.actor, session=self.session,

@@ -12,9 +12,6 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 @pytest.mark.req("TST-011", "ANL-008")
-@pytest.mark.skip(
-    reason="TST-011: stage test files are added with the analytics features (Phase 6)"
-)
 def test_tst_011_every_analytics_module_has_a_test_file() -> None:
     modules = {p.stem for p in (ROOT / "analytics").glob("*.py")} - {"__init__"}
     missing = [
