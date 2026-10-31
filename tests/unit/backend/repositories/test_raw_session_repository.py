@@ -45,7 +45,10 @@ def test_database_assigned_columns_are_refused(column: str) -> None:
 @pytest.mark.req("DB-004", "FEAT-010-FR-04")
 def test_repository_has_no_update_or_delete() -> None:
     public = {name for name in dir(RawSessionRepository) if not name.startswith("_")}
-    assert public == {"insert", "by_resident", "by_session_id", "exists_session_id"}
+    assert public == {
+        "insert", "by_resident", "by_session_id", "exists_session_id", "first_payload",
+        "latest_timestamp_for_device",
+    }  # fmt: skip
 
 
 @pytest.mark.req("DB-001", "FEAT-010-AC-06")

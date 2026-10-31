@@ -8,12 +8,40 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterable
+from dataclasses import dataclass
+from datetime import date
+from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session
 
-from backend.models import CusumState, Score
+from backend.models import CusumState, Epoch, ProcessedSession, Resident, Score
 from backend.schemas.json_columns import score_z_json
+
+
+@dataclass(frozen=True)
+class ScoreFilter:
+    resident_id: uuid.UUID | None = None
+    epoch_number: int | None = None
+    start: date | None = None
+    end: date | None = None
+
+
+@dataclass(frozen=True)
+class ScoreReadRow:
+    """One `ScoreRow` (TRD 19) with the ids of its resident-epoch."""
+
+    session_id: str
+    resident_code: str
+    epoch_number: int
+    local_date: date
+    is_morning: bool
+    z: dict[str, Any]
+    composite_raw: float
+    composite_z: float
+    cusum_tally: float
+    alarm_state: str
+    epoch_id: uuid.UUID
 
 
 class ScoreRepository:
@@ -58,3 +86,55 @@ class ScoreRepository:
             delete(CusumState).where(CusumState.resident_id == resident_id)
         )
         return int(result.rowcount or 0)
+
+    def _read_query(self, where: ScoreFilter) -> Select[Any]:
+        query = (
+            select(
+                ProcessedSession.session_id, Resident.resident_code, Epoch.epoch_number,
+                Score.local_date, Score.is_morning, Score.z, Score.composite_raw,
+                Score.composite_z, Score.cusum_tally, Score.alarm_state, Score.epoch_id,
+            )
+            .join(ProcessedSession, ProcessedSession.id == Score.processed_session_id)
+            .join(Resident, Resident.id == Score.resident_id)
+            .join(Epoch, Epoch.id == Score.epoch_id)
+        )  # fmt: skip
+        if where.resident_id is not None:
+            query = query.where(Score.resident_id == where.resident_id)
+        if where.epoch_number is not None:
+            query = query.where(Epoch.epoch_number == where.epoch_number)
+        if where.start is not None:
+            query = query.where(Score.local_date >= where.start)
+        if where.end is not None:
+            query = query.where(Score.local_date <= where.end)
+        return query
+
+    def count_rows(self, where: ScoreFilter) -> int:
+        return int(
+            self.session.scalar(
+                select(func.count()).select_from(self._read_query(where).subquery())
+            )
+            or 0
+        )
+
+    def read_rows(
+        self, where: ScoreFilter, *, limit: int | None = None, offset: int = 0
+    ) -> list[ScoreReadRow]:
+        """Score rows ordered by resident code, local date and session id (API-079)."""
+        query = self._read_query(where).order_by(
+            Resident.resident_code, Score.local_date, ProcessedSession.session_id
+        )
+        if limit is not None:
+            query = query.limit(limit).offset(offset)
+        return [
+            ScoreReadRow(
+                session_id=r[0], resident_code=r[1], epoch_number=r[2], local_date=r[3],
+                is_morning=r[4], z=r[5], composite_raw=r[6], composite_z=r[7],
+                cusum_tally=r[8], alarm_state=str(r[9]), epoch_id=r[10],
+            )
+            for r in self.session.execute(query).all()
+        ]  # fmt: skip
+
+    def epochs_in(self, where: ScoreFilter) -> list[uuid.UUID]:
+        """The resident-epochs present in a filtered result (`baseline_periods`)."""
+        sub = self._read_query(where).subquery()
+        return list(self.session.scalars(select(sub.c.epoch_id).distinct()).all())

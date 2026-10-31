@@ -8,14 +8,39 @@ Review and snooze only change `status`, `acknowledged_*` and `snoozed_*` (DME-00
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
-from backend.models import Alert, AlertReview, AlertStatus, ReviewOutcome
+from backend.models import (
+    Alert,
+    AlertReview,
+    AlertStatus,
+    CusumState,
+    Device,
+    Epoch,
+    Resident,
+    ReviewOutcome,
+    User,
+)
 
 CLOSED_REASONS = frozenset({"epoch ended", "admin", "superseded by rebuild"})
+_FactsRow = tuple[Alert, str, int, str | None, float | None, int, datetime | None]
+
+
+@dataclass(frozen=True)
+class AlertFacts:
+    """An alert with the facts of the `Alert` DTO that live in other tables (TRD 23 §4.4.1)."""
+
+    alert: Alert
+    resident_code: str
+    epoch_number: int
+    device_code: str | None
+    current_tally: float | None
+    review_count: int
+    last_reviewed_at: datetime | None
 
 
 class AlertRepository:
@@ -86,7 +111,9 @@ class AlertRepository:
         outcome: ReviewOutcome,
         explanations: list[str],
         note: str | None,
+        created_at: datetime | None = None,
     ) -> AlertReview:
+        """`created_at` defaults to the database clock; the API passes the application clock."""
         review = AlertReview(
             alert_id=alert_id,
             reviewer_user_id=reviewer_user_id,
@@ -94,6 +121,8 @@ class AlertRepository:
             explanations=explanations,
             note=note,
         )
+        if created_at is not None:
+            review.created_at = created_at
         self.session.add(review)
         self.session.flush()
         return review
@@ -107,3 +136,72 @@ class AlertRepository:
                 .order_by(AlertReview.created_at.desc())
             ).all()
         )
+
+    def _facts_query(self) -> Select[_FactsRow]:
+        reviews = (
+            select(
+                AlertReview.alert_id,
+                func.count().label("n"),
+                func.max(AlertReview.created_at).label("last"),
+            )
+            .group_by(AlertReview.alert_id)
+            .subquery()
+        )
+        return (
+            select(
+                Alert, Resident.resident_code, Epoch.epoch_number, Device.device_code,
+                CusumState.current_tally, func.coalesce(reviews.c.n, 0), reviews.c.last,
+            )
+            .join(Resident, Resident.id == Alert.resident_id)
+            .join(Epoch, Epoch.id == Alert.epoch_id)
+            .outerjoin(Device, Device.id == Epoch.device_id)
+            .outerjoin(CusumState, CusumState.epoch_id == Alert.epoch_id)
+            .outerjoin(reviews, reviews.c.alert_id == Alert.id)
+        )  # fmt: skip
+
+    def list_with_facts(
+        self,
+        *,
+        status: AlertStatus | None = None,
+        resident_id: uuid.UUID | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[AlertFacts], int]:
+        """Alerts by `triggered_at` ascending with their DTO facts in one query (API-080)."""
+        query = self._facts_query()
+        if status is not None:
+            query = query.where(Alert.status == status)
+        if resident_id is not None:
+            query = query.where(Alert.resident_id == resident_id)
+        total = self.session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        rows = self.session.execute(
+            query.order_by(Alert.triggered_at, Alert.id).limit(limit).offset(offset)
+        ).all()
+        return [AlertFacts(*row) for row in rows], total
+
+    def facts(self, alert_id: uuid.UUID) -> AlertFacts | None:
+        row = self.session.execute(self._facts_query().where(Alert.id == alert_id)).first()
+        return AlertFacts(*row) if row is not None else None
+
+    def get_for_update(self, alert_id: uuid.UUID) -> Alert | None:
+        """The alert row locked for a review or snooze (one writer at a time)."""
+        return self.session.scalars(
+            select(Alert).where(Alert.id == alert_id).with_for_update()
+        ).first()
+
+    def reviews_page(
+        self, alert_id: uuid.UUID, *, limit: int = 50, offset: int = 0
+    ) -> tuple[list[tuple[AlertReview, str]], int]:
+        """Reviews newest first with the reviewer's display name (API-131)."""
+        total = self.session.scalar(
+            select(func.count()).select_from(AlertReview).where(AlertReview.alert_id == alert_id)
+        )
+        rows = self.session.execute(
+            select(AlertReview, User.display_name)
+            .join(User, User.id == AlertReview.reviewer_user_id)
+            .where(AlertReview.alert_id == alert_id)
+            .order_by(AlertReview.created_at.desc(), AlertReview.id)
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        return [(review, name) for review, name in rows], int(total or 0)

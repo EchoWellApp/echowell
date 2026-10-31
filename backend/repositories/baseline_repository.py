@@ -14,7 +14,7 @@ from enum import StrEnum
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.models import FEATURE_KEYS, Baseline, Epoch
+from backend.models import FEATURE_KEYS, Baseline, Device, Epoch, Resident
 
 # A frozen resident-epoch has one row per feature plus the composite row (PGS-031).
 BASELINE_KEYS: tuple[str, ...] = (*FEATURE_KEYS, "composite")
@@ -76,3 +76,23 @@ class BaselineRepository:
                 .offset(offset)
             ).all()
         )
+
+    def read_rows(
+        self, *, resident_id: uuid.UUID | None = None, epoch_number: int | None = None
+    ) -> list[tuple[Baseline, str, int, str]]:
+        """Baselines with resident code, epoch number and the epoch's device code, ordered by
+        resident code, epoch, then contract §6 order with `composite` last (API-088)."""
+        query = (
+            select(Baseline, Resident.resident_code, Epoch.epoch_number, Device.device_code)
+            .join(Resident, Resident.id == Baseline.resident_id)
+            .join(Epoch, Epoch.id == Baseline.epoch_id)
+            .join(Device, Device.id == Epoch.device_id)
+        )
+        if resident_id is not None:
+            query = query.where(Baseline.resident_id == resident_id)
+        if epoch_number is not None:
+            query = query.where(Epoch.epoch_number == epoch_number)
+        rows = [(b, r, e, d) for b, r, e, d in self.session.execute(query).all()]
+        rank = {key: i for i, key in enumerate(BASELINE_KEYS)}
+        rows.sort(key=lambda row: (row[1], row[2], rank[row[0].feature_key]))
+        return rows

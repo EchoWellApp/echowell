@@ -7,9 +7,10 @@ Only `backend/services/audit_service.py` calls this module (FEAT-015-AC-07).
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import insert
+from sqlalchemy import func, insert, select
 from sqlalchemy.orm import Session
 
 from backend.models import ActorType, AuditLog
@@ -48,3 +49,14 @@ class AuditRepository:
                 .returning(AuditLog.id)
             ).scalar_one()
         )
+
+    def login_failures_since(self, email: str, since: datetime) -> tuple[int, datetime | None]:
+        """Count and latest time of `auth.login.failed` rows for `email` since `since` (SEC-015)."""
+        count, latest = self.session.execute(
+            select(func.count(), func.max(AuditLog.occurred_at)).where(
+                AuditLog.action == "auth.login.failed",
+                AuditLog.details["email"].astext == email,
+                AuditLog.occurred_at >= since,
+            )
+        ).one()
+        return int(count), latest

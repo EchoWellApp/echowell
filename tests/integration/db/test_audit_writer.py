@@ -29,6 +29,7 @@ SAMPLE_VALUES: dict[str, Any] = {
     "code": "FORBIDDEN", "closed_reason": "admin", "kind": "device_silent", "from": "a", "to": "b",
     "epoch_number": 1, "withdrawn_on": "2026-10-20", "row_counts": {}, "residents": 10,
     "devices": 10, "device_assignments": 11, "old_config_hash": "a", "new_config_hash": "b",
+    "pipeline_run_id": None,
 }  # fmt: skip
 
 
