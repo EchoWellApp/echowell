@@ -159,7 +159,7 @@ class AlertReview(Base):
 
 
 class DataAlert(Base):
-    """`data_alerts` (TRD 20 §4.6.19; TRD 23 §4.2.19; FEAT-012)."""
+    """`data_alerts` (TRD 20 §4.6.19, §4.14; TRD 23 §4.2.19; FEAT-012)."""
 
     __tablename__ = "data_alerts"
     __table_args__ = (
@@ -219,6 +219,10 @@ class DataAlert(Base):
     )
     title: Mapped[str] = mapped_column(Text(), nullable=False)
     detail: Mapped[str] = mapped_column(Text(), server_default=text("''"), nullable=False)
+    # facility-local days the alert is about; empty for baseline_stalled (migration 0004, D-130)
+    days: Mapped[list[date]] = mapped_column(
+        ARRAY(Date()), server_default=text("'{}'::date[]"), nullable=False
+    )
     first_detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[DataAlertStatus] = mapped_column(

@@ -220,6 +220,7 @@ def test_meta_uses_the_latest_succeeded_run(app_session: Session, api_settings: 
     run = runs.insert_running(
         trigger=PipelineTrigger.TEST, scope={"type": "all"}, config_profile="test_v0_1",
         config_snapshot={}, code_version="t", as_of=datetime(2026, 10, 30, 20, tzinfo=UTC),
+        started_at=datetime(2026, 10, 30, 20, tzinfo=UTC),
     )  # fmt: skip
     runs.finish(run, status=PipelineRunStatus.SUCCEEDED, finished_at=datetime.now(UTC))
     meta = get_meta(app_session, api_settings)

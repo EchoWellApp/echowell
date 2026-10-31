@@ -87,6 +87,7 @@ class World:
             config_snapshot={"baseline_n": 16},
             code_version="test",
             as_of=T0,
+            started_at=T0,
         )
         world.run_id = run.id
         return world

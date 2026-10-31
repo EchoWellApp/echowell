@@ -4,15 +4,14 @@ TRD 05 API-006; FEAT-048-FR-07, FEAT-051-FR-11..FR-13).
 `GET /api/v1/analytics` calls `analytics.aggregates.build_analytics_summary` and
 `GET /api/v1/alerts` calls `analytics.alert_generator.leaning_most` on the rows the latest runs
 wrote; nothing here
-re-implements a formula. A `device_silent` data alert stores no day list, so its days are read
-back from its detail text: every "<Mon D>" falls in the 30-day window and maps to one date.
+re-implements a formula. The days of a data alert come from its stored `days` column (migration
+0004, TRD 24 D-130), clipped to the read window.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -49,7 +48,6 @@ from backend.repositories.config_repository import ConfigRepository
 from backend.services import config_service
 
 SUPERSEDED = "superseded by rebuild"
-_MONTH_DAY = re.compile(r"\b([A-Z][a-z]{2}) (\d{1,2})\b")
 
 
 def config_for(session: Session, profile: str) -> PipelineConfig:
@@ -129,7 +127,7 @@ def stored_result(session: Session, period: tuple[date, date]) -> StoredResult:
             row.kind.value,  # type: ignore[arg-type]  # the four rule kinds only
             codes.get(row.resident_id) if row.resident_id else None,
             devices.get(row.device_id) if row.device_id else None, row.title, row.detail,
-            days_in(row.detail, period),
+            tuple(d for d in sorted(row.days) if period[0] <= d <= period[1]),
         )
         for row in open_rule_alerts
     ]  # fmt: skip
@@ -153,20 +151,6 @@ def _epoch(
         last_scored_session_id=state.last_scored_session_id if state else None,
         alarm_on=state.alarm_on if state else False, first_alarm_session_id=None,
     )  # fmt: skip
-
-
-def days_in(detail: str, period: tuple[date, date]) -> tuple[date, ...]:
-    """The "<Mon D>" dates of a detail text inside the window `period` (at most 30 days, so each
-    month-day names one date)."""
-    start, end = period
-    by_label = {}
-    day = start
-    while day <= end:
-        by_label[(f"{day:%b}", day.day)] = day
-        day += timedelta(days=1)
-    found = {by_label[(m, int(d))] for m, d in _MONTH_DAY.findall(detail)
-             if (m, int(d)) in by_label}  # fmt: skip
-    return tuple(sorted(found))
 
 
 def epoch_scores(

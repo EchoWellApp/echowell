@@ -32,7 +32,8 @@ def _derived(cli: Cli) -> dict[str, list[tuple[str, ...]]]:
 
 
 def _seed(cli: Cli) -> None:
-    cli.env(**SEED_SECRETS)
+    # runs without --as-of (rebuild) use the test as-of, not today's date (D-50)
+    cli.env(**SEED_SECRETS, PIPELINE_AS_OF="2026-10-30T20:00:00+00:00")
     run = cli("seed", "test_v0_1")
     assert run.code == 0, run.err
 

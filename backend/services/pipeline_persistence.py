@@ -388,12 +388,12 @@ def reconcile_data_alerts(
         if alert is not None and row is None:
             session.add(DataAlertRow(
                 kind=DataAlertKind(kind), title=alert.title, detail=alert.detail,
-                first_detected_at=run.as_of, last_detected_at=run.as_of,
+                days=list(alert.days), first_detected_at=run.as_of, last_detected_at=run.as_of,
                 status=DataAlertStatus.OPEN, pipeline_run_id=run.run_id,
                 **{column: subject_id},
             ))  # fmt: skip
         elif alert is not None and row is not None:
-            row.title, row.detail = alert.title, alert.detail
+            row.title, row.detail, row.days = alert.title, alert.detail, list(alert.days)
             row.last_detected_at, row.pipeline_run_id = run.as_of, run.run_id
         elif row is not None:
             row.status, row.resolved_at = DataAlertStatus.RESOLVED, run.as_of

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
@@ -105,6 +105,11 @@ def test_full_run_on_src05(uploaded: Session, runner: PipelineRunner) -> None:
         "R05 · possible other speaker", "R08 · baseline stuck at 13 of 16",
     ]  # fmt: skip
     assert {(a.status, a.first_detected_at) for a in data} == {("open", AS_OF)}
+    days = dict(uploaded.execute(text("SELECT title, days FROM data_alerts")).tuples().all())
+    assert days["D02 · device silent all day"] == [date(2026, 10, 12)]  # D-130
+    assert days["R08 · baseline stuck at 13 of 16"] == []
+    assert len(days["R03 · many check-ins set aside"]) == 7
+    assert len(days["R05 · possible other speaker"]) == 2
 
 
 @pytest.mark.req("DB-019", "ANL-023", "AGT-056", "TST-050", "FEAT-053-AC-02", "FEAT-053-FR-17")

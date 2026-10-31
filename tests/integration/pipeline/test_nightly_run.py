@@ -74,12 +74,13 @@ def test_missed_night_is_reported(
     assert roster.execute(text("SELECT count(*) FROM pipeline_runs")).scalar_one() == 0
 
 
-@pytest.mark.req("DEP-048", "FEAT-054-FR-12")
+@pytest.mark.req("DEP-048", "D-129", "FEAT-054-FR-12")
 def test_schema_mismatch_refuses(
     factory: Callable[[], Session], monkeypatch: pytest.MonkeyPatch, roster: Session
 ) -> None:
     real = nightly_run.database_revision
-    monkeypatch.setattr(nightly_run, "database_revision", lambda _: "0001")
-    assert _night(factory, datetime(2026, 10, 31, 7, 30, tzinfo=UTC)) == 1
+    assert real(factory) == nightly_run.bundled_revision()  # the app role reads it (D-129)
+    for found in ("0001", nightly_run.UNREADABLE):
+        monkeypatch.setattr(nightly_run, "database_revision", lambda _, f=found: f)
+        assert _night(factory, datetime(2026, 10, 31, 7, 30, tzinfo=UTC)) == 1
     assert roster.execute(text("SELECT count(*) FROM pipeline_runs")).scalar_one() == 0
-    assert real(factory) == nightly_run.UNREADABLE  # the app role may not read alembic_version

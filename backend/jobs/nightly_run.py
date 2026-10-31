@@ -4,9 +4,9 @@ API-060..API-062; TRD 15 DEP-046..DEP-048; TRD 24 D-47, D-70; FEAT-054, FEAT-056
 The external cron (`0 7,8 * * *` UTC) fires twice a day; exactly one firing lands in the
 facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (02:xx) whatever the DST state, so the job:
 
-1. exits 1 when the database schema revision is not the one bundled with this code (it never
-   runs migrations, DEP-048); the app role cannot read `alembic_version`, so this check
-   currently only warns `schema_revision_unreadable`;
+1. exits 1 when the database schema revision is not the one bundled with this code, or cannot
+   be read (it never runs migrations, DEP-048; migration 0004 grants the app role `SELECT` on
+   `alembic_version`, D-129);
 2. exits 0 outside that local hour, after checking that the previous night's run exists
    (`nightly_run_missing`, LOG-111);
 3. inside it, takes `pg_advisory_xact_lock(advisory_key('nightly', <local date>))`, exits 0 when
@@ -53,8 +53,8 @@ UNREADABLE = "unreadable"
 
 
 def database_revision(session_factory: Callable[[], Session]) -> str | None:
-    """The applied revision, or `UNREADABLE` when the app role may not read `alembic_version`
-    (TRD 20 §4.8 grants it nothing; see the checkpoint 5 report, Q-1)."""
+    """The applied revision, or `UNREADABLE` when `alembic_version` cannot be read (a database
+    older than migration 0004, which grants the app role `SELECT` on it)."""
     with session_factory() as session:
         try:
             return session.execute(
@@ -90,11 +90,9 @@ def run_night(
     zone = ZoneInfo(settings.facility_tz)
     local = now.astimezone(zone)
     runner = runner or PipelineRunner(session_factory, settings, clock=clock)
-    found = database_revision(session_factory)
-    if found == UNREADABLE:
-        logger.warning("schema_revision_unreadable")
-    elif found != bundled_revision():
-        logger.error("schema_revision_mismatch", extra={"database": found})
+    found, expected = database_revision(session_factory), bundled_revision()
+    if found != expected:
+        logger.error("schema_revision_mismatch", extra={"database": found, "expected": expected})
         return 1
     with session_factory() as session:
         if local.hour != settings.nightly_run_hour_local:

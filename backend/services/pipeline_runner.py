@@ -232,14 +232,15 @@ class PipelineRunner:
         as_of: datetime | None,
         actor: Actor,
     ) -> RunHandle:
-        resolved = resolve_as_of(as_of, self.settings, self.clock)
-        abandon_stale_runs(session, self.clock())
+        now = self.clock()  # one application-clock reading per run start (D-131)
+        resolved = resolve_as_of(as_of, self.settings, lambda: now)
+        abandon_stale_runs(session, now)
         values = ConfigRepository(session).values_for_profile(profile)
         snapshot = config_snapshot(values, resolved, profile)
         run = PipelineRunRepository(session).insert_running(
             trigger=trigger, scope=scope_value(scope), config_profile=profile,
             config_snapshot=snapshot, code_version=self.settings.git_sha, as_of=resolved,
-            started_at=self.clock(),
+            started_at=now,
         )  # fmt: skip
         audit_service.record(
             session, action=AuditAction.PIPELINE_RUN_STARTED, actor_type=actor.type,
