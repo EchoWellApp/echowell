@@ -10,7 +10,15 @@ from functools import cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from analytics.config import FEATURE_KEYS, DeviceAssignment, RawRecord, ResidentInfo
+from analytics.config import (
+    FEATURE_KEYS,
+    TEST_V0_1,
+    DeviceAssignment,
+    PipelineResult,
+    RawRecord,
+    ResidentInfo,
+)
+from analytics.pipeline import run_pipeline
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC_05 = ROOT / "tests" / "fixtures" / "pipeline_input" / "EchoWell_pipeline_test_input_v0_1.csv"
@@ -58,3 +66,9 @@ ASSIGNMENTS = (
     DeviceAssignment("R09", "D09", ENROLLED),
     DeviceAssignment("R10", "D10", ENROLLED),
 )
+
+
+@cache
+def result() -> PipelineResult:
+    """`run_pipeline` on SRC-05 with profile test_v0_1 (TRD 07 ANL-017)."""
+    return run_pipeline(records(), RESIDENTS, ASSIGNMENTS, TEST_V0_1, AS_OF)
