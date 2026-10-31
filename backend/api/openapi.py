@@ -6,11 +6,17 @@ matrix (`permissions.PERMISSIONS`), shared `components/responses`, `headers` and
 `X-Request-ID` on every response, the ingest request bodies, and no FastAPI validation schemas.
 The committed `docs/api_reference/openapi.json` is this document printed by
 `python -m backend.cli export-openapi` (D-89).
+
+The JSON examples of TRD 19 §4.3 live in `openapi_examples.json` and are attached as media-type
+`examples` (OAS-015; FEAT-038-FR-10); an example of a shared error response is attached to an
+inline copy of that response, so the shared component stays example-free.
 """
 
 from __future__ import annotations
 
 import copy
+import json
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
@@ -71,6 +77,7 @@ SHARED_PARAMETERS: dict[tuple[str, str], str] = {
 }
 EXPERIMENTAL_PATHS = ("/admissions", "/facility/reference-ranges")
 FASTAPI_SCHEMAS = ("HTTPValidationError", "ValidationError")
+EXAMPLES_FILE = Path(__file__).with_name("openapi_examples.json")
 
 
 def _components() -> dict[str, Any]:
@@ -283,7 +290,32 @@ def build_openapi(app: FastAPI) -> dict[str, Any]:
         "paths": _tidy(paths),
         "components": {**_components(), "schemas": _tidy(schemas)},
     }
+    _attach_examples(document)
     return document
+
+
+def examples() -> list[dict[str, Any]]:
+    """The TRD 19 §4.3 examples: `endpoint`, `method`, `path`, `target` (`request` or a status),
+    `name`, `value`, and `completed` where the TRD abbreviates the example."""
+    loaded: list[dict[str, Any]] = json.loads(EXAMPLES_FILE.read_text(encoding="utf-8"))
+    return loaded
+
+
+def _attach_examples(document: dict[str, Any]) -> None:
+    shared = document["components"]["responses"]
+    for example in examples():
+        operation = document["paths"][example["path"]][example["method"].lower()]
+        if example["target"] == "request":
+            holder = operation["requestBody"]
+        else:
+            holder = operation["responses"][example["target"]]
+            if "$ref" in holder:
+                holder = copy.deepcopy(shared[holder["$ref"].split("/")[-1]])
+                operation["responses"][example["target"]] = holder
+        media = next(iter(holder["content"].values()))
+        media.setdefault("examples", {})[example["name"]] = {
+            "summary": f"TRD 19 {example['endpoint']}", "value": example["value"],
+        }  # fmt: skip
 
 
 def install(app: FastAPI) -> None:

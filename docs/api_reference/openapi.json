@@ -4280,6 +4280,75 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-13",
+                    "value": {
+                      "items": [
+                        {
+                          "closed_reason": null,
+                          "current_tally": 26.830256,
+                          "cusum_value": 5.431965,
+                          "device_code": "D09",
+                          "epoch_number": 1,
+                          "id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                          "last_reviewed_at": null,
+                          "leaning_most": [
+                            "number_of_pauses",
+                            "loudness_dbfs",
+                            "voiced_fraction"
+                          ],
+                          "local_date": "2026-10-21",
+                          "open_days": 9,
+                          "resident_code": "R09",
+                          "review_count": 0,
+                          "reviewed": false,
+                          "session_id": "R09-20261021-01",
+                          "snoozed_by": null,
+                          "snoozed_until": null,
+                          "status": "open",
+                          "triggered_at": "2026-10-21T19:07:50Z"
+                        },
+                        {
+                          "closed_reason": null,
+                          "current_tally": 13.418183,
+                          "cusum_value": 5.97205,
+                          "device_code": "D10",
+                          "epoch_number": 1,
+                          "id": "4e3d2c1b-0a9f-4e8d-b7c6-5a4f3e2d1c0b",
+                          "last_reviewed_at": null,
+                          "leaning_most": [
+                            "number_of_pauses",
+                            "articulation_rate_syl_per_s",
+                            "speech_rate_syl_per_s"
+                          ],
+                          "local_date": "2026-10-24",
+                          "open_days": 6,
+                          "resident_code": "R10",
+                          "review_count": 0,
+                          "reviewed": false,
+                          "session_id": "R10-20261024-01",
+                          "snoozed_by": null,
+                          "snoozed_until": null,
+                          "status": "open",
+                          "triggered_at": "2026-10-24T19:25:37Z"
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 2
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/AlertList"
                 }
@@ -4367,6 +4436,18 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "examples": {
+                "known_cause": {
+                  "summary": "TRD 19 E-14",
+                  "value": {
+                    "explanations": [
+                      "cold_cough_sore_throat"
+                    ],
+                    "note": "Resident has a cold; nurse notified.",
+                    "outcome": "known_cause"
+                  }
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/AlertReviewCreate"
               }
@@ -4378,6 +4459,25 @@
           "201": {
             "content": {
               "application/json": {
+                "examples": {
+                  "known_cause": {
+                    "summary": "TRD 19 E-14",
+                    "value": {
+                      "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                      "created_at": "2026-10-30T20:10:00Z",
+                      "explanations": [
+                        "cold_cough_sore_throat"
+                      ],
+                      "id": "2d4f6a8c-1b3e-4c5d-8e7f-9a0b1c2d3e4f",
+                      "note": "Resident has a cold; nurse notified.",
+                      "outcome": "known_cause",
+                      "reviewer": {
+                        "display_name": "Clinician One",
+                        "id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f"
+                      }
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/AlertReview"
                 }
@@ -4485,6 +4585,222 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-18",
+                    "value": {
+                      "alarm_timing": [
+                        {
+                          "alarm_rang": "2026-10-21",
+                          "change_began": "2026-10-21",
+                          "delay_days": 0,
+                          "planted_change": "Sudden step",
+                          "resident_code": "R09",
+                          "result": "detected"
+                        },
+                        {
+                          "alarm_rang": "2026-10-24",
+                          "change_began": "2026-10-17",
+                          "delay_days": 7,
+                          "planted_change": "Slow drift",
+                          "resident_code": "R10",
+                          "result": "detected"
+                        },
+                        {
+                          "alarm_rang": null,
+                          "change_began": null,
+                          "delay_days": null,
+                          "planted_change": "None",
+                          "resident_code": "R01",
+                          "result": "correct_no_alarm"
+                        }
+                      ],
+                      "by_resident": [
+                        {
+                          "days": 30,
+                          "missed_days": 12,
+                          "quarantined_days": 0,
+                          "resident_code": "R08",
+                          "set_aside_days": 5,
+                          "used_days": 13,
+                          "used_percent": 43
+                        },
+                        {
+                          "days": 30,
+                          "missed_days": 1,
+                          "quarantined_days": 0,
+                          "resident_code": "R03",
+                          "set_aside_days": 7,
+                          "used_days": 22,
+                          "used_percent": 73
+                        },
+                        {
+                          "days": 30,
+                          "missed_days": 6,
+                          "quarantined_days": 0,
+                          "resident_code": "R02",
+                          "set_aside_days": 0,
+                          "used_days": 24,
+                          "used_percent": 80
+                        },
+                        {
+                          "days": 30,
+                          "missed_days": 0,
+                          "quarantined_days": 2,
+                          "resident_code": "R05",
+                          "set_aside_days": 0,
+                          "used_days": 28,
+                          "used_percent": 93
+                        },
+                        {
+                          "days": 30,
+                          "missed_days": 0,
+                          "quarantined_days": 0,
+                          "resident_code": "R01",
+                          "set_aside_days": 0,
+                          "used_days": 30,
+                          "used_percent": 100
+                        }
+                      ],
+                      "daily_series": [
+                        {
+                          "local_date": "2026-10-12",
+                          "missed": 2,
+                          "quarantined": 0,
+                          "set_aside": 0,
+                          "silent_device_codes": [
+                            "D02"
+                          ],
+                          "used": 8
+                        }
+                      ],
+                      "funnel": {
+                        "days": 30,
+                        "duplicates_removed": 2,
+                        "expected": 300,
+                        "missed": 19,
+                        "passed_quality": 269,
+                        "quarantined": 2,
+                        "received": 281,
+                        "residents": 10,
+                        "set_aside": 12,
+                        "set_aside_multi_reason": 1,
+                        "set_aside_reasons": {
+                          "noise_above_limit": 5,
+                          "quality_flag_poor": 5,
+                          "speech_too_short": 3
+                        },
+                        "used": 267
+                      },
+                      "kpis": {
+                        "alarms_raised": {
+                          "count": 2,
+                          "not_reviewed_count": 2,
+                          "resident_codes": [
+                            "R09",
+                            "R10"
+                          ]
+                        },
+                        "baselines_formed": {
+                          "formed": 9,
+                          "forming_resident_codes": [
+                            "R08"
+                          ],
+                          "residents": 10,
+                          "restarts": [
+                            {
+                              "resident_code": "R07",
+                              "restart_count": 1
+                            }
+                          ]
+                        },
+                        "checkins_received": {
+                          "count": 281,
+                          "expected": 300,
+                          "percent": 94
+                        },
+                        "used_for_scoring": {
+                          "count": 267,
+                          "expected": 300,
+                          "percent": 89
+                        }
+                      },
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "period": {
+                        "days": 30,
+                        "from": "2026-10-01",
+                        "to": "2026-10-30"
+                      },
+                      "pipeline_run": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "code_version": "3f2c9ab",
+                        "config_profile": "test_v0_1",
+                        "counts": {
+                          "alerts_opened": 2,
+                          "arrivals": 283,
+                          "duplicate": 2,
+                          "excluded_after_as_of": 0,
+                          "late_arrival": 0,
+                          "missing_device_gap": 2,
+                          "missing_resident": 17,
+                          "quarantined": 2,
+                          "residents": 10,
+                          "scored": 98,
+                          "set_aside": 12,
+                          "usable": 267
+                        },
+                        "finished_at": "2026-10-30T20:01:14Z",
+                        "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                        "scope": "all",
+                        "started_at": "2026-10-30T20:01:06Z",
+                        "status": "succeeded",
+                        "trigger": "manual",
+                        "warnings": []
+                      },
+                      "resident_outcomes": [
+                        {
+                          "baseline_formed": true,
+                          "baseline_frozen_after": "R09-20261016-01",
+                          "device_code": "D09",
+                          "epoch_number": 1,
+                          "first_alarm_session": "R09-20261021-01",
+                          "note": null,
+                          "resident_code": "R09",
+                          "scored_sessions": 14,
+                          "usable_in_epoch": 30
+                        }
+                      ],
+                      "review_outcomes": null,
+                      "status_counts": [
+                        {
+                          "duplicate": 0,
+                          "missing_device_gap": 1,
+                          "missing_resident": 5,
+                          "quarantined": 0,
+                          "resident_code": "R02",
+                          "set_aside": 0,
+                          "usable": 24
+                        }
+                      ],
+                      "status_totals": {
+                        "duplicate": 2,
+                        "missing_device_gap": 2,
+                        "missing_resident": 17,
+                        "quarantined": 2,
+                        "set_aside": 12,
+                        "usable": 267
+                      }
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/AnalyticsResponse"
                 }
@@ -4548,6 +4864,53 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r09": {
+                    "summary": "TRD 19 E-19",
+                    "value": {
+                      "items": [
+                        {
+                          "device_code": "D09",
+                          "epoch_number": 1,
+                          "feature_key": "loudness_dbfs",
+                          "first_session_id": "R09-20261001-01",
+                          "floor_applied": false,
+                          "frozen_after_session_id": "R09-20261016-01",
+                          "mad": 1.45,
+                          "median": -22.405,
+                          "n_sessions": 16,
+                          "resident_code": "R09",
+                          "robust_spread": 2.14977
+                        },
+                        {
+                          "device_code": "D09",
+                          "epoch_number": 1,
+                          "feature_key": "composite",
+                          "first_session_id": "R09-20261001-01",
+                          "floor_applied": false,
+                          "frozen_after_session_id": "R09-20261016-01",
+                          "mad": 0.359758,
+                          "median": 0.038219,
+                          "n_sessions": 16,
+                          "resident_code": "R09",
+                          "robust_spread": 0.533378
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 20
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/BaselineRowList"
                 }
@@ -4606,6 +4969,25 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "clinician": {
+                    "summary": "TRD 19 E-02",
+                    "value": {
+                      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.<payload>.<signature>",
+                      "expires_in": 3600,
+                      "token_type": "bearer",
+                      "user": {
+                        "active": true,
+                        "created_at": "2026-10-19T15:02:10Z",
+                        "display_name": "Clinician One",
+                        "email": "clinician1@example.org",
+                        "id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f",
+                        "last_login_at": "2026-10-30T19:58:41Z",
+                        "role": "clinician"
+                      }
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/Token"
                 }
@@ -4702,6 +5084,45 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-32",
+                    "value": {
+                      "alert_snooze_hours": 24,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "review_explanations": [
+                        {
+                          "code": "cold_cough_sore_throat",
+                          "label": "Cold, cough or sore throat"
+                        },
+                        {
+                          "code": "dental_dentures",
+                          "label": "Dental problem or dentures out"
+                        },
+                        {
+                          "code": "medication_change",
+                          "label": "New or changed medication"
+                        },
+                        {
+                          "code": "poor_sleep_unusual_day",
+                          "label": "Poor sleep or unusual day"
+                        },
+                        {
+                          "code": "room_device_moved",
+                          "label": "Room or device moved"
+                        }
+                      ]
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/UiConfig"
                 }
@@ -4761,6 +5182,75 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-30",
+                    "value": {
+                      "items": [
+                        {
+                          "detail": "baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.",
+                          "device_code": null,
+                          "first_detected_at": "2026-10-30T20:00:00Z",
+                          "id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+                          "kind": "baseline_stalled",
+                          "last_detected_at": "2026-10-30T20:00:00Z",
+                          "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                          "resident_code": "R08",
+                          "status": "open",
+                          "title": "R08 \u00b7 baseline stuck at 13 of 16"
+                        },
+                        {
+                          "detail": "2 check-ins held back as possible other voice (Oct 8, Oct 22).",
+                          "device_code": null,
+                          "first_detected_at": "2026-10-30T20:00:00Z",
+                          "id": "7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e",
+                          "kind": "possible_other_speaker",
+                          "last_detected_at": "2026-10-30T20:00:00Z",
+                          "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                          "resident_code": "R05",
+                          "status": "open",
+                          "title": "R05 \u00b7 possible other speaker"
+                        },
+                        {
+                          "detail": "7 of 29 received check-ins set aside (noise, quality flag, too short).",
+                          "device_code": null,
+                          "first_detected_at": "2026-10-30T20:00:00Z",
+                          "id": "8c3d4e5f-6a7b-4c8d-ae9f-1a2b3c4d5e6f",
+                          "kind": "high_set_aside",
+                          "last_detected_at": "2026-10-30T20:00:00Z",
+                          "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                          "resident_code": "R03",
+                          "status": "open",
+                          "title": "R03 \u00b7 many check-ins set aside"
+                        },
+                        {
+                          "detail": "silent all day Oct 12. Affected R02 and R03.",
+                          "device_code": "D02",
+                          "first_detected_at": "2026-10-30T20:00:00Z",
+                          "id": "9d4e5f6a-7b8c-4d9e-bf0a-2b3c4d5e6f7a",
+                          "kind": "device_silent",
+                          "last_detected_at": "2026-10-30T20:00:00Z",
+                          "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                          "resident_code": null,
+                          "status": "open",
+                          "title": "D02 \u00b7 device silent all day"
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 4
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/DataAlertList"
                 }
@@ -4806,6 +5296,70 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-17",
+                    "value": {
+                      "items": [
+                        {
+                          "active": true,
+                          "device_code": "D02",
+                          "device_gap_days_last_30": [
+                            "2026-10-12"
+                          ],
+                          "firmware_version": "fw-1.0.0",
+                          "in_use_since": "2026-10-01",
+                          "in_use_until": null,
+                          "last_upload_at": "2026-10-30T19:55:23Z",
+                          "last_upload_local": "2026-10-30T14:55:23-05:00",
+                          "replaced_by_device_code": null,
+                          "replaces_device_code": null,
+                          "resident_codes": [
+                            "R02",
+                            "R03"
+                          ],
+                          "room_label": null,
+                          "shared": true,
+                          "silent_days_last_30": [
+                            "2026-10-12"
+                          ],
+                          "uploaded_on_as_of_date": true
+                        },
+                        {
+                          "active": true,
+                          "device_code": "D07B",
+                          "device_gap_days_last_30": [],
+                          "firmware_version": "fw-1.0.0",
+                          "in_use_since": "2026-10-13",
+                          "in_use_until": null,
+                          "last_upload_at": "2026-10-30T19:52:57Z",
+                          "last_upload_local": "2026-10-30T14:52:57-05:00",
+                          "replaced_by_device_code": null,
+                          "replaces_device_code": "D07",
+                          "resident_codes": [
+                            "R07"
+                          ],
+                          "room_label": null,
+                          "shared": false,
+                          "silent_days_last_30": [],
+                          "uploaded_on_as_of_date": true
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 10
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/DeviceList"
                 }
@@ -4885,6 +5439,17 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "ok": {
+                    "summary": "TRD 19 E-01",
+                    "value": {
+                      "database": "ok",
+                      "status": "ok",
+                      "time": "2026-10-30T20:00:00Z",
+                      "version": "3f2c9ab"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/Health"
                 }
@@ -4951,6 +5516,19 @@
           "202": {
             "content": {
               "application/json": {
+                "examples": {
+                  "accepted": {
+                    "summary": "TRD 19 E-06",
+                    "value": {
+                      "accepted": 283,
+                      "duplicates": 2,
+                      "ingest_batch_id": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d",
+                      "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                      "rejected": 0,
+                      "source": "csv_upload"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/IngestBatchAccepted"
                 }
@@ -5008,6 +5586,24 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "csv_upload": {
+                    "summary": "TRD 19 E-07",
+                    "value": {
+                      "accepted_count": 283,
+                      "duplicate_count": 2,
+                      "filename": "EchoWell_pipeline_test_input_v0_1.csv",
+                      "id": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d",
+                      "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                      "received_at": "2026-10-30T20:01:05Z",
+                      "record_count": 283,
+                      "rejected_count": 0,
+                      "rejections": [],
+                      "source": "csv_upload",
+                      "uploaded_by": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/IngestBatch"
                 }
@@ -5050,6 +5646,16 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "examples": {
+                "all": {
+                  "summary": "TRD 19 E-20",
+                  "value": {
+                    "as_of": "2026-10-30T20:00:00Z",
+                    "profile": "test_v0_1",
+                    "scope": "all"
+                  }
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/PipelineRunRequest"
               }
@@ -5061,6 +5667,14 @@
           "202": {
             "content": {
               "application/json": {
+                "examples": {
+                  "started": {
+                    "summary": "TRD 19 E-20",
+                    "value": {
+                      "pipeline_run_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/PipelineRunAccepted"
                 }
@@ -5263,6 +5877,158 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "test_v0_1": {
+                    "summary": "TRD 19 E-08",
+                    "value": {
+                      "items": [
+                        {
+                          "alarm_reviewed": false,
+                          "alarm_since": "2026-10-21",
+                          "attention_reasons": [],
+                          "baseline_progress": {
+                            "n_required": 16,
+                            "n_usable": 16
+                          },
+                          "baseline_restarted_on": null,
+                          "cohort": "longitudinal",
+                          "current_epoch": 1,
+                          "device_code": "D09",
+                          "device_shared": false,
+                          "last_30_days": {
+                            "missed": 0,
+                            "quarantined": 0,
+                            "set_aside": 0,
+                            "used": 30
+                          },
+                          "last_checkin_at": "2026-10-30T19:28:04Z",
+                          "last_checkin_local": "2026-10-30T14:28:04-05:00",
+                          "needs_attention": false,
+                          "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                          "previous_device_code": null,
+                          "resident_code": "R09",
+                          "resident_status": "active",
+                          "restart_cause": null,
+                          "status": "alarm_on"
+                        },
+                        {
+                          "alarm_reviewed": null,
+                          "alarm_since": null,
+                          "attention_reasons": [
+                            "high_set_aside"
+                          ],
+                          "baseline_progress": {
+                            "n_required": 16,
+                            "n_usable": 16
+                          },
+                          "baseline_restarted_on": null,
+                          "cohort": "longitudinal",
+                          "current_epoch": 1,
+                          "device_code": "D02",
+                          "device_shared": true,
+                          "last_30_days": {
+                            "missed": 1,
+                            "quarantined": 0,
+                            "set_aside": 7,
+                            "used": 22
+                          },
+                          "last_checkin_at": "2026-10-30T19:19:17Z",
+                          "last_checkin_local": "2026-10-30T14:19:17-05:00",
+                          "needs_attention": true,
+                          "open_alert_id": null,
+                          "previous_device_code": null,
+                          "resident_code": "R03",
+                          "resident_status": "active",
+                          "restart_cause": null,
+                          "status": "no_alarm"
+                        },
+                        {
+                          "alarm_reviewed": null,
+                          "alarm_since": null,
+                          "attention_reasons": [
+                            "baseline_stalled"
+                          ],
+                          "baseline_progress": {
+                            "n_required": 16,
+                            "n_usable": 13
+                          },
+                          "baseline_restarted_on": null,
+                          "cohort": "longitudinal",
+                          "current_epoch": 1,
+                          "device_code": "D08",
+                          "device_shared": false,
+                          "last_30_days": {
+                            "missed": 12,
+                            "quarantined": 0,
+                            "set_aside": 5,
+                            "used": 13
+                          },
+                          "last_checkin_at": "2026-10-30T19:28:26Z",
+                          "last_checkin_local": "2026-10-30T14:28:26-05:00",
+                          "needs_attention": true,
+                          "open_alert_id": null,
+                          "previous_device_code": null,
+                          "resident_code": "R08",
+                          "resident_status": "active",
+                          "restart_cause": null,
+                          "status": "baseline_forming"
+                        },
+                        {
+                          "alarm_reviewed": null,
+                          "alarm_since": null,
+                          "attention_reasons": [],
+                          "baseline_progress": {
+                            "n_required": 16,
+                            "n_usable": 16
+                          },
+                          "baseline_restarted_on": "2026-10-13",
+                          "cohort": "longitudinal",
+                          "current_epoch": 2,
+                          "device_code": "D07B",
+                          "device_shared": false,
+                          "last_30_days": {
+                            "missed": 0,
+                            "quarantined": 0,
+                            "set_aside": 0,
+                            "used": 30
+                          },
+                          "last_checkin_at": "2026-10-30T19:52:57Z",
+                          "last_checkin_local": "2026-10-30T14:52:57-05:00",
+                          "needs_attention": false,
+                          "open_alert_id": null,
+                          "previous_device_code": "D07",
+                          "resident_code": "R07",
+                          "resident_status": "active",
+                          "restart_cause": "device",
+                          "status": "no_alarm"
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "summary": {
+                        "changed": 2,
+                        "learning": 0,
+                        "needs_attention": 2,
+                        "usual": 6
+                      },
+                      "total": 10,
+                      "window": {
+                        "days": 30,
+                        "from": "2026-10-01",
+                        "to": "2026-10-30"
+                      }
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ResidentsOverviewResponse"
                 }
@@ -5305,6 +6071,85 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r09": {
+                    "summary": "TRD 19 E-09",
+                    "value": {
+                      "admitted_on": null,
+                      "alarm_reviewed": false,
+                      "alarm_since": "2026-10-21",
+                      "attention_reasons": [],
+                      "baseline": {
+                        "first_local_date": "2026-10-01",
+                        "first_session_id": "R09-20261001-01",
+                        "frozen_after_local_date": "2026-10-16",
+                        "frozen_after_session_id": "R09-20261016-01",
+                        "n_required": 16,
+                        "n_usable": 16,
+                        "state": "frozen"
+                      },
+                      "cohort": "longitudinal",
+                      "current_epoch": {
+                        "device_code": "D09",
+                        "device_firmware_version": "fw-1.0.0",
+                        "epoch_number": 1,
+                        "extraction_software_version": "openSMILE 3.0.2",
+                        "from_value": null,
+                        "started_at": "2026-10-01T19:40:50Z",
+                        "started_on": "2026-10-01",
+                        "to_value": null
+                      },
+                      "current_tally": 26.830256,
+                      "device": {
+                        "device_code": "D09",
+                        "previous_device_code": null,
+                        "shared": false,
+                        "shared_with": []
+                      },
+                      "enrolled_on": "2026-10-01",
+                      "epoch_count": 1,
+                      "explanation": {
+                        "alarm_crossed_on": "2026-10-21",
+                        "baseline_n_required": 16,
+                        "baseline_n_usable": 16,
+                        "baseline_restarted_on": null,
+                        "compared_with": "own_baseline",
+                        "still_above_line": true
+                      },
+                      "last_30_days": {
+                        "missed": 0,
+                        "quarantined": 0,
+                        "set_aside": 0,
+                        "used": 30
+                      },
+                      "last_checkin_at": "2026-10-30T19:28:04Z",
+                      "last_checkin_local": "2026-10-30T14:28:04-05:00",
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "needs_attention": false,
+                      "open_alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                      "resident_code": "R09",
+                      "resident_status": "active",
+                      "restart_cause": null,
+                      "sex": "F",
+                      "status": "alarm_on",
+                      "watching_since": "2026-10-17",
+                      "window": {
+                        "days": 30,
+                        "from": "2026-10-01",
+                        "to": "2026-10-30"
+                      },
+                      "withdrawn_on": null
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ResidentDetail"
                 }
@@ -5359,6 +6204,66 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r09": {
+                    "summary": "TRD 19 E-10",
+                    "value": {
+                      "items": [
+                        {
+                          "cusum_tally": 5.431965,
+                          "detail": "tally crossed 5.0",
+                          "device_code": null,
+                          "epoch_number": 1,
+                          "event_type": "alarm_on",
+                          "from_value": null,
+                          "local_date": "2026-10-21",
+                          "previous_device_code": null,
+                          "restart_cause": null,
+                          "session_id": "R09-20261021-01",
+                          "to_value": null
+                        },
+                        {
+                          "cusum_tally": null,
+                          "detail": null,
+                          "device_code": null,
+                          "epoch_number": 1,
+                          "event_type": "watching_started",
+                          "from_value": null,
+                          "local_date": "2026-10-17",
+                          "previous_device_code": null,
+                          "restart_cause": null,
+                          "session_id": "R09-20261017-01",
+                          "to_value": null
+                        },
+                        {
+                          "cusum_tally": null,
+                          "detail": "16 of 16",
+                          "device_code": null,
+                          "epoch_number": 1,
+                          "event_type": "baseline_complete",
+                          "from_value": null,
+                          "local_date": "2026-10-16",
+                          "previous_device_code": null,
+                          "restart_cause": null,
+                          "session_id": "R09-20261016-01",
+                          "to_value": null
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 4
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/CheckinEventList"
                 }
@@ -5410,6 +6315,299 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r09": {
+                    "summary": "TRD 19 E-11",
+                    "value": {
+                      "epoch_number": 1,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "resident_code": "R09",
+                      "scored_features": [
+                        {
+                          "baseline_median": -22.405,
+                          "baseline_robust_spread": 2.14977,
+                          "composite_sign": -1,
+                          "feature_key": "loudness_dbfs",
+                          "label": "Quieter (loudness)",
+                          "points": [
+                            {
+                              "adjusted_value": -21.21,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": -21.21,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": -30.03,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": -30.03,
+                              "session_id": "R09-20261017-01",
+                              "z": -3.546891
+                            },
+                            {
+                              "adjusted_value": -28.29,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": -28.29,
+                              "session_id": "R09-20261021-01",
+                              "z": -2.737502
+                            }
+                          ],
+                          "unit": "dBFS"
+                        },
+                        {
+                          "baseline_median": 2.415,
+                          "baseline_robust_spread": 0.126021,
+                          "composite_sign": 1,
+                          "feature_key": "total_phrase_duration_s",
+                          "label": "Slower to say the phrase (phrase duration)",
+                          "points": [
+                            {
+                              "adjusted_value": 2.43,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 2.43,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 2.71,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 2.71,
+                              "session_id": "R09-20261017-01",
+                              "z": 2.34088
+                            },
+                            {
+                              "adjusted_value": 2.72,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 2.72,
+                              "session_id": "R09-20261021-01",
+                              "z": 2.420232
+                            }
+                          ],
+                          "unit": "s"
+                        },
+                        {
+                          "baseline_median": 3.69,
+                          "baseline_robust_spread": 0.177912,
+                          "composite_sign": -1,
+                          "feature_key": "speech_rate_syl_per_s",
+                          "label": "Fewer syllables per second (speech rate)",
+                          "points": [
+                            {
+                              "adjusted_value": 3.82,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 3.82,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 3.63,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 3.63,
+                              "session_id": "R09-20261017-01",
+                              "z": -0.337245
+                            },
+                            {
+                              "adjusted_value": 3.48,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 3.48,
+                              "session_id": "R09-20261021-01",
+                              "z": -1.180359
+                            }
+                          ],
+                          "unit": "syllables/s"
+                        },
+                        {
+                          "baseline_median": 5.435,
+                          "baseline_robust_spread": 0.318759,
+                          "composite_sign": -1,
+                          "feature_key": "articulation_rate_syl_per_s",
+                          "label": "Slower while talking (articulation rate)",
+                          "points": [
+                            {
+                              "adjusted_value": 5.59,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 5.59,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 4.84,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 4.84,
+                              "session_id": "R09-20261017-01",
+                              "z": -1.866614
+                            },
+                            {
+                              "adjusted_value": 4.93,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 4.93,
+                              "session_id": "R09-20261021-01",
+                              "z": -1.584269
+                            }
+                          ],
+                          "unit": "syllables/s"
+                        },
+                        {
+                          "baseline_median": 1.0,
+                          "baseline_robust_spread": 0.7413,
+                          "composite_sign": 1,
+                          "feature_key": "number_of_pauses",
+                          "label": "More pauses (number of pauses)",
+                          "points": [
+                            {
+                              "adjusted_value": 0.0,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 0.0,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 3.0,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 3.0,
+                              "session_id": "R09-20261017-01",
+                              "z": 2.697963
+                            },
+                            {
+                              "adjusted_value": 2.0,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 2.0,
+                              "session_id": "R09-20261021-01",
+                              "z": 1.348982
+                            }
+                          ],
+                          "unit": "count"
+                        },
+                        {
+                          "baseline_median": 0.138,
+                          "baseline_robust_spread": 0.026687,
+                          "composite_sign": 1,
+                          "feature_key": "pause_fraction",
+                          "label": "More time in pauses (pause fraction)",
+                          "points": [
+                            {
+                              "adjusted_value": 0.115,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 0.115,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 0.163,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 0.163,
+                              "session_id": "R09-20261017-01",
+                              "z": 0.936793
+                            },
+                            {
+                              "adjusted_value": 0.199,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 0.199,
+                              "session_id": "R09-20261021-01",
+                              "z": 2.285774
+                            }
+                          ],
+                          "unit": "proportion"
+                        },
+                        {
+                          "baseline_median": 0.6675,
+                          "baseline_robust_spread": 0.031876,
+                          "composite_sign": -1,
+                          "feature_key": "voiced_fraction",
+                          "label": "Less voiced sound (voiced fraction)",
+                          "points": [
+                            {
+                              "adjusted_value": 0.711,
+                              "in_baseline": true,
+                              "is_morning": false,
+                              "local_date": "2026-10-16",
+                              "raw_value": 0.711,
+                              "session_id": "R09-20261016-01",
+                              "z": null
+                            },
+                            {
+                              "adjusted_value": 0.587,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-17",
+                              "raw_value": 0.587,
+                              "session_id": "R09-20261017-01",
+                              "z": -2.525419
+                            },
+                            {
+                              "adjusted_value": 0.517,
+                              "in_baseline": false,
+                              "is_morning": false,
+                              "local_date": "2026-10-21",
+                              "raw_value": 0.517,
+                              "session_id": "R09-20261021-01",
+                              "z": -4.721435
+                            }
+                          ],
+                          "unit": "proportion"
+                        }
+                      ],
+                      "stored_feature_keys": [
+                        "mean_f0_hz",
+                        "f0_variability_st",
+                        "jitter_local_pct",
+                        "shimmer_local_pct",
+                        "hnr_db",
+                        "cpps_db",
+                        "alpha_ratio_db",
+                        "hammarberg_index_db",
+                        "mfcc1",
+                        "mfcc2",
+                        "mfcc3",
+                        "mfcc4"
+                      ]
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/FeaturesResponse"
                 }
@@ -5509,6 +6707,17 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "examples": {
+                "observation": {
+                  "summary": "TRD 19 E-16",
+                  "value": {
+                    "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                    "body": "Resident has a cold; nurse notified.",
+                    "note_type": "observation",
+                    "supersedes_id": null
+                  }
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/StaffNoteCreate"
               }
@@ -5520,6 +6729,24 @@
           "201": {
             "content": {
               "application/json": {
+                "examples": {
+                  "observation": {
+                    "summary": "TRD 19 E-16",
+                    "value": {
+                      "alert_id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90",
+                      "author": {
+                        "display_name": "Clinician One",
+                        "id": "5a0c3f8e-1d2b-4c6a-8e9f-0a1b2c3d4e5f"
+                      },
+                      "body": "Resident has a cold; nurse notified.",
+                      "created_at": "2026-10-30T20:10:00Z",
+                      "id": "8c7b6a59-4d3e-4f2a-9b1c-0d9e8f7a6b5c",
+                      "note_type": "observation",
+                      "resident_code": "R09",
+                      "supersedes_id": null
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/StaffNote"
                 }
@@ -5598,6 +6825,98 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r09": {
+                    "summary": "TRD 19 E-12",
+                    "value": {
+                      "baseline_periods": [
+                        {
+                          "epoch_number": 1,
+                          "first_local_date": "2026-10-01",
+                          "frozen_after_local_date": "2026-10-16",
+                          "frozen_after_session_id": "R09-20261016-01",
+                          "n_sessions": 16,
+                          "resident_code": "R09"
+                        }
+                      ],
+                      "cusum_k": 0.5,
+                      "items": [
+                        {
+                          "alarm_state": "off",
+                          "composite_raw": 0.235887,
+                          "composite_z": 0.370597,
+                          "cusum_tally": 1.643658,
+                          "epoch_number": 1,
+                          "is_morning": false,
+                          "local_date": "2026-10-20",
+                          "resident_code": "R09",
+                          "session_id": "R09-20261020-01",
+                          "z": {
+                            "z_articulation_rate_syl_per_s": 0.298031,
+                            "z_loudness_dbfs": 0.918703,
+                            "z_number_of_pauses": 0.0,
+                            "z_pause_fraction": 0.524604,
+                            "z_speech_rate_syl_per_s": -0.22483,
+                            "z_total_phrase_duration_s": 0.753843,
+                            "z_voiced_fraction": -1.364667
+                          }
+                        },
+                        {
+                          "alarm_state": "rings",
+                          "composite_raw": 2.325508,
+                          "composite_z": 4.288307,
+                          "cusum_tally": 5.431965,
+                          "epoch_number": 1,
+                          "is_morning": false,
+                          "local_date": "2026-10-21",
+                          "resident_code": "R09",
+                          "session_id": "R09-20261021-01",
+                          "z": {
+                            "z_articulation_rate_syl_per_s": -1.584269,
+                            "z_loudness_dbfs": -2.737502,
+                            "z_number_of_pauses": 1.348982,
+                            "z_pause_fraction": 2.285774,
+                            "z_speech_rate_syl_per_s": -1.180359,
+                            "z_total_phrase_duration_s": 2.420232,
+                            "z_voiced_fraction": -4.721435
+                          }
+                        },
+                        {
+                          "alarm_state": "on",
+                          "composite_raw": 1.65291,
+                          "composite_z": 3.027292,
+                          "cusum_tally": 7.959257,
+                          "epoch_number": 1,
+                          "is_morning": false,
+                          "local_date": "2026-10-22",
+                          "resident_code": "R09",
+                          "session_id": "R09-20261022-01",
+                          "z": {
+                            "z_articulation_rate_syl_per_s": -2.086216,
+                            "z_loudness_dbfs": -1.597845,
+                            "z_number_of_pauses": 1.348982,
+                            "z_pause_fraction": 1.836114,
+                            "z_speech_rate_syl_per_s": 0.056208,
+                            "z_total_phrase_duration_s": 2.420232,
+                            "z_voiced_fraction": -2.337189
+                          }
+                        }
+                      ],
+                      "limit": 50,
+                      "meta": {
+                        "as_of": "2026-10-30T20:00:00Z",
+                        "baseline_n": 16,
+                        "cusum_h": 5.0,
+                        "data_source_label": "pipeline test data v0.1",
+                        "facility_name": "Edgewood",
+                        "facility_tz": "America/Chicago",
+                        "pipeline_profile": "test_v0_1"
+                      },
+                      "offset": 0,
+                      "total": 14
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ScoresResponse"
                 }
@@ -5648,6 +6967,43 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "examples": {
+                "r09_20261021": {
+                  "summary": "TRD 19 E-05",
+                  "value": {
+                    "alpha_ratio_db": -3.6,
+                    "articulation_rate_syl_per_s": 4.93,
+                    "audio_quality_flag": "ok",
+                    "cpps_db": 10.94,
+                    "device_firmware_version": "fw-1.0.0",
+                    "device_id": "D09",
+                    "extraction_software_version": "openSMILE 3.0.2",
+                    "f0_variability_st": 2.97,
+                    "hammarberg_index_db": 29.88,
+                    "hnr_db": 15.26,
+                    "jitter_local_pct": 0.305,
+                    "loudness_dbfs": -28.29,
+                    "mean_f0_hz": 178.8,
+                    "mfcc1": 26.8,
+                    "mfcc2": 10.31,
+                    "mfcc3": 2.02,
+                    "mfcc4": -4.5,
+                    "mic_noise_level_dbfs": -54.6,
+                    "number_of_pauses": 2,
+                    "pause_fraction": 0.199,
+                    "phrase_id": "P01",
+                    "resident_id": "R09",
+                    "schema_version": "0.1",
+                    "session_id": "R09-20261021-01",
+                    "shimmer_local_pct": 5.96,
+                    "speech_duration_s": 2.72,
+                    "speech_rate_syl_per_s": 3.48,
+                    "timestamp_utc": "2026-10-21 19:07:50",
+                    "total_phrase_duration_s": 2.72,
+                    "voiced_fraction": 0.517
+                  }
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/IngestRecord"
               }
@@ -5659,6 +7015,21 @@
           "200": {
             "content": {
               "application/json": {
+                "examples": {
+                  "duplicate": {
+                    "summary": "TRD 19 E-05",
+                    "value": {
+                      "arrival_seq": 284,
+                      "pipeline_run_id": null,
+                      "raw_session_id": "1f2e3d4c-5b6a-4978-8695-a4b3c2d1e0f9",
+                      "reasons": [
+                        "session_id already received"
+                      ],
+                      "session_id": "R09-20261021-01",
+                      "status_after_processing": "duplicate"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/IngestResult"
                 }
@@ -5674,6 +7045,33 @@
           "201": {
             "content": {
               "application/json": {
+                "examples": {
+                  "r03_set_aside": {
+                    "summary": "TRD 19 E-05",
+                    "value": {
+                      "arrival_seq": 78,
+                      "pipeline_run_id": "c2a1b0f9-8e7d-4c6b-a5f4-e3d2c1b0a998",
+                      "raw_session_id": "5a4b3c2d-1e0f-4a9b-8c7d-6e5f4a3b2c1d",
+                      "reasons": [
+                        "quality flag poor",
+                        "noise above limit"
+                      ],
+                      "session_id": "R03-20261018-01",
+                      "status_after_processing": "set_aside"
+                    }
+                  },
+                  "r09_20261021": {
+                    "summary": "TRD 19 E-05",
+                    "value": {
+                      "arrival_seq": 254,
+                      "pipeline_run_id": "c2a1b0f9-8e7d-4c6b-a5f4-e3d2c1b0a998",
+                      "raw_session_id": "9d7e1c44-3b2a-4f0e-8c1d-6e5f4a3b2c10",
+                      "reasons": [],
+                      "session_id": "R09-20261021-01",
+                      "status_after_processing": "usable"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/IngestResult"
                 }
@@ -5699,7 +7097,38 @@
             "$ref": "#/components/responses/UnsupportedMediaType"
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "unknown_resident": {
+                    "summary": "TRD 19 E-05",
+                    "value": {
+                      "detail": "resident_id 'R11' is not enrolled.",
+                      "errors": [
+                        {
+                          "code": "unknown_resident",
+                          "field": "resident_id",
+                          "message": "resident_id 'R11' is not enrolled."
+                        }
+                      ],
+                      "request_id": "0e4b2f7a-9c1d-4e8b-a3f6-5d2c7b1e9a40",
+                      "status": 422,
+                      "title": "Unknown resident",
+                      "type": "urn:echowell:error:UNKNOWN_RESIDENT"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_ERROR and the other 422 codes of TRD 05 \u00a74.7",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
