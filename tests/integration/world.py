@@ -312,6 +312,7 @@ class World:
         run = PipelineRunRepository(self.session).get(self.run_id)  # type: ignore[arg-type]
         assert run is not None
         run.as_of = as_of
+        run.started_at = min(run.started_at, as_of)  # finished_at >= started_at at any wall time
         PipelineRunRepository(self.session).finish(
             run, status=PipelineRunStatus.SUCCEEDED, finished_at=as_of,
             counts=dict.fromkeys(
