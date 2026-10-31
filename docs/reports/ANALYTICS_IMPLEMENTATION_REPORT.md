@@ -43,9 +43,11 @@ Stage order follows TRD 07 §4.5. Every stage has its own test module under `tes
 ## 3. How the backend runs it
 
 - `PipelineRunner.start` inserts the `pipeline_runs` row (`running`) with the configuration snapshot, its hash and the git SHA (AGT-020); `execute` loads the inputs, calls `run_pipeline` and writes each resident in its own transaction under `lock_xact("resident", code)`.
-- One resident failing rolls back only that resident; the run is `failed`, keeps its counts and warnings, and the next ingest or nightly run retries (FEAT-056-FR-07).
+- One resident failing rolls back only that resident; the run is `failed`, keeps its counts and warnings, and the next ingest or nightly run starts a new run that recomputes everything; there is no in-place retry (FEAT-056-FR-07, D-132).
 - If the algorithm configuration changed since the last run, the run fails with `config_changed_requires_rebuild` until an operator runs `rebuild --confirm REBUILD` (D-56, D-69). `rebuild` runs as `echowell_migrator`, because the application role may not delete frozen baselines.
-- Run logging: `pipeline_run_succeeded`, `pipeline_run_failed`, `pipeline_warning`, `data_alerts_updated`, `nightly_run_missing`; nightly runs add `db_size_bytes` to their counts.
+- The nightly job refuses to run (exit 1) when the database schema revision differs from the code's or cannot be read (DEP-048, D-129).
+- Data alerts store the days they are about (`data_alerts.days`, D-130); run start and finish times come from the application clock (D-131).
+- Run logging: `pipeline_run_succeeded`, `pipeline_run_failed`, `pipeline_warning`, `data_alerts_updated`, `nightly_run_missing`, `schema_revision_mismatch`; nightly runs add `db_size_bytes` to their counts.
 
 ## 4. Check against the answer key
 

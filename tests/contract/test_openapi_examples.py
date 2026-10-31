@@ -1,8 +1,8 @@
 """The TRD 19 §4.3 JSON examples in the OpenAPI document (TRD 19 OAS-015, AC-OAS-04;
 FEAT-038-FR-10).
 
-Every `json` block of §4.3 is in `backend/api/openapi_examples.json`, in order and unchanged, except
-where the TRD abbreviates (`completed` says how); every example in the generated document validates
+Every `json` block of §4.3 is in `backend/api/openapi_examples.json`, in order and unchanged (TRD 24
+D-134 wrote the abbreviated ones out in full); every example in the generated document validates
 against the schema of its request body or response, formats included.
 """
 
@@ -42,8 +42,7 @@ def test_examples_are_the_trd_examples() -> None:
     assert len(stored) == len(blocks) == 26
     for example, block in zip(stored, blocks, strict=True):
         assert example["path"] in _section_43()
-        if "completed" not in example:
-            assert example["value"] == block, example["name"]
+        assert example["value"] == block, example["name"]
 
 
 @pytest.mark.req("OAS-015", "AC-OAS-04", "FEAT-038-FR-10")

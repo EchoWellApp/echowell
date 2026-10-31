@@ -161,8 +161,7 @@
     "noise above limit"
    ],
    "pipeline_run_id": "c2a1b0f9-8e7d-4c6b-a5f4-e3d2c1b0a998"
-  },
-  "completed": "placeholder ids replaced"
+  }
  },
  {
   "endpoint": "E-05",
@@ -515,8 +514,7 @@
    "total": 4,
    "limit": 50,
    "offset": 0
-  },
-  "completed": "null-valued required fields added"
+  }
  },
  {
   "endpoint": "E-11",
@@ -811,8 +809,7 @@
     "mfcc3",
     "mfcc4"
    ]
-  },
-  "completed": "all 7 scored features (engine output on SRC-05)"
+  }
  },
  {
   "endpoint": "E-12",
@@ -1449,8 +1446,7 @@
    "total": 20,
    "limit": 50,
    "offset": 0
-  },
-  "completed": "meta written out"
+  }
  },
  {
   "endpoint": "E-20",

@@ -296,7 +296,7 @@ def build_openapi(app: FastAPI) -> dict[str, Any]:
 
 def examples() -> list[dict[str, Any]]:
     """The TRD 19 §4.3 examples: `endpoint`, `method`, `path`, `target` (`request` or a status),
-    `name`, `value`, and `completed` where the TRD abbreviates the example."""
+    `name` and `value`."""
     loaded: list[dict[str, Any]] = json.loads(EXAMPLES_FILE.read_text(encoding="utf-8"))
     return loaded
 

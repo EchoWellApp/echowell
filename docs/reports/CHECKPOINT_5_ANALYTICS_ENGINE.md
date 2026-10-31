@@ -1,6 +1,6 @@
 # Checkpoint 5 Report — Phase 11 Implement Analytics Engine
 
-Block 3 "Implement Features", checkpoint 5 of 9, its own PR (branch `feat/cp5-analytics-engine`, created from `main` after GitHub PR #18 was merged on 30 October 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 11: Implement Analytics Engine" · TRD 25 Phase 6 · Features: FEAT-040..FEAT-056, plus FEAT-038-FR-10 carried over from checkpoint 4 (D-128) · Date: 31 October 2026 · Status: in review (GitHub PR #20).
+Block 3 "Implement Features", checkpoint 5 of 9, its own PR (branch `feat/cp5-analytics-engine`, created from `main` after GitHub PR #18 was merged on 30 October 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 11: Implement Analytics Engine" · TRD 25 Phase 6 · Features: FEAT-040..FEAT-056, plus FEAT-038-FR-10 carried over from checkpoint 4 (D-128) · Date: 31 October 2026 · Status: in review (GitHub PR #20); review round 1 answered and applied, section 9.
 
 Build order followed roadmap §5.5: [FEAT-040..FEAT-043] → [FEAT-044..FEAT-047] → [FEAT-048..FEAT-052] → [FEAT-053..FEAT-056]. TRDs read in the roadmap order: 07, 08, 09, 10, 06, 20, 23, 24; then SRC-04 and the SRC-03 Parameters sheet, for the rules only.
 
@@ -130,3 +130,29 @@ None. Decisions from this review will be recorded in TRD 24 with the next free n
 | Q-9 | Four TRD 19 §4.3 examples are abbreviated and do not validate as written. I completed them in the examples file: E-05 R03 response (`"..."` ids → UUIDs), E-10 (null fields added), E-11 (all 7 features, from the engine output), E-19 (`meta` written out). Update TRD 19 §4.3 to match? |
 | Q-10 | `rebuild` runs as `echowell_migrator`, because only the table owner may delete frozen baselines (N-4). Agree? |
 | Q-11 | Size: about 5,100 hand-written lines (1,960 engine, 1,350 backend, 1,820 tests) for 17 features. Accept as one PR, as for checkpoints 3 and 4? |
+
+## 9. Review round 1 resolutions (31 October 2026)
+
+Shaba's review of GitHub PR #20 (changes requested). Decisions recorded in TRD 24 as D-129 to D-134.
+
+| Q | Answer | Change | Documents |
+|---|---|---|---|
+| Q-1 | Grant `SELECT` on `alembic_version` and keep the full schema check. | Migration 0004 grants it. The nightly job now exits 1 when the revision differs or cannot be read; the `schema_revision_unreadable` warning is gone (D-129). | TRD 20 §4.8, §4.14 (v0.11) |
+| Q-2 | Keep the copy; state clearly that it is a copy of SRC-05. | `database/seeds/test_v0_1/README.md` says so and how to refresh it; `tests/unit/test_seed_copies.py` fails when either SRC-05 copy differs from `specs/data-samples/` (D-133). | — |
+| Q-3 | Add a migration; store the days as data. | Migration 0004 adds `data_alerts.days` (date[]). The pipeline writes the days it detected (silent days, quarantined and set-aside dates), and the read side uses the column; the text parser is removed (D-130). | TRD 20 §4.6.19, §4.14; TRD 23 §4.2.19 (v0.13); ERD v0.4 |
+| Q-4 | Confirmed. | No change (D-134). | TRD 24 |
+| Q-5 | A new run is not a retry: retry explicitly, or reword the requirement. | Reworded: a failed run is not retried in place; the next trigger starts a new run, and every failure keeps its own row (D-132). | TRD 17 LOG-067 (v0.12), FEAT-056-FR-07 |
+| Q-6 | OK, with one consistent timestamp source. | `insert_running` now requires `started_at`, so no run can fall back to `now()`; one clock reading per run start covers `started_at`, stale-run checks and the default as-of; `finished_at` uses the same clock (D-131). | TRD 23 (v0.13) |
+| Q-7 | Keep the fixes here. | No change (D-134). | — |
+| Q-8 | Agree. | No change (D-134). | — |
+| Q-9 | Update TRD 19 to match. | The four examples are written out in full in TRD 19 §4.3; the examples file now equals the TRD block for block, and the contract test checks all 26 (D-134). | TRD 19 (v0.10) |
+| Q-10, Q-11 | Agree. | No change (D-134). | — |
+
+Also changed: the CLI tests set `PIPELINE_AS_OF` to the test as-of. `rebuild` has no `--as-of` option, so the rebuild test otherwise used today's date and failed once Chicago reached 31 October.
+
+Verification after review round 1:
+
+- `alembic upgrade head`, `downgrade 0003` and `upgrade head` run cleanly, and `alembic check` reports nothing.
+- `scripts/dump_schema.sh` regenerated `database/schema.sql`.
+- `ruff`, `mypy` and `lint-imports` are clean.
+- Full test suite: RESULT_ROUND1.

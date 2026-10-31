@@ -55,7 +55,7 @@ Make every pipeline run observable and every operational failure detectable. Aro
 | FEAT-056-FR-04 | Stage names in warnings and logs shall be exactly `duplicate_detection`, `quality_gate`, `epoch_detection`, `speaker_screen`, `context_adjustment`, `baseline`, `scoring`, `cusum`, `alerts`, `day_ledger`, `data_alerts`, `aggregates`. | LOG-063, D-80 |
 | FEAT-056-FR-05 | Each run warning shall be stored in `pipeline_runs.warnings` as `{code, resident_code, session_id, detail}` without failing the run, and logged as one `pipeline_warning` event (WARNING; ERROR for `baseline_mismatch`). | LOG-064, ANL-052, ANL-053 |
 | FEAT-056-FR-06 | A run row left `running` for more than 30 minutes shall be marked `failed` with warning `run_abandoned` and a non-empty `error_message` by the next run (before it proceeds) or at backend startup. | LOG-066, API-068 |
-| FEAT-056-FR-07 | A failed run shall be retried automatically at most once, at the next ingest or nightly trigger; repeated failure stays visible in `GET /api/v1/pipeline/runs` for the `/admin` list. | LOG-067 |
+| FEAT-056-FR-07 | A failed run shall not be retried in place; the next ingest-triggered or nightly run is a new run that recomputes from `raw_sessions`, and every failed run keeps its own row, so repeated failure stays visible in `GET /api/v1/pipeline/runs` for the `/admin` list (TRD 24 D-132). | LOG-067 |
 | FEAT-056-FR-08 | Nightly runs shall add `db_size_bytes` (`pg_database_size`) to `counts`. | DB-049; TRD 23 §4.2.10 |
 | FEAT-056-FR-09 | Each firing of `backend.jobs.nightly_run` that does not start a run shall check the most recent facility-local date whose 02:00 hour has passed and, if no succeeded nightly run exists for it, log ERROR `nightly_run_missing` and report it to Sentry when enabled. | LOG-111, TRD 17 §4.9 |
 | FEAT-056-FR-10 | The data needed for the `/admin` banners (latest run status of any trigger; latest succeeded nightly run `started_at`) shall be available through `GET /api/v1/pipeline/runs` with the `trigger` and `status` filters, computed at read time. | LOG-111, LOG-112, API-134 |
@@ -130,7 +130,7 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
   - Success run logs one start and one success event with `config_hash`, `counts`, `duration_ms`, `warning_count`.
   - Nightly run `counts` contains `db_size_bytes` > 0 (DB-049).
   - Log scan: no feature value or e-mail in captured pipeline logs (AC-LOG-02 style grep).
-- Retry rule: two consecutive failures produce at most one automatic retry (LOG-067).
+- Failure rule: a failed run is followed by a new run at the next trigger, not an in-place retry; two consecutive failures leave two `failed` rows (LOG-067, D-132).
 
 ## Acceptance Criteria
 
