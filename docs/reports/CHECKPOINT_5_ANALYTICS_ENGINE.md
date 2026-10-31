@@ -155,4 +155,4 @@ Verification after review round 1:
 - `alembic upgrade head`, `downgrade 0003` and `upgrade head` run cleanly, and `alembic check` reports nothing.
 - `scripts/dump_schema.sh` regenerated `database/schema.sql`.
 - `ruff`, `mypy` and `lint-imports` are clean.
-- Full test suite: RESULT_ROUND1.
+- Full test suite, random order: 563 passed, 0 skipped; `analytics` + `backend` coverage 97 %.
