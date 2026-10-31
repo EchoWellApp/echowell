@@ -73,7 +73,7 @@ Environment: Linux container, Python 3.12 (virtualenv), PostgreSQL 16 (local clu
 
 | # | Command | Result |
 |---|---|---|
-| 1 | `pytest tests/unit tests/integration tests/contract tests/security tests/validation`, random order, with `--cov=analytics --cov=backend --cov-branch` | 562 passed, 1 skipped (the `pg_dump` 16 schema-reference test; this container has an older `pg_dump`). Coverage of `analytics` and `backend` together 97 % |
+| 1 | `pytest tests/unit tests/integration tests/contract tests/security tests/validation`, random order, with `--cov=analytics --cov=backend --cov-branch` | 561 passed, 0 skipped (4 min 16 s). Coverage of `analytics` and `backend` together 97 % |
 | 2 | `pytest tests/unit --cov=analytics --cov-branch` | 245 passed; `analytics/` 97 % (target 95 %, TST-140) |
 | 3 | `pytest tests/integration -q -k pipeline` | 27 passed |
 | 4 | `ruff check .`; `ruff format --check .`; `mypy analytics backend`; `lint-imports` | all exit 0; 3 import contracts kept |
