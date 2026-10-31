@@ -15,6 +15,22 @@ SRC05_COUNTS = {"arrivals": 283, "usable": 267, "set_aside": 12, "quarantined": 
                 "excluded_after_as_of": 0, "residents": 10}  # fmt: skip
 
 
+DERIVED = ("epochs", "processed_sessions", "baselines", "scores", "cusum_state", "day_ledger",
+           "alerts", "data_alerts")  # fmt: skip
+VOLATILE = {"id", "created_at", "updated_at", "pipeline_run_id", "epoch_id",
+            "processed_session_id", "last_detected_at"}  # fmt: skip
+
+
+def _derived(cli: Cli) -> dict[str, list[tuple[str, ...]]]:
+    tables = {}
+    for table in DERIVED:
+        rows = cli.rows(f"SELECT * FROM {table}")  # noqa: S608
+        tables[table] = sorted(
+            tuple(str(v) for k, v in row._mapping.items() if k not in VOLATILE) for row in rows
+        )
+    return tables
+
+
 def _seed(cli: Cli) -> None:
     cli.env(**SEED_SECRETS)
     run = cli("seed", "test_v0_1")
@@ -48,6 +64,18 @@ def test_run_pipeline_command(cli: Cli) -> None:
     assert (latest.trigger, latest.status) == ("manual", "succeeded")
     assert latest.scope == {"type": "residents", "resident_codes": ["R01", "R02"]}
     assert cli("run-pipeline", "--as-of", "2026-10-30T15:00:00").code == 2  # no offset
+
+
+@pytest.mark.req("ANL-032", "ANL-033", "AC-ANL-09", "FEAT-055-FR-04")
+def test_rebuild_reproduces_identical_derived_tables(cli: Cli) -> None:
+    """With an unchanged configuration, a rebuild re-derives every frozen baseline from
+    `raw_sessions` and every derived table comes back identical (roadmap §5.5 exit criterion)."""
+    _seed(cli)
+    before = _derived(cli)
+    rebuilt = cli("rebuild", "--profile", "test_v0_1", "--confirm", "REBUILD")
+    assert rebuilt.code == 0, rebuilt.err
+    assert cli.scalar("SELECT count(*) FROM pipeline_runs WHERE status = 'succeeded'") == 2
+    assert _derived(cli) == before
 
 
 @pytest.mark.req("ANL-032", "D-56", "D-69", "FEAT-055-AC-02", "FEAT-055-AC-03", "FEAT-055-FR-02",
