@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from analytics.config import TEST_V0_1, ConfigError, PipelineConfig
 from backend.core.config import Settings
 from backend.core.errors import ResidentNotFoundError
 from backend.models import AlertStatus, Epoch, Resident, ResidentCohort, ResidentStatus
@@ -26,7 +27,7 @@ from backend.repositories.config_repository import ConfigRepository
 from backend.repositories.device_repository import DeviceRepository
 from backend.repositories.resident_repository import ResidentRepository
 from backend.schemas.common import Meta
-from backend.services import meta_service
+from backend.services import config_service, meta_service
 
 Sort = Literal["alarm", "resident_id", "last_checkin"]
 CHANGED, NEEDS_ATTENTION, LEARNING, USUAL = 0, 1, 2, 3
@@ -51,6 +52,8 @@ class ReadContext:
     baseline_n: int
     cusum_h: float
     shared_device_min_residents: int
+    # the profile's engine configuration, for the read-side pure helpers (D-79)
+    pipeline_config: PipelineConfig = TEST_V0_1
 
     def local(self, instant: datetime | None) -> datetime | None:
         return instant.astimezone(self.tz) if instant is not None else None
@@ -73,7 +76,17 @@ def read_context(
         baseline_n=int(values["baseline_n"]),
         cusum_h=float(values["cusum_h"]),
         shared_device_min_residents=int(values.get("shared_device_min_residents", 2)),
+        pipeline_config=_engine_config(values, settings.pipeline_profile),
     )
+
+
+def _engine_config(values: dict[str, Any], profile: str) -> PipelineConfig:
+    """The stored profile as a `PipelineConfig`; the built-in profile when the rows are invalid
+    (a run with them fails anyway, ANL-031)."""
+    try:
+        return config_service.pipeline_config(values, profile)[0]
+    except ConfigError:
+        return config_service.BUILT_IN.get(profile, TEST_V0_1)
 
 
 @dataclass

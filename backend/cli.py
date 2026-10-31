@@ -1,10 +1,10 @@
 """Operator command line: `python -m backend.cli <command>` (TRD 15 §4.8; TRD 21 ENV-053).
 
 Commands of FEAT-016 (credentials), FEAT-017 (master data, withdrawal, purge, seed, reset),
-FEAT-032 (`resolve-data-alert`) and FEAT-038 (`export-openapi`); `run-pipeline`, `rebuild` and
-`set-config` follow with their features. Exit codes (TRD 24 D-86): 0 success; 1 invalid settings
-(ENV-002, checked by `load_settings_or_exit`); 2 a command-specific refusal, which prints the
-reason and writes nothing.
+FEAT-032 (`resolve-data-alert`), FEAT-038 (`export-openapi`) and FEAT-055 (`run-pipeline`,
+`rebuild`, `set-config`, and the SRC-05 ingest and run step of `seed`). Exit codes (TRD 24
+D-86): 0 success; 1 invalid settings (ENV-002, checked by `load_settings_or_exit`) or a failed
+pipeline run; 2 a command-specific refusal, which prints the reason and writes nothing.
 RefusalErrors that depend only on the environment are checked before the settings are built.
 
 Connections: `seed`, `reset-test-db` and `purge-resident` run as `echowell_migrator` through
@@ -30,6 +30,7 @@ from sqlalchemy import ColumnElement, delete, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from analytics.config import OPERATIONAL_KEYS, ConfigError
 from backend.core.config import Settings, environment_value, load_settings_or_exit
 from backend.core.db import create_engine_for, migrator_connection
 from backend.core.errors import PasswordPolicyError
@@ -41,6 +42,7 @@ from backend.core.security import (
     validate_password,
 )
 from backend.models import (
+    ActorType,
     Alert,
     AlertReview,
     Base,
@@ -50,6 +52,9 @@ from backend.models import (
     DayLedgerEntry,
     DeviceAssignment,
     Epoch,
+    IngestSource,
+    PipelineRunStatus,
+    PipelineTrigger,
     ProcessedSession,
     RawSession,
     Resident,
@@ -63,10 +68,14 @@ from backend.repositories.api_key_repository import ApiKeyRepository
 from backend.repositories.config_repository import CONFIG_KEYS, ConfigRepository
 from backend.repositories.device_repository import DeviceRepository
 from backend.repositories.facility_repository import FacilityRepository
+from backend.repositories.pipeline_run_repository import PipelineRunRepository
 from backend.repositories.resident_repository import ResidentRepository
 from backend.repositories.user_repository import UserRepository
-from backend.services import data_alert_service
+from backend.services import config_service, data_alert_service, validation
 from backend.services.audit_service import AuditAction, record_cli
+from backend.services.ingestion import Caller, IngestService, name_map, parse_csv_batch
+from backend.services.pipeline_runner import Actor, PipelineRunner, RunHandle, Scope
+from backend.services.validation import NameMapError
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_ROSTER_DIR = ROOT / "database" / "seeds" / "test_v0_1"
@@ -500,10 +509,119 @@ def seed(settings: Settings, args: argparse.Namespace) -> int:
             details={"name": SEED_API_KEY_NAME, "device_code": None},
         )
         session.commit()
-    if not args.master_only:
-        _say("Ingesting SRC-05 and running the pipeline are added by FEAT-055 (checkpoint 5).")
+    if not args.master_only and seed_records(settings) != 0:
+        return 1
     _say("Seed test_v0_1 complete.")
     return 0
+
+
+# --- pipeline commands (FEAT-055) --------------------------------------------------------------
+
+SEED_INPUT = TEST_ROSTER_DIR / "EchoWell_pipeline_test_input_v0_1.csv"
+SEED_AS_OF = datetime(2026, 10, 30, 20, 0, tzinfo=UTC)  # 15:00 America/Chicago (DB-058)
+REBUILD_TOKEN = "REBUILD"  # noqa: S105 - a confirmation word, not a secret
+
+
+def _app_factory(settings: Settings) -> Callable[[], Session]:
+    engine = create_engine_for(settings.database_url, app_env=settings.app_env)
+    return lambda: Session(engine)
+
+
+def _scope(value: str) -> Scope:
+    return "all" if value == "all" else [c.strip() for c in value.split(",") if c.strip()]
+
+
+def _finish_run(handle: RunHandle, status: PipelineRunStatus) -> int:
+    _say(f"Pipeline run {handle.id} {status.value}.")
+    return 0 if status == PipelineRunStatus.SUCCEEDED else 1
+
+
+def run_pipeline_command(settings: Settings, args: argparse.Namespace) -> int:
+    """`run-pipeline --scope all|R01,R02 [--profile P] [--as-of ISO]` (trigger manual)."""
+    as_of = datetime.fromisoformat(args.as_of) if args.as_of else None
+    if as_of is not None and as_of.tzinfo is None:
+        raise RefusalError("--as-of needs a time-zone offset")
+    runner = PipelineRunner(_app_factory(settings), settings)
+    handle, status = runner.run(_scope(args.scope), PipelineTrigger.MANUAL, args.profile, as_of,
+                                Actor(ActorType.SYSTEM, getpass.getuser()))  # fmt: skip
+    return _finish_run(handle, status)
+
+
+def rebuild(settings: Settings, args: argparse.Namespace) -> int:
+    """`rebuild --profile P --confirm REBUILD`: the only path that deletes frozen baselines,
+    as `echowell_migrator` (ANL-032, DB-009, DB-016)."""
+    if args.confirm != REBUILD_TOKEN:
+        raise RefusalError(f"type --confirm {REBUILD_TOKEN} to delete and recompute all baselines")
+    with migrator_connection(settings) as connection:
+        factory: Callable[[], Session] = lambda: Session(bind=connection)  # noqa: E731
+        with factory() as session:
+            latest = PipelineRunRepository(session).latest_succeeded(args.profile)
+            old_hash = (latest.config_snapshot or {}).get("config_hash") if latest else None
+        runner = PipelineRunner(factory, settings)
+        operator = Actor(ActorType.SYSTEM, getpass.getuser())
+        handle, status = runner.run("all", PipelineTrigger.MANUAL, args.profile, None, operator,
+                                    rebuild=True)  # fmt: skip
+        with factory() as session, session.begin():
+            record_cli(session, action=AuditAction.PIPELINE_REBUILD, entity_type="pipeline_run",
+                       entity_id=str(handle.id),
+                       details={"profile": args.profile, "old_config_hash": old_hash,
+                                "new_config_hash": handle.config.get("config_hash")})  # fmt: skip
+    return _finish_run(handle, status)
+
+
+def set_config(settings: Settings, args: argparse.Namespace) -> int:
+    """`set-config --profile P --key K --value JSON --reason TEXT` as `echowell_migrator`
+    (FR-229, D-69): validated, audited, never applied to frozen baselines without `rebuild`."""
+    try:
+        value = json.loads(args.value)
+    except ValueError:
+        raise RefusalError("--value must be JSON") from None
+    if not args.reason.strip():
+        raise RefusalError("--reason must not be empty")
+    with migrator_session(settings) as session:
+        repository = ConfigRepository(session)
+        row = repository.get(args.profile, args.key)
+        if row is None:
+            raise RefusalError(f"unknown key {args.key} for profile {args.profile}")
+        values = {**repository.values_for_profile(args.profile), args.key: value}
+        try:
+            if args.key == "feature_name_map":
+                validation.check_name_map(value)
+            elif args.key == "supported_schema_versions":
+                if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                    raise ConfigError("supported_schema_versions: must be a list of strings")
+            else:
+                config_service.pipeline_config(values, args.profile)
+        except (ConfigError, NameMapError) as exc:
+            raise RefusalError(str(exc)) from None
+        old = row.value
+        repository.update_value(args.profile, args.key, value)
+        record_cli(session, action=AuditAction.CONFIG_CHANGED, entity_type="config_parameter",
+                   entity_id=f"{args.profile}.{args.key}",
+                   details={"old": old, "new": value, "reason": args.reason})  # fmt: skip
+        session.commit()
+    _say(f"{args.profile}.{args.key} updated.")
+    if args.key not in OPERATIONAL_KEYS and args.key not in config_service.INGEST_KEYS:
+        _say(f"Algorithm key changed: run python -m backend.cli rebuild --profile {args.profile} "
+             f"--confirm {REBUILD_TOKEN}")  # fmt: skip
+    return 0
+
+
+def seed_records(settings: Settings) -> int:
+    """SRC-05 through the batch-ingest code path as one `seed` batch, then a manual run at the
+    test as-of (DB-058, FEAT-055-FR-06, FR-07)."""
+    factory = _app_factory(settings)
+    runner = PipelineRunner(factory, settings)
+    with factory() as session:
+        service = IngestService(session, settings, runner)
+        records = parse_csv_batch(SEED_INPUT.read_bytes(), name_map(session, settings))
+        caller = Caller(ActorType.SYSTEM, "seed")
+        body, _ = service.ingest_batch(caller, records, IngestSource.SEED,
+                                       filename=SEED_INPUT.name, start_run=False)  # fmt: skip
+    _say(f"Ingested {body['accepted']} records ({body['duplicates']} duplicates).")
+    handle, status = runner.run("all", PipelineTrigger.MANUAL, "test_v0_1", SEED_AS_OF,
+                                Actor(ActorType.SYSTEM, getpass.getuser()))  # fmt: skip
+    return _finish_run(handle, status)
 
 
 # --- argument parsing --------------------------------------------------------------------------
@@ -551,6 +669,9 @@ COMMANDS: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
     "reset-test-db": reset_test_db,
     "resolve-data-alert": resolve_data_alert,
     "export-openapi": export_openapi,
+    "run-pipeline": run_pipeline_command,
+    "rebuild": rebuild,
+    "set-config": set_config,
 }
 
 
@@ -599,6 +720,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reason", required=True)
 
     sub.add_parser("export-openapi", help="print the OpenAPI document (no database connection)")
+
+    p = sub.add_parser("run-pipeline", help="run the pipeline (trigger manual)")
+    p.add_argument("--scope", default="all", help="all, or resident codes separated by commas")
+    p.add_argument("--profile", help="default PIPELINE_PROFILE")
+    p.add_argument("--as-of", help="ISO 8601 with offset (not in production)")
+
+    p = sub.add_parser("rebuild", help="delete and recompute all baselines after a config change")
+    p.add_argument("--profile", required=True)
+    p.add_argument("--confirm", required=True, help=f"the word {REBUILD_TOKEN}")
+
+    p = sub.add_parser("set-config", help="change one config_parameters value")
+    p.add_argument("--profile", required=True)
+    p.add_argument("--key", required=True)
+    p.add_argument("--value", required=True, help="JSON value")
+    p.add_argument("--reason", required=True)
     return parser
 
 

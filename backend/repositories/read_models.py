@@ -865,3 +865,12 @@ def usable_since(
     if since is not None:
         query = query.where(ProcessedSession.local_date >= since)
     return list(session.scalars(query.order_by(ProcessedSession.timestamp_utc)).all())
+
+
+def open_alerts_in(session: Session, start: date, end: date) -> int:
+    """Alarms first raised in the period that nobody has reviewed yet (`open`, ANL-065)."""
+    return int(session.scalar(
+        select(func.count()).select_from(Alert).where(
+            Alert.status == AlertStatus.OPEN, Alert.local_date >= start, Alert.local_date <= end,
+        )
+    ) or 0)  # fmt: skip

@@ -239,6 +239,7 @@ class PipelineRunner:
         run = PipelineRunRepository(session).insert_running(
             trigger=trigger, scope=scope_value(scope), config_profile=profile,
             config_snapshot=snapshot, code_version=self.settings.git_sha, as_of=resolved,
+            started_at=self.clock(),
         )  # fmt: skip
         audit_service.record(
             session, action=AuditAction.PIPELINE_RUN_STARTED, actor_type=actor.type,

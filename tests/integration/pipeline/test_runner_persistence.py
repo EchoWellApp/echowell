@@ -219,3 +219,42 @@ def test_runner_never_reads_the_answer_key() -> None:
         "backend/services/pipeline_persistence.py",
     ):
         assert "evaluation_ground_truth" not in (root / module).read_text(encoding="utf-8")
+
+
+@pytest.mark.req("FEAT-051-AC-05", "FEAT-051-FR-11", "FEAT-051-FR-12", "FEAT-051-FR-13",
+                 "API-087", "D-79")  # fmt: skip
+def test_analytics_endpoint_after_the_run(
+    api: TestClient, uploaded: Session, runner: PipelineRunner, principals: Principals
+) -> None:
+    _run(runner)
+    body = api.get("/api/v1/analytics", headers=principals.bearer("researcher")).json()
+    k = body["kpis"]
+    assert k["checkins_received"] == {"count": 281, "expected": 300, "percent": 94}
+    assert k["used_for_scoring"] == {"count": 267, "expected": 300, "percent": 89}
+    assert k["baselines_formed"] == {
+        "formed": 9, "residents": 10, "forming_resident_codes": ["R08"],
+        "restarts": [{"resident_code": "R07", "restart_count": 1}],
+    }  # fmt: skip
+    assert k["alarms_raised"] == {"count": 2, "resident_codes": ["R09", "R10"],
+                                  "not_reviewed_count": 2}  # fmt: skip
+    f = body["funnel"]
+    assert (f["expected"], f["received"], f["passed_quality"], f["used"]) == (300, 281, 269, 267)
+    assert (f["missed"], f["duplicates_removed"], f["set_aside_multi_reason"]) == (19, 2, 1)
+    oct12 = next(d for d in body["daily_series"] if d["local_date"] == "2026-10-12")
+    assert (oct12["used"], oct12["missed"], oct12["silent_device_codes"]) == (8, 2, ["D02"])
+    assert [r["used_percent"] for r in body["by_resident"]][:4] == [43, 73, 80, 93]
+
+
+@pytest.mark.req("FEAT-048-FR-07", "CUS-041", "API-080")
+def test_alerts_endpoint_leaning_most(
+    api: TestClient, uploaded: Session, runner: PipelineRunner, principals: Principals
+) -> None:
+    _run(runner)
+    items = api.get("/api/v1/alerts", headers=principals.bearer("clinician")).json()["items"]
+    leaning = {a["resident_code"]: a["leaning_most"] for a in items}
+    assert leaning == {
+        "R09": ["number_of_pauses", "loudness_dbfs", "voiced_fraction"],
+        "R10": ["number_of_pauses", "articulation_rate_syl_per_s", "speech_rate_syl_per_s"],
+    }
+    tallies = {a["resident_code"]: round(a["current_tally"], 1) for a in items}
+    assert tallies == {"R09": 26.8, "R10": 13.4}

@@ -14,22 +14,29 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from analytics.alert_generator import leaning_most as engine_leaning_most
+from analytics.config import AlertEvent
 from backend.core.errors import AlertClosedError, AlertNotFoundError
 from backend.models import ActorType, Alert, AlertStatus, User
 from backend.repositories.alert_repository import AlertFacts, AlertRepository
 from backend.repositories.config_repository import ConfigRepository
 from backend.repositories.resident_repository import ResidentRepository
-from backend.services import audit_service
+from backend.services import audit_service, engine_read
 from backend.services.audit_service import AuditAction
 from backend.services.resident_service import ReadContext
 
 
-def leaning_most(session: Session, alert: Alert) -> list[str]:
-    """The up-to-3 features leaning most in the alarm direction (CUS-041).
-
-    FEAT-048 replaces this provider; until then it yields an empty list (TRD 24 D-92).
-    """
-    return []
+def leaning_most(session: Session, ctx: ReadContext, facts: AlertFacts) -> list[str]:
+    """The up-to-3 features leaning most in the alarm direction, by the engine's pure
+    `leaning_most` on the stored scores of the alert's epoch (CUS-041, FEAT-048-FR-07, D-79)."""
+    alert = facts.alert
+    event = AlertEvent(
+        facts.resident_code, facts.epoch_number, alert.session_id, alert.triggered_at,
+        alert.local_date, alert.cusum_value, False, None,
+    )  # fmt: skip
+    stored = engine_read.epoch_scores(session, alert, facts.resident_code, facts.epoch_number)
+    scores = [s for s in stored if s.local_date <= ctx.as_of_date]
+    return list(engine_leaning_most(scores, event, ctx.pipeline_config))
 
 
 def alert_dto(session: Session, ctx: ReadContext, facts: AlertFacts) -> dict[str, Any]:
@@ -52,7 +59,7 @@ def alert_dto(session: Session, ctx: ReadContext, facts: AlertFacts) -> dict[str
         "last_reviewed_at": facts.last_reviewed_at,
         "snoozed_until": alert.snoozed_until,
         "snoozed_by": alert.snoozed_by,
-        "leaning_most": leaning_most(session, alert),
+        "leaning_most": leaning_most(session, ctx, facts),
         "closed_reason": alert.closed_reason,
     }
 
