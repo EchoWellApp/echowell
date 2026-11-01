@@ -6,8 +6,8 @@ through a second engine on DATABASE_READONLY_URL (login role `echowell_readonly`
 read-only transactions, no `SET ROLE`). The pipeline never reads the answer key (TST-068). Under
 profile `production` that engine is never created and `review_outcomes` replaces `alarm_timing`.
 
-The `kpis`, `daily_series`, `funnel` and `by_resident` blocks come from `aggregate_blocks`, the
-FEAT-051 seam; until FEAT-051 it returns empty blocks (TRD 24 D-92).
+The `kpis`, `daily_series`, `funnel` and `by_resident` blocks are the engine's
+`build_analytics_summary` on the stored rows of the latest runs (FEAT-051, TRD 24 D-79).
 """
 
 from __future__ import annotations
@@ -15,18 +15,20 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import asdict
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from analytics.aggregates import build_analytics_summary
 from backend.core import db
 from backend.core.config import Settings
 from backend.models import EvaluationGroundTruth
 from backend.repositories import read_models as rm
 from backend.repositories.pipeline_run_repository import PipelineRunRepository
 from backend.repositories.resident_repository import ResidentRepository
+from backend.services import engine_read
 from backend.services.pipeline_service import run_dto
 from backend.services.resident_service import ReadContext, natural_key
 
@@ -82,26 +84,51 @@ def _timing(onset: date | None, rang: date | None) -> dict[str, Any]:
 
 
 def aggregate_blocks(session: Session, ctx: ReadContext, start: date, end: date) -> dict[str, Any]:
-    """`kpis`, `daily_series`, `funnel`, `by_resident`: the FEAT-051 seam (D-92), empty until
-    FEAT-051 replaces this function."""
-    zero = {"count": 0, "expected": 0, "percent": 0}
+    """`kpis`, `daily_series`, `funnel`, `by_resident` from `build_analytics_summary` on the
+    stored rows (FEAT-051, D-79), mapped to the TRD 19 E-18 names (FEAT-051-FR-12)."""
+    stored = engine_read.stored_result(session, (start, end))
+    as_of = ctx.meta.as_of or datetime.combine(end, time(12), tzinfo=ctx.tz)
+    summary = build_analytics_summary(stored.sessions, stored.ledger, stored.epochs, stored.alerts,
+                                      stored.data_alerts, stored.residents, ctx.pipeline_config,
+                                      as_of)  # fmt: skip
+    k = summary.kpis
+    alarms = k["alarms_raised"]
+    not_reviewed = rm.open_alerts_in(session, start, end) if alarms["value"] else 0
+    funnel = {step["step"]: step for step in summary.funnel}
     return {
         "kpis": {
-            "checkins_received": zero, "used_for_scoring": zero,
-            "baselines_formed": {"formed": 0, "residents": 0, "forming_resident_codes": [],
-                                 "restarts": []},
-            "alarms_raised": {"count": 0, "resident_codes": [], "not_reviewed_count": 0},
+            "checkins_received": _count(k["checkins_received"]),
+            "used_for_scoring": _count(k["used_for_scoring"]),
+            "baselines_formed": {
+                "formed": k["baselines_formed"]["value"],
+                "residents": k["baselines_formed"]["total"],
+                "forming_resident_codes": k["baselines_formed"]["forming"],
+                "restarts": [{"resident_code": c, "restart_count": n}
+                             for c, n in k["baselines_formed"]["restarts"].items()],
+            },
+            "alarms_raised": {"count": alarms["value"], "resident_codes": alarms["residents"],
+                              "not_reviewed_count": not_reviewed},
         },
-        "daily_series": [],
+        "daily_series": list(summary.daily_series),
         "funnel": {
-            "expected": 0, "residents": 0, "days": 0, "received": 0, "missed": 0,
-            "duplicates_removed": 0, "passed_quality": 0, "set_aside": 0,
-            "set_aside_reasons": {"quality_flag_poor": 0, "noise_above_limit": 0,
-                                  "speech_too_short": 0},
-            "set_aside_multi_reason": 0, "quarantined": 0, "used": 0,
+            "expected": funnel["expected"]["value"], "residents": funnel["expected"]["residents"],
+            "days": funnel["expected"]["days"], "received": funnel["received"]["value"],
+            "missed": funnel["received"]["missed"],
+            "duplicates_removed": funnel["received"]["duplicates_removed"],
+            "passed_quality": funnel["passed_quality"]["value"],
+            "set_aside": funnel["passed_quality"]["set_aside"],
+            "set_aside_reasons": funnel["passed_quality"]["set_aside_reasons"],
+            "set_aside_multi_reason": funnel["passed_quality"]["set_aside_multi_reason"],
+            "quarantined": funnel["used"]["quarantined"], "used": funnel["used"]["value"],
         },
-        "by_resident": [],
+        "by_resident": [{**row, "used_percent": row["used_percent"] or 0}
+                        for row in summary.by_resident],
     }  # fmt: skip
+
+
+def _count(block: dict[str, Any]) -> dict[str, int]:
+    return {"count": block["value"], "expected": block["expected"],
+            "percent": block["percent"] or 0}  # fmt: skip
 
 
 def _alarm_timing_block(

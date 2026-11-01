@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -719,6 +719,7 @@ CREATE TABLE data_alerts (
   alert_review_id    uuid              NULL REFERENCES alert_reviews (id) ON DELETE RESTRICT,
   title              text              NOT NULL,
   detail             text              NOT NULL DEFAULT '',
+  days               date[]            NOT NULL DEFAULT '{}',   -- added by migration 0004 (§4.14)
   first_detected_at  timestamptz       NOT NULL,
   last_detected_at   timestamptz       NOT NULL,
   status             data_alert_status NOT NULL DEFAULT 'open',
@@ -945,6 +946,8 @@ GRANT SELECT, INSERT, UPDATE ON facilities, residents, devices, device_assignmen
 GRANT SELECT, INSERT, UPDATE, DELETE ON epochs, processed_sessions, day_ledger, scores, cusum_state,
   facility_reference_ranges TO echowell_app;
 GRANT USAGE, SELECT ON SEQUENCE raw_sessions_arrival_seq_seq, audit_logs_id_seq TO echowell_app;
+-- echowell_app: read the applied migration revision (nightly schema check, DEP-048; migration 0004, §4.14)
+GRANT SELECT ON alembic_version TO echowell_app;
 -- echowell_app: NO privilege on evaluation_ground_truth (the pipeline never reads the answer key, SRC-02; contract R20)
 
 -- echowell_readonly: everything except credential columns (incl. evaluation_ground_truth, which holds rows only in test_v0_1)
@@ -966,6 +969,7 @@ Privilege matrix (summary of the grants above):
 | users, api_keys | SELECT, INSERT, UPDATE | SELECT on non-credential columns only | owner |
 | epochs, processed_sessions, day_ledger, scores, cusum_state, facility_reference_ranges | SELECT, INSERT, UPDATE, DELETE | SELECT | owner |
 | evaluation_ground_truth | none (read only through `DATABASE_READONLY_URL`, PGS-040) | SELECT | owner |
+| alembic_version | SELECT (migration 0004, for the nightly schema check) | none | owner |
 
 ### 4.9 Naming conventions
 
@@ -1166,6 +1170,18 @@ ALTER TABLE ingest_batches
 CREATE INDEX ingest_batches_pipeline_run_idx ON ingest_batches (pipeline_run_id);
 ```
 
+### 4.14 Migration 0004: schema-check grant and data-alert days
+
+Checkpoint 5 review (GitHub PR #20 Q-1 and Q-3; TRD 24 D-129, D-130):
+
+- `echowell_app` may read `alembic_version`, so the nightly job compares the applied revision with the one bundled in its image and exits non-zero on a difference or when the revision cannot be read (TRD 15 DEP-048). The revision identifier is operational metadata, not study data.
+- `data_alerts.days` holds the facility-local days an alert is about: the silent days of `device_silent`, the dates of the quarantined check-ins of `possible_other_speaker` and of the set-aside check-ins of `high_set_aside`; it is empty for `baseline_stalled` and `review_flagged_data_problem`. The detail text is written from these dates; readers use the column and never parse the text.
+
+```sql
+GRANT SELECT ON alembic_version TO echowell_app;
+ALTER TABLE data_alerts ADD COLUMN days date[] NOT NULL DEFAULT '{}';
+```
+
 ## 5. Assumptions
 
 - ASM-01 Facility time zone America/Chicago (default of `facilities.timezone` and `config_parameters.facility_tz`).
@@ -1259,3 +1275,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (PGS-027 non-local (D-88)) | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): references only (SRC-18/19 superseded, alarm timing check on the Study team page); no table, enum, index or constraint change (the D-114 fields `needs_attention`, `attention_reasons`, `alarm_reviewed`, `checkins_started` and `uploaded_on_as_of_date` are derived on read) | — |
 | 0.10 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.13 migration 0003 adds `ingest_batches.pipeline_run_id` (nullable FK to `pipeline_runs`, index `ingest_batches_pipeline_run_idx`); §4.10 row updated | — |
+| 0.11 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-1, Q-3; TRD 24 D-129, D-130): §4.14 migration 0004 grants `echowell_app` SELECT on `alembic_version` and adds `data_alerts.days`; §4.6.19 and §4.8 updated | — |

@@ -82,7 +82,7 @@ def test_src05_upload(api: TestClient, roster: Session, principals: Principals) 
     assert str(batch.pipeline_run_id) == body["pipeline_run_id"]  # D-124
     runs = roster.execute(text("SELECT id, trigger, status FROM pipeline_runs")).all()
     assert [(str(r.id), r.trigger, r.status) for r in runs] == [
-        (body["pipeline_run_id"], "ingest", "failed")  # executed in the background (interim)
+        (body["pipeline_run_id"], "ingest", "succeeded")  # executed in the background
     ]
     payload = roster.execute(
         text("SELECT payload FROM raw_sessions ORDER BY arrival_seq LIMIT 1")

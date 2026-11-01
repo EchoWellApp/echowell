@@ -192,7 +192,7 @@ def test_pipeline_runs(world: World) -> None:
     with pytest.raises(ValueError, match="does not match any of the expected tags"):
         repo.insert_running(
             trigger=PipelineTrigger.TEST, scope={"type": "some"}, config_profile="test_v0_1",
-            config_snapshot={}, code_version="t", as_of=T0,
+            config_snapshot={}, code_version="t", as_of=T0, started_at=T0,
         )  # fmt: skip
 
 
@@ -331,7 +331,7 @@ def test_reference_ranges_latest_per_feature_and_sex(world: World) -> None:
     assert facility is not None
     later = PipelineRunRepository(world.session).insert_running(
         trigger=PipelineTrigger.TEST, scope={"type": "all"}, config_profile="test_v0_1",
-        config_snapshot={}, code_version="t", as_of=T0,
+        config_snapshot={}, code_version="t", as_of=T0, started_at=T0,
     )  # fmt: skip
     insert = text(
         "INSERT INTO facility_reference_ranges (facility_id, feature_key, sex, low, high, method, "
