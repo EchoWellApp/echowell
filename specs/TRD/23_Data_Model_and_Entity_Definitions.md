@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -257,7 +257,7 @@ One execution of the pipeline. Read by `/api/v1/pipeline/runs/{id}`, `/api/v1/an
 | `config_snapshot` | jsonb | no | All 23 config_parameters keys and values of the profile used, plus `config_hash` (algorithm keys only, TRD 07 ANL-030) and `as_of`, as one JSON object | Pipeline service |
 | `code_version` | text | no | Git SHA (GIT_SHA) or `unknown` when unset (TRD 21) | Pipeline service |
 | `as_of` | timestamptz | no | Instant up to which the day ledger runs: explicit `as_of` of POST /pipeline/run → PIPELINE_AS_OF (not in production) → now() (contract R21); test 2026-10-30T20:00:00Z | Pipeline service |
-| `started_at` | timestamptz | no | Start instant | Pipeline service |
+| `started_at` | timestamptz | no | Start instant, from the application clock (one reading per run start, like `finished_at`), never the database's `now()` (TRD 24 D-131) | Pipeline service |
 | `finished_at` | timestamptz | yes | End instant; NULL while running | Pipeline service |
 | `status` | pipeline_run_status | no | `running`, `succeeded`, `failed` | Pipeline service |
 | `counts` | jsonb | no | JSON object with exactly the keys arrivals, usable, set_aside, quarantined, duplicate, missing_resident, missing_device_gap, late_arrival, scored, alerts_opened, excluded_after_as_of, residents (+ db_size_bytes on nightly runs); this list is the single definition (TRD 06 DB-020, TRD 07 `PipelineResult.counts`, TRD 17 LOG-065, TRD 19 `PipelineRun`) | Pipeline service |
@@ -422,6 +422,7 @@ Data-quality alert for the study team (not a health alarm), listed on the Study 
 | `alert_review_id` | uuid | yes | Review with outcome data_problem that raised it (review_flagged_data_problem only) | Review service |
 | `title` | text | no | Title (accessible name of the code link on the Study team page), e.g. `R08 · baseline stuck at 13 of 16`, `D02 · device silent all day` (≤ 200 chars) | Same |
 | `detail` | text | no | Row text after "<code>: " (v0.2 wording, TRD 09 §4.9, TRD 24 D-114), e.g. `baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.`, `silent all day Oct 12. Affected R02 and R03.` (≤ 500 chars) | Same |
+| `days` | date[] | no | Facility-local days the alert is about: silent days (device_silent), dates of the quarantined (possible_other_speaker) or set-aside (high_set_aside) check-ins; empty for baseline_stalled and review_flagged_data_problem. The detail text is written from it, never parsed (migration 0004, TRD 24 D-130) | Data-alert rules |
 | `first_detected_at` | timestamptz | no | as_of of the run that first detected it (review time for review-flagged) | Same |
 | `last_detected_at` | timestamptz | no | as_of of the latest run that detected it | Same |
 | `status` | data_alert_status | no | `open` or `resolved` | Same |
@@ -960,3 +961,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.10 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; §4.4.3 keeps the pipeline `status` and adds the derived `needs_attention`, `attention_reasons`, `alarm_reviewed`, `restart_cause` and the detail `window` with the four display statuses (D-109); §4.4.4 adds the `checkins_started` event and the same-date order; §4.4.2 adds upload on the as-of date; §4.3.7 and `data_alerts.detail` use the v0.2 detail texts; entity read-by notes, DME-011, DME-012, DME-024 and AC-DME-05, -08, -09 follow the v0.2 pages | — |
 | 0.11 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115); last check-in example with "CT" (D-119) | — |
 | 0.12 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.2.7 `ingest_batches.pipeline_run_id` | — |
+| 0.13 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20; TRD 24 D-130, D-131): §4.2.19 `data_alerts.days`; `pipeline_runs.started_at` from the application clock | — |

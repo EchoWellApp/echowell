@@ -1,6 +1,6 @@
 # EchoWell Database ERD and Data Ownership
 
-Document: docs/design/Database_ERD.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Version 0.3 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2), 29 October 2026 (checkpoint 4 review)
+Document: docs/design/Database_ERD.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Version 0.4 · Revised: 23 October 2026 (review round 1), 26 October 2026 (wireframe v0.2), 29 October 2026 (checkpoint 4 review)
 
 ## 1. Purpose and sources
 
@@ -252,6 +252,7 @@ erDiagram
     text title
     text detail
     data_alert_status status
+    date_array days "device_silent days, quarantined or set-aside dates (migration 0004)"
     timestamptz first_detected_at
     timestamptz last_detected_at
     uuid pipeline_run_id FK
@@ -549,3 +550,4 @@ Every index of TRD 20 §4.7 is created with its exact name (PGS-038); new indexe
 |---|---|---|---|
 | 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §9 query list renamed for the Resident list, Resident chart and Study team and extended with the attention-flag, `checkins_started` and `uploaded_on_as_of_date` reads on existing indexes; no table, enum or index change (TRD 06 v0.11, TRD 20 v0.9) | — |
 | 0.3 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): `ingest_batches.pipeline_run_id` (migration 0003, TRD 20 §4.13) and its relationship to `pipeline_runs` | — |
+| 0.4 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20, TRD 24 D-130): `data_alerts.days` (migration 0004, TRD 20 §4.14) | — |

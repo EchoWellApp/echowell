@@ -388,6 +388,7 @@ CREATE TABLE public.data_alerts (
     pipeline_run_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    days date[] DEFAULT '{}'::date[] NOT NULL,
     CONSTRAINT data_alerts_detected_ck CHECK ((last_detected_at >= first_detected_at)),
     CONSTRAINT data_alerts_resolved_ck CHECK (((status = 'resolved'::public.data_alert_status) = (resolved_at IS NOT NULL))),
     CONSTRAINT data_alerts_run_ck CHECK (((kind = 'review_flagged_data_problem'::public.data_alert_kind) = (pipeline_run_id IS NULL))),
@@ -1925,6 +1926,12 @@ ALTER TABLE ONLY public.staff_notes
 REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO echowell_app;
 GRANT USAGE ON SCHEMA public TO echowell_readonly;
+
+--
+-- Name: TABLE alembic_version; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.alembic_version TO echowell_app;
 
 --
 -- Name: TABLE alert_reviews; Type: ACL; Schema: public; Owner: -

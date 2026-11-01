@@ -86,7 +86,9 @@ def test_alert_list(api: TestClient, scene: World, principals: Principals) -> No
         "device_code": "D01", "epoch_number": 1, "session_id": "R01-20261020-01",
         "cusum_value": 5.4, "current_tally": 7.5, "open_days": 10, "status": "open",
         "reviewed": False, "review_count": 0, "last_reviewed_at": None, "snoozed_until": None,
-        "snoozed_by": None, "leaning_most": [], "closed_reason": None,
+        "snoozed_by": None, "closed_reason": None,
+        # all z = 0.5 in the fixture: the three up-signed features tie in canonical order (CUS-041)
+        "leaning_most": ["total_phrase_duration_s", "number_of_pauses", "pause_fraction"],
     }  # fmt: skip
     assert body["items"][1]["current_tally"] is None  # R02 has no cusum_state row
     assert api.get(ALERTS, params={"status": "open"},

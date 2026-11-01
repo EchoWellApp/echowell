@@ -50,6 +50,7 @@ def _running(session: Session, *, scope: dict[str, Any], minutes_ago: int = 0) -
     run = PipelineRunRepository(session).insert_running(
         trigger=PipelineTrigger.MANUAL, scope=scope, config_profile="test_v0_1",
         config_snapshot={}, code_version="test", as_of=datetime.now(UTC),
+        started_at=datetime.now(UTC),
     )  # fmt: skip
     session.execute(
         text("UPDATE pipeline_runs SET started_at = now() - make_interval(mins => :m) "
@@ -115,7 +116,7 @@ def test_admin_starts_a_manual_run(
         text("SELECT trigger, status, error_message FROM pipeline_runs WHERE id = :i"),
         {"i": run_id},
     ).one()
-    assert tuple(run) == ("manual", "failed", "pipeline not available until Phase 6")
+    assert tuple(run) == ("manual", "succeeded", None)
     actions = roster.execute(
         text("SELECT action, actor_type FROM audit_logs WHERE entity_id = :i ORDER BY id"),
         {"i": run_id},

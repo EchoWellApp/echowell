@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -217,7 +217,7 @@ stateDiagram-v2
 | LOG-064 | Non-fatal conditions shall be recorded in `pipeline_runs.warnings` without failing the run, each as `{"code": ..., "resident_code": ..., "session_id": ..., "detail": ...}`, with codes at least `late_arrival` (ASM-07), `config_mismatch`, and `no_device_assignment`. | Must | ASM-07, OQ-10 | Test |
 | LOG-065 | On success the run row shall be updated to status `succeeded` with `finished_at` and `counts` with the keys of TRD 23 §4.2.10 `pipeline_runs.counts` and one INFO `pipeline_run_succeeded` log with the same counts and `duration_ms`. | Must | contract §9, BR-15 | Test |
 | LOG-066 | A `pipeline_runs` row left in status `running` for more than 30 minutes (process crash) shall be marked `failed` with warning code `run_abandoned` by the next run or at startup (TRD 05 API-068 is the owning row). | Must | — | Test |
-| LOG-067 | A failed run shall never be retried automatically more than once; the single retry shall occur at the next ingest or nightly trigger, and repeated failure shall be visible on the admin page (`/admin`, pipeline runs list). | Should | TRD 04 | Test |
+| LOG-067 | A failed run shall not be retried in place. The next ingest-triggered or nightly run is a new run that recomputes from `raw_sessions`, so a transient failure is repaired at the next trigger without a separate retry; every failed run keeps its own `pipeline_runs` row and `pipeline_run_failed` event, so repeated failure is visible on the admin page (`/admin`, pipeline runs list) (TRD 24 D-132). | Should | TRD 04 | Test |
 
 #### 4.6.3 API layer
 
@@ -367,3 +367,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.9 | 19 Oct 2026 | Phase 1 round-8 minor fixes (R8-01) | — |
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (LOG-080 error boundary path; LOG-063 stage names and AC-LOG-05 (D-80)) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §2 note, LOG-083, §4.9 data-alert row and LOG-113 name the v0.2 places (Resident chart, Study team `/study`; Alert review page retired) | — |
+| 0.12 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-5, TRD 24 D-132): LOG-067 describes the implemented behaviour (no in-place retry; the next trigger starts a new run; every failure stays visible) | — |
