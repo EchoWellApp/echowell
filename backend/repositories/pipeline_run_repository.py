@@ -37,6 +37,7 @@ class PipelineRunRepository:
         config_snapshot: dict[str, Any],
         code_version: str,
         as_of: datetime,
+        started_at: datetime,
     ) -> PipelineRun:
         run = PipelineRun(
             trigger=trigger,
@@ -46,6 +47,7 @@ class PipelineRunRepository:
             code_version=code_version,
             as_of=as_of,
         )
+        run.started_at = started_at  # always the application clock, never now() (D-131)
         self.session.add(run)
         self.session.flush()
         return run

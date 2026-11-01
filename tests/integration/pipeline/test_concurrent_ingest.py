@@ -60,7 +60,7 @@ def test_concurrent_posts_of_one_session_id(fresh_db: PgUrls) -> None:
     first = next(r for r in results if r["status"] == 201)
     duplicate = next(r for r in results if r["status"] == 200)
     assert duplicate["status_after_processing"] == "duplicate"
-    assert first["status_after_processing"] == "pending"  # interim executor until FEAT-053
+    assert first["status_after_processing"] == "usable"  # processed by the synchronous run
     assert first["arrival_seq"] < duplicate["arrival_seq"]
     with create_engine(fresh_db.app, poolclass=NullPool).connect() as conn:
         rows = conn.execute(text("SELECT arrival_seq FROM raw_sessions ORDER BY arrival_seq")).all()

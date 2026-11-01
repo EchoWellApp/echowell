@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -191,8 +191,7 @@ Response 200 (same body posted again):
 Response 201 for SRC-05 row R03-20261018-01 (`audio_quality_flag` poor, noise −30.0):
 
 ```json
-{"raw_session_id": "...", "arrival_seq": 78, "session_id": "R03-20261018-01", "status_after_processing": "set_aside",
- "reasons": ["quality flag poor", "noise above limit"], "pipeline_run_id": "..."}
+{"raw_session_id": "5a4b3c2d-1e0f-4a9b-8c7d-6e5f4a3b2c1d", "arrival_seq": 78, "session_id": "R03-20261018-01", "status_after_processing": "set_aside", "reasons": ["quality flag poor", "noise above limit"], "pipeline_run_id": "c2a1b0f9-8e7d-4c6b-a5f4-e3d2c1b0a998"}
 ```
 
 Response 422 (unknown resident):
@@ -345,21 +344,19 @@ as for the `baseline_restarted` event, TRD 06 DB-065); R08 has `needs_attention`
 - 200 `CheckinEventList` (newest first; events on the same local date in the order `alarm_on`, `watching_started`, `baseline_complete`, `baseline_restarted`, `quarantined`, `set_aside`, `device_silent`, `missed`, `checkins_started`, TRD 11 UX-141). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
-          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
-  {"local_date": "2026-10-21", "event_type": "alarm_on", "epoch_number": 1, "session_id": "R09-20261021-01",
-   "detail": "tally crossed 5.0", "cusum_tally": 5.431965},
-  {"local_date": "2026-10-17", "event_type": "watching_started", "epoch_number": 1, "session_id": "R09-20261017-01",
-   "detail": null, "cusum_tally": null},
-  {"local_date": "2026-10-16", "event_type": "baseline_complete", "epoch_number": 1, "session_id": "R09-20261016-01",
-   "detail": "16 of 16", "cusum_tally": null}
- ], "total": 4, "limit": 50, "offset": 0}
+  {"local_date": "2026-10-21", "event_type": "alarm_on", "epoch_number": 1, "session_id": "R09-20261021-01", "detail": "tally crossed 5.0", "cusum_tally": 5.431965, "device_code": null, "restart_cause": null, "previous_device_code": null, "from_value": null, "to_value": null},
+  {"local_date": "2026-10-17", "event_type": "watching_started", "epoch_number": 1, "session_id": "R09-20261017-01", "detail": null, "cusum_tally": null, "device_code": null, "restart_cause": null, "previous_device_code": null, "from_value": null, "to_value": null},
+  {"local_date": "2026-10-16", "event_type": "baseline_complete", "epoch_number": 1, "session_id": "R09-20261016-01", "detail": "16 of 16", "cusum_tally": null, "device_code": null, "restart_cause": null, "previous_device_code": null, "from_value": null, "to_value": null}
+ ],
+ "total": 4,
+ "limit": 50,
+ "offset": 0}
 ```
 
-(The first three items are shown; the fourth and oldest is R09's `checkins_started` event on 2026-10-01. The restart
-fields and `device_code`, null on these events, are omitted for brevity; in responses every `CheckinEvent` property is
-present, OAS-012.)
+(The first three items are shown; the fourth and oldest is R09's `checkins_started` event on 2026-10-01. Every
+`CheckinEvent` property is present, null where it does not apply, OAS-012.)
 
 Other event examples: R03 2026-10-18 `set_aside` detail "quality flag poor; noise above limit"; R05 2026-10-08
 `quarantined` detail "possible other speaker (F0 z=-8.61; composite features with |z|>=3: 4)"; R02 2026-10-04
@@ -383,26 +380,23 @@ is D07B (TRD 11 §4.5.6).
 - 200 `FeaturesResponse`. Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
-          "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
- "resident_code": "R09", "epoch_number": 1,
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+ "resident_code": "R09",
+ "epoch_number": 1,
  "scored_features": [
-  {"feature_key": "loudness_dbfs", "label": "Quieter (loudness)", "unit": "dBFS", "composite_sign": -1,
-   "baseline_median": -22.405, "baseline_robust_spread": 2.14977,
-   "points": [
-     {"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": -21.21,
-      "adjusted_value": -21.21, "z": null, "in_baseline": true},
-     {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": -30.03,
-      "adjusted_value": -30.03, "z": -3.546891, "in_baseline": false},
-     {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": -28.29,
-      "adjusted_value": -28.29, "z": -2.737502, "in_baseline": false}
-   ]}
+  {"feature_key": "loudness_dbfs", "label": "Quieter (loudness)", "unit": "dBFS", "composite_sign": -1, "baseline_median": -22.405, "baseline_robust_spread": 2.14977, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": -21.21, "adjusted_value": -21.21, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": -30.03, "adjusted_value": -30.03, "z": -3.546891, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": -28.29, "adjusted_value": -28.29, "z": -2.737502, "in_baseline": false}]},
+  {"feature_key": "total_phrase_duration_s", "label": "Slower to say the phrase (phrase duration)", "unit": "s", "composite_sign": 1, "baseline_median": 2.415, "baseline_robust_spread": 0.126021, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 2.43, "adjusted_value": 2.43, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 2.71, "adjusted_value": 2.71, "z": 2.34088, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 2.72, "adjusted_value": 2.72, "z": 2.420232, "in_baseline": false}]},
+  {"feature_key": "speech_rate_syl_per_s", "label": "Fewer syllables per second (speech rate)", "unit": "syllables/s", "composite_sign": -1, "baseline_median": 3.69, "baseline_robust_spread": 0.177912, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 3.82, "adjusted_value": 3.82, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 3.63, "adjusted_value": 3.63, "z": -0.337245, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 3.48, "adjusted_value": 3.48, "z": -1.180359, "in_baseline": false}]},
+  {"feature_key": "articulation_rate_syl_per_s", "label": "Slower while talking (articulation rate)", "unit": "syllables/s", "composite_sign": -1, "baseline_median": 5.435, "baseline_robust_spread": 0.318759, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 5.59, "adjusted_value": 5.59, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 4.84, "adjusted_value": 4.84, "z": -1.866614, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 4.93, "adjusted_value": 4.93, "z": -1.584269, "in_baseline": false}]},
+  {"feature_key": "number_of_pauses", "label": "More pauses (number of pauses)", "unit": "count", "composite_sign": 1, "baseline_median": 1.0, "baseline_robust_spread": 0.7413, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 0.0, "adjusted_value": 0.0, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 3.0, "adjusted_value": 3.0, "z": 2.697963, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 2.0, "adjusted_value": 2.0, "z": 1.348982, "in_baseline": false}]},
+  {"feature_key": "pause_fraction", "label": "More time in pauses (pause fraction)", "unit": "proportion", "composite_sign": 1, "baseline_median": 0.138, "baseline_robust_spread": 0.026687, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 0.115, "adjusted_value": 0.115, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 0.163, "adjusted_value": 0.163, "z": 0.936793, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 0.199, "adjusted_value": 0.199, "z": 2.285774, "in_baseline": false}]},
+  {"feature_key": "voiced_fraction", "label": "Less voiced sound (voiced fraction)", "unit": "proportion", "composite_sign": -1, "baseline_median": 0.6675, "baseline_robust_spread": 0.031876, "points": [{"session_id": "R09-20261016-01", "local_date": "2026-10-16", "is_morning": false, "raw_value": 0.711, "adjusted_value": 0.711, "z": null, "in_baseline": true}, {"session_id": "R09-20261017-01", "local_date": "2026-10-17", "is_morning": false, "raw_value": 0.587, "adjusted_value": 0.587, "z": -2.525419, "in_baseline": false}, {"session_id": "R09-20261021-01", "local_date": "2026-10-21", "is_morning": false, "raw_value": 0.517, "adjusted_value": 0.517, "z": -4.721435, "in_baseline": false}]}
  ],
- "stored_feature_keys": ["mean_f0_hz", "f0_variability_st", "jitter_local_pct", "shimmer_local_pct", "hnr_db",
-   "cpps_db", "alpha_ratio_db", "hammarberg_index_db", "mfcc1", "mfcc2", "mfcc3", "mfcc4"]}
+ "stored_feature_keys": ["mean_f0_hz", "f0_variability_st", "jitter_local_pct", "shimmer_local_pct", "hnr_db", "cpps_db", "alpha_ratio_db", "hammarberg_index_db", "mfcc1", "mfcc2", "mfcc3", "mfcc4"]}
 ```
 
-(`scored_features` always has 7 entries in contract §6 order; abbreviated here.)
+(`scored_features` always has 7 entries in contract §6 order; the points are abbreviated to three sessions, with the
+values the engine computes on SRC-05.)
 
 #### E-12 GET /api/v1/scores
 - Auth: bearer (A, C, Rs). Query `resident_code` (optional), `epoch` (integer ≥ 1, requires `resident_code`),
@@ -660,15 +654,14 @@ In production `alarm_timing` is null and `review_outcomes` is
 - 200 `BaselineRowList`, or `text/csv` with `Accept: text/csv`. Test data total = 180.
 
 ```json
-{"meta": {"...": "as above"},
+{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
-  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "loudness_dbfs", "n_sessions": 16,
-   "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
-   "median": -22.405, "mad": 1.45, "robust_spread": 2.14977, "floor_applied": false},
-  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "composite", "n_sessions": 16,
-   "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01",
-   "median": 0.038219, "mad": 0.359758, "robust_spread": 0.533378, "floor_applied": false}
- ], "total": 20, "limit": 50, "offset": 0}
+  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "loudness_dbfs", "n_sessions": 16, "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01", "median": -22.405, "mad": 1.45, "robust_spread": 2.14977, "floor_applied": false},
+  {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "composite", "n_sessions": 16, "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01", "median": 0.038219, "mad": 0.359758, "robust_spread": 0.533378, "floor_applied": false}
+ ],
+ "total": 20,
+ "limit": 50,
+ "offset": 0}
 ```
 
 #### E-20 POST /api/v1/pipeline/run
@@ -2174,3 +2167,4 @@ components:
 | 0.7 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
 | 0.8 | 27 Oct 2026 | Checkpoint 4: three YAML quoting fixes so the §8 skeleton parses as intended (the `/scores` 200 description, `IngestBatchAccepted.accepted.description` and `CheckinEvent.detail.description` contained an unquoted comma); no contract change | — |
 | 0.9 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-9, Q-11; TRD 24 D-126): §4.2 universal responses add 415 and are documented once rather than per operation; global `audio/*` content-type rule | — |
+| 0.10 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-9, TRD 24 D-134): four §4.3 examples written out in full so every example validates against its schema (OAS-015): E-05 set-aside response (UUIDs instead of `"..."`), E-10 (null-valued properties), E-11 (all 7 scored features, values from the engine on SRC-05), E-19 (`meta` in full) | — |

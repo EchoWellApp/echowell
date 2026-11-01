@@ -93,8 +93,8 @@ def get_pipeline_runner(
     settings: Annotated[Settings, Depends(get_settings)],
     session_factory: Annotated[SessionFactory, Depends(get_session_factory)],
 ) -> PipelineRunner:
-    """The runner with `app.state.pipeline_executor` when set (tests), else the interim
-    executor until FEAT-053."""
+    """The runner with `app.state.pipeline_executor` when set (tests), else the analytics
+    executor (FEAT-053)."""
     executor: Executor | None = getattr(request.app.state, "pipeline_executor", None)
     return PipelineRunner(session_factory, settings, executor)
 
