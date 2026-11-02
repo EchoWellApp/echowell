@@ -1,4 +1,4 @@
-// Playwright E2E configuration skeleton (TRD 13 TST-004, TRD 24 D-73); specs arrive with FEAT-076.
+// Playwright E2E configuration (TRD 13 TST-004, TST-101; TRD 24 D-73; FEAT-076-FR-01, FR-13).
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -6,7 +6,8 @@ export default defineConfig({
   globalSetup: "./tests/e2e/global-setup.ts",
   grepInvert: /@isolated/,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3001",

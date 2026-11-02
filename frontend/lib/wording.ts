@@ -7,3 +7,5 @@ export * from "./wording/chart";
 export * from "./wording/review";
 export * from "./wording/study";
 export * from "./wording/admin";
+export * from "./wording/device";
+export * from "./wording/trends";
