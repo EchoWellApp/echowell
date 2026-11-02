@@ -13,11 +13,12 @@ from typing import Any
 import pytest
 
 from analytics import FEATURE_KEYS
+from tests.support.system import TierB
 from tests.validation.answer_key import INPUT_CSV, rows
 from tests.validation.cases import TIERS, finish, outputs, rule
 from tests.validation.comparator import Result, compare_outputs, compare_sheet
 from tests.validation.outputs import STATUS_COLUMNS, Outputs, from_result, run_tier_a
-from tests.validation.tier_b import TierB
+from tests.validation.tier_b import collect
 
 pytestmark = pytest.mark.validation
 
@@ -266,5 +267,5 @@ def test_vc_g12_determinism_and_rebuild(request: pytest.FixtureRequest, tier: st
     else:
         harness: TierB = request.getfixturevalue("tier_b_harness")
         harness.run_at_as_of()  # a full rebuild of the derived results at the same as-of
-        again = harness.outputs()
+        again = collect(harness)
     finish("VC-G12", tier, compare_outputs(before, again, f"Tier {tier} run vs rerun"))

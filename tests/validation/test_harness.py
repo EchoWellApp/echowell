@@ -14,9 +14,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.pool import NullPool
 
+from tests.support.system import TierB, load_ground_truth
 from tests.validation.comparator import SHEETS, Result, compare_outputs, compare_sheet
 from tests.validation.outputs import Outputs
-from tests.validation.tier_b import TierB, load_ground_truth
+from tests.validation.tier_b import collect
 
 pytestmark = pytest.mark.validation
 
@@ -82,7 +83,7 @@ def test_ground_truth_never_changes_the_outputs(
     load_ground_truth(tier_b_harness.urls)
     assert tier_b_harness.select("SELECT count(*) FROM evaluation_ground_truth")[0][0] == 10
     tier_b_harness.run_at_as_of()
-    after = tier_b_harness.outputs()
+    after = collect(tier_b_harness)
     assert compare_outputs(tier_b_outputs, after, "without vs with ground truth").mismatches == []
 
 

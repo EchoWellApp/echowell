@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import pytest
 
+from tests.support.system import TierB
 from tests.validation.cases import TIERS, days, duplicates, finish, outputs, resident_sheets, rule
 from tests.validation.comparator import Result
-from tests.validation.tier_b import TierB
 
 pytestmark = pytest.mark.validation
 

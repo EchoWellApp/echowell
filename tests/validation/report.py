@@ -1,7 +1,8 @@
 """The validation report (TRD 14 §4.10, TDV-070..TDV-073; TRD 16 CIC-100, CIC-102; FEAT-059).
 
-Case tests record each tier's comparison `Result` in `RESULTS`; after the session `write` renders
-`docs/reports/ALGORITHM_VALIDATION_REPORT.md` and `docs/reports/validation_results.json`. A case
+Case tests record each tier's comparison `Result` in `RESULTS`; after a full-suite session `write`
+renders `docs/reports/ALGORITHM_VALIDATION_REPORT.md` and `docs/reports/validation_results.json`
+(partial selections such as `-k r09` leave the canonical files alone, TRD 24 D-137). A case
 that did not run, or ran with 0 checks, is FAIL (TDV-071). "Overall: PASS" requires all 22 cases
 to pass in both tiers (VC-G11 is Tier B only) and VC-R04-INV and VC-R10-FRZ to pass (TDV-070).
 Sections 4 and 5 are left for the engineer to complete in the PR for each failed case (TDV-072).
@@ -66,6 +67,16 @@ RESULTS = Results()
 
 def record(case: str, tier: str, result: Result) -> Result:
     return RESULTS.record(case, tier, result)
+
+
+def complete(results: Results) -> bool:
+    """Every case ran in each of its tiers and every supplementary check ran: a full-suite
+    session, the only kind that writes the canonical report (TRD 24 D-137)."""
+    for case in CASES:
+        tiers = ("B",) if case in TIER_B_ONLY else ("A", "B")
+        if any(t not in results.cases.get(case, {}) for t in tiers):
+            return False
+    return all(s in results.supplementary for s in ("VC-R04-INV", "VC-R10-FRZ", "VC-R06-MUT"))
 
 
 def _status(result: Result | None) -> str:

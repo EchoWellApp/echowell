@@ -85,3 +85,18 @@ def test_gating_supplementary_check_fails_overall() -> None:
     results.record_supplementary("VC-R06-MUT", Result(1, [
         Mismatch("Exp_baselines", "R06", "row", 1, 2, None, 6)]))  # fmt: skip
     assert report.overall(results)[0] == "PASS"  # VC-R06-MUT is a Should, not gating
+
+
+@pytest.mark.req("TDV-073", "D-137")
+def test_only_a_full_session_is_complete() -> None:
+    assert report.complete(_all_passing())
+    partial = report.Results()
+    partial.record("VC-R09", "A", Result(3, []))
+    partial.record("VC-R09", "B", Result(3, []))
+    assert not report.complete(partial)
+    missing_tier = _all_passing()
+    del missing_tier.cases["VC-G11"]["B"]
+    assert not report.complete(missing_tier)
+    no_supplementary = _all_passing()
+    del no_supplementary.supplementary["VC-R10-FRZ"]
+    assert not report.complete(no_supplementary)

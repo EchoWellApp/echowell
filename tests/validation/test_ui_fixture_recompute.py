@@ -16,8 +16,8 @@ from typing import Any
 
 import pytest
 
+from tests.support.system import TierB, load_ground_truth
 from tests.validation.answer_key import GROUND_TRUTH, local_date, rows
-from tests.validation.tier_b import TierB, load_ground_truth
 
 pytestmark = pytest.mark.validation
 

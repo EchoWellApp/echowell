@@ -14,11 +14,11 @@ import pytest
 
 from analytics import TEST_V0_1, PipelineConfig
 from backend.api.deps import get_clock
+from tests.support.system import TierB, tier_b
 from tests.validation import report
 from tests.validation.answer_key import INPUT_CSV
 from tests.validation.comparator import Mismatch, Result, compare_outputs, compare_sheet
 from tests.validation.outputs import Outputs, from_result, input_rows, run_tier_a
-from tests.validation.tier_b import TierB, tier_b
 
 pytestmark = pytest.mark.validation
 

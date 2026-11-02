@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from tests.contract.response_validation import check_response
-from tests.validation.tier_b import TierB, ds07
+from tests.support.system import TierB, ds07
 
 pytestmark = pytest.mark.integration
 

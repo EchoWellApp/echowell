@@ -125,10 +125,12 @@ def test_second_run_changes_nothing(uploaded: Session, runner: PipelineRunner) -
     )
 
 
-@pytest.mark.req("TDV-031", "DB-036", "ANL-060")
-def test_a_run_at_an_earlier_as_of_succeeds(uploaded: Session, runner: PipelineRunner) -> None:
-    """An ingest-triggered run at the current time followed by the explicit test as-of run
-    (TRD 14 TDV-031) moves `first_detected_at` back instead of breaking `last >= first`."""
+@pytest.mark.req("TDV-031", "DB-036", "ANL-060", "D-135")
+def test_a_run_at_an_earlier_as_of_keeps_alert_history(
+    uploaded: Session, runner: PipelineRunner
+) -> None:
+    """A run at an earlier as-of than the previous one succeeds; an open data alert keeps its
+    first detection and its last detection never moves backwards."""
     later = AS_OF + timedelta(days=3)
     assert runner.run("all", PipelineTrigger.TEST, as_of=later)[1] == PipelineRunStatus.SUCCEEDED
     _, status = _run(runner)
@@ -139,7 +141,7 @@ def test_a_run_at_an_earlier_as_of_succeeds(uploaded: Session, runner: PipelineR
         "D02 · device silent all day", "R03 · many check-ins set aside",
         "R05 · possible other speaker", "R08 · baseline stuck at 13 of 16",
     ]  # fmt: skip
-    assert {(r.first_detected_at, r.last_detected_at) for r in rows} == {(AS_OF, AS_OF)}
+    assert {(r.first_detected_at, r.last_detected_at) for r in rows} == {(later, later)}
     assert uploaded.execute(text("SELECT count(*) FROM day_ledger")).scalar_one() == 300
 
 
