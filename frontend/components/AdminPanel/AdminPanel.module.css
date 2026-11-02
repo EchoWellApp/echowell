@@ -16,8 +16,8 @@
   cursor: pointer;
 }
 .tab[aria-selected="true"] {
-  border-bottom-color: var(--chrome);
-  color: var(--chrome);
+  border-bottom-color: var(--link);
+  color: var(--link);
 }
 .tabpanel {
   min-height: 200px;

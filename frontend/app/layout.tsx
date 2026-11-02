@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Source_Sans_3 } from "next/font/google";
 import { EnvironmentRibbon } from "@/components/EnvironmentRibbon/EnvironmentRibbon";
 import { config } from "@/lib/config";
-import { SKIP_LINK } from "@/lib/wording";
+import { NOSCRIPT_TEXT, SKIP_LINK } from "@/lib/wording";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
 
@@ -28,6 +28,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a href="#main" className="skip-link">
           {SKIP_LINK}
         </a>
+        <noscript>
+          <p className="noscript">{NOSCRIPT_TEXT}</p>
+        </noscript>
         <EnvironmentRibbon appEnv={config.appEnv} />
         <Providers>{children}</Providers>
       </body>

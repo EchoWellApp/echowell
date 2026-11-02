@@ -147,3 +147,10 @@ textarea {
     animation: none !important;
   }
 }
+.noscript {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+}

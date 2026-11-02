@@ -81,6 +81,8 @@ export const PAGE_NOT_FOUND = "This page was not found.";
 export const residentNotFound = (code: string) => `Resident ${code} was not found.`;
 export const couldNotRefresh = (asOf: string) => `Could not refresh. Showing data as of ${asOf}.`;
 export const SKIP_LINK = "Skip to main content";
+/** TRD 03 NFR-142: shown when JavaScript is disabled. */
+export const NOSCRIPT_TEXT = "This dashboard needs JavaScript enabled.";
 
 /** Document titles (UX-229, FE-032). */
 export const pageTitle = (page: string) => `${page} – EchoWell`;

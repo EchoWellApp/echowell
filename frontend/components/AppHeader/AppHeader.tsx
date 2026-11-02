@@ -12,6 +12,15 @@ import styles from "./AppHeader.module.css";
 
 export type ActivePage = "residents" | "admissions" | "study" | "admin" | null;
 
+/** The app bar entry that is current for a protected route. */
+export function activeFor(pathname: string): ActivePage {
+  if (pathname.startsWith("/residents")) return "residents";
+  if (pathname.startsWith("/admissions")) return "admissions";
+  if (pathname.startsWith("/study")) return "study";
+  if (pathname.startsWith("/admin")) return "admin";
+  return null;
+}
+
 export interface AppHeaderProps {
   meta: Meta | undefined;
   active: ActivePage;

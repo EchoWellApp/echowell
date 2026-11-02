@@ -32,8 +32,12 @@ describe("ChartSectionNav", () => {
       <ChartSectionNav residentCode="R09" current="summary" unreviewedAlarm />,
     );
     const review = screen.getByRole("link", { name: "Review and notes, alarm not reviewed" });
-    expect(within(review).getByText("1")).toHaveAttribute("aria-hidden", "true");
+    const count = review.querySelector("[data-count]");
+    expect(count).toHaveAttribute("data-count", "1");
+    expect(count).toHaveAttribute("aria-hidden", "true");
     rerender(<ChartSectionNav residentCode="R01" current="summary" unreviewedAlarm={false} />);
-    expect(screen.getByRole("link", { name: "Review and notes" })).not.toHaveTextContent("1");
+    expect(
+      screen.getByRole("link", { name: "Review and notes" }).querySelector("[data-count]"),
+    ).toBeNull();
   });
 });

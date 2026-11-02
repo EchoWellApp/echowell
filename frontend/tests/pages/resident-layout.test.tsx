@@ -56,8 +56,10 @@ describe("resident chart layout", () => {
       "page",
     );
     expect(
-      within(nav).getByRole("link", { name: "Review and notes, alarm not reviewed" }),
-    ).toHaveTextContent("1");
+      within(nav)
+        .getByRole("link", { name: "Review and notes, alarm not reviewed" })
+        .querySelector("[data-count]"),
+    ).toHaveAttribute("data-count", "1");
     expect(document.title).toBe("R09 · Summary – EchoWell");
   });
 

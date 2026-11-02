@@ -26,6 +26,8 @@ export interface AuthUser {
 export interface AuthState {
   status: "loading" | "signed-in" | "signed-out";
   user: AuthUser | null;
+  /** True after "Sign out", which navigates to /login itself (FE-058; no `next` redirect). */
+  signedOutByUser?: boolean;
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [status, setStatus] = useState<AuthState["status"]>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [signedOutByUser, setSignedOutByUser] = useState(false);
   const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reset = useCallback(() => {
@@ -107,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const u = token.user;
       queryClient.setQueryData(["me"], u);
       setUser({ id: u.id, email: u.email, displayName: u.display_name, role: u.role });
+      setSignedOutByUser(false);
       setStatus("signed-in");
     },
     [queryClient, scheduleExpiry],
@@ -114,10 +118,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await api.logout();
+    setSignedOutByUser(true);
     reset();
     router.replace("/login");
   }, [reset, router]);
 
-  const value = useMemo(() => ({ status, user, signIn, signOut }), [status, user, signIn, signOut]);
+  const value = useMemo(
+    () => ({ status, user, signedOutByUser, signIn, signOut }),
+    [status, user, signedOutByUser, signIn, signOut],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

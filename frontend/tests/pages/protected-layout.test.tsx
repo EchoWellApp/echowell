@@ -2,7 +2,8 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import ProtectedLayout, { activeFor } from "@/app/(protected)/layout";
+import ProtectedLayout from "@/app/(protected)/layout";
+import { activeFor } from "@/components/AppHeader/AppHeader";
 import ProtectedError from "@/app/(protected)/error";
 import GlobalError from "@/app/global-error";
 import NotFound from "@/app/not-found";
@@ -72,6 +73,21 @@ describe("protected layout", () => {
       ),
     );
     expect(client.getQueryCache().getAll()).toHaveLength(0);
+  });
+
+  it("goes to plain /login after Sign out, without a next redirect (FE-058)", async () => {
+    window.history.pushState({}, "", "/residents");
+    nav.router.replace.mockClear();
+    server.use(http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })));
+    renderSignedIn(
+      <ProtectedLayout>
+        <p>content</p>
+      </ProtectedLayout>,
+      "clinician",
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(nav.router.replace).toHaveBeenCalledWith("/login"));
+    expect(nav.router.replace).not.toHaveBeenCalledWith(expect.stringMatching(/^\/login\?next=/));
   });
 
   it("maps paths to the active link", () => {

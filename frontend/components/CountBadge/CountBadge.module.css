@@ -9,3 +9,6 @@
   line-height: 20px;
   margin-left: 6px;
 }
+.count::before {
+  content: attr(data-count);
+}

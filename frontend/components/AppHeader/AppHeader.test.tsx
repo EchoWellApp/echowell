@@ -25,7 +25,8 @@ describe("AppHeader", () => {
       name: "Resident list, 2 alarms not reviewed",
     });
     expect(list).toHaveAttribute("aria-current", "page");
-    expect(list).toHaveTextContent("Resident list2");
+    expect(list).toHaveTextContent("Resident list");
+    expect(list.querySelector("[data-count]")).toHaveAttribute("data-count", "2");
     expect(within(navEl).getAllByRole("link").map(linkText)).toEqual([
       "Resident list",
       "New admissions",
