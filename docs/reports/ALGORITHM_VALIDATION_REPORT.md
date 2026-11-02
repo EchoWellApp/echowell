@@ -60,4 +60,6 @@ No failed case.
 
 ## 7. Informational: false-alarm robustness (not gating)
 
-Not run in this session; the nightly job runs `tests/validation/robustness.py` (TDV-083).
+Latest run 2026-11-02T04:43:24Z: seeds 1..100, residents R01-R06 (rate) and R07-R08 (reported), false alarms 61, rate 10.2% (61 of 600).
+Per resident: R01 14, R02 7, R03 8, R04 8, R05 13, R06 11, R07 0, R08 0.
+Answer-key reproduction mismatches (S2 when non-zero): 0 seeds.

@@ -192,5 +192,23 @@
     "VC-R10-FRZ": "PASS",
     "VC-R06-MUT": "PASS"
   },
-  "robustness": null
+  "robustness": {
+    "generated_at": "2026-11-02T04:43:24Z",
+    "seeds": "1..100",
+    "false_alarms": 61,
+    "denominator": 600,
+    "rate": 0.10166666666666667,
+    "per_resident": {
+      "R01": 14,
+      "R02": 7,
+      "R03": 8,
+      "R04": 8,
+      "R05": 13,
+      "R06": 11,
+      "R07": 0,
+      "R08": 0
+    },
+    "reproduction_mismatches": 0,
+    "mismatched_seeds": []
+  }
 }
