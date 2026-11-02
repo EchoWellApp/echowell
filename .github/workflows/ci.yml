@@ -80,6 +80,17 @@ jobs:
           name: backend-reports
           path: build/
           retention-days: 30
+      - if: always() # TRD 16 CIC-100: the validation report is uploaded even when tests fail
+        uses: actions/upload-artifact@v7
+        with:
+          name: algorithm-validation-report
+          path: |
+            docs/reports/ALGORITHM_VALIDATION_REPORT.md
+            docs/reports/validation_results.json
+          if-no-files-found: warn
+          retention-days: 30
+      - if: always() # CIC-102: R01-R10 pass/fail table in the job summary
+        run: python -m tests.validation.report >> "$GITHUB_STEP_SUMMARY"
   frontend:
     runs-on: ubuntu-24.04
     timeout-minutes: 12

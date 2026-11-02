@@ -237,3 +237,31 @@ def write(results: Results, directory: Path = REPORTS) -> dict[str, Any]:
     (directory / JSON).write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     (directory / MARKDOWN).write_text(as_markdown(results, data), encoding="utf-8")
     return data
+
+
+def job_summary(directory: Path = REPORTS) -> str:
+    """The R01-R10 and global-check pass/fail table for the CI job summary (CIC-102)."""
+    path = directory / JSON
+    if not path.exists():
+        return "Validation report not written (the validation suite did not run).\n"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    lines = [
+        f"### Algorithm validation: {data['overall']}",
+        "",
+        "| Case | Title | Tier A | Tier B | Checks | Mismatches |",
+        "|---|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {c['id']} | {c['title']} | {c['tier_a']} | {c['tier_b']} | {c['checks']} | "
+        f"{len(c['mismatches'])} |"
+        for c in data["cases"]
+    ]
+    lines += [
+        "",
+        "Supplementary: " + ", ".join(f"{k} {v}" for k, v in data["supplementary"].items()),
+    ]
+    return "\n".join(lines) + "\n"
+
+
+if __name__ == "__main__":
+    print(job_summary(), end="")

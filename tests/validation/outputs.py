@@ -55,6 +55,7 @@ class Outputs:
     cusum: dict[Key, dict[str, Any]] = field(default_factory=dict)
     ledger: list[tuple[str, date, str, str | None, str]] = field(default_factory=list)
     data_alerts: list[tuple[str, str, str, str]] = field(default_factory=list)
+    adjusted: dict[Key, dict[str, float]] = field(default_factory=dict)  # by session_id
 
     def compared(self) -> dict[str, Any]:
         """Every value the comparator checks, for Tier A = Tier B (TST-081)."""
@@ -161,6 +162,8 @@ def from_result(result: PipelineResult, rows: list[dict[str, str]] | None = None
             ordinal=s.baseline_ordinal, in_baseline=s.in_baseline,
             record=record_values(by_seq[rec.arrival_seq]), baseline_n=baseline_n,
         )  # fmt: skip
+        if s.status != "duplicate":
+            out.adjusted[(rec.session_id,)] = {k: s.adjusted[k] for k in COMPOSITE_KEYS}
     for d in result.ledger:
         out.ledger.append((d.resident_code, d.local_date, d.status, d.device_code, d.reason))
         if d.status != "checked_in":

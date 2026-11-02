@@ -24,6 +24,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
+from analytics import COMPOSITE_KEYS
 from backend.core.config import get_settings
 from backend.main import create_app
 from tests.conftest import make_settings
@@ -209,7 +210,8 @@ def collect(harness: TierB) -> Outputs:
     baseline_n = int(snapshot["baseline_n"])
     sessions = harness.select(
         "SELECT p.status, p.reason_text, p.local_date, p.local_time, p.is_morning, "
-        "p.baseline_ordinal, p.in_baseline, e.epoch_number, r.arrival_seq, r.payload, "
+        "p.baseline_ordinal, p.in_baseline, p.adjusted_features, p.session_id, e.epoch_number, "
+        "r.arrival_seq, r.payload, "
         "res.resident_code "
         "FROM processed_sessions p JOIN raw_sessions r ON r.id = p.raw_session_id "
         "JOIN residents res ON res.id = p.resident_id "
@@ -223,6 +225,9 @@ def collect(harness: TierB) -> Outputs:
             ordinal=s.baseline_ordinal, in_baseline=s.in_baseline,
             record=record_values(payload_row(s.payload)), baseline_n=baseline_n,
         )  # fmt: skip
+        if s.status != "duplicate":
+            out.adjusted[(s.session_id,)] = {k: float(s.adjusted_features[k])
+                                             for k in COMPOSITE_KEYS}  # fmt: skip
     ledger = harness.select(
         "SELECT res.resident_code, d.local_date, d.status, dev.device_code, d.reason "
         "FROM day_ledger d JOIN residents res ON res.id = d.resident_id "

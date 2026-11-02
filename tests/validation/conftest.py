@@ -25,7 +25,9 @@ from tests.validation.tier_b import TierB, tier_b
 
 @pytest.fixture(scope="session")
 def tier_a_result() -> PipelineResult:
-    return run_tier_a()
+    result = run_tier_a()
+    report.RESULTS.config_snapshot = result.run_config  # the report header hash (TDV-070)
+    return result
 
 
 @pytest.fixture(scope="session")
