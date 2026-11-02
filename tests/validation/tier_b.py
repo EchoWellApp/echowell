@@ -304,3 +304,20 @@ def payload_row(payload: dict[str, Any]) -> dict[str, str]:
 
 def as_of() -> datetime:
     return datetime(2026, 10, 30, 20, 0, tzinfo=UTC)
+
+
+@contextmanager
+def ds07() -> Iterator[TierB]:
+    """DS-07 (TRD 14 §4.9, TDV-061): the full `seed test_v0_1` (roster, users, SRC-05 and the
+    explicit-as-of run) plus the DS-10 loader, with no clock override in the running services."""
+    with database() as urls:
+        operator(urls, "-m", "backend.cli", "seed", "test_v0_1")
+        load_ground_truth(urls)
+        settings = make_settings(database_url=urls.app, database_readonly_url=urls.readonly,
+                                 facility_name="Edgewood")  # fmt: skip
+        app = create_app(settings)
+        app.dependency_overrides[get_settings] = lambda: settings
+        with TestClient(app, raise_server_exceptions=False) as client:
+            harness = TierB(urls, client)
+            harness.run = harness.items("/pipeline/runs")[0]
+            yield harness

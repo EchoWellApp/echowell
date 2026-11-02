@@ -199,12 +199,16 @@ def key_text(key: Key) -> str:
 
 
 def compare_sheet(
-    name: str, outputs: Outputs, select: Callable[[Key], bool] = lambda _: True
+    name: str,
+    outputs: Outputs,
+    select: Callable[[Key], bool] = lambda _: True,
+    book: dict[str, Any] | None = None,
 ) -> Result:
-    """Every selected row of a DS-02 sheet against the outputs, matched by natural key."""
+    """Every selected row of a DS-02 sheet (or of `book`, another seed's answer key) against the
+    outputs, matched by natural key."""
     spec = SHEETS[name]
     actual: dict[Key, dict[str, Any]] = getattr(outputs, spec.outputs)
-    expected = {key_of(name, row, i): row for i, row in enumerate(rows(name))}
+    expected = {key_of(name, row, i): row for i, row in enumerate(rows(name, book))}
     result = Result()
     for key in sorted({k for k in expected if select(k)} | {k for k in actual if select(k)},
                       key=key_text):  # fmt: skip

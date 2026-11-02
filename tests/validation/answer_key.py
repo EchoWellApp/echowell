@@ -53,9 +53,9 @@ def workbook() -> dict[str, pd.DataFrame]:
     return read_sheets(WORKBOOK)
 
 
-def rows(sheet: str) -> list[dict[str, Any]]:
-    """The rows of a DS-02 sheet as dicts, blanks as None."""
-    frame = workbook()[sheet]
+def rows(sheet: str, book: dict[str, pd.DataFrame] | None = None) -> list[dict[str, Any]]:
+    """The rows of a DS-02 sheet (or of another answer-key workbook) as dicts, blanks as None."""
+    frame = (book if book is not None else workbook())[sheet]
     return [{k: (None if blank(v) else v) for k, v in record.items()}
             for record in frame.to_dict(orient="records")]  # fmt: skip
 
