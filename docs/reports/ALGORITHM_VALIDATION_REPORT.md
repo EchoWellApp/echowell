@@ -1,6 +1,6 @@
 # ALGORITHM_VALIDATION_REPORT
 
-Generated: 2026-11-02T04:37:06Z · Git SHA: 2578880 · Profile: test_v0_1 · Config snapshot SHA-256: 51ca68f8aaa253aa4cc7b3b8456d2f3634f3ea96ea57f650f54d7279509ddcca
+Generated: 2026-11-02T04:49:32Z · Git SHA: 0880794 · Profile: test_v0_1 · Config snapshot SHA-256: 51ca68f8aaa253aa4cc7b3b8456d2f3634f3ea96ea57f650f54d7279509ddcca
 Input: EchoWell_pipeline_test_input_v0_1.csv (SHA-256 78e77faad423f305dfb83429ccd21978f089e843c181b5d244a5d7d4f5fabe28) · Answer key: EchoWell_pipeline_test_v0_1.xlsx (SHA-256 ddbc03ea6fef37388d2f0265902096cc0fe28559d36cb2855f63ec51ec482257)
 Tolerance: abs 1e-6 (float64); strings, integers, booleans exact
 Overall: PASS

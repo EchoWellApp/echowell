@@ -68,8 +68,8 @@ Environment: Linux container, Python 3.12 (virtualenv), PostgreSQL 16 (local clu
 
 | # | Command | Result |
 |---|---|---|
-| 1 | `pytest tests/unit tests/integration tests/contract tests/security tests/validation`, random order, with coverage | FULL_SUITE |
-| 2 | `pytest tests/validation -q` | VALIDATION_SUITE; report "Overall: PASS" |
+| 1 | `pytest tests/unit tests/integration tests/contract tests/security tests/validation`, random order, with coverage | 648 passed, 0 skipped (5 min 41 s); coverage of `analytics` and `backend` together 97 % |
+| 2 | `pytest tests/validation -q` | 70 passed, 0 skipped (about 20 s); report "Overall: PASS", 22 of 22 cases in both tiers |
 | 3 | `pytest tests/validation -q -k integrity` | 7 passed |
 | 4 | `pytest tests/integration -q -k ui_fixture` | 10 passed |
 | 5 | `python -m tests.validation.robustness --seeds 100` | 61 false alarms of 600 (10.2 %); per resident R01 14, R02 7, R03 8, R04 8, R05 13, R06 11, R07 0, R08 0; 0 reproduction mismatches |
