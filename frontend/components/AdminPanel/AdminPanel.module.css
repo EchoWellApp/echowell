@@ -1,0 +1,124 @@
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.tab {
+  min-height: var(--touch-min);
+  padding: 0 16px;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] {
+  border-bottom-color: var(--chrome);
+  color: var(--chrome);
+}
+.tabpanel {
+  min-height: 200px;
+}
+.footer {
+  min-height: 1.5em;
+}
+.bannerRed,
+.bannerYellow {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.bannerRed {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.bannerYellow {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border: 1px solid var(--yellow-edge);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  text-align: left;
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+}
+.table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 16px;
+  align-items: start;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field label {
+  font-weight: 600;
+  font-size: 14px;
+}
+.input {
+  min-height: var(--touch-min);
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.input[aria-invalid="true"] {
+  border-color: var(--red);
+}
+.fieldError {
+  color: var(--red);
+  font-size: 14px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  grid-column: 1 / -1;
+}
+.formError {
+  grid-column: 1 / -1;
+  color: var(--red);
+}
+.formError:empty {
+  display: none;
+}
+.dialog {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--surface-2);
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.status {
+  font-size: 14px;
+}
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}

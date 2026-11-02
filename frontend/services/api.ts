@@ -122,6 +122,7 @@ interface RequestOptions {
   accept?: string;
   timeoutMs?: number;
   auth?: boolean;
+  okStatuses?: number[]; // non-2xx statuses whose body is the result (GET /health 503)
 }
 
 async function send(path: string, options: RequestOptions = {}): Promise<Response> {
@@ -153,7 +154,7 @@ async function send(path: string, options: RequestOptions = {}): Promise<Respons
   } finally {
     clearTimeout(timer);
   }
-  if (!res.ok) {
+  if (!res.ok && !options.okStatuses?.includes(res.status)) {
     const error = await toApiError(res, requestId);
     if (res.status === 401 && token) {
       clearToken();
@@ -239,7 +240,8 @@ export const downloadScoresCsv = (p: { residentCode?: string } = {}) =>
 export const downloadBaselinesCsv = () => csv("/analytics/baselines");
 
 // Admin
-export const listPipelineRuns = () => json<PipelineRunList>("/pipeline/runs");
+export const listPipelineRuns = (p: { trigger?: string; status?: string; limit?: number } = {}) =>
+  json<PipelineRunList>(`/pipeline/runs${query({ limit: 50, ...p })}`);
 export const getPipelineRun = (id: string) =>
   json<PipelineRun>(`/pipeline/runs/${encodeURIComponent(id)}`);
 export const triggerPipelineRun = (input: PipelineRunRequest) =>
@@ -260,4 +262,4 @@ export const createUser = (input: UserCreate) =>
   json<User>("/users", { method: "POST", body: input });
 export const updateUser = (id: string, patch: UserUpdate) =>
   json<User>(`/users/${encodeURIComponent(id)}`, { method: "PATCH", body: patch });
-export const getHealth = () => json<Health>("/health", { auth: false });
+export const getHealth = () => json<Health>("/health", { auth: false, okStatuses: [503] });
