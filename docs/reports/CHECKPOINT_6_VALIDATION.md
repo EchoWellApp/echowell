@@ -1,6 +1,6 @@
 # Checkpoint 6 Report — Phase 12 Pass R01-R10 Validation Tests
 
-Block 3 "Implement Features", checkpoint 6 of 9, its own PR (branch `feat/cp6-validation`, created from `main` after GitHub PR #20 was merged on 1 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 12: Pass R01-R10 Validation Tests" · TRD 25 Phase 7 · Features: FEAT-057..FEAT-061 · Date: 2 November 2026 · Status: in review.
+Block 3 "Implement Features", checkpoint 6 of 9, its own PR (branch `feat/cp6-validation`, created from `main` after GitHub PR #20 was merged on 1 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 12: Pass R01-R10 Validation Tests" · TRD 25 Phase 7 · Features: FEAT-057..FEAT-061 · Date: 2 November 2026 · Status: in review (GitHub PR #22).
 
 Build order followed roadmap §5.6: [FEAT-057, FEAT-058, FEAT-059] → [FEAT-060, FEAT-061]. TRDs read in the roadmap order: 13, 14, 08, 09, then the SRC-03 Exp_ sheets.
 
