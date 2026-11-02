@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -123,6 +123,24 @@ def test_second_run_changes_nothing(uploaded: Session, runner: PipelineRunner) -
     assert (
         uploaded.execute(text("SELECT id FROM alerts ORDER BY session_id")).scalars().all() == ids
     )
+
+
+@pytest.mark.req("TDV-031", "DB-036", "ANL-060")
+def test_a_run_at_an_earlier_as_of_succeeds(uploaded: Session, runner: PipelineRunner) -> None:
+    """An ingest-triggered run at the current time followed by the explicit test as-of run
+    (TRD 14 TDV-031) moves `first_detected_at` back instead of breaking `last >= first`."""
+    later = AS_OF + timedelta(days=3)
+    assert runner.run("all", PipelineTrigger.TEST, as_of=later)[1] == PipelineRunStatus.SUCCEEDED
+    _, status = _run(runner)
+    assert status == PipelineRunStatus.SUCCEEDED
+    rows = uploaded.execute(text("SELECT title, first_detected_at, last_detected_at "
+                                 "FROM data_alerts WHERE status = 'open'")).all()  # fmt: skip
+    assert sorted(r.title for r in rows) == [
+        "D02 · device silent all day", "R03 · many check-ins set aside",
+        "R05 · possible other speaker", "R08 · baseline stuck at 13 of 16",
+    ]  # fmt: skip
+    assert {(r.first_detected_at, r.last_detected_at) for r in rows} == {(AS_OF, AS_OF)}
+    assert uploaded.execute(text("SELECT count(*) FROM day_ledger")).scalar_one() == 300
 
 
 @pytest.mark.req("ANL-039", "AC-ANL-11", "TST-067", "CUS-015", "FEAT-053-AC-03", "FEAT-053-FR-09")

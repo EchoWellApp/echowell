@@ -395,6 +395,9 @@ def reconcile_data_alerts(
         elif alert is not None and row is not None:
             row.title, row.detail, row.days = alert.title, alert.detail, list(alert.days)
             row.last_detected_at, row.pipeline_run_id = run.as_of, run.run_id
+            # A run at an earlier as-of than the one that first detected the row (an explicit
+            # as-of after an ingest-triggered run, TRD 14 TDV-031) moves the first detection back.
+            row.first_detected_at = min(row.first_detected_at, run.as_of)
         elif row is not None:
             row.status, row.resolved_at = DataAlertStatus.RESOLVED, run.as_of
     session.flush()
