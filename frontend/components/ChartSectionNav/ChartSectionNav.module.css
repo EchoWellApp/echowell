@@ -1,0 +1,38 @@
+/* Section navigation: 200px column, a scrolling row below 760px (UX-410, UX-241, FE-165). */
+.nav {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--panel-radius);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+.link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+  padding: 10px 12px;
+  border-radius: 4px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+.link:hover {
+  background: var(--surface-2);
+}
+.link[aria-current="page"] {
+  background: var(--chrome);
+  color: var(--chrome-ink);
+}
+@media (max-width: 759px) {
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .link {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+}

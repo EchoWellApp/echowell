@@ -143,7 +143,7 @@ describe("api client", () => {
     await api.updateUser("u1", { active: false });
     await api.getHealth();
     await api.getUiConfig();
-    expect(calls).toContain("GET /residents/R%201/checkins?from=2026-10-01");
+    expect(calls).toContain("GET /residents/R%201/checkins?from=2026-10-01&limit=500&offset=0");
     expect(calls).toContain("GET /scores?resident_code=R09&epoch=2");
     expect(calls).toContain("POST /alerts/a1/snooze");
     expect(calls).toContain("GET /devices?limit=500&offset=0".replace("devices", "admissions"));

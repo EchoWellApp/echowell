@@ -203,7 +203,7 @@ export const getResidents = () =>
   );
 export const getResident = (c: string) => json<ResidentDetail>(`/residents/${code(c)}`);
 export const getCheckins = (c: string, range: { from?: string; to?: string } = {}) =>
-  json<CheckinEventList>(`/residents/${code(c)}/checkins${query(range)}`);
+  json<CheckinEventList>(`/residents/${code(c)}/checkins${query({ ...range, ...LIST })}`);
 export const getFeatures = (c: string) => json<FeaturesResponse>(`/residents/${code(c)}/features`);
 export const getScores = (p: { residentCode: string; epoch?: number | null }) =>
   json<ScoresResponse>(`/scores${query({ resident_code: p.residentCode, epoch: p.epoch })}`);

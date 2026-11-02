@@ -38,7 +38,9 @@ export async function apiLogin(role: E2ERole): Promise<{ token: string; exp: num
   });
   if (!res.ok) throw new Error(`login ${role} failed: ${res.status}`);
   const body = (await res.json()) as { access_token: string; expires_in: number };
-  const payload = JSON.parse(Buffer.from(body.access_token.split(".")[1] ?? "", "base64url").toString());
+  const payload = JSON.parse(
+    Buffer.from(body.access_token.split(".")[1] ?? "", "base64url").toString(),
+  );
   return { token: body.access_token, exp: Number(payload.exp) };
 }
 
