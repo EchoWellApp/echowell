@@ -54,7 +54,7 @@ Implement the ten resident validation cases VC-R01..VC-R10 (including the invari
 | FEAT-059-FR-07 | VC-R07 shall pass: epoch 1 (D07) 12 usable, not formed, note "Too few usable sessions: baseline pending, nothing scored", no baselines/scores/alerts; epoch 2 (D07B) from R07-20261013-01, frozen after R07-20261028-01, 2 scored with tally 0.000000. | TDV-057, AGT-045 |
 | FEAT-059-FR-08 | VC-R08 shall pass: 13 usable, 5 set aside with exact reasons, 12 `missing_resident`, no baselines/scores/alerts, run `succeeded`. | TDV-058 |
 | FEAT-059-FR-09 | VC-R09 shall pass with the 14-row table of TRD 14 §4.7.9 (first alarm R09-20261021-01 tally 5.431965 "RINGS (first crossing)", final 26.830256) and one alert. | TDV-059, CUS-027, AGT-047, AGT-048 |
-| FEAT-059-FR-10 | VC-R10 shall pass with the 14-row table of §4.7.10 (first alarm R10-20261024-01 tally 5.972050, final 13.418183); VC-R10-FRZ: (a) Exp_baselines R10 match, (b) Tier A truncated to R10 days ≤ 2026-10-16 gives identical R10 baselines, (c) Tier B incremental ingestion with `time-machine` keeps R10 `baselines` (values and `frozen_at`) unchanged after days 17–30. | TDV-060, AGT-051 |
+| FEAT-059-FR-10 | VC-R10 shall pass with the 14-row table of §4.7.10 (first alarm R10-20261024-01 tally 5.972050, final 13.418183); VC-R10-FRZ: (a) Exp_baselines R10 match, (b) Tier A truncated to R10 days ≤ 2026-10-16 gives identical R10 baselines, (c) Tier B incremental ingestion with the application clock frozen (D-136) keeps R10 `baselines` (values and `frozen_at`) unchanged after days 17–30. | TDV-060, AGT-051 |
 | FEAT-059-FR-11 | `test_global_checks.py` shall implement VC-G01..VC-G12 and pass in both tiers (VC-G11 Tier B only): status totals 267/12/2/2/17/2; 302 Annotated_sessions rows; 10 status-count rows; 11 outcome rows; 180 baselines with `floor_applied` "yes" on exactly 8 `number_of_pauses` rows; 98 scores (off 81, on 15, RINGS 2); 19 morning offsets; parameters; 300 ledger rows; exactly 2 open alerts with `cusum_state` tallies; 283 raw rows with exact payloads; determinism and rebuild. | TDV-050, TRD 14 §4.6, CUS-028, TST-050 |
 | FEAT-059-FR-12 | `tests/validation/report.py` shall write `docs/reports/ALGORITHM_VALIDATION_REPORT.md` with the header fields (Generated, Git SHA, Profile, Config snapshot SHA-256, input and workbook SHA-256, tolerance, Overall) and sections 1–7 of TRD 14 §4.10, and `docs/reports/validation_results.json` with the §4.10 schema. | TST-082, TDV-070, CIC-100 |
 | FEAT-059-FR-13 | "Overall: PASS" shall be written only when all 22 cases pass in both tiers and VC-R04-INV and VC-R10-FRZ pass; `checks` shall equal the number of value comparisons and a case with 0 checks shall be FAIL. | TDV-070, TDV-071 |
@@ -119,7 +119,7 @@ None in production code. Each case targets one pitfall of TRD 25 §4.8 (AGT-040 
 
 ## Testing Requirements
 
-- Validation suite (marker `validation`): the ten case modules, `test_global_checks.py`, `test_invariance.py` (VC-R04-INV, VC-R10-FRZ (b)) and the Tier B incremental part of VC-R10-FRZ (c) with `time-machine`.
+- Validation suite (marker `validation`): the ten case modules, `test_global_checks.py`, `test_invariance.py` (VC-R04-INV, VC-R10-FRZ (b)) and the Tier B incremental part of VC-R10-FRZ (c) with the application clock frozen (D-136).
 - Report tests: a synthetic run with one failed case produces "Overall: FAIL (1 of 22 cases failed)", a section-3 table for that case, and JSON matching the §4.10 schema; a case with 0 checks is FAIL (TDV-071).
 - Command: `pytest tests/validation -q`.
 

@@ -1,6 +1,6 @@
 # Checkpoint 6 Report — Phase 12 Pass R01-R10 Validation Tests
 
-Block 3 "Implement Features", checkpoint 6 of 9, its own PR (branch `feat/cp6-validation`, created from `main` after GitHub PR #20 was merged on 1 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 12: Pass R01-R10 Validation Tests" · TRD 25 Phase 7 · Features: FEAT-057..FEAT-061 · Date: 2 November 2026 · Status: in review (GitHub PR #22).
+Block 3 "Implement Features", checkpoint 6 of 9, its own PR (branch `feat/cp6-validation`, created from `main` after GitHub PR #20 was merged on 1 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 12: Pass R01-R10 Validation Tests" · TRD 25 Phase 7 · Features: FEAT-057..FEAT-061 · Date: 2 November 2026 · Status: in review (GitHub PR #22); review round 1 answered and applied, section 10.
 
 Build order followed roadmap §5.6: [FEAT-057, FEAT-058, FEAT-059] → [FEAT-060, FEAT-061]. TRDs read in the roadmap order: 13, 14, 08, 09, then the SRC-03 Exp_ sheets.
 
@@ -37,7 +37,7 @@ The validation suite found two problems in code from earlier checkpoints. Both a
 
 | # | Found by | Problem | Root cause | Fix |
 |---|---|---|---|---|
-| F-1 | Tier B, the TDV-031 sequence | Upload DS-01, which starts a run at the current time (2 Nov), then run explicitly at the test as-of (30 Oct): the second run failed with `data_alerts_detected_ck`. | Re-detecting an open data alert set `last_detected_at` to the earlier as-of but left `first_detected_at` at 2 Nov, so last < first. Stage 11 (data alerts), persistence only. | `reconcile_data_alerts` moves `first_detected_at` back to the run's as-of when it is earlier (`backend/services/pipeline_persistence.py`). Regression test `test_a_run_at_an_earlier_as_of_succeeds` fails without the fix. |
+| F-1 | Tier B, the TDV-031 sequence | Upload DS-01, which starts a run at the current time (2 Nov), then run explicitly at the test as-of (30 Oct): the second run failed with `data_alerts_detected_ck`. | Re-detecting an open data alert set `last_detected_at` to the earlier as-of, before `first_detected_at`. Stage 11 (data alerts), persistence only. | After review round 1 (section 10, D-135): `first_detected_at` is never rewritten and `last_detected_at` only moves forward, so such a run succeeds without rewriting history; Tier B sets PIPELINE_AS_OF to the test as-of, so the ingest-triggered run already evaluates 30 Oct. Regression test `test_a_run_at_an_earlier_as_of_keeps_alert_history`. |
 | F-2 | VC-R10-FRZ (c) | Runs started through the API read `datetime.now()` directly, not the application clock, so the clock could not be set consistently (D-131, from the checkpoint 5 review). | `get_pipeline_runner` built the runner without `get_clock`. | The runner now takes the application clock (`backend/api/deps.py`). |
 
 ## 4. Files
@@ -45,6 +45,7 @@ The validation suite found two problems in code from earlier checkpoints. Both a
 **Created:**
 - `tests/fixtures/answer_key/EchoWell_pipeline_test_v0_1.xlsx`, `SHA256SUMS` and `evaluation_ground_truth_v0_1.csv`;
 - `database/seeds/load_evaluation_ground_truth.py`;
+- `tests/support/system.py` (the full-system builder, moved there in review round 1);
 - `tests/validation/`: `answer_key.py`, `outputs.py`, `comparator.py`, `tier_b.py`, `guard.py`, `conftest.py`, `cases.py`, `report.py`, `diff_answer_key.py`, `robustness.py` and 18 test modules;
 - `tests/integration/api/test_ui_fixture_ds07.py`;
 - `tests/integration/db/test_ground_truth_loader.py`;
@@ -99,7 +100,7 @@ None. Decisions from this review will be recorded in TRD 24 from D-135.
 |---|---|
 | N-1 | Tier B and DS-07 each build their own throwaway database. CI therefore runs the full system twice more, plus the 30-record incremental ingestion of VC-R10-FRZ (c); together that adds about 20 seconds. |
 | N-2 | The `PipelineRun` response has no `config_snapshot`, so VC-G08 reads the snapshot from the `pipeline_runs` row, as TRD 14 Table 4.5-E allows ("the `config_snapshot` of the validation `pipeline_runs` row"). |
-| N-3 | After the TDV-031 sequence, Tier B holds 8 resolved `device_silent` alerts. The run at the current time (2 Nov) saw every device silent from 31 Oct, and the 30 Oct run resolved those alerts (Q-2). They are not open, so no page shows them. |
+| N-3 | Before review round 1, the TDV-031 sequence left 8 resolved `device_silent` alerts from the run at the current time. With PIPELINE_AS_OF set (D-135) Tier B no longer creates them; where an earlier run does, they are kept as history (D-138). |
 | N-4 | Capturing the frontend MSW fixtures from DS-07 (`npm run fixtures:capture`) is FEAT-062 (checkpoint 7); the DS-07 assertions here are the values those fixtures must hold. |
 
 ## 9. Questions for the reviewer
@@ -114,3 +115,26 @@ None. Decisions from this review will be recorded in TRD 24 from D-135.
 | Q-6 | The robustness figures come from a local 100-seed run. Wiring the script into the nightly `nightly-validation` job is FEAT-080 (checkpoint 8). Agree? |
 | Q-7 | The DS-07 builder lives in `tests/validation/tier_b.py` and is imported by the integration test. Keep it there, or move the shared test helpers to a `tests/support/` module? |
 | Q-8 | Size: about 3,900 hand-written lines, almost all tests, for 5 features. Accept as one PR? |
+
+## 10. Review round 1 resolutions (2 November 2026)
+
+Shaba's review of GitHub PR #22 (changes requested). Decisions recorded in TRD 24 as D-135 to D-139.
+
+| Q | Answer | Change | Documents |
+|---|---|---|---|
+| Q-1 | Set PIPELINE_AS_OF in TDV-031 instead of moving `first_detected_at` back; keep it a stable historical fact. | `first_detected_at` is no longer rewritten. `last_detected_at` only moves forward, so a run at an earlier as-of still succeeds instead of failing the database check. Tier B sets PIPELINE_AS_OF to the test as-of, so the ingest-triggered run already evaluates 30 Oct (D-135). | TRD 14 TDV-031 (v0.13), TRD 23 (v0.14), FEAT-058-FR-03 |
+| Q-2 | Acceptable; resolved alerts are history. | No change (D-138). With PIPELINE_AS_OF, Tier B no longer creates them. | — |
+| Q-3 | Agree. | No change. | — |
+| Q-4 | Freeze the application clock; update the wording. | TDV-061, §4.7.10 VC-R10-FRZ (c) and FEAT-059-FR-10 say "freeze the application clock" (D-136). | TRD 14 (v0.13), FEAT-058, FEAT-059 |
+| Q-5 | Write the canonical report only on full-suite runs. | `report.complete` checks that every case ran in its tiers and every supplementary check ran; otherwise the session prints a note and leaves both files alone. New test `test_only_a_full_session_is_complete` (D-137). | TRD 14 TDV-073 (v0.13) |
+| Q-6 | Agree. | No change (D-138). | — |
+| Q-7 | Move the builder to `tests/support/`. | `tests/support/system.py` holds the throwaway database, operator commands, API client, `tier_b()` and `ds07()`; `tests/validation/tier_b.py` keeps only the answer-key collection (D-139). | — |
+| Q-8 | One PR is fine. | No change (D-138). | — |
+
+Verification after review round 1:
+
+- ruff, mypy and lint-imports are clean.
+- `pytest tests/validation -q`: 71 passed, and the report still reads "Overall: PASS".
+- A partial run (`-k r09`) leaves the report files byte-identical.
+- Full suite, random order: 649 passed, 0 skipped.
+
