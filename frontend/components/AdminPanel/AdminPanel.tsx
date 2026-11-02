@@ -87,7 +87,7 @@ export function AdminPanel() {
   });
   const runs = useQuery({
     queryKey: queryKeys.adminRuns(),
-    queryFn: api.listPipelineRuns,
+    queryFn: () => api.listPipelineRuns(),
     enabled: admin,
   });
 
