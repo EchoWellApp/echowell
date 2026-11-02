@@ -20,7 +20,7 @@ describe("design tokens", () => {
 
   it("defines the light and dark schemes and reduced motion", () => {
     const tokens = readFileSync(join(__dirname, "../../styles/tokens.css"), "utf8");
-    expect(tokens).toContain("--chrome: #1F3A52;");
+    expect(tokens.toLowerCase()).toContain("--chrome: #1f3a52;");
     expect(tokens).toContain("@media (prefers-color-scheme: dark)");
     const globals = readFileSync(join(__dirname, "../../styles/globals.css"), "utf8");
     expect(globals).toContain("prefers-reduced-motion: reduce");
