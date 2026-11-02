@@ -1,0 +1,11 @@
+resident_code,planted_change,true_onset_date,source_file
+R01,None,,EchoWell_pipeline_test_v0_1.xlsx
+R02,None,,EchoWell_pipeline_test_v0_1.xlsx
+R03,None,,EchoWell_pipeline_test_v0_1.xlsx
+R04,None,,EchoWell_pipeline_test_v0_1.xlsx
+R05,None,,EchoWell_pipeline_test_v0_1.xlsx
+R06,None,,EchoWell_pipeline_test_v0_1.xlsx
+R07,None,,EchoWell_pipeline_test_v0_1.xlsx
+R08,None,,EchoWell_pipeline_test_v0_1.xlsx
+R09,Sudden step,2026-10-21,EchoWell_pipeline_test_v0_1.xlsx
+R10,Slow drift,2026-10-17,EchoWell_pipeline_test_v0_1.xlsx

@@ -394,7 +394,10 @@ def reconcile_data_alerts(
             ))  # fmt: skip
         elif alert is not None and row is not None:
             row.title, row.detail, row.days = alert.title, alert.detail, list(alert.days)
-            row.last_detected_at, row.pipeline_run_id = run.as_of, run.run_id
+            # first_detected_at is history and never changes; last_detected_at only moves
+            # forward, so a run at an earlier as-of cannot break last >= first (TRD 24 D-135)
+            row.last_detected_at = max(row.last_detected_at, run.as_of)
+            row.pipeline_run_id = run.run_id
         elif row is not None:
             row.status, row.resolved_at = DataAlertStatus.RESOLVED, run.as_of
     session.flush()

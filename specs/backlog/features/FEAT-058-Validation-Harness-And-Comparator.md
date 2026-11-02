@@ -8,7 +8,7 @@
 | Complexity | High |
 | MVP status | Required |
 | Dependencies | FEAT-057, FEAT-052, FEAT-055 |
-| Status | Not Started |
+| Status | Complete |
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Build the infrastructure under `tests/validation/` that runs the pipeline on the
 |---|---|---|
 | FEAT-058-FR-01 | Tier A shall run `analytics.pipeline.run_pipeline` in-process on the DS-01 records (file order = arrival order 1..283) with profile `test_v0_1`, facility timezone America/Chicago, R01–R10 enrolled 2026-10-01, the §4.9 device assignments and as-of 2026-10-30 15:00 America/Chicago. | TDV-030, TDV-002, ANL-017 |
 | FEAT-058-FR-02 | DS-01 shall be the only pipeline input; no file, column or parameter derived from DS-02 shall be passed to the pipeline. | TDV-001 |
-| FEAT-058-FR-03 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token), wait for the batch's run to finish, call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s, polling `GET /api/v1/pipeline/runs/{id}`), then compare API responses and database rows. | TDV-031, TST-081, TST-048 |
+| FEAT-058-FR-03 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token) with PIPELINE_AS_OF at the test as-of (D-135), wait for the batch's run to finish, call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s, polling `GET /api/v1/pipeline/runs/{id}`), then compare API responses and database rows. | TDV-031, TST-081, TST-048 |
 | FEAT-058-FR-04 | Floats (median, MAD, robust_spread, z, composite_raw, composite_z, cusum_tally, adjusted and raw feature values) shall pass iff `abs(actual − expected) ≤ 1e-6`; NaN or missing actual where a number is expected fails. | TDV-032, D-26 |
 | FEAT-058-FR-05 | Strings shall compare exactly (case-sensitive, no trimming); integers, counts and booleans exactly; a blank workbook cell equals null or ""; `first_alarm_session` "none" equals null. | TDV-033, TDV-034, TDV-035 |
 | FEAT-058-FR-06 | Rows shall be matched by natural keys, never by order: Annotated_sessions (resident_id, day, arrival_order); Exp_status_counts resident_id; Exp_resident_outcomes (resident_id, epoch); Exp_baselines (resident_id, epoch, feature); Exp_morning_offset feature; Exp_scores session_id; missing or extra rows on either side fail. | TDV-036 |
@@ -151,4 +151,4 @@ None in production code; the harness exercises the full stage chain and attribut
 - Derive local date from `day` as `date(2026, 10, 1) + timedelta(days=day − 1)`; `local_time` is truncated to minutes (TRD 14 §8).
 - Always include `arrival_order` in the Annotated_sessions key; the two duplicates share `(resident_id, day)` with their originals.
 - Tier B must wait on `GET /api/v1/pipeline/runs/{id}`; never sleep a fixed time.
-- In-process tests freeze the clock with `time-machine` where needed (TDV-061); Tier B uses the explicit as-of run instead of a clock override.
+- In-process tests freeze the application clock (`get_clock`) where needed (TDV-061, D-136); Tier B uses the explicit as-of run instead of a clock override.

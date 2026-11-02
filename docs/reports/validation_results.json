@@ -1,0 +1,214 @@
+{
+  "generated_at": "2026-11-02T18:46:35Z",
+  "git_sha": "11983b9",
+  "profile": "test_v0_1",
+  "config_snapshot_sha256": "51ca68f8aaa253aa4cc7b3b8456d2f3634f3ea96ea57f650f54d7279509ddcca",
+  "inputs": {
+    "csv_sha256": "78e77faad423f305dfb83429ccd21978f089e843c181b5d244a5d7d4f5fabe28",
+    "workbook_sha256": "ddbc03ea6fef37388d2f0265902096cc0fe28559d36cb2855f63ec51ec482257"
+  },
+  "tolerance_abs": 1e-06,
+  "overall": "PASS",
+  "cases": [
+    {
+      "id": "VC-R01",
+      "title": "Clean control",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3310,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R02",
+      "title": "Missing days",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 2920,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R03",
+      "title": "Set-aside sessions",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 2866,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R04",
+      "title": "Duplicate records",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3233,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R05",
+      "title": "Possible other speaker",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3016,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R06",
+      "title": "Morning effect",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3226,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R07",
+      "title": "Device move",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 2836,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R08",
+      "title": "Too few sessions",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 2298,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R09",
+      "title": "Step change",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3186,
+      "mismatches": []
+    },
+    {
+      "id": "VC-R10",
+      "title": "Gradual drift",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3186,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G01",
+      "title": "Status totals",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 26,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G02",
+      "title": "Annotated sessions row by row",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 22348,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G03",
+      "title": "Per-resident status counts",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 142,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G04",
+      "title": "Resident outcomes",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 178,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G05",
+      "title": "Baselines",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3286,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G06",
+      "title": "Scores",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 3160,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G07",
+      "title": "Morning offsets",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 116,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G08",
+      "title": "Parameters",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 32,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G09",
+      "title": "Day ledger",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 8,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G10",
+      "title": "Alerts",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 40,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G11",
+      "title": "Raw store fidelity",
+      "tier_a": "n/a",
+      "tier_b": "PASS",
+      "checks": 286,
+      "mismatches": []
+    },
+    {
+      "id": "VC-G12",
+      "title": "Determinism and rebuild",
+      "tier_a": "PASS",
+      "tier_b": "PASS",
+      "checks": 32520,
+      "mismatches": []
+    }
+  ],
+  "supplementary": {
+    "VC-R04-INV": "PASS",
+    "VC-R10-FRZ": "PASS",
+    "VC-R06-MUT": "PASS"
+  },
+  "robustness": {
+    "generated_at": "2026-11-02T04:43:24Z",
+    "seeds": "1..100",
+    "false_alarms": 61,
+    "denominator": 600,
+    "rate": 0.10166666666666667,
+    "per_resident": {
+      "R01": 14,
+      "R02": 7,
+      "R03": 8,
+      "R04": 8,
+      "R05": 13,
+      "R06": 11,
+      "R07": 0,
+      "R08": 0
+    },
+    "reproduction_mismatches": 0,
+    "mismatched_seeds": []
+  }
+}
