@@ -1,0 +1,23 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.scroll svg {
+  overflow: visible;
+}
+.details {
+  font-size: 14px;
+}
+.summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--link);
+  cursor: pointer;
+  font-weight: 600;
+}
