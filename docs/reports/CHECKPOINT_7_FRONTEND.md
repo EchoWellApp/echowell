@@ -81,7 +81,7 @@ The local stack used here: PostgreSQL 16 with DS-07 (`seed test_v0_1` plus the D
 
 ## 7. New OQ and D IDs
 
-None. Decisions from this review will be recorded in TRD 24 from D-140.
+None. Decisions from this review will be recorded in TRD 24 from D-141 (D-140 is the OpenAPI server fix, GitHub PR #29).
 
 ## 8. Notes
 
