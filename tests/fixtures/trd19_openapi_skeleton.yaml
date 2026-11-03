@@ -6,7 +6,6 @@ info:
     EchoWell research system API. Detects a change in a resident's voice measurements relative to their own
     frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.
 servers:
-  - url: http://localhost:8000/api/v1
   - url: /api/v1
 security: []
 tags:

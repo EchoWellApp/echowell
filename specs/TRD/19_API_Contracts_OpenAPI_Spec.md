@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 3 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -45,7 +45,7 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | OAS-001 | The API shall be versioned in the path as `/api/v1`; a breaking change (removed/renamed field, changed type, new required request field, removed enum value) shall require a new path version `/api/v2`. | Must | BR-17 | Inspection |
-| OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the servers `/api/v1`-relative paths defined in §4.4. The generated document shall be committed as `docs/api_reference/openapi.json`, produced by `python -m backend.cli export-openapi`. | Must | SRC-17, contract §21 R22 | Test |
+| OAS-002 | The FastAPI-generated document at `/api/v1/openapi.json` shall declare `openapi: 3.1.0`, `info.title` "EchoWell API", `info.version` "0.1.0", and the single relative server `/api/v1` defined in §4.4 (TRD 24 D-140). The generated document shall be committed as `docs/api_reference/openapi.json`, produced by `python -m backend.cli export-openapi`. | Must | SRC-17, contract §21 R22 | Test |
 | OAS-003 | Every path, method, parameter (name, location, type, required flag, constraints), request body and response status code in this document shall appear in the generated document, and no other paths shall appear. | Must | SRC-17 | Test |
 | OAS-004 | Every schema in `components/schemas` of §4.5 shall exist in the generated document with the same property names, types, `required` lists and enum values; additional optional response properties are a contract change and shall be added here first. | Must | SRC-17 | Test |
 | OAS-005 | CI shall regenerate the schema with `python -m backend.cli export-openapi` and fail when it differs from the committed `docs/api_reference/openapi.json`. A contract test (`tests/contract/test_openapi_contract.py`, TRD 13 TST-060) shall also compare the generated document with the §4.5 skeleton (stored verbatim as `tests/fixtures/trd19_openapi_skeleton.yaml`) and fail on any difference in paths, methods, status codes, parameter definitions, schema property names, types, required lists or enums. | Must | SRC-17, TRD 13, contract §21 R22 | Test |
@@ -755,11 +755,12 @@ In production `alarm_timing` is null and `review_outcomes` is
 
 ```yaml
 servers:
-  - url: http://localhost:8000/api/v1
-    description: local (docker-compose)
   - url: /api/v1
-    description: relative to the deployed Railway API origin (staging, production)
+    description: current deployment
 ```
+
+The single relative server resolves against whichever origin serves the document: `http://localhost:8000` locally,
+the deployed API origin in staging and production (TRD 24 D-140).
 
 ### 4.5 OpenAPI 3.1 skeleton
 
@@ -777,7 +778,6 @@ info:
     EchoWell research system API. Detects a change in a resident's voice measurements relative to their own
     frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.
 servers:
-  - url: http://localhost:8000/api/v1
   - url: /api/v1
 security: []
 tags:
@@ -2168,3 +2168,4 @@ components:
 | 0.8 | 27 Oct 2026 | Checkpoint 4: three YAML quoting fixes so the §8 skeleton parses as intended (the `/scores` 200 description, `IngestBatchAccepted.accepted.description` and `CheckinEvent.detail.description` contained an unquoted comma); no contract change | — |
 | 0.9 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-9, Q-11; TRD 24 D-126): §4.2 universal responses add 415 and are documented once rather than per operation; global `audio/*` content-type rule | — |
 | 0.10 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-9, TRD 24 D-134): four §4.3 examples written out in full so every example validates against its schema (OAS-015): E-05 set-aside response (UUIDs instead of `"..."`), E-10 (null-valued properties), E-11 (all 7 scored features, values from the engine on SRC-05), E-19 (`meta` in full) | — |
+| 0.11 | 3 Nov 2026 | §4.4 and the §4.5 skeleton: one relative server `/api/v1` ("current deployment") instead of the localhost and Railway entries, matching the change on `main` (TRD 24 D-140); OAS-002 wording | — |

@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.23 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.24 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -309,6 +309,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-137 | The canonical `ALGORITHM_VALIDATION_REPORT.md` and `validation_results.json` are written only by a full-suite validation session (all 22 cases in their tiers and the supplementary checks); partial selections leave them alone, and CI's full run is the source of truth. | Checkpoint 6 review (GitHub PR #22, Q-5) | 14 |
 | D-138 | Confirmed in the checkpoint 6 review: resolved data alerts left by an earlier run are kept as history, since every view shows open alerts only (Q-2); the 100-seed robustness run is wired into the nightly job by FEAT-080 (Q-6); checkpoint 6 is accepted as one PR (Q-8). | Checkpoint 6 review (GitHub PR #22, Q-2, Q-6, Q-8) | 14 |
 | D-139 | Test helpers imported outside their own module are shared test infrastructure and live under `tests/support/`; the full-system builder (throwaway database, operator commands, API client, Tier B, DS-07) is `tests/support/system.py`. | Checkpoint 6 review (GitHub PR #22, Q-7) | 13 |
+| D-140 | The OpenAPI document declares one server, the relative `/api/v1` ("current deployment"), which resolves against whichever origin serves it (local, staging, production); the `http://localhost:8000/api/v1` entry is removed so the deployed docs do not point at localhost. Applied on `main` by the algorithm lead on 3 Nov 2026 ("Fix OpenAPI server URL"); TRD 19 §4.4, the §4.5 skeleton, `tests/fixtures/trd19_openapi_skeleton.yaml` and the committed `docs/api_reference/openapi.json` follow. | Change on `main`, 3 Nov 2026; confirmed by the project coordinator | 19 |
 
 ## 5. Assumptions
 
@@ -372,3 +373,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-32). OQ-21 and OQ-23 (
 | 0.21 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18): D-124 (batch to run column), D-125 (TRD 10 warning and refusal codes), D-126 (universal responses and the audio content-type rule), D-127 (confirmations), D-128 (Table 4.13-A rows, OpenAPI examples in checkpoint 5, PR size) | — |
 | 0.22 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20): D-129 (schema-check grant), D-130 (data-alert days), D-131 (one application clock for run times), D-132 (no in-place retry), D-133 (SRC-05 seed copy), D-134 (confirmations) | — |
 | 0.23 | 2 Nov 2026 | Checkpoint 6 review (GitHub PR #22): D-135 (data-alert history, TDV-031 PIPELINE_AS_OF), D-136 (freeze the application clock), D-137 (report on full runs only), D-138 (confirmations), D-139 (`tests/support/`) | — |
+| 0.24 | 3 Nov 2026 | D-140 (one relative OpenAPI server) | — |
