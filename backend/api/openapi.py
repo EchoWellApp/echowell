@@ -35,10 +35,9 @@ DESCRIPTION = (
     "their own frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.\n"
 )
 SERVERS = [
-    {"url": "http://localhost:8000/api/v1", "description": "local (docker-compose)"},
     {
         "url": "/api/v1",
-        "description": "relative to the deployed Railway API origin (staging, production)",
+        "description": "current deployment",
     },
 ]
 TAGS = [
