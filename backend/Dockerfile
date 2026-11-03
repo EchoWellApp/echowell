@@ -14,6 +14,7 @@ RUN pip install -r backend/requirements.txt
 COPY alembic.ini ./
 COPY analytics/ analytics/
 COPY backend/ backend/
+COPY database/ database/
 
 EXPOSE 8000
 
