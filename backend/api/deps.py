@@ -88,15 +88,26 @@ def get_session_factory(engine: Annotated[Engine, Depends(get_engine)]) -> Sessi
     return db.session_factory(engine)
 
 
+Clock = Callable[[], datetime]
+
+
+def get_clock() -> Clock:
+    """The application clock (DME-022, D-37): reviews and snoozes never use database `now()`;
+    tests freeze it with `time-machine` or override this dependency."""
+    return lambda: datetime.now(UTC)
+
+
 def get_pipeline_runner(
     request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
     session_factory: Annotated[SessionFactory, Depends(get_session_factory)],
+    clock: Annotated[Clock, Depends(get_clock)],
 ) -> PipelineRunner:
     """The runner with `app.state.pipeline_executor` when set (tests), else the analytics
-    executor (FEAT-053)."""
+    executor (FEAT-053); run times and the default as-of come from the application clock
+    (TRD 24 D-131)."""
     executor: Executor | None = getattr(request.app.state, "pipeline_executor", None)
-    return PipelineRunner(session_factory, settings, executor)
+    return PipelineRunner(session_factory, settings, executor, clock=clock)
 
 
 def get_ingest_service(
@@ -265,15 +276,6 @@ def check_date_range(start: date | None, end: date | None, max_days: int | None 
         raise InvalidQueryParameterError("'from' must not be later than 'to'")
     if max_days and start is not None and end is not None and (end - start).days + 1 > max_days:
         raise InvalidQueryParameterError(f"'from'..'to' may span at most {max_days} days")
-
-
-Clock = Callable[[], datetime]
-
-
-def get_clock() -> Clock:
-    """The application clock (DME-022, D-37): reviews and snoozes never use database `now()`;
-    tests freeze it with `time-machine` or override this dependency."""
-    return lambda: datetime.now(UTC)
 
 
 def get_read_context(
