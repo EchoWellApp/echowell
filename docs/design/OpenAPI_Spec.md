@@ -40,7 +40,7 @@ flowchart LR
 | ID | Design rule | Source |
 |---|---|---|
 | OAS-A1 | DTO class names equal the component schema names of §8; request models use `ConfigDict(extra="forbid")`; nullable response fields are declared `X \| None` without a default and are always serialised (OAS-012). | TRD 19 §8, OAS-004, OAS-012 |
-| OAS-A2 | `info.title` "EchoWell API", `info.version` "0.1.0", `openapi: 3.1.0`; one relative server `/api/v1` ("current deployment"). | OAS-002, TRD 19 §4.4 |
+| OAS-A2 | `info.title` "EchoWell API", `info.version` "0.1.0", `openapi: 3.1.0`; server `/api/v1` (relative to the serving origin; TRD 24 D-140). | OAS-002, TRD 19 §4.4 |
 | OAS-A3 | The committed file is regenerated only with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` and never edited by hand; `frontend/lib/api-types.ts` is regenerated with `npm run gen:api` after every API change. | ARC-017, FE-012, AGT-061, D-51, D-89 |
 | OAS-A4 | `POST /sessions` and `POST /ingest` read the raw body manually (so invalid bodies reach `ingest_rejections`) and attach the request schema through `openapi_extra`. | API-031, TRD 19 §8 |
 | OAS-A5 | `GET /scores` and `GET /analytics/baselines` declare both `application/json` and `text/csv` 200 responses; the handler chooses from the `Accept` header. | OAS-018, API-129 |

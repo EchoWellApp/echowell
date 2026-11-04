@@ -1,0 +1,30 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.caption {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 12px;
+}
+.table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.alarm {
+  color: var(--red);
+  font-weight: 600;
+}
