@@ -128,6 +128,6 @@ Shaba (algorithm lead) answered all 13 questions in her review of GitHub PR #28,
 | Q-10 | Update TRD 04 §4.8 to the implemented props | 19 component rows updated from the code; `StaffNotes` noted as fetching its own notes (D-150) |
 | Q-11 | Firefox, WebKit and `@isolated` in `e2e.yml` satisfy the requirement | D-151 |
 | Q-12 | Accept as one PR | D-151 |
-| Q-13 | Render (not Railway) is the intended backend host; update all deployment documentation and Block 4 planning | Done in its own documentation PR (branch `docs/render-deployment`, D-153), because it touches about 45 deployment documents and none of the frontend code |
+| Q-13 | Render (not Railway) is the intended backend host; update all deployment documentation and Block 4 planning | Done in its own documentation PR, GitHub PR #30 (D-153), because it touches about 60 deployment documents and none of the frontend code |
 
 Checks after the changes: Vitest 429 passed; contract tests, `test_residents.py` and the DS-07 UI fixture checks passed (54); `ruff check` and `ruff format --check` clean; the live API returns `device_code: "D02"` for R03's Oct 12 `device_silent` event.
