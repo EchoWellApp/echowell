@@ -1,6 +1,6 @@
 # Backend image (TRD 15 DEP-020, DEP-022). Build context: repository root.
 # Hardening (non-root UID 10001, image checks) is completed by FEAT-077.
-FROM python:3.15-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,6 +14,7 @@ RUN pip install -r backend/requirements.txt
 COPY alembic.ini ./
 COPY analytics/ analytics/
 COPY backend/ backend/
+COPY database/ database/
 
 EXPOSE 8000
 

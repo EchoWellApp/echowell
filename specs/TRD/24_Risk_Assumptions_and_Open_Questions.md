@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.22 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.23 (draft for review) · Date: 18 October 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -304,6 +304,11 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-132 | A failed pipeline run is not retried in place: the next ingest-triggered or nightly run is a new run that recomputes from `raw_sessions`, and every failed run keeps its own row and `pipeline_run_failed` event. TRD 17 LOG-067 and FEAT-056-FR-07 are reworded to this behaviour instead of adding an explicit second attempt. | Checkpoint 5 review (GitHub PR #20, Q-5) | 17 |
 | D-133 | The full `seed test_v0_1` reads a byte-identical copy of SRC-05 at `database/seeds/test_v0_1/EchoWell_pipeline_test_input_v0_1.csv`, because the Docker image has no `specs/`; the folder README marks it as a copy, and a unit test fails when it differs from SRC-05. | Checkpoint 5 review (GitHub PR #20, Q-2) | 15, 20 |
 | D-134 | Confirmed in the checkpoint 5 review: withdrawn residents do not contribute to data alerts or the KPI and funnel totals, and their ledger stops at `withdrawn_on` (Q-4); the fixes for the date-dependent test fixture and the frontend lockfile stay in the checkpoint 5 PR (Q-7); the automated SRC-03 comparison is FEAT-057/FEAT-058 in checkpoint 6 (Q-8); the four abbreviated TRD 19 §4.3 examples are written out in full (Q-9); `rebuild` runs as `echowell_migrator` (Q-10); checkpoint 5 is accepted as one PR (Q-11). | Checkpoint 5 review (GitHub PR #20, Q-4, Q-7..Q-11) | 07, 08, 19 |
+| D-135 | A data alert's `first_detected_at` is history and is never rewritten; `last_detected_at` only moves forward, so a run at an earlier as-of than a previous one still succeeds. The TDV-031 procedure sets PIPELINE_AS_OF to the test as-of, so the ingest-triggered run already evaluates 30 Oct; a separate field would be added if the earliest applicable as-of ever needs tracking. | Checkpoint 6 review (GitHub PR #22, Q-1) | 14, 23 |
+| D-136 | Tests freeze the application clock (the `get_clock` dependency, which API-started pipeline runs now use, D-131), not `time-machine`, which breaks psycopg connection deadlines; TDV-061, TRD 14 §4.7.10 VC-R10-FRZ (c) and FEAT-059-FR-10 say so. | Checkpoint 6 review (GitHub PR #22, Q-3, Q-4) | 14 |
+| D-137 | The canonical `ALGORITHM_VALIDATION_REPORT.md` and `validation_results.json` are written only by a full-suite validation session (all 22 cases in their tiers and the supplementary checks); partial selections leave them alone, and CI's full run is the source of truth. | Checkpoint 6 review (GitHub PR #22, Q-5) | 14 |
+| D-138 | Confirmed in the checkpoint 6 review: resolved data alerts left by an earlier run are kept as history, since every view shows open alerts only (Q-2); the 100-seed robustness run is wired into the nightly job by FEAT-080 (Q-6); checkpoint 6 is accepted as one PR (Q-8). | Checkpoint 6 review (GitHub PR #22, Q-2, Q-6, Q-8) | 14 |
+| D-139 | Test helpers imported outside their own module are shared test infrastructure and live under `tests/support/`; the full-system builder (throwaway database, operator commands, API client, Tier B, DS-07) is `tests/support/system.py`. | Checkpoint 6 review (GitHub PR #22, Q-7) | 13 |
 
 ## 5. Assumptions
 
@@ -366,3 +371,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-32). OQ-21 and OQ-23 (
 | 0.20 | 27 Oct 2026 | Checkpoint 3 review (GitHub PR #17): D-120 (transaction-scoped migration lock), D-121 (common-password list), D-122 (seed users and the production safeguard), D-123 (completion with seed values re-checked later) | — |
 | 0.21 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18): D-124 (batch to run column), D-125 (TRD 10 warning and refusal codes), D-126 (universal responses and the audio content-type rule), D-127 (confirmations), D-128 (Table 4.13-A rows, OpenAPI examples in checkpoint 5, PR size) | — |
 | 0.22 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20): D-129 (schema-check grant), D-130 (data-alert days), D-131 (one application clock for run times), D-132 (no in-place retry), D-133 (SRC-05 seed copy), D-134 (confirmations) | — |
+| 0.23 | 2 Nov 2026 | Checkpoint 6 review (GitHub PR #22): D-135 (data-alert history, TDV-031 PIPELINE_AS_OF), D-136 (freeze the application clock), D-137 (report on full runs only), D-138 (confirmations), D-139 (`tests/support/`) | — |
