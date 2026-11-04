@@ -1,6 +1,6 @@
 # EchoWell Deployment Architecture
 
-Document: docs/design/Deployment_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1); 26 October 2026 (wireframe v0.2, SRC-21; TRD 24 D-108 to D-114: smoke and local checks use the Resident list filter counts)
+Document: docs/design/Deployment_Architecture.md · Block 3 checkpoint 1, its own PR: GitHub PR #3 (Implement_Feature_Batches.md Phase 7, TRD 25 Phase 2) · Feature: FEAT-001 · Date: 21 October 2026 · Revised: 23 October 2026 (review round 1); 26 October 2026 (wireframe v0.2, SRC-21; TRD 24 D-108 to D-114: smoke and local checks use the Resident list filter counts); 4 November 2026 (backend host Railway → Render, TRD 24 D-153: §2, §3, §4, §5, §7, §8, §9, §10, §11, §12)
 
 ## 1. Purpose and sources
 
@@ -10,7 +10,7 @@ This document describes environments, hosting, branching and release, CI/CD work
 
 | Decision | Content | Design consequence | Source |
 |---|---|---|---|
-| D-OWNER-3 (D-27) | AWS (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) is the **target** production platform; Netlify + Railway + Neon is the **interim** stack until the AWS budget is approved | code stays portable: no Netlify, Railway or Neon SDK in application code; configuration only through environment variables; TLS 1.2+ everywhere including `sslmode=require` to PostgreSQL; encryption at rest | ARC-090..ARC-094, DEP-110, DEP-111, AGT-003 |
+| D-OWNER-3 (D-27) | AWS (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) is the **target** production platform; Netlify + Railway + Neon is the **interim** stack until the AWS budget is approved (backend host Render instead of Railway since D-153) | code stays portable: no Netlify, Render or Neon SDK in application code; configuration only through environment variables; TLS 1.2+ everywhere including `sslmode=require` to PostgreSQL; encryption at rest | ARC-090..ARC-094, DEP-110, DEP-111, AGT-003 |
 | D-OWNER-4 (D-28, closes OQ-23) | no real patient or resident data on the interim stack; the interim stack holds synthetic and test data only; go-live only on AWS after approval | every environment of the interim stack (local, staging, interim production) holds only synthetic data and team test check-ins under `T`-prefixed demo study IDs; seed and upload paths reference only `specs/data-samples` or `tests/fixtures` | ARC-008, DEP-008, DEP-118, AGT-014, UX-214, AC-AGT-10 |
 | D-OWNER-2 (D-01) | production `baseline_n` = 30; profile `test_v0_1` (16) for build and test only | production runs `PIPELINE_PROFILE=production`; the backend refuses `test_v0_1` or `PIPELINE_AS_OF` when `APP_ENV=production` | ARC-056, API-058, ENV-010, ENV-012, AGT-015 |
 | D-OWNER-1 (D-29) | third-party-licensed documents are linked, not committed | no licensed document in any image or artefact | AGT-016 |
@@ -36,22 +36,22 @@ flowchart LR
   end
   subgraph STG["staging (synthetic data, test_v0_1)"]
     NS["Netlify site echowell-und-staging"]
-    RS["Railway env staging: backend + nightly cron"]
+    RS["Render env staging: web service echowell-backend-staging + cron job echowell-nightly-staging"]
     DS[("Neon branch staging, aws-us-east-1")]
     NS --> RS --> DS
   end
   subgraph PRD["production (interim: synthetic and team test check-ins only)"]
     NP["Netlify site echowell-und (builds stopped)"]
-    RP["Railway env production: backend + nightly cron (auto deploy off)"]
+    RP["Render env production: web service echowell-backend-production + cron job echowell-nightly-production (auto-deploy off)"]
     DP[("Neon branch main, aws-us-east-1")]
     NP --> RP --> DP
   end
   FB -- "pull request, CI, review" --> M
   FB -. "deploy preview of the staging site" .-> NS
   M -- "every merge (Netlify integration)" --> NS
-  M -- "every merge, Wait for CI (Railway integration)" --> RS
+  M -- "every merge, After CI checks pass (Render auto-deploy)" --> RS
   M -- "chosen commit" --> REL
-  REL -- "railway up" --> RP
+  REL -- "Render API deploy of the released commit" --> RP
   REL -- "netlify deploy --build --prod" --> NP
   DEV["Team 1 device / admin CSV"] -- "HTTPS, X-API-Key" --> RP
 ```
@@ -60,12 +60,12 @@ flowchart LR
 |---|---|---|---|---|
 | Git source | working tree | `main`, automatically on every merge | a `main` commit chosen for a release | DEP-002..DEP-004, D-99 |
 | Frontend | `next dev` :3000 (Compose) | Netlify `echowell-und-staging` (production branch `main`) + PR deploy previews | Netlify `echowell-und`, published only by `deploy-production.yml` | DEP-050..DEP-054 |
-| Backend | uvicorn :8000 `--reload` | Railway project `echowell`, environment `staging`, service `backend` | Railway environment `production`, service `backend` | DEP-040..DEP-045 |
-| Nightly | manual CLI | Railway Cron Job service `nightly`, `0 7,8 * * *` UTC | same | DEP-046, DEP-047, D-47 |
+| Backend | uvicorn :8000 `--reload` | Render project `echowell`, environment `staging`, web service `echowell-backend-staging` (`https://echowell-backend-staging.onrender.com`) | Render environment `production`, web service `echowell-backend-production` (`https://echowell-backend-production.onrender.com`) | DEP-040..DEP-045 |
+| Nightly | manual CLI | Render cron job `echowell-nightly-staging`, `0 7,8 * * *` UTC | Render cron job `echowell-nightly-production`, same schedule | DEP-046, DEP-047, D-47 |
 | Database | `postgres:16-alpine`, volume `pgdata` | Neon project `echowell`, branch `staging` | Neon project `echowell`, branch `main` | DEP-005, DEP-030, DEP-031 |
 | `APP_ENV` / `PIPELINE_PROFILE` | `local` / `test_v0_1` | `staging` / `test_v0_1` | `production` / `production` | TRD 15 §4.1, ENV-050 |
 | Seed data | `seed test_v0_1` allowed | `seed test_v0_1 --reset` after migrations or analytics changes | never | DEP-007, DEP-070..DEP-074 |
-| Regions | — | Neon `aws-us-east-1`, Railway US East | same | ARC-084, D-54 |
+| Regions | — | Neon `aws-us-east-1`, Render `virginia` (US East) | same | ARC-084, D-54 |
 
 Each environment has its own `JWT_SECRET`, API keys and users; no credential works across environments (DEP-006, ENV-051).
 
@@ -102,15 +102,15 @@ sequenceDiagram
   participant Dev as Developer
   participant GH as GitHub (main protected)
   participant CI as ci.yml + e2e.yml
-  participant STG as Staging (Netlify, Railway, Neon staging)
+  participant STG as Staging (Netlify, Render, Neon staging)
   participant DS as deploy-staging.yml
   participant Lead as Algorithm lead / required reviewer
   participant DP as deploy-production.yml
-  participant PRD as Production (Netlify echowell-und, Railway production)
+  participant PRD as Production (Netlify echowell-und, Render production)
   Dev->>GH: pull request from feat/... to main
   GH->>CI: required checks (CIC-070)
   Lead->>GH: approve, merge to main
-  GH->>STG: Netlify builds staging, Railway waits for CI, runs alembic upgrade head, starts uvicorn
+  GH->>STG: Netlify builds staging, Render waits for CI checks, runs pre-deploy alembic upgrade head, starts uvicorn
   GH->>DS: push to main
   DS->>STG: wait for health version = merged SHA, re-seed if migrations or analytics changed, staging smoke tests
   Lead->>STG: review staging dashboard (Resident list 10 / 2 / 2 / 6, R09 Changed)
@@ -118,7 +118,7 @@ sequenceDiagram
   DP->>Lead: GitHub environment production waits for a required reviewer
   Lead->>DP: approve
   DP->>DP: verify sha on main, required checks green, staging deploy succeeded
-  DP->>PRD: railway up (pre-deploy alembic upgrade head), netlify deploy --build --prod
+  DP->>PRD: Render API deploy commitId=sha (pre-deploy alembic upgrade head), netlify deploy --build --prod
   DP->>PRD: wait for version = released SHA, production smoke tests (read-only)
   DP->>GH: tag vX.Y.Z and GitHub Release (only after smoke tests pass)
 ```
@@ -129,9 +129,9 @@ sequenceDiagram
 | Each Block 3 checkpoint is its own branch and PR from the latest `main` (checkpoints 3–8 are left out of the diagram; branch names in `specs/backlog/IMPLEMENTATION_ROADMAP.md` §2.1); the next checkpoint starts only after the previous checkpoint PR is approved and merged | GIT-030, GIT-031, D-101 |
 | There is no `staging` branch and no promotion merge; "staging" names only the staging environment, deployed from `main` on every merge | DEP-004, TRD 18 §4.2, D-99 |
 | Production changes only through the manual, reviewer-approved `deploy-production.yml` run for a chosen `main` commit; automatic deploys of the production services are disabled and the production Netlify site's builds are stopped | DEP-002, DEP-003, CIC-053, D-99 |
-| The only production secrets in GitHub are `RAILWAY_PRODUCTION_TOKEN` and `NETLIFY_AUTH_TOKEN`; the workflow never holds a production database URL | CIC-050, CIC-090 |
+| The only production secrets in GitHub are `RENDER_API_KEY` and `NETLIFY_AUTH_TOKEN`; the workflow never holds a production database URL | CIC-050, CIC-090 |
 | Tags `vX.Y.Z` and GitHub Releases are created only by `deploy-production.yml` after the production smoke tests pass | CIC-052 |
-| Migrations never run from GitHub Actions against production; only as the Railway pre-deploy command | CIC-003, DEP-060 |
+| Migrations never run from GitHub Actions against production; only as the Render pre-deploy command | CIC-003, DEP-060 |
 | An urgent production fix is a `fix/` PR to `main` followed by a release run | GIT-012 |
 
 ## 5. Deployable units
@@ -139,12 +139,12 @@ sequenceDiagram
 | Unit | Build | Runtime | Source |
 |---|---|---|---|
 | Backend image | `backend/Dockerfile` from `python:3.12-slim`, repository root as context; copies `backend/`, `analytics/`, `alembic.ini`; installs `backend/requirements.txt` (`psycopg[binary]` 3.x, pinned) and `tzdata`; non-root UID 10001; no `.env`, tests, `specs/` or `frontend/` (root `.dockerignore`) | `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"`; no migration step in the image command | DEP-020..DEP-022, ARC-090, D-53, CIC-023 |
-| Railway `backend` service | same image | pre-deploy `alembic upgrade head` (repository root, `DATABASE_MIGRATION_URL`); start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040, API-103); healthcheck `/api/v1/health` within 120 s; 1 replica | DEP-040, DEP-041, DEP-042, D-58 |
-| Railway `nightly` service | same image | `python -m backend.jobs.nightly_run`, cron `0 7,8 * * *` UTC; never runs Alembic; exits non-zero on schema revision mismatch; has no `DATABASE_MIGRATION_URL` | DEP-046..DEP-048, D-58 |
+| Render web service `echowell-backend-<env>` | same image (Docker runtime, build context repository root) | pre-deploy command `alembic upgrade head` (repository root, `DATABASE_MIGRATION_URL`); Docker command exports `GIT_SHA` from `RENDER_GIT_COMMIT`, then `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040, API-103); health check `/api/v1/health` (Render keeps the previous deploy until it passes); 1 Starter instance, no spin-down | DEP-040, DEP-041, DEP-042, D-58 |
+| Render cron job `echowell-nightly-<env>` | same image | `python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC; variables only from the environment group; never runs Alembic; exits non-zero on schema revision mismatch; has no `DATABASE_MIGRATION_URL` | DEP-046..DEP-048, D-58 |
 | Frontend | `frontend/Dockerfile` multi-stage `node:20-alpine` for Compose; Netlify builds with base `frontend/`, `node scripts/check-csp.mjs && npm run build`, `@netlify/plugin-nextjs` | server-capable Next.js; security headers and CSP from `netlify.toml` | DEP-023, DEP-050, DEP-053, FE-041 |
-| Configuration as code | `netlify.toml`, `railway.toml`, `docker-compose.yml`, `.env.example`, `.env.development.example`, `.env.production.example` at the repository root | dashboard-only settings listed in `railway.toml` comments | DEP-044, ENV-040 |
+| Configuration as code | `netlify.toml`, `render.yaml` (Blueprint: web services, cron jobs, environment groups), `docker-compose.yml`, `.env.example`, `.env.development.example`, `.env.production.example` at the repository root | secret values (`sync: false`) and dashboard-only settings listed in `docs/deployment.md` | DEP-044, ENV-040 |
 
-Railway Cron and FastAPI `BackgroundTasks` are the only schedulers and workers; no Celery, Redis or message queue (TRD 01 §8, AGT-059).
+Render cron jobs and FastAPI `BackgroundTasks` are the only schedulers and workers; no Celery, Redis or message queue (TRD 01 §8, AGT-059).
 
 ## 6. Local stack (Docker Compose)
 
@@ -164,7 +164,7 @@ Railway Cron and FastAPI `BackgroundTasks` are the only schedulers and workers; 
 | `ci.yml` | every PR, push to `main`, manual | `repo-hygiene`, `backend-lint`, `backend-test` (postgres:16-alpine service, provisioning script, unit + integration + validation, coverage 95 % analytics / 85 % backend, `budget` marker), `openapi-contract`, `frontend`, `security-audit`, `docker-build`; no repository secret; `ubuntu-24.04` runners | CIC-010..CIC-027, CIC-114, CIC-115 |
 | `e2e.yml` | PR, push to `main`, nightly 08:00 UTC, manual | `playwright` (Compose demo stack, Chromium + axe), `performance` (nightly), `lighthouse` (PRs, informational), `nightly-validation` (nightly) | CIC-030..CIC-037, CIC-116 |
 | `deploy-staging.yml` | push to `main` | wait for staging `version` = SHA (15 min), re-seed when `backend/alembic/**` or `analytics/**` changed, staging smoke tests; GitHub environment `staging` | CIC-040..CIC-043 |
-| `deploy-production.yml` | manual `workflow_dispatch` (`sha`, `version`) | required-reviewer approval, verification, `railway up`, `netlify deploy --build --prod`, smoke tests, tag and release | CIC-050..CIC-053 |
+| `deploy-production.yml` | manual `workflow_dispatch` (`sha`, `version`) | required-reviewer approval, verification, Render API deploy of the commit (`RENDER_API_KEY`), `netlify deploy --build --prod`, smoke tests, tag and release | CIC-050..CIC-053 |
 | `uptime.yml` | every 30 minutes | production and staging health, production `/login`; opens an `incident` issue after two failures | CIC-060, CIC-061 |
 
 Required checks on `main`: `repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright` (CIC-070). Phase 3 replaces the legacy `ci.yml` stub with `backend-lint`, `backend-test` and `frontend`; Phase 9 adds the remaining jobs and replaces the legacy `docker-compose.yml` (D-94, D-55).
@@ -173,9 +173,9 @@ Required checks on `main`: `repo-hygiene`, `backend-lint`, `backend-test`, `open
 
 | Class | Where it lives | Examples | Source |
 |---|---|---|---|
-| Backend environment variables | Railway service variables (interim), Secrets Manager → App Runner (target), `.env` locally only | `APP_ENV`, `DATABASE_URL`, `DATABASE_MIGRATION_URL` (backend service pre-deploy only), `DATABASE_READONLY_URL` (local and staging, test-profile alarm timing only; not set in production, SEC-116), `JWT_SECRET`, `CORS_ORIGINS`, `PIPELINE_PROFILE`, `GIT_SHA`, `FACILITY_NAME`, `FACILITY_TZ`, `DATA_SOURCE_LABEL`, `NIGHTLY_RUN_HOUR_LOCAL`, `PORT` | TRD 21 §4.2–§4.3, ENV-005, D-58 |
+| Backend environment variables | Render environment group (shared with the cron job) and web-service variables (interim), Secrets Manager → App Runner (target), `.env` locally only | `APP_ENV`, `DATABASE_URL`, `DATABASE_MIGRATION_URL` (web service only, for the pre-deploy command), `DATABASE_READONLY_URL` (local and staging, test-profile alarm timing only; not set in production, SEC-116), `JWT_SECRET`, `CORS_ORIGINS`, `PIPELINE_PROFILE`, `GIT_SHA`, `FACILITY_NAME`, `FACILITY_TZ`, `DATA_SOURCE_LABEL`, `NIGHTLY_RUN_HOUR_LOCAL`, `PORT` | TRD 21 §4.2–§4.3, ENV-005, D-58 |
 | Frontend build variables | Netlify site settings (interim), Amplify (target) | `NEXT_PUBLIC_API_BASE_URL` (per site; previews never point to production), `NEXT_PUBLIC_APP_ENV` | FE-170, DEP-051, DEP-054 |
-| GitHub Actions secrets | environments `staging` and `production` only | `STAGING_DATABASE_URL`, `STAGING_SEED_*`, `RAILWAY_PRODUCTION_TOKEN`, `NETLIFY_AUTH_TOKEN` | CIC-090..CIC-092 |
+| GitHub Actions secrets | environments `staging` and `production` only | `STAGING_DATABASE_URL`, `STAGING_SEED_*`, `RENDER_API_KEY`, `NETLIFY_AUTH_TOKEN` (variables `RENDER_PRODUCTION_BACKEND_SERVICE_ID`, `RENDER_PRODUCTION_NIGHTLY_SERVICE_ID`) | CIC-090..CIC-092 |
 | Algorithm and operational parameters | `config_parameters` rows (not environment variables) | `baseline_n`, `cusum_h`, `alert_snooze_hours`, `review_explanations` | ENV-020, ANL-028 |
 
 Production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; every non-local database URL uses `sslmode=require` (TRD 25 Phase 9, ENV-011, ENV-012, PGS-027). Secrets and `.env` files are never committed (AGT-016, CIC-021).
@@ -186,7 +186,7 @@ Production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; 
 |---|---|---|
 | Browser → frontend, browser and device → backend | HTTPS TLS 1.2+ terminated by the platform; HTTP redirected; HSTS on API and frontend in staging and production | ARC-005, DEP-045, FE-061, TST-135 |
 | Backend → database | TLS `sslmode=require` (or `verify-full`); startup refused otherwise in staging and production | ARC-006, ARC-057, DEP-034 |
-| Storage | provider-managed encryption at rest (Neon, Railway); RDS with KMS and encrypted backups on AWS | ARC-007, DEP-009, DEP-112 |
+| Storage | provider-managed encryption at rest (Neon; Render Postgres if used); RDS with KMS and encrypted backups on AWS | ARC-007, DEP-009, DEP-112 |
 | Database roles | runtime `echowell_app` through the pooled endpoint; migrations `echowell_migrator` through the direct endpoint; readonly role only for the alarm-timing read | DEP-032, ARC-015, ARC-019 |
 | Ingest | API keys with scope `ingest:write`, optional device binding; scheduler key `pipeline:run` | ARC-004, D-47 |
 | Browser | CSP of TRD 12 §4.9 in `netlify.toml` (`connect-src` = API origin), `X-Frame-Options: DENY`, `Permissions-Policy` denying camera and microphone | FE-060, FE-061, DEP-053 |
@@ -196,9 +196,9 @@ Production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; 
 
 ## 10. Migrations, seeding and bootstrap
 
-- Schema changes only through Alembic as the Railway pre-deploy command (`alembic upgrade head`, advisory lock key `0x45434857`); a failed migration fails the deployment and the previous one stays live (DEP-040, DEP-060, DEP-064, DEP-065).
+- Schema changes only through Alembic as the Render pre-deploy command (`alembic upgrade head`, advisory lock key `0x45434857`); a failed migration fails the deployment and the previous one stays live (DEP-040, DEP-060, DEP-064, DEP-065).
 - Migrations are backward compatible with the previous release (expand/contract), applied to staging before any production release (DEP-061, DEP-062); before a production release with a migration a Neon restore branch `pre-<short-sha>` is created (DEP-063, DB-031).
-- `python -m backend.cli bootstrap` creates the facility row and verifies the config seed; the first production admin is created with `railway run --environment production python -m backend.cli create-user ... --role admin` with an interactive password (DEP-072, DEP-075, SEC-017).
+- `python -m backend.cli bootstrap` creates the facility row and verifies the config seed; the first production admin is created with `python -m backend.cli create-user ... --role admin` in the Render Shell (or SSH) of `echowell-backend-production` with an interactive password (DEP-072, DEP-075, SEC-017).
 - Seeding is refused in production (exit code 2); production holds no `ingest_batches.source = seed` row (DEP-070, DEP-073, DB-059).
 
 ## 11. Post-deploy checks, rollback, backups
@@ -207,9 +207,9 @@ Production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; 
 |---|---|---|
 | Staging smoke | health 200 with `database` "ok" and `version` = SHA; `/login` 200; login with the seeded researcher; `GET /residents` 200; HSTS | DEP-080, TST-152 |
 | Production smoke | unauthenticated and read-only: health, `/login` over HTTPS, headers; no login (no smoke user in production); manual authenticated check recorded afterwards | DEP-081, DEP-083 |
-| Rollback | platform "publish/redeploy previous" within 10 minutes; never `alembic downgrade` in production; data damage → revoke keys, restore Neon branch or PITR, redeploy, `run-pipeline --scope all` | DEP-085..DEP-087, TRD 15 §4.12 |
+| Rollback | Netlify "Publish deploy" and Render "Rollback" (Events tab; Render then turns auto-deploy off on that service until re-enabled) within 10 minutes; a rollback re-runs the pre-deploy command, so after a migration revert and deploy forward if it fails; never `alembic downgrade` in production; data damage → revoke keys, restore Neon branch or PITR, redeploy, `run-pipeline --scope all` | DEP-085..DEP-087, TRD 15 §4.12 |
 | Backups | Neon PITR plus weekly `pg_dump` (and before migration releases) stored only on UND-approved storage; never in the repository or Actions artifacts; restore drill before 15 Nov 2026 | DEP-095..DEP-098, DB-051, OQ-01 |
-| Monitoring | JSON logs to stdout (Railway logs; CloudWatch on AWS); optional Sentry via `SENTRY_DSN`; uptime workflow; nightly-missing banner on `/admin` | TRD 17, FEAT-084, FEAT-085, UX-219 |
+| Monitoring | JSON logs to stdout (Render Logs tab; CloudWatch on AWS); Render notification e-mails for failed deploys; Render Metrics tab; optional Sentry via `SENTRY_DSN`; uptime workflow; nightly-missing banner on `/admin` | TRD 17, FEAT-084, FEAT-085, UX-219 |
 | Demo fallback | if production does not pass smoke tests by 5 Nov 2026, the demo runs on a laptop with `docker compose --profile demo up -d db backend frontend-prod` (dashboard :3001, device posts to :8000) | DEP-090..DEP-093, RSK-12 |
 
 ## 12. Target AWS architecture (after approval)
@@ -230,11 +230,11 @@ flowchart LR
 | Concern | Interim (current) | AWS target | Change required | Source |
 |---|---|---|---|---|
 | Frontend | Netlify | Amplify Hosting | new app, same `NEXT_PUBLIC_*` variables; no code change | ARC-093, FE-044 |
-| Backend | Railway | App Runner from ECR | same image, `PORT`, health path | ARC-090, DEP-111 |
-| Database | Neon (or Railway) PostgreSQL 16 | RDS PostgreSQL 16 + KMS, `rds.force_ssl = 1` | provisioning step, roles, Alembic; credentials not migrated | DEP-112, DEP-117 |
+| Backend | Render web service | App Runner from ECR | same image, `PORT`, health path | ARC-090, DEP-111 |
+| Database | Neon (or Render Postgres) PostgreSQL 16 | RDS PostgreSQL 16 + KMS, `rds.force_ssl = 1` | provisioning step, roles, Alembic; credentials not migrated | DEP-112, DEP-117 |
 | Secrets | platform variables, GitHub secrets | Secrets Manager | same variable names | DEP-113 |
-| Scheduler | Railway Cron `nightly_run` | EventBridge → `POST /api/v1/pipeline/run` with `pipeline:run` key (or ECS scheduled task) | configuration only | DEP-116, D-47, D-70 |
-| Logs | Railway logs | CloudWatch, 90-day retention | none | DEP-115 |
+| Scheduler | Render cron job `nightly_run` | EventBridge → `POST /api/v1/pipeline/run` with `pipeline:run` key (or ECS scheduled task) | configuration only | DEP-116, D-47, D-70 |
+| Logs | Render logs | CloudWatch, 90-day retention | none | DEP-115 |
 | Compliance | synthetic data only | BAA accepted, HIPAA-eligible services confirmed before live data | account setup | DEP-114, DEP-118 |
 
 A migration to AWS changes only deployment configuration, never application source (ARC-094). The AWS work is the post-MVP item FEAT-092.

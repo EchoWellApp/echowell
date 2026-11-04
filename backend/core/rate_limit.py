@@ -32,7 +32,7 @@ def _settings(request: Request) -> Settings:
 
 
 def client_address(request: Request) -> str:
-    """Left-most `X-Forwarded-For` (set by the Railway edge), else the socket peer (API-103)."""
+    """Left-most `X-Forwarded-For` (set by the Render edge), else the socket peer (API-103)."""
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded and forwarded.split(",", 1)[0].strip():
         return forwarded.split(",", 1)[0].strip()

@@ -40,7 +40,7 @@ flowchart LR
 | ID | Design rule | Source |
 |---|---|---|
 | OAS-A1 | DTO class names equal the component schema names of §8; request models use `ConfigDict(extra="forbid")`; nullable response fields are declared `X \| None` without a default and are always serialised (OAS-012). | TRD 19 §8, OAS-004, OAS-012 |
-| OAS-A2 | `info.title` "EchoWell API", `info.version` "0.1.0", `openapi: 3.1.0`; servers `http://localhost:8000/api/v1` and `/api/v1`. | OAS-002, TRD 19 §4.4 |
+| OAS-A2 | `info.title` "EchoWell API", `info.version` "0.1.0", `openapi: 3.1.0`; one relative server `/api/v1` ("current deployment"). | OAS-002, TRD 19 §4.4 |
 | OAS-A3 | The committed file is regenerated only with `python -m backend.cli export-openapi > docs/api_reference/openapi.json` and never edited by hand; `frontend/lib/api-types.ts` is regenerated with `npm run gen:api` after every API change. | ARC-017, FE-012, AGT-061, D-51, D-89 |
 | OAS-A4 | `POST /sessions` and `POST /ingest` read the raw body manually (so invalid bodies reach `ingest_rejections`) and attach the request schema through `openapi_extra`. | API-031, TRD 19 §8 |
 | OAS-A5 | `GET /scores` and `GET /analytics/baselines` declare both `application/json` and `text/csv` 200 responses; the handler chooses from the `Accept` header. | OAS-018, API-129 |
@@ -366,3 +366,4 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §6.2 E-08 default order (D-109) and summary, attention flag, `alarm_reviewed`, `checkins_started`, `uploaded_on_as_of_date`, v0.2 data-alert details and the nav badge consumer; §8 `ResidentOverviewRow`, `OverviewSummary`, `DateWindow`, `EpochInfo`, `ResidentDetail`, `CheckinEvent`, `CheckinEventType`, `Device` and new `AttentionReason` per TRD 19 v0.6; OQ-31; PR #5 review round 1: OQ-31 answered (D-115) | — |
+| 0.3 | 4 Nov 2026 | Servers: one relative server `/api/v1` (TRD 19 §4.4 v0.11, TRD 24 D-153) | — |

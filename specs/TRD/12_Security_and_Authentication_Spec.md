@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -16,7 +16,7 @@ no personally identifying information about residents: residents are known only 
 
 ## 2. Scope
 
-In scope: the FastAPI backend (Railway now, AWS App Runner target), the Next.js frontend (Netlify now, AWS
+In scope: the FastAPI backend (Render now, AWS App Runner target), the Next.js frontend (Netlify now, AWS
 Amplify target), the PostgreSQL database (Neon now, AWS RDS target), GitHub repository and Actions, the admin
 CLI, and operational security procedures run by Team 2.
 
@@ -28,7 +28,7 @@ not defined); the offline mixed-effects research analysis environment (governed 
 
 | ID | Document |
 |---|---|
-| SRC-01 | Deployment Architecture (Netlify, Railway, Neon/Railway PostgreSQL, GitHub Actions, future AWS) |
+| SRC-01 | Deployment Architecture (Netlify, Render, Neon/Render Postgres, GitHub Actions, future AWS; backend host amended from Railway by TRD 24 D-153) |
 | SRC-02 | Storage flowchart (raw store kept as received; every other table rebuildable) |
 | SRC-05 | Pipeline test input CSV (synthetic data permitted on the interim stack) |
 | SRC-07 | Preprint (https://preprints.jmir.org/preprint/113062): device captures a short fixed phrase; features only |
@@ -78,18 +78,18 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 
 | Class | Examples | Allowed where |
 |---|---|---|
-| Synthetic / test | SRC-05 CSV, SRC-06 legacy mock, generated datasets, public development datasets' derived features (DAIC-WOZ, E-DAIC) | local, interim stack (Netlify/Railway/Neon), AWS |
+| Synthetic / test | SRC-05 CSV, SRC-06 legacy mock, generated datasets, public development datasets' derived features (DAIC-WOZ, E-DAIC) | local, interim stack (Netlify/Render/Neon), AWS |
 | Live research data (potentially PHI-derived) | features from Team 1 devices at Edgewood, staff notes about real residents, derived scores and alerts | AWS target platform only, after approval |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-001 | The interim stack (Netlify + Railway + Neon, all environments including the one named `production`) shall hold synthetic and test data only; no real resident data shall be loaded, ingested or entered into it. | Must | D-OWNER-4, BR-16 | Inspection |
+| SEC-001 | The interim stack (Netlify + Render + Neon, all environments including the one named `production`) shall hold synthetic and test data only; no real resident data shall be loaded, ingested or entered into it. | Must | D-OWNER-4, BR-16 | Inspection |
 | SEC-002 | EchoWell shall not go live with real resident data until the AWS target platform is approved; go-live shall happen on AWS only. | Must | D-OWNER-4, D-OWNER-3 | Inspection |
 | SEC-003 | Team 2 shall not issue interim-stack API keys to devices deployed at Edgewood; interim-stack API keys shall be bound to test devices or used only by test harnesses. | Must | D-OWNER-4 | Inspection |
 | SEC-004 | On the interim stack, DATA_SOURCE_LABEL shall name the synthetic/test source (for example "pipeline test data v0.1") and the frontend data bar (TRD 11 UX-400) shall display it on every page. | Must | D-OWNER-4, contract §11 | Demo |
 | SEC-005 | The go-live checklist (TRD 15) shall include a signed-off item "hosting approved for PHI-derived data (AWS)" by the PI and UND IT before any live device is pointed at the API. | Must | D-OWNER-3, D-OWNER-4 | Inspection |
-| SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Railway US East, AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
-| SEC-006 | Application code shall remain portable to AWS (App Runner, Amplify, RDS PostgreSQL, KMS, Secrets Manager, CloudWatch) with configuration changes only: no Railway-, Netlify- or Neon-specific SDKs in application code. | Must | D-OWNER-3, SRC-01 | Inspection |
+| SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Render Virginia (US East), AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
+| SEC-006 | Application code shall remain portable to AWS (App Runner, Amplify, RDS PostgreSQL, KMS, Secrets Manager, CloudWatch) with configuration changes only: no Render-, Netlify- or Neon-specific SDKs in application code. | Must | D-OWNER-3, SRC-01 | Inspection |
 
 ### 4.3 Authentication: dashboard users
 
@@ -189,7 +189,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* credentials of TRD 21 (never in production), database role passwords, platform deploy tokens) shall be stored only in Railway service variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. Exception: obviously fake local/CI-only placeholders following the patterns `local-dev-only-*` and `ci-only-*` may be committed: the SEED_* values and JWT_SECRET of `.env.development.example` (e.g. `local-dev-only-change-me`) and the local/CI database passwords (Postgres superuser and login roles) in `docker-compose.yml`, `ci.yml` and the `.env.development.example` connection URLs; they are never valid in staging or production, and startup refuses them when APP_ENV is `staging` or `production` (TRD 21 ENV-041, TRD 06 DB-057). | Must | contract §12, D-OWNER-3 | Inspection |
+| SEC-050 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* credentials of TRD 21 (never in production), database role passwords, platform deploy tokens) shall be stored only in Render environment variables, Netlify environment variables, Neon project settings and GitHub Actions encrypted secrets; on AWS in AWS Secrets Manager. Exception: obviously fake local/CI-only placeholders following the patterns `local-dev-only-*` and `ci-only-*` may be committed: the SEED_* values and JWT_SECRET of `.env.development.example` (e.g. `local-dev-only-change-me`) and the local/CI database passwords (Postgres superuser and login roles) in `docker-compose.yml`, `ci.yml` and the `.env.development.example` connection URLs; they are never valid in staging or production, and startup refuses them when APP_ENV is `staging` or `production` (TRD 21 ENV-041, TRD 06 DB-057). | Must | contract §12, D-OWNER-3 | Inspection |
 | SEC-051 | `.env`, `.env.*` (except `.env.example`) shall be listed in `.gitignore`; `.env.example` shall contain variable names with non-secret dummy values only. | Must | contract §12 | Inspection |
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
@@ -203,10 +203,10 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-060 | All external traffic shall use HTTPS with TLS 1.2 or higher (Netlify and Railway edges now; AWS ALB/App Runner/CloudFront with a TLS 1.2+ security policy on AWS); TLS 1.0/1.1 and plain HTTP shall not serve data (HTTP redirects to HTTPS). | Must | contract §12, D-OWNER-3 | Test |
+| SEC-060 | All external traffic shall use HTTPS with TLS 1.2 or higher (Netlify and Render edges now; AWS ALB/App Runner/CloudFront with a TLS 1.2+ security policy on AWS); TLS 1.0/1.1 and plain HTTP shall not serve data (HTTP redirects to HTTPS). | Must | contract §12, D-OWNER-3 | Test |
 | SEC-061 | The backend shall connect to PostgreSQL with `sslmode=require` (or `verify-full`) in staging and production and refuse to start otherwise (TRD 05 API-059); on AWS, RDS shall set `rds.force_ssl=1`. | Must | D-OWNER-3 | Test |
 | SEC-062 | `Strict-Transport-Security: max-age=31536000; includeSubDomains` shall be sent by the backend (TRD 05 API-106) and by Netlify (netlify.toml) in staging and production. | Must | contract §12 | Test |
-| SEC-063 | Data at rest shall be encrypted with provider-managed encryption on the interim stack (Neon storage encryption; Railway volumes) and, on AWS, with RDS storage encryption using a customer-managed KMS key, encrypted automated backups and snapshots, and encrypted S3 buckets if any are used. | Must | D-OWNER-3 | Inspection |
+| SEC-063 | Data at rest shall be encrypted with provider-managed encryption on the interim stack (Neon storage encryption; Render Postgres if TRD 15 DEP-035 applies; the Render web service and cron job keep no data) and, on AWS, with RDS storage encryption using a customer-managed KMS key, encrypted automated backups and snapshots, and encrypted S3 buckets if any are used. | Must | D-OWNER-3 | Inspection |
 | SEC-064 | Device-to-API traffic shall use HTTPS only; the API shall not offer any unencrypted ingest path. | Must | BR-01, OQ-07 | Test |
 | SEC-065 | Local development (`docker-compose`) may use plain HTTP on localhost with synthetic data only. | May | — | Inspection |
 | SEC-066 | A TLS check (e.g. `curl --tlsv1.1 --tls-max 1.1` must fail; `--tlsv1.2` must succeed) shall be part of the post-deploy smoke test for staging and production. | Should | TRD 15 | Test |
@@ -224,13 +224,13 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
     X-Frame-Options = "DENY"
     Referrer-Policy = "no-referrer"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-backend-staging.up.railway.app https://echowell-backend-production.up.railway.app; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-backend-staging.onrender.com https://echowell-backend-production.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 ```
 
-The `connect-src` origins are the Railway public domains of the staging and production API services, which
-shall be configured as `echowell-backend-staging.up.railway.app` and `echowell-backend-production.up.railway.app`
-(TRD 15 §4.5 step 3; Railway service settings → Networking → generate domain with these names). They are exactly the
-values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) of the two Netlify sites; if Railway assigns other names,
+The `connect-src` origins are the Render default (`onrender.com`) domains of the staging and production API web services, which
+are `echowell-backend-staging.onrender.com` and `echowell-backend-production.onrender.com`
+(TRD 15 §4.5 step 3; Render derives them from the service names `echowell-backend-staging` and `echowell-backend-production`). They are exactly the
+values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) of the two Netlify sites; if Render assigns other names,
 the recorded names replace both entries here and in TRD 15 in the same change. Local development (`next dev` on :3000 against
 :8000) is not served through Netlify and therefore not subject to this header. When the API moves to AWS, the
 AWS API origin replaces these entries in the same change that switches NEXT_PUBLIC_API_BASE_URL.
@@ -318,14 +318,14 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 
 | Role | Purpose | Privileges |
 |---|---|---|
-| echowell_migrator | Alembic migrations (Railway pre-deploy command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
+| echowell_migrator | Alembic migrations (Render pre-deploy command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`), connection string in DATABASE_MIGRATION_URL | Owner of schema `public` and all objects; DDL |
 | echowell_app | FastAPI backend and nightly job, connection string in DATABASE_URL | CONNECT; USAGE on schema; SELECT, INSERT on `raw_sessions`, `audit_logs`, `ingest_rejections`, `staff_notes`, `baselines`, `alert_reviews`; no privilege at all on `evaluation_ground_truth`; SELECT, INSERT, UPDATE (no DELETE) on `facilities`, `residents`, `devices`, `device_assignments`, `users`, `api_keys`, `ingest_batches`, `pipeline_runs`, `config_parameters`, `alerts`, `data_alerts`; SELECT, INSERT, UPDATE, DELETE on rebuildable derived tables (`epochs`, `processed_sessions`, `day_ledger`, `scores`, `cusum_state`, `facility_reference_ranges`); USAGE on sequences; no DDL, no TRUNCATE (exact grants: TRD 20 §4.8) |
 | echowell_readonly | Researchers' offline analysis, audit review, exports; login used by DATABASE_READONLY_URL (alarm-timing read in `analytics_summary.py`, test_v0_1 only) | SELECT on all tables (including `evaluation_ground_truth` in the test profile) except `users.password_hash` and `api_keys.key_hash` (column-level grants) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-110 | The three roles above and their login roles shall be created by the provisioning step run with owner/superuser rights (`database/roles/provision_login_roles.sql` locally and in CI; the documented owner step on Neon, Railway PostgreSQL and RDS; TRD 20 §4.3, TRD 24 D-72), never by an Alembic migration, and the migrations shall grant the listed privileges, in every environment. | Must | contract §12 | Test |
-| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as the Railway pre-deploy command `alembic upgrade head`, never in the web start command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`) shall use DATABASE_MIGRATION_URL as `echowell_migrator` (each runs `SET ROLE echowell_migrator` after connecting); application request, pipeline and job code shall never read it (import-boundary test), and it shall not be set on the Railway cron (`nightly`) service; on AWS only the one-off migration task receives it (TRD 24 D-58, RSK-15). | Must | contract §12, §21 R20 | Inspection |
+| SEC-110 | The three roles above and their login roles shall be created by the provisioning step run with owner/superuser rights (`database/roles/provision_login_roles.sql` locally and in CI; the documented owner step on Neon, Render Postgres and RDS; TRD 20 §4.3, TRD 24 D-72), never by an Alembic migration, and the migrations shall grant the listed privileges, in every environment. | Must | contract §12 | Test |
+| SEC-111 | The backend and nightly job shall connect with DATABASE_URL as `echowell_app`; only Alembic (run as the Render pre-deploy command `alembic upgrade head`, never in the web start command, TRD 15 DEP-040) and the closed list of TRD 20 §4.3 (seed, reset-test-db, purge-resident, rebuild, set-config, and the script `database/seeds/load_evaluation_ground_truth.py`) shall use DATABASE_MIGRATION_URL as `echowell_migrator` (each runs `SET ROLE echowell_migrator` after connecting); application request, pipeline and job code shall never read it (import-boundary test), and it shall not be set on the Render nightly cron jobs (`echowell-nightly-staging`, `echowell-nightly-production`) or the environment groups they share; on AWS only the one-off migration task receives it (TRD 24 D-58, RSK-15). | Must | contract §12, §21 R20 | Inspection |
 | SEC-112 | `raw_sessions` shall be immutable: trigger `raw_sessions_no_update_delete` raises on UPDATE/DELETE, and `echowell_app` has no UPDATE, DELETE or TRUNCATE privilege on it. | Must | BR-02, T-04 | Test |
 | SEC-113 | `staff_notes` shall be append-only for `echowell_app` (SELECT, INSERT only); edits create a new row with `supersedes_id`. | Must | contract §9, T-07 | Test |
 | SEC-114 | An integration test connected as `echowell_app` shall assert that UPDATE and DELETE on `raw_sessions`, `audit_logs`, `alert_reviews` and `staff_notes` fail and that `SELECT * FROM evaluation_ground_truth` fails with a permission error. | Must | T-04, contract §21 R20 | Test |
@@ -372,7 +372,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| SEC-170 | Containment actions shall be documented in `docs/deployment.md` and executable within 1 hour by the on-duty Team 2 DevOps lead: revoke API keys (CLI), deactivate users (`PATCH /users/{id}`), rotate JWT_SECRET (invalidates all sessions), rotate database role passwords, and scale the Railway/App Runner service to zero if needed. | Must | BR-16 | Demo |
+| SEC-170 | Containment actions shall be documented in `docs/deployment.md` and executable within 1 hour by the on-duty Team 2 DevOps lead: revoke API keys (CLI), deactivate users (`PATCH /users/{id}`), rotate JWT_SECRET (invalidates all sessions), rotate database role passwords, and suspend the Render web service and cron job (dashboard → Settings → Suspend) or scale App Runner to zero if needed. | Must | BR-16 | Demo |
 | SEC-171 | A suspected security incident shall be reported to the PI and the Team 2 lead within 24 hours of discovery; the PI decides on reporting to UND IT security and the IRB under UND policy. | Must | BR-16 | Inspection |
 | SEC-172 | Investigation shall use `audit_logs` (actor, action, request_id, ip) correlated with application logs by `request_id`. | Must | T-07 | Demo |
 | SEC-173 | Each incident shall produce a written post-incident note (timeline, cause, data affected, corrective actions) stored in the team's private project space, not in the public repository. | Should | BR-16 | Inspection |
@@ -392,7 +392,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 - ASM-03 Single facility (Edgewood); one tenant, no cross-facility isolation needed in the MVP.
 - ASM-05 Devices reach the API over HTTPS with an API key; device-side key storage is Team 1's responsibility.
 - ASM-08 < 25 dashboard users; rate limits and lockout thresholds are sized for this.
-- Note for lead (TRD-local): a single Railway web replica is assumed, so in-memory rate-limit storage is
+- Note for lead (TRD-local): a single Render web instance is assumed, so in-memory rate-limit storage is
   sufficient; on AWS with more than one instance a shared store (e.g. PostgreSQL- or Redis-backed limits) is required.
 
 ## 6. Dependencies
@@ -433,7 +433,7 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
   reads actor, IP and request_id from the request context var; never call it after commit.
 - Failed-login rows are written in their own short transaction because the login request itself does not commit other changes.
 - For tests, create users with a reduced argon2 memory cost only via a test-only settings override; never weaken production parameters.
-- Pitfall: Railway's edge sets `X-Forwarded-For`; without `--proxy-headers` every client appears as the proxy and the login limit would lock everyone out together.
+- Pitfall: Render's edge sets `X-Forwarded-For`; without `--proxy-headers` every client appears as the proxy and the login limit would lock everyone out together.
 - Pitfall: the only permitted `allow_origin_regex` is CORS_ORIGIN_REGEX of TRD 21, set in staging only to the anchored Netlify deploy-preview pattern `^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$` of the staging site (deploy previews call the staging API, TRD 15 DEP-054); it is refused in production (TRD 21 ENV-012). Every other allowed origin is an exact entry of CORS_ORIGINS.
 
 ## 9. Open Questions
@@ -465,3 +465,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.12 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SEC-043 page and control access (Study team `/study` for researcher and admin; review and notes in the Resident chart for clinician and admin); SEC-004 data bar; SEC-072 font Source Sans 3; SRC-21 reference | — |
 | 0.13 | 27 Oct 2026 | Checkpoint 4: `ingest.batch.received` details add `pipeline_run_id`, the link from a batch to its pipeline run for `GET /ingest/batches/{id}` (open question to the reviewer: a nullable `ingest_batches.pipeline_run_id` column instead) | — |
 | 0.14 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, Q-6; TRD 24 D-124, D-127): `ingest.batch.received` keeps `pipeline_run_id` for traceability while `ingest_batches.pipeline_run_id` (TRD 20 §4.13) holds the link the API reads; the SEC-012 bundled list keeps `password1234` as an "EchoWell addition" so the AC-SEC-05 example stays valid | — |
+| 0.15 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

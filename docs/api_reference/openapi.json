@@ -7327,11 +7327,7 @@
   "security": [],
   "servers": [
     {
-      "description": "local (docker-compose)",
-      "url": "http://localhost:8000/api/v1"
-    },
-    {
-      "description": "relative to the deployed Railway API origin (staging, production)",
+      "description": "current deployment",
       "url": "/api/v1"
     }
   ],

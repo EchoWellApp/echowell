@@ -12,11 +12,11 @@
 
 ## Purpose
 
-Execute the Phase 10 deployment on the interim stack: provision Neon, Railway and Netlify per the Phase 9 runbooks, deploy staging (profile `test_v0_1`, fixed `PIPELINE_AS_OF` 2026-10-30T15:00:00-05:00, seeded with the answer-key data) and interim production (profile `production`, `bootstrap`, first admin created interactively, a roster of `T`-prefixed demo study IDs, no `test_v0_1` seed data), verify health, HTTPS, login and the R01–R10 suite on the deployed SHA, and write `docs/reports/DEPLOYMENT_REPORT.md` stating that this is a synthetic-data interim deployment, not a go-live.
+Execute the Phase 10 deployment on the interim stack: provision Neon, Render and Netlify per the Phase 9 runbooks, deploy staging (profile `test_v0_1`, fixed `PIPELINE_AS_OF` 2026-10-30T15:00:00-05:00, seeded with the answer-key data) and interim production (profile `production`, `bootstrap`, first admin created interactively, a roster of `T`-prefixed demo study IDs, no `test_v0_1` seed data), verify health, HTTPS, login and the R01–R10 suite on the deployed SHA, and write `docs/reports/DEPLOYMENT_REPORT.md` stating that this is a synthetic-data interim deployment, not a go-live.
 
 ## Business Context
 
-- BR-17 and VIS-016: EchoWell runs on Netlify, Railway and Neon until the AWS budget is approved (OQ-07).
+- BR-17 and VIS-016: EchoWell runs on Netlify, Render and Neon until the AWS budget is approved (OQ-07).
 - BR-15: staging reproduces the answer key and shows the full dashboard (DEP-093, D-59).
 - BR-16, VIS-024, D-28: only synthetic and test data on the interim stack; production never contains `test_v0_1` seed data (DEP-007, DEP-073).
 - SRC-15 demo steps 4–5 need interim production to receive a live demo check-in under a `T`-prefixed study ID (D-59, FEAT-090).
@@ -35,12 +35,12 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 
 ## Scope
 
-- Neon: project `echowell`, PostgreSQL 16, `aws-us-east-1`, database branch `main` (production) and child database branch `staging`; owner-role extensions and `timezone` UTC; group and login roles with generated passwords; pooled and direct URLs recorded only in Railway variables and `STAGING_DATABASE_URL`.
-- Railway: project `echowell`, environments `production` (automatic deploys disabled; deployed by `deploy-production.yml`) and `staging` (source branch `main`, Wait for CI), services `backend` (from `/railway.toml`) and `nightly` (from `/railway.nightly.toml`), variables per TRD 21 §4.7, public domains recorded in `docs/deployment.md` and in the repository variables `PRODUCTION_API_BASE_URL` and `STAGING_API_BASE_URL`, usage hard limit.
+- Neon: project `echowell`, PostgreSQL 16, `aws-us-east-1`, database branch `main` (production) and child database branch `staging`; owner-role extensions and `timezone` UTC; group and login roles with generated passwords; pooled and direct URLs recorded only in Render environment variables and `STAGING_DATABASE_URL`.
+- Render: project `echowell`, environments `production` (auto-deploy off; deployed by `deploy-production.yml` through the Render API) and `staging` (branch `main`, auto-deploy "After CI checks pass"), web services `echowell-backend-<env>` and cron jobs `echowell-nightly-<env>` created from the Blueprint `/render.yaml`, environment groups `echowell-<env>-shared` plus web-only variables per TRD 21 §4.7 (secret values entered in the dashboard), Starter instances in region `virginia`, `onrender.com` domains recorded in `docs/deployment.md` and in the repository variables `PRODUCTION_API_BASE_URL` and `STAGING_API_BASE_URL`, workspace notifications for failed deploys, and the decision on the pre-existing `echowell-api` service (TRD 15 §4.5 step 3).
 - Netlify: staging site `echowell-und-staging` (production branch `main`, deploy previews) and production site `echowell-und` (builds stopped, published by `deploy-production.yml`); per-site `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV`; repository variables `PRODUCTION_FRONTEND_URL` and `STAGING_FRONTEND_URL`.
-- GitHub: environment `staging` (branch rule `main`) with the five secrets; environment `production` with branch rule `main`, a required reviewer, the secrets `RAILWAY_PRODUCTION_TOKEN` and `NETLIFY_AUTH_TOKEN` and the variable `NETLIFY_PRODUCTION_SITE_ID`.
+- GitHub: environment `staging` (branch rule `main`) with the five secrets; environment `production` with branch rule `main`, a required reviewer, the secrets `RENDER_API_KEY` and `NETLIFY_AUTH_TOKEN` and the variables `NETLIFY_PRODUCTION_SITE_ID`, `RENDER_PRODUCTION_BACKEND_SERVICE_ID` and `RENDER_PRODUCTION_NIGHTLY_SERVICE_ID`.
 - Staging data: `deploy-staging.yml` re-seed (`seed test_v0_1 --reset` and the DS-10 loader) with PIPELINE_AS_OF 2026-10-30T15:00:00-05:00.
-- Production bootstrap: `python -m backend.cli bootstrap`; first admin via `railway run --environment production python -m backend.cli create-user --email <admin email> --display-name <name> --role admin` with an interactive password; demo roster of `T`-prefixed study IDs (e.g. `T01`) and test devices via `import-master-data`; API keys for test devices or harnesses only (`create-api-key`).
+- Production bootstrap: `python -m backend.cli bootstrap`; first admin via `python -m backend.cli create-user --email <admin email> --display-name <name> --role admin` in the Render Shell (or SSH) of `echowell-backend-production` with an interactive password; demo roster of `T`-prefixed study IDs (e.g. `T01`) and test devices via `import-master-data`; API keys for test devices or harnesses only (`create-api-key`).
 - Verification and `docs/reports/DEPLOYMENT_REPORT.md` ending in "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED" with evidence.
 
 ## Out of Scope
@@ -53,25 +53,25 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-088-FR-01 | The system shall be deployed to exactly the environments `staging` and `production` (plus `local`), identified by APP_ENV, each with its own Neon database branch, Railway environment and Netlify site. | DEP-001, DEP-004, DEP-005, ARC-080 |
-| FEAT-088-FR-02 | Staging shall be deployed from `main` on every merge through the Netlify and Railway GitHub integrations; production frontend and backend shall be deployed only by an approved manual `deploy-production.yml` run for a chosen `main` commit, tagged `vX.Y.Z`. | DEP-002, DEP-003, DEP-004 |
+| FEAT-088-FR-01 | The system shall be deployed to exactly the environments `staging` and `production` (plus `local`), identified by APP_ENV, each with its own Neon database branch, Render environment and Netlify site. | DEP-001, DEP-004, DEP-005, ARC-080 |
+| FEAT-088-FR-02 | Staging shall be deployed from `main` on every merge through the Netlify and Render GitHub integrations; production frontend and backend shall be deployed only by an approved manual `deploy-production.yml` run for a chosen `main` commit, tagged `vX.Y.Z`. | DEP-002, DEP-003, DEP-004 |
 | FEAT-088-FR-03 | Staging shall run PIPELINE_PROFILE=`test_v0_1` with PIPELINE_AS_OF=2026-10-30T15:00:00-05:00 and be seeded with `seed test_v0_1 --reset` from the deploy-staging re-seed step. | D-59, DEP-074, TRD 21 §4.7 |
 | FEAT-088-FR-04 | Production shall run PIPELINE_PROFILE=`production`, PIPELINE_AS_OF empty, DATABASE_READONLY_URL unset and DATA_SOURCE_LABEL `demo data (synthetic)`. | AGT-015, SEC-116, SEC-004, TRD 21 §4.7 |
 | FEAT-088-FR-05 | Production shall contain only the facility row, `config_parameters`, users, API keys and data received from devices or CSV upload of team test check-ins under `T`-prefixed demo study IDs; no row with `ingest_batches.source = seed` and no `test_v0_1` data. | DEP-007, DEP-008, DEP-073, DEP-093 |
-| FEAT-088-FR-06 | `python -m backend.cli bootstrap` shall be run on production (idempotent); the first production admin shall be created only with `railway run --environment production python -m backend.cli create-user --email <admin email> --display-name <name> --role admin`, the password entered interactively and never written to a file, shell history or chat. | DEP-072, DEP-075, SEC-017 |
+| FEAT-088-FR-06 | `python -m backend.cli bootstrap` shall be run on production (idempotent); the first production admin shall be created only with `python -m backend.cli create-user --email <admin email> --display-name <name> --role admin` in the Render Shell (or SSH) of the production web service, the password entered interactively and never written to a file, shell history or chat. | DEP-072, DEP-075, SEC-017 |
 | FEAT-088-FR-07 | Each environment shall have its own JWT_SECRET, API keys and users; a staging credential shall be rejected by production. | DEP-006, ENV-051 |
 | FEAT-088-FR-08 | Interim API keys shall be issued only to test devices or harnesses, never to devices deployed at Edgewood. | SEC-003, AGT-014 |
-| FEAT-088-FR-09 | Migrations shall run only as the Railway pre-deploy command `alembic upgrade head`, never by hand against the target. | DEP-060, ARC-082, TRD 25 §4.6 Phase 10 Commands |
+| FEAT-088-FR-09 | Migrations shall run only as the Render pre-deploy command `alembic upgrade head`, never by hand against the target. | DEP-060, ARC-082, TRD 25 §4.6 Phase 10 Commands |
 | FEAT-088-FR-10 | Health shall return `status` ok with `database` ok and `version` = deployed SHA in both environments; the frontend shall load over HTTPS; login shall work; staging and production smoke tests shall pass. | ARC-083, DEP-080, DEP-081, TST-152 |
 | FEAT-088-FR-11 | The R01–R10 suite (`pytest tests/validation -q`) shall pass in CI on the deployed commit. | TRD 25 §4.6 Phase 10 DoD, AC-AGT-04 |
-| FEAT-088-FR-12 | Regions shall be Neon `aws-us-east-1` and Railway US East. | ARC-084, D-54 |
+| FEAT-088-FR-12 | Regions shall be Neon `aws-us-east-1` and Render Virginia (US East). | ARC-084, D-54 |
 | FEAT-088-FR-13 | `docs/reports/DEPLOYMENT_REPORT.md` shall end in "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED" with evidence, state that the deployment is a synthetic-data interim deployment and not a go-live, and state that no real resident data was loaded. | TRD 25 §4.6 Phase 10 Outputs and DoD, AC-AGT-10, VIS-024 |
 | FEAT-088-FR-14 | Every deviation from the TRD 21 §4.7 matrix shall be recorded in `docs/deployment.md` with a reason. | ENV-050 |
 | FEAT-088-FR-15 | Before the first deployment, two-factor authentication shall be required for all members of the `EchoWellApp` GitHub organisation, verified in the organisation settings and recorded in DEPLOYMENT_CHECKLIST.md A.04. | TPS-040 |
 
 ## Inputs
 
-- Phase 9 artefacts and runbooks (FEAT-077..FEAT-087), team-owned Netlify, Railway and Neon accounts (TRD 22), the `main` commit chosen for the release.
+- Phase 9 artefacts and runbooks (FEAT-077..FEAT-087), team-owned Netlify, Render and Neon accounts (TRD 22), the `main` commit chosen for the release.
 - Synthetic data only: SRC-05 via the staging re-seed; demo roster CSVs with `T`-prefixed IDs.
 
 ## Outputs
@@ -82,7 +82,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Railway an
 
 ## Data Flow
 
-Merge to `main` → Railway staging pre-deploy migration → backend start → healthcheck → Netlify staging-site deploy → `deploy-staging.yml` re-seed and smoke → algorithm lead reviews staging (Resident list All 10 / Changed 2 / Needs attention 2 / Usual 6, R09 Changed). Manual `deploy-production.yml` run for that commit, approved by the required reviewer → `railway up` and Netlify CLI production deploy → smoke and tag → `bootstrap`, `create-user`, demo roster → manual authenticated check → report.
+Merge to `main` → Render staging (after CI checks pass) pre-deploy migration → backend start → health check → Netlify staging-site deploy → `deploy-staging.yml` re-seed and smoke → algorithm lead reviews staging (Resident list All 10 / Changed 2 / Needs attention 2 / Usual 6, R09 Changed). Manual `deploy-production.yml` run for that commit, approved by the required reviewer → Render API deploy of that commit and Netlify CLI production deploy → smoke and tag → `bootstrap`, `create-user`, demo roster → manual authenticated check → report.
 
 ## Dependencies
 
@@ -101,7 +101,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 ## API Impact
 
 - Consumed for verification: `GET /api/v1/health`, `POST /api/v1/auth/login`, the staging smoke endpoints (FEAT-086).
-- Exposed: the full TRD 19 API at the Railway domains; no change.
+- Exposed: the full TRD 19 API at the Render domains; no change.
 
 ## Frontend Impact
 
@@ -127,7 +127,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 
 ## Logging Requirements
 
-- Railway logs JSON to stdout; `nightly_run_missing` and pipeline failures visible as in FEAT-056.
+- Render logs JSON to stdout; `nightly_run_missing` and pipeline failures visible as in FEAT-056.
 - Audit rows for bootstrap-created users and keys and the staging `seed.reset`.
 - The report records commands run and their results (AGT-022).
 
@@ -159,6 +159,6 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 ## Implementation Notes
 
 - Read TRD 15, 22, 21, 17, 13 in that order before starting (TRD 25 §4.4 "Deploy").
-- Disable Railway app sleeping on demo days (DEP-042).
+- Keep the Render web services on the always-on Starter instance type, never Free (spin-down), in particular on demo days (DEP-042).
 - If default domain names are taken, record the generated names in `docs/deployment.md` and the repository variables, and raise a TRD 12 §4.9 change for `connect-src` (FEAT-082 note).
 - The demo check-in on production uses the production profile (baseline_n 30), so the demo resident shows the pill "○ Learning" with "Learning their usual: 1 of 30 check-ins so far." (TST-184).

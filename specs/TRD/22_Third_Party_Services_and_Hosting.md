@@ -1,12 +1,12 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.4 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.5 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
 This document lists every third-party service EchoWell uses or may use, and for each one states its purpose, the
 plan or tier, the limits that matter for the MVP, the data it stores, its region, who owns the account, and the exit
-or migration path. It distinguishes the **current interim hosting stack** (Netlify + Railway + Neon, used until the
+or migration path. It distinguishes the **current interim hosting stack** (Netlify + Render + Neon; Render replaced Railway as the backend host by TRD 24 D-153; used until the
 AWS budget is approved) from the **AWS target production platform** (D-OWNER-3), records the owner decision that no
 real resident data is ever placed on the interim stack and that go-live happens only on AWS (D-OWNER-4), and lists
 the services that are explicitly excluded.
@@ -15,7 +15,7 @@ the services that are explicitly excluded.
 
 **In scope**
 
-- Current interim stack: Netlify, Railway, Neon (with Railway PostgreSQL as alternative).
+- Current interim stack: Netlify, Render, Neon (with Render Postgres as alternative).
 - Development and delivery: GitHub (repository, Actions, Dependabot, secret scanning).
 - Fonts: "Source Sans 3" via `next/font` self-hosting (Google Fonts at build time only; TRD 24 D-112).
 - Optional: Sentry error tracking.
@@ -31,7 +31,7 @@ the services that are explicitly excluded.
 
 | ID | Reference |
 |---|---|
-| SRC-01 | Deployment Architecture (Netlify, Railway, Neon or Railway PostgreSQL, GitHub Actions; future AWS Amplify / App Runner / RDS) |
+| SRC-01 | Deployment Architecture (Netlify, Render, Neon or Render Postgres, GitHub Actions; future AWS Amplify / App Runner / RDS; backend host amended from Railway by TRD 24 D-153) |
 | SRC-12 | TRD Generation Prompt |
 | SRC-14 | Team 2 PRD Guide Part B (no LLMs; raw audio never leaves the room) |
 | D-OWNER-3 | AWS is target production; interim stack until budget approval; live feature data treated as potentially PHI-derived |
@@ -50,9 +50,9 @@ the services that are explicitly excluded.
 |---|---|---|---|
 | GitHub (org `EchoWellApp`) | Source code, CI/CD (Actions), Dependabot, issues | current + target | Never |
 | Netlify | Frontend hosting (Next.js) | current interim | Never (D-OWNER-4) |
-| Railway | Backend hosting (FastAPI + analytics) | current interim | Never (D-OWNER-4) |
+| Render | Backend hosting (FastAPI + analytics web service, nightly cron job) | current interim | Never (D-OWNER-4) |
 | Neon | PostgreSQL 16 database | current interim | Never (D-OWNER-4) |
-| Railway PostgreSQL | Alternative database if Neon unavailable | contingency | Never (D-OWNER-4) |
+| Render Postgres | Alternative database if Neon unavailable | contingency | Never (D-OWNER-4) |
 | Google Fonts (via `next/font`) | "Source Sans 3" font files, fetched at build time | current + target | No data |
 | Sentry (optional) | Backend exception tracking | optional | Never on interim stack; on AWS only after re-approval (TPS-061) |
 | AWS (Amplify, App Runner, ECR, RDS, KMS, Secrets Manager, CloudWatch, EventBridge, SNS, CloudTrail) | Target production platform | target | Yes, after go-live |
@@ -60,9 +60,9 @@ the services that are explicitly excluded.
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TPS-001 | EchoWell shall use no third-party service other than those listed in §4.1; adding a service requires a PR updating this TRD, approved by the project coordinator. | Must | BR-16, BR-18 | Inspection |
-| TPS-002 | No real resident data (feature records, study IDs of enrolled residents, staff notes about residents, alerts) shall be stored on or transmitted through Netlify, Railway, Neon or Sentry at any time; these services hold only synthetic and team-test data. | Must | D-OWNER-4, RSK-14 | Inspection |
+| TPS-002 | No real resident data (feature records, study IDs of enrolled residents, staff notes about residents, alerts) shall be stored on or transmitted through Netlify, Render, Neon or Sentry at any time; these services hold only synthetic and team-test data. | Must | D-OWNER-4, RSK-14 | Inspection |
 | TPS-003 | EchoWell shall go live (accept real resident data) only on the AWS target platform, after AWS budget approval, acceptance of the AWS BAA, and the checks of TRD 15 DEP-112 to DEP-114 and DEP-117. | Must | D-OWNER-3, D-OWNER-4, OQ-07 | Inspection |
-| TPS-004 | All services that store EchoWell data shall be located in the United States (Neon `aws-us-east-1`, Railway US East, AWS `us-east-1`; Netlify serves static/SSR content from its global edge but stores no data). | Must | BR-16 | Inspection |
+| TPS-004 | All services that store EchoWell data shall be located in the United States (Neon `aws-us-east-1`, Render `virginia` (US East), AWS `us-east-1`; Netlify serves static/SSR content from its global edge but stores no data). | Must | BR-16 | Inspection |
 | TPS-005 | Every service account shall be owned by the project (team-controlled shared mailbox or UND-managed identity), not by an individual's personal account, and shall have at least 2 administrators with multi-factor authentication enabled. | Must | BR-16, OQ-07 | Inspection |
 | TPS-006 | The account owner, administrators, plan and the date limits were last verified shall be recorded per service in `docs/deployment.md` (no credentials). | Must | RSK-07 | Inspection |
 | TPS-007 | Plan limits below are indicative as of October 2026; at account creation the DevOps owner shall verify them on the provider's pricing page and record the actual values in `docs/deployment.md`. | Must | RSK-07 | Inspection |
@@ -84,39 +84,42 @@ the services that are explicitly excluded.
 | TPS-010 | Netlify shall host only the frontend; no Netlify Functions, Forms, Identity, Blobs, Analytics or Edge Functions shall be used by EchoWell code beyond what `@netlify/plugin-nextjs` generates for Next.js routes. | Must | DEP-110, TPS-001 | Inspection |
 | TPS-011 | Netlify environment variables shall contain only NEXT_PUBLIC_* values, NODE_VERSION and NEXT_TELEMETRY_DISABLED (TRD 21 §4.5). | Must | BR-16, TRD 21 | Inspection |
 
-### 4.3 Railway (backend hosting, current interim)
+### 4.3 Render (backend hosting, current interim)
+
+Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153, checkpoint 7 review of GitHub PR #28).
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Build `backend/Dockerfile` and run the FastAPI backend with the analytics engine, plus the Cron Job service `nightly`; environments `staging` (GitHub integration on `main` with "Wait for CI") and `production` (no GitHub trigger; deployed only by the release workflow with the Railway CLI, D-99); TLS edge |
-| Plan | Hobby (monthly subscription that includes a usage credit; usage-based above it). Trial credit only for the first days. |
-| Relevant limits | Usage billed by vCPU, memory and egress; one always-on small service per environment is expected to stay near the included credit (about USD 5 per environment per month, TRD 15 DEP-100). The nightly run is a separate Railway Cron Job service (`nightly`, TRD 15 DEP-046) billed only while it runs; the backend may use app sleeping to reduce usage (cold start on the first request), except on demo days (TRD 15 DEP-042). Log retention on Hobby is short (about 7 days, TRD 17 §4.10). Team (shared workspace) features may require the Pro plan. |
-| Data stored | Container images, environment variables (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17). Synthetic/test data only passes through (D-OWNER-4). |
-| Region | US East (Virginia) |
-| Ownership | Railway workspace owned by the project mailbox; DevOps owner + 1 other admin; if team membership needs Pro, the upgrade decision follows OQ-07 |
+| Purpose | Build `backend/Dockerfile` (Docker runtime, build context = repository root) and run the FastAPI backend with the analytics engine as a web service, plus one cron job for the nightly run, in the Render project `echowell` with environments `staging` (`echowell-backend-staging`, `echowell-nightly-staging`; auto-deploy from `main` "After CI checks pass") and `production` (`echowell-backend-production`, `echowell-nightly-production`; auto-deploy off; deployed only by the release workflow through the Render API, D-99); configuration as code in the Blueprint `render.yaml`; environment groups for the variables shared by web service and cron job; TLS edge with automatic certificates on `*.onrender.com` (TRD 15 §4.5) |
+| Plan | Hobby workspace; web services on the Starter instance type (always on); cron jobs on the Starter instance type. The Free instance type is not used: it spins down after 15 minutes without traffic (cold start of up to about a minute) and has no pre-deploy command, Shell or SSH (TRD 15 DEP-042). |
+| Relevant limits | Fixed price per instance (Starter web service about USD 7 per month per environment); cron jobs billed per running second with a minimum of about USD 1 per month each (TRD 15 DEP-100); build minutes and outbound bandwidth allowances of the workspace plan; one cron run at a time per cron job, no automatic retry. The health check must pass before a new deploy receives traffic (TRD 15 DEP-041). Log retention in the dashboard is short on the Hobby workspace (TRD 17 §4.10); longer retention needs a log stream to an external syslog provider, which is not used in the MVP (it would add a service, TPS-001). Team members beyond the workspace plan's limit, and some team features, may require the Professional workspace plan; that upgrade follows OQ-07. |
+| Data stored | Built images, environment variables and environment groups (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17), deploy history. Synthetic/test data only passes through (D-OWNER-4). |
+| Region | `virginia` (US East), next to Neon `aws-us-east-1`; a service's region cannot be changed after creation |
+| Network | Public HTTPS only on the web services; cron jobs have no inbound URL; outbound connections use the region's shared outbound IP ranges shown on the service's Connect → Outbound tab (recorded in `docs/deployment.md`; not used for allow-listing on Neon Free) |
+| Ownership | Render workspace owned by the project mailbox; DevOps owner + 1 other admin; the deploy account that owns `RENDER_API_KEY` (TRD 16 §4.9) is a member of this workspace only |
 | Exit path | AWS App Runner running the same image from ECR (TRD 15 §4.16, DEP-116 for the nightly run) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TPS-020 | The Railway backend service shall not use Railway-specific APIs or SDKs; only `railway.toml`, environment variables and the PORT convention couple the code to Railway. | Must | DEP-110 | Inspection |
-| TPS-021 | Railway usage shall be capped with a usage limit (hard limit) of USD 20 per month for the workspace, with an e-mail alert at USD 10. | Should | RSK-07 | Inspection |
+| TPS-020 | The Render backend services shall not use Render-specific APIs or SDKs in application code; only `render.yaml`, environment variables, the PORT convention and the `RENDER_GIT_COMMIT` export in the `render.yaml` start commands couple the deployment to Render. | Must | DEP-110 | Inspection |
+| TPS-021 | Render costs shall be bounded by the configured instance types (two Starter web services, two cron jobs) with no autoscaling; Render has no hard spending cap, so the DevOps owner checks the workspace's month-to-date charges weekly (TRD 15 DEP-101) and any change of instance type or added service needs approval under OQ-07; billing e-mail notifications go to the project mailbox. | Should | RSK-07 | Inspection |
 
-### 4.4 Neon (PostgreSQL, current interim) and Railway PostgreSQL (alternative)
+### 4.4 Neon (PostgreSQL, current interim) and Render Postgres (alternative)
 
-| Aspect | Neon (preferred) | Railway PostgreSQL (alternative) |
+| Aspect | Neon (preferred) | Render Postgres (alternative) |
 |---|---|---|
 | Purpose | Managed PostgreSQL 16 for staging (database branch `staging`) and interim production (database branch `main`); Neon branches are database branches, not Git branches | Same, if Neon becomes unavailable to the team |
-| Plan | Free | Included in Railway Hobby usage |
-| Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days), accepted for the interim synthetic/test-data stack under the waiver of TRD 03 NFR-024 (TRD 24 D-60); live data requires the AWS target (RDS automated backups, ≥ 7 days) | Volume-backed single instance; backups depend on plan; no branching; database runs as a service with continuous usage |
+| Plan | Free | Paid instance type (the Free Render Postgres instance expires after a fixed period and is not used) |
+| Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days), accepted for the interim synthetic/test-data stack under the waiver of TRD 03 NFR-024 (TRD 24 D-60); live data requires the AWS target (RDS automated backups, ≥ 7 days) | Single instance with fixed monthly price; backups and point-in-time recovery depend on the instance type and workspace plan (verify, TPS-007); no branching; always on |
 | Data stored | All EchoWell tables (synthetic/test data only on the interim stack, D-OWNER-4) | Same |
-| Encryption | TLS required (`sslmode=require`), provider-managed encryption at rest | TLS via Railway proxy, provider-managed volume encryption per Railway documentation |
-| Region | `aws-us-east-1` | US East |
-| Ownership | Neon organisation owned by the project mailbox; 2 admins | Railway workspace (as §4.3) |
+| Encryption | TLS required (`sslmode=require`), provider-managed encryption at rest | TLS required for external connections, provider-managed encryption at rest per Render documentation |
+| Region | `aws-us-east-1` | `virginia` (US East) |
+| Ownership | Neon organisation owned by the project mailbox; 2 admins | Render workspace (as §4.3) |
 | Exit path | `pg_dump`/`pg_restore` or fresh Alembic schema to RDS PostgreSQL 16 (TRD 15 DEP-117) | Same |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TPS-030 | Neon shall be the interim database provider; Railway PostgreSQL shall be used only if Neon is unavailable, by changing DATABASE_URL and DATABASE_MIGRATION_URL (TRD 15 DEP-035). | Must | SRC-01 | Inspection |
+| TPS-030 | Neon shall be the interim database provider; Render Postgres shall be used only if Neon is unavailable, by changing DATABASE_URL and DATABASE_MIGRATION_URL (TRD 15 DEP-035). | Must | SRC-01 | Inspection |
 | TPS-031 | The Neon project shall run PostgreSQL 16 in `aws-us-east-1` with the database branches `main` and `staging` only, plus temporary `pre-<sha>` and `restore-drill` branches deleted within 7 days (TRD 15 DEP-063, DEP-097). | Must | TRD 15 | Inspection |
 | TPS-032 | No Neon-specific features (Neon serverless driver, Neon Auth, Data API) shall be used; access is plain PostgreSQL over psycopg 3. | Must | DEP-110 | Inspection |
 
@@ -238,7 +241,7 @@ the services that are explicitly excluded.
 - Do not add `@sentry/nextjs`; only the Python `sentry-sdk` (optional import guarded by SENTRY_DSN).
 - When creating accounts, use the project mailbox as the owner and invite individuals as members; never transfer ownership to a student's personal account, because accounts must survive team changes at semester end.
 - Keep a single page in `docs/deployment.md` titled "Service accounts" for TPS-006; it must never contain passwords or tokens.
-- Netlify, Railway and Neon offer BAAs only on higher (enterprise/scale) tiers, if at all; that is why D-OWNER-4 forbids real resident data on them (RSK-14). Do not attempt to "upgrade into compliance" without a new owner decision.
+- Netlify, Render and Neon offer BAAs only on higher (enterprise/scale) tiers, if at all; that is why D-OWNER-4 forbids real resident data on them (RSK-14). Do not attempt to "upgrade into compliance" without a new owner decision.
 
 ## 9. Open Questions
 
@@ -256,3 +259,4 @@ the services that are explicitly excluded.
 | 0.2 | 19 Oct 2026 | Phase 1 validation fixes (F-14, F-23, F-45) | — |
 | 0.3 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.4 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): fonts: Source Sans 3 replaces IBM Plex Sans and Mono (§2, §4.1 table, §4.6, TPS-050, §8; D-112) | — |
+| 0.5 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §1, §2, §4.1 table, TPS-002, TPS-004, §4.3 rewritten for Render (TPS-020, TPS-021), §4.4 alternative database Render Postgres (TPS-030), §8 | — |

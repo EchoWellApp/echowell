@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Detect outages of the interim deployment and keep free-tier usage under control: a scheduled GitHub Actions workflow `uptime.yml` checks staging and production `GET /api/v1/health` and the production frontend `/login` every 30 minutes (never more often), retries once after 60 s, and opens or updates an `incident` issue when a check fails twice in a row; and a documented routine in which the DevOps owner checks Netlify build minutes, Railway usage dollars (with the hard limit) and Neon compute hours and storage, relaxing the uptime interval first if Neon compute would run out.
+Detect outages of the interim deployment and keep free-tier usage under control: a scheduled GitHub Actions workflow `uptime.yml` checks staging and production `GET /api/v1/health` and the production frontend `/login` every 30 minutes (never more often), retries once after 60 s, and opens or updates an `incident` issue when a check fails twice in a row; and a documented routine in which the DevOps owner checks Netlify build minutes, Render month-to-date charges and Neon compute hours and storage, relaxing the uptime interval first if Neon compute would run out.
 
 ## Business Context
 
@@ -31,13 +31,13 @@ Detect outages of the interim deployment and keep free-tier usage under control:
 ## Scope
 
 - `.github/workflows/uptime.yml`: trigger `schedule` `*/30 * * * *` and `workflow_dispatch`; one job on `ubuntu-24.04` with `permissions: contents: read` plus `issues: write` for the issue step; `curl --fail --max-time 30` on `${{ vars.PRODUCTION_API_BASE_URL }}/health`, `${{ vars.STAGING_API_BASE_URL }}/health` and `${{ vars.PRODUCTION_FRONTEND_URL }}/login`; one retry after 60 s per failing check; on a second failure open or update the issue titled "Uptime check failing" with label `incident` via `gh`; `timeout-minutes` ≤ 20.
-- `docs/deployment.md` section "Usage monitoring": weekly check of Netlify build minutes, Railway usage dollars (hard limit USD 20, alert at USD 10) and Neon compute hours and storage, recorded in the weekly team status; the fallback order (relax the uptime interval first, suspend staging compute second, before any production setting); per-service owner, admins, plan and verified limits.
+- `docs/deployment.md` section "Usage monitoring": weekly check of Netlify build minutes, Render month-to-date charges (fixed instance types; Render has no hard spending cap) and Neon compute hours and storage, recorded in the weekly team status; the fallback order (relax the uptime interval first, suspend staging compute second, before any production setting); per-service owner, admins, plan and verified limits.
 - Repository issue label `incident` and the watch rule (DevOps owner and algorithm lead watch issues with that label).
 - Uptime report procedure for NFR-020: monthly availability computed from the `uptime.yml` run history.
 
 ## Out of Scope
 
-- Railway/Netlify/Neon account creation and limit settings (Phase 10, FEAT-088).
+- Render/Netlify/Neon account creation and limit settings (Phase 10, FEAT-088).
 - Sentry (FEAT-084); pipeline failure and missing-nightly banners (FEAT-056).
 - Paging, SMS or e-mail notifications beyond GitHub issue notifications (TPS-083, LOG-113).
 
@@ -51,9 +51,9 @@ Detect outages of the interim deployment and keep free-tier usage under control:
 | FEAT-085-FR-04 | The uptime interval shall never be shorter than 30 minutes. | CIC-061 |
 | FEAT-085-FR-05 | The workflow shall use no secret, default `permissions: contents: read`, `issues: write` only for the issue step's job, and actions pinned per CIC-025. | CIC-024, CIC-025, CIC-090 |
 | FEAT-085-FR-06 | Operational notifications shall reach at least the DevOps owner and the algorithm lead by watching issues labelled `incident`. | LOG-114 |
-| FEAT-085-FR-07 | The DevOps owner shall check Netlify build minutes, Railway usage dollars and Neon compute hours and storage weekly and record them in the weekly team status. | DEP-101, TRD 17 §4.8 |
+| FEAT-085-FR-07 | The DevOps owner shall check Netlify build minutes, Render month-to-date charges and Neon compute hours and storage weekly and record them in the weekly team status. | DEP-101, TRD 17 §4.8 |
 | FEAT-085-FR-08 | If Neon Free compute hours would be exhausted before month end, the uptime interval shall be relaxed first and staging compute suspended second, before any production setting changes. | DEP-102 |
-| FEAT-085-FR-09 | The runbook shall record per service the account owner, administrators, plan and the date limits were last verified, and the verified plan limits, without credentials; Railway shall have a USD 20 hard limit with an alert at USD 10. | TPS-006, TPS-007, TPS-021 |
+| FEAT-085-FR-09 | The runbook shall record per service the account owner, administrators, plan and the date limits were last verified, and the verified plan limits, without credentials; Render shall run only the two Starter web services and two cron jobs, with billing e-mails to the project mailbox. | TPS-006, TPS-007, TPS-021 |
 | FEAT-085-FR-10 | Production availability of `GET /api/v1/health` during 16 Nov – 8 Dec 2026 shall be reported from the uptime run history against the ≥ 99.0 % target. | NFR-020 |
 
 ## Inputs
@@ -68,13 +68,13 @@ Detect outages of the interim deployment and keep free-tier usage under control:
 
 ## Data Flow
 
-Cron every 30 min → GitHub-hosted runner → HTTPS GET to three URLs → on failure wait 60 s and retry → second failure → `gh issue create|comment` with label `incident` → watchers notified by GitHub e-mail. Weekly: DevOps owner reads Netlify, Railway and Neon usage pages → team status entry → fallback actions if limits approach.
+Cron every 30 min → GitHub-hosted runner → HTTPS GET to three URLs → on failure wait 60 s and retry → second failure → `gh issue create|comment` with label `incident` → watchers notified by GitHub e-mail. Weekly: DevOps owner reads Netlify, Render and Neon usage pages → team status entry → fallback actions if limits approach.
 
 ## Dependencies
 
 Required before implementation (BACKLOG.md): FEAT-081, FEAT-082
 
-- [FEAT-081](FEAT-081-Railway-Backend-And-Nightly-Cron-Services.md) Railway backend configuration (health endpoint host, usage limit).
+- [FEAT-081](FEAT-081-Render-Backend-And-Nightly-Cron-Services.md) Render backend configuration (health endpoint host, instance types).
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify frontend configuration (`/login` host, build minutes).
 
 Features that build directly on this one (BACKLOG.md §4): none.
@@ -124,7 +124,7 @@ None.
 | FEAT-085-AC-01 | `uptime.yml` has `schedule: cron "*/30 * * * *"` and `workflow_dispatch`, and no schedule with a shorter interval. Verified by: Inspection (schedule expression `*/30 * * * *` (CIC-061)). | CIC-060, CIC-061 |
 | FEAT-085-AC-02 | A dispatched run against a failing URL retries once after 60 s and then opens (or comments on) an issue titled "Uptime check failing" with label `incident`. Verified by: Negative test (dispatch with a temporary variable pointing to a non-existent path, observe one retry and the `incident` issue, then restore the variable and close the issue). | CIC-060 |
 | FEAT-085-AC-03 | `grep -n "secrets\." .github/workflows/uptime.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-090 |
-| FEAT-085-AC-04 | `docs/deployment.md` records owner, admins, plan, verified limits and verification date for Netlify, Railway and Neon, the Railway USD 20 hard limit with USD 10 alert, the weekly usage check and the DEP-102 fallback order. Verified by: Inspection (the inspection method of DEP-101, applied to the condition stated in the criterion). | TPS-006, TPS-007, TPS-021, DEP-101, DEP-102 |
+| FEAT-085-AC-04 | `docs/deployment.md` records owner, admins, plan, verified limits and verification date for Netlify, Render and Neon, the Render instance types and billing e-mail recipient, the weekly usage check and the DEP-102 fallback order. Verified by: Inspection (the inspection method of DEP-101, applied to the condition stated in the criterion). | TPS-006, TPS-007, TPS-021, DEP-101, DEP-102 |
 | FEAT-085-AC-05 | At least two team members are listed as watchers of `incident` issues in the runbook. Verified by: Negative test (dispatch with a temporary variable pointing to a non-existent path, observe one retry and the `incident` issue, then restore the variable and close the issue). | LOG-114 |
 
 ## Definition of Done

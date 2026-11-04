@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -65,7 +65,7 @@ Related TRDs: all of 00–24. TRD 24 holds every OQ, ASM, RSK, DSC and D identif
 | 19 | 19_API_Contracts_OpenAPI_Spec.md | Endpoint-level request/response contracts | OAS | Backend, frontend agents |
 | 20 | 20_PostgreSQL_Schema_Definition.md | DDL, constraints, indexes, grants, triggers | PGS | Database agent |
 | 21 | 21_Environment_Configuration_Spec.md | Env vars, config profiles | ENV | Skeleton, backend, deployment agents |
-| 22 | 22_Third_Party_Services_and_Hosting.md | Netlify, Railway, Neon (interim), AWS (target) | TPS | Deployment agents |
+| 22 | 22_Third_Party_Services_and_Hosting.md | Netlify, Render, Neon (interim), AWS (target) | TPS | Deployment agents |
 | 23 | 23_Data_Model_and_Entity_Definitions.md | Entities, fields, enums, DTO mapping | DME | Database, backend agents |
 | 24 | 24_Risk_Assumptions_and_Open_Questions.md | Master register of OQ, ASM, RSK, DSC, D | RAQ, OQ, ASM, RSK, DSC, D | All agents (before guessing anything) |
 | 25 | 25_AI_Agent_Build_Instructions.md | This document | AGT | All agents |
@@ -94,7 +94,7 @@ Rules: IDs are never renumbered or reused. Code, tests and PR descriptions cite 
 |---|---|---|---|---|
 | AGT-001 | Agents shall treat TRDs 00–24 as the source of truth; where a prompt in specs/prompts/ conflicts with a TRD, the TRD wins and the agent shall note the conflict in its report. | Must | SRC-12 | Inspection |
 | AGT-002 | Agents shall not implement behaviour that contradicts any TRD requirement, source document SRC-01..SRC-21 (except the wireframes superseded by SRC-21, TRD 24 D-108), or any decision D-xx of the TRD 24 §4.6 decision log. | Must | SRC-12 rule 2 | Inspection (audit phase) |
-| AGT-003 | Agents shall not invent architecture: the stack is Next.js (App Router, TypeScript) on Netlify, FastAPI on Railway, PostgreSQL 16 on Neon or Railway as the interim stack, AWS as target (D-27), GitHub Actions, single monorepo. | Must | SRC-01; BR-17 | Inspection |
+| AGT-003 | Agents shall not invent architecture: the stack is Next.js (App Router, TypeScript) on Netlify, FastAPI on Render, PostgreSQL 16 on Neon or Render Postgres as the interim stack, AWS as target (D-27), GitHub Actions, single monorepo. | Must | SRC-01; BR-17 | Inspection |
 | AGT-004 | Agents shall not add any large language model feature, dependency, API call, summary or chat interface. | Must | BR-18 | Inspection (`grep -rniE "openai\|anthropic\|langchain\|llama\|gpt" frontend backend analytics` returns nothing) |
 | AGT-005 | Agents shall not add any machine-learning model to the pipeline critical path; the pipeline is deterministic robust statistics plus CUSUM. | Must | BR-18; D-14 | Inspection |
 | AGT-006 | Agents shall not create any endpoint, field, table or storage that receives, stores, transmits or replays audio. | Must | BR-01; BR-16 | Inspection; Test (no route accepts `audio/*` content types) |
@@ -105,7 +105,7 @@ Rules: IDs are never renumbered or reused. Code, tests and PR descriptions cite 
 | AGT-011 | Agents shall use `specs/TRD/` for the TRDs; any `specs/TRDS/` in an older copy of a prompt means `specs/TRD/`. | Must | D-22; OQ-22 | Inspection |
 | AGT-012 | Agents shall not commit changes; after each prompt (one review checkpoint) the agent shall stop, report, and wait for human review. Nothing is automated: a human starts each prompt, one at a time. Commits are made only after review and pushed to the PR of that checkpoint (each Block 3 checkpoint has its own PR, D-101) (consistent with "Action: Do not commit changes" in TRD_Implementation_Audit_Checklist.md). | Must | SRC-17; SRC-20; TRD 18 | Inspection |
 | AGT-013 | Build phases shall be delivered as the team plan (SRC-20, TRD 24 D-100, D-101): TRD 25 Phases 2–9 and 11 as the nine consecutive checkpoints of Block 3 (one prompt of `Implement_Feature_Batches.md` per checkpoint: Phases 7, 8, 9, 10, 11, 12, 13, 14A, 15), each checkpoint a separate pull request to `main` on its own feature branch created from the latest `main`; Phase 10 as the Block 4 PR and the test cases as the Block 5 PR; each checkpoint PR is reviewed, approved by the algorithm lead and merged to `main` before the next prompt runs. | Must | TRD 18 GIT-030; SRC-20; D-100; D-101 | Inspection (PR history and review comments) |
-| AGT-014 | HARD RULE: Agents shall never load, upload, seed, migrate or connect real patient or resident data to the interim Netlify / Railway / Neon stack, in any environment; the interim stack holds synthetic and test data only. Agents shall not take any go-live step (real residents, real devices, real data) until AWS is approved. | Must | D-28 (owner decision D-OWNER-4); OQ-23 (answered); RSK-14 | Inspection (seed and upload scripts reference only specs/data-samples or tests/fixtures) |
+| AGT-014 | HARD RULE: Agents shall never load, upload, seed, migrate or connect real patient or resident data to the interim Netlify / Render / Neon stack, in any environment; the interim stack holds synthetic and test data only. Agents shall not take any go-live step (real residents, real devices, real data) until AWS is approved. | Must | D-28 (owner decision D-OWNER-4); OQ-23 (answered); RSK-14 | Inspection (seed and upload scripts reference only specs/data-samples or tests/fixtures) |
 | AGT-015 | Agents shall never configure or use the `test_v0_1` profile in production; the backend shall refuse to start when `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1`, and shall refuse `PIPELINE_AS_OF` when `APP_ENV=production`. | Must | D-01; D-50 | Test |
 | AGT-016 | Agents shall not commit secrets, `.env` files, or third-party-licensed documents; SRC-07 is cited only by its link in specs/business-requirements/REFERENCES.md and the removed PDF path shall never be referenced. | Must | D-29; TRD 12; TRD 18 | Inspection |
 | AGT-017 | Agents shall not put names or other PII in code, fixtures, logs or seed data; residents are study IDs only (e.g. R01). | Must | BR-16 | Inspection |
@@ -266,13 +266,13 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 | Item | Content |
 |---|---|
 | Inputs | TRD 15, 16, 21, 22, 12, 17; SRC-01 |
-| Outputs | `netlify.toml`; Railway service configuration; backend and frontend Dockerfiles; `docker-compose.yml`; `.env.example`, `.env.development.example`, `.env.production.example`; GitHub Actions CI and deploy workflows; `specs/backlog/DEPLOYMENT_CHECKLIST.md` and `specs/backlog/MVP_READINESS_CHECKLIST.md` (from TRD 13 and TRD 15 acceptance criteria, if absent); `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`; `docs/reports/CONFIGURATION_VALIDATION_REPORT.md`; legacy stubs (`docker-compose.yml` `version: "3"`, `.github/workflows/ci.yml` stub) replaced (D-55, closes the DSC-13 stub gap; Phase 3 already replaced the `ci.yml` stub with the three core jobs, D-94) and `ci.yml` completed with every required check of TRD 16 CIC-070; Railway Cron Job service for the nightly run at `0 7,8 * * *` UTC (D-47) |
-| Definition of done | Config validated against SRC-01 and TRD 22; every env var from TRD 21 documented; CI runs unit, integration, validation tests and frontend build on every PR; production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; `DATABASE_URL` (app role) and `DATABASE_MIGRATION_URL` (migrator role) both use `sslmode=require`; regions Neon aws-us-east-1 and Railway US East (D-54); CI fails when `docs/api_reference/openapi.json` differs from the generated schema (D-51); no deployment performed |
+| Outputs | `netlify.toml`; Render Blueprint `render.yaml` (web services, cron jobs, environment groups); backend and frontend Dockerfiles; `docker-compose.yml`; `.env.example`, `.env.development.example`, `.env.production.example`; GitHub Actions CI and deploy workflows; `specs/backlog/DEPLOYMENT_CHECKLIST.md` and `specs/backlog/MVP_READINESS_CHECKLIST.md` (from TRD 13 and TRD 15 acceptance criteria, if absent); `docs/reports/DEPLOYMENT_CONFIGURATION_GUIDE.md`; `docs/reports/CONFIGURATION_VALIDATION_REPORT.md`; legacy stubs (`docker-compose.yml` `version: "3"`, `.github/workflows/ci.yml` stub) replaced (D-55, closes the DSC-13 stub gap; Phase 3 already replaced the `ci.yml` stub with the three core jobs, D-94) and `ci.yml` completed with every required check of TRD 16 CIC-070; Render cron job for the nightly run at `0 7,8 * * *` UTC (D-47) |
+| Definition of done | Config validated against SRC-01 and TRD 22; every env var from TRD 21 documented; CI runs unit, integration, validation tests and frontend build on every PR; production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; `DATABASE_URL` (app role) and `DATABASE_MIGRATION_URL` (migrator role) both use `sslmode=require`; regions Neon aws-us-east-1 and Render Virginia (US East) (D-54); CI fails when `docs/api_reference/openapi.json` differs from the generated schema (D-51); no deployment performed |
 | Required tests | CI dry run on the PR; startup-guard test (AGT-015) |
 | Commands | `docker compose config`; `docker compose up -d && pytest -q` |
 | Pitfalls | Do not configure real data sources or real-device API keys (AGT-014 hard rule). Secrets only as platform or GitHub Actions secrets. |
 
-#### Phase 10 — Deploy (Block 4, one PR: Implement_Feature_Batches.md Phase 14B plus the manual Netlify, Railway and Neon setup of `specs/backlog/DEPLOYMENT_CHECKLIST.md`; runs after the Block 3 checkpoint 9 PR is merged)
+#### Phase 10 — Deploy (Block 4, one PR: Implement_Feature_Batches.md Phase 14B plus the manual Netlify, Render and Neon setup of `specs/backlog/DEPLOYMENT_CHECKLIST.md`; runs after the Block 3 checkpoint 9 PR is merged)
 
 | Item | Content |
 |---|---|
@@ -280,7 +280,7 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 | Outputs | Staging and production deployments on the interim stack; `docs/reports/DEPLOYMENT_REPORT.md` ending in "DEPLOYMENT SUCCESSFUL" or "DEPLOYMENT FAILED" with evidence |
 | Definition of done | Health endpoint returns `status` ok with `database` ok; frontend loads over HTTPS; login works; R01–R10 suite passes in CI on the deployed commit; only synthetic/test data loaded (AGT-014 hard rule); report states the deployment is a synthetic-data interim deployment, not a go-live |
 | Required tests | Post-deploy smoke tests from TRD 15; `pytest tests/validation -q` on the deployed SHA |
-| Commands | migrations run only as the Railway pre-deploy command `alembic upgrade head` (from the repository root, TRD 15 DEP-040, D-58; on AWS the one-off migration task), never by hand against the target; `curl -fsS "$BACKEND_URL/api/v1/health"`; `curl -fsSI "$FRONTEND_URL/residents"` |
+| Commands | migrations run only as the Render pre-deploy command `alembic upgrade head` (from the repository root, TRD 15 DEP-040, D-58; on AWS the one-off migration task), never by hand against the target; `curl -fsS "$BACKEND_URL/api/v1/health"`; `curl -fsSI "$FRONTEND_URL/residents"` |
 | Pitfalls | Do not change requirements or application logic during deployment except to fix a deployment-specific defect, and report any such change. Never set `PIPELINE_PROFILE=test_v0_1` on production (AGT-015); the seeded R01–R10 demo data uses staging. If cloud is not ready by 5 Nov 2026, the demo uses the local docker-compose server (RSK-12). |
 
 #### Phase 11 — Audits (Block 3 checkpoint 9, the last, its own PR: Implement_Feature_Batches.md Phase 15; the duplicate Implementation_Audit_Checklist.md Sprint 6 is not run separately, and the documentation-audit checks of Generate_Documentation_Audit_Prompt.md (run in Block 2) are refreshed within this checkpoint through FEAT-091)
@@ -345,7 +345,7 @@ ASM-01 (America/Chicago), ASM-04 (baseline profiles; production 30, test 16 for 
 
 - TRDs 00–24 completed and validated (Phase 1).
 - Algorithm lead available to review and approve each Block 3 checkpoint PR and the Block 4 and Block 5 PRs (D-100, D-101).
-- GitHub Actions, Netlify, Railway and Neon accounts for Phases 9–10 (interim stack, synthetic and test data only; go-live waits for AWS approval, D-28).
+- GitHub Actions, Netlify, Render and Neon accounts for Phases 9–10 (interim stack, synthetic and test data only; go-live waits for AWS approval, D-28).
 - Answers to OQs affect only the parts named in TRD 24; no phase is blocked by an open OQ because each has an interim decision.
 
 ## 7. Acceptance Criteria
@@ -397,3 +397,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.14 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5; each Block 3 checkpoint is its own PR, merged before the next prompt (D-101): §1 scope, SRC-17, SRC-20, AGT-012, AGT-013, AGT-030, AGT-033, §4.5 diagram and workflow, phase headings, Phase 11 and Phase 12 definitions of done, §6, AC-AGT-01, AC-AGT-04 | — |
 | 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §3 SRC-21 added and SRC-09/10/11/18/19 marked superseded; AGT-002; §4.4 reading order; Phase 2 pitfalls (pages per D-110); Phase 6 inputs; Phase 8 frontend inputs, outputs, definition of done, required tests and pitfalls; AGT-053, AGT-057, AGT-062 | — |
 | 0.16 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): Phase 13 required tests: `@mutating` order follows D-118 | — |
+| 0.17 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

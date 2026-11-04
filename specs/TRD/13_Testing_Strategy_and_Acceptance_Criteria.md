@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -506,14 +506,14 @@ Table 4.17-A MVP acceptance criteria.
 | MVP-05 | Resident chart shows the change score chart with "Alarm line: 5", 7 plain-language measurements, baseline info, check-in log, device, staff notes and alarm review | BR-13 | E2E-08..E2E-12 |
 | MVP-06 | New admissions page exists, is labelled experimental, and does not affect the longitudinal pipeline | BR-14 | E2E-13 |
 | MVP-07 | Auth matrix, rate limits, audit trail, HTTPS and no-audio checks pass | BR-16 | TST-130..TST-137, TST-053 |
-| MVP-08 | Frontend on Netlify, backend on Railway, PostgreSQL on Neon or Railway, deployed by GitHub Actions; health endpoint 200 in staging and production | BR-17 | TST-152, DEPLOYMENT_REPORT.md |
+| MVP-08 | Frontend on Netlify, backend on Render, PostgreSQL on Neon or Render Postgres, deployed by GitHub Actions; health endpoint 200 in staging and production | BR-17 | TST-152, DEPLOYMENT_REPORT.md |
 | MVP-09 | No LLM dependency in `backend/`, `analytics/`, `frontend/` lockfiles; no ML library on the pipeline path; UI wording passes TST-097 | BR-18 | Lockfile scan test, TST-097 |
 | MVP-10 | Coverage gates TST-140..TST-142 met; all PR-gating suites green | Quality | CI run |
 | MVP-11 | Accessibility: zero serious/critical axe violations | contract §11 | TST-110 |
 | MVP-12 | A full rebuild reproduces identical results and keeps reviews, notes and snoozes | SRC-02, BR-02, R15 | TST-050, TST-067 |
 | MVP-13 | The nav badge and the Resident chart Summaries show the 2 change alarms and the Study team page the 4 data problems of the fixture; saving a review in the chart sets Reviewed without changing the change score | BR-11, BR-13, SRC-21 | E2E-17, E2E-18, TST-056 |
 | MVP-14 | Study team page reproduces the DS-07 figures (94%, 89%, 9 of 10, 2; funnel 300/281/269/267; by-resident; alarm timing 0 and 7 days) and the pipeline never reads evaluation ground truth | BR-15, SRC-21 | E2E-20, TST-068 |
-| MVP-15 | Interim stack (Netlify/Railway/Neon) holds synthetic and test data only; `PIPELINE_PROFILE=test_v0_1` is refused when `APP_ENV=production` | D-OWNER-2, D-OWNER-4 | CFG-06, deployment checklist |
+| MVP-15 | Interim stack (Netlify/Render/Neon) holds synthetic and test data only; `PIPELINE_PROFILE=test_v0_1` is refused when `APP_ENV=production` | D-OWNER-2, D-OWNER-4 | CFG-06, deployment checklist |
 
 ### 4.18 Demo acceptance (SRC-15 tracker steps 4 and 5)
 
@@ -605,3 +605,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): E2E-01, E2E-03..E2E-13, E2E-16..E2E-21 rewritten for the Resident list (filters, D-109 order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07), Resident chart sections (review flow in "Review and notes") and Study team (`/study`; Alert review page retired); TST-033, TST-090..TST-094, TST-096, TST-097, TST-100, TST-110 (9 routes, light and dark), TST-111, TST-112, TST-125 (four pages of NFR-010), TST-184, TST-185, TST-191; DA-01, DA-03, DA-04, DA-07 v0.2 details; §9 OQ-31; MVP-03..MVP-05, MVP-13, MVP-14; SRC-21 replaces SRC-09/10/11/18/19 | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): E2E-09 on R10, 3rd in the `@mutating` group after the FE-193 reminder step (D-118); date-time expectations with "CT" (D-119); OQ-31 note answered (D-115) | — |
 | 0.15 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-12, TRD 24 D-128): Table 4.13-A adds the rows `GET /openapi.json`, `POST /auth/login` and `GET /config/ui` (statuses as in the TRD 12 §4.6 matrix), so the table lists every endpoint | — |
+| 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

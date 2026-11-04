@@ -296,7 +296,7 @@ Added on 26 Oct 2026 at the algorithm lead's request (TRD 24 D-107). This sectio
 ### Phase 14A: Deployment configuration (checkpoint 8 PR)
 
 - [ ] Frontend: `netlify.toml`, environment templates and build configuration exist.
-- [ ] Backend: Railway configuration, environment templates and startup configuration exist.
+- [ ] Backend: Render configuration (`render.yaml`), environment templates and startup configuration exist.
 - [ ] Database: connection configuration and migration execution configuration exist.
 - [ ] CI/CD: GitHub Actions workflows for tests and deployment exist.
 - [ ] Docker: backend Dockerfile (and a frontend Dockerfile if needed) and `docker-compose.yml` for local development exist.
@@ -304,7 +304,7 @@ Added on 26 Oct 2026 at the algorithm lead's request (TRD 24 D-107). This sectio
 - [ ] Security: the secrets management strategy and the environment variable documentation are written.
 - [ ] `DEPLOYMENT_CONFIGURATION_GUIDE.md` covers the purpose of each generated file, required environment variables, local development, staging setup, production setup and deployment prerequisites.
 - [ ] `CONFIGURATION_VALIDATION_REPORT.md` summarises every generated infrastructure artefact.
-- [ ] The configurations were validated against `Deployment_Architecture.md` and checked for compatibility with FastAPI, PostgreSQL, Railway, Netlify and GitHub Actions.
+- [ ] The configurations were validated against `Deployment_Architecture.md` and checked for compatibility with FastAPI, PostgreSQL, Render, Netlify and GitHub Actions.
 - [ ] No deployment was performed; only configuration files and documentation were generated.
 
 ### Phase 14B: Deployment (Block 4 PR)

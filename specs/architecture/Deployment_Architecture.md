@@ -1,5 +1,7 @@
 # EchoWell Deployment Architecture
 
+> Updated 4 Nov 2026: the backend is hosted on Render instead of Railway (TRD 24 D-153, checkpoint 7 review of GitHub PR #28). Netlify, Neon and the AWS target are unchanged. Procedures: TRD 15 §4.5.
+
 ## Overview
 
 EchoWell will be developed as a single GitHub monorepo containing the frontend, backend, analytics engine, database schema, testing framework, and documentation. This architecture prioritizes simplicity, rapid development, low operational cost, and ease of maintenance while remaining scalable enough to support future migration to AWS or another enterprise cloud provider.
@@ -64,16 +66,17 @@ Netlify provides:
 
 #### Hosting
 
-- Railway
+- Render (web service built from `backend/Dockerfile`; a Render cron job runs the nightly pipeline)
 
 #### Justification
 
-Railway provides:
-- Convenient FastAPI deployment
-- Simple configuration
-- GitHub integration
-- Minimal DevOps overhead
-- Suitable free/trial tier for MVP development
+Render provides:
+- Docker-based FastAPI deployment from the repository's `backend/Dockerfile`
+- Automatic deploys from `main` through the GitHub integration (after CI checks pass)
+- Configuration as code (`render.yaml` Blueprint) and environment groups
+- Built-in HTTPS, health checks, pre-deploy commands (migrations) and one-click rollback
+- Cron jobs for scheduled work
+- Low fixed cost on the entry instance types for MVP development
 
 ### Analytics Engine
 
@@ -125,7 +128,7 @@ PostgreSQL
 ##### Preferred Prototype Options
 
 - Neon PostgreSQL
-- Railway PostgreSQL
+- Render Postgres (alternative)
 
 ##### Future Production Option
 
@@ -145,11 +148,11 @@ PostgreSQL provides:
 GitHub Monorepo
 │
 ├── Netlify Hosting (React / Next.js)
-└── Railway Hosting (FastAPI Backend)
+└── Render Hosting (FastAPI Backend web service + nightly cron job)
       │
       └── Analytics Engine
             │
-            └── PostgreSQL (Neon or Railway PostgreSQL)
+            └── PostgreSQL (Neon or Render Postgres)
 ```
 
 ## Testing Infrastructure
@@ -205,7 +208,7 @@ GitHub → Netlify
 
 ### Backend
 
-GitHub → Railway
+GitHub → Render
 
 ## Future AWS Migration
 
@@ -236,9 +239,9 @@ No significant application code changes should be required for migration.
 - **Frontend:** React + Next.js
 - **Frontend Hosting:** Netlify
 - **Backend:** FastAPI + Python
-- **Backend Hosting:** Railway
+- **Backend Hosting:** Render
 - **Database:** PostgreSQL
-- **Database Hosting:** Neon or Railway PostgreSQL
+- **Database Hosting:** Neon or Render Postgres
 - **Testing:** Pytest
 - **CI/CD:** GitHub Actions
 - **Future Cloud Target:** AWS

@@ -12,12 +12,12 @@
 
 ## Purpose
 
-Define, document and verify how every secret of every environment is created, stored, separated and rotated, and how every network hop is encrypted: secrets only in Railway variables, Netlify variables (none secret), the GitHub `staging` environment secrets, the two deploy tokens of the GitHub `production` environment and, on AWS, Secrets Manager; distinct JWT secrets, database role passwords and API keys per environment; rotation procedures recorded as audit rows; no secret in any `NEXT_PUBLIC_*` variable or committed file; TLS 1.2 or higher everywhere with `sslmode=require` on every non-local database URL; a TLS smoke check; and the rule that the interim stack holds synthetic and test data only.
+Define, document and verify how every secret of every environment is created, stored, separated and rotated, and how every network hop is encrypted: secrets only in Render environment variables, Netlify variables (none secret), the GitHub `staging` environment secrets, the two deploy tokens of the GitHub `production` environment and, on AWS, Secrets Manager; distinct JWT secrets, database role passwords and API keys per environment; rotation procedures recorded as audit rows; no secret in any `NEXT_PUBLIC_*` variable or committed file; TLS 1.2 or higher everywhere with `sslmode=require` on every non-local database URL; a TLS smoke check; and the rule that the interim stack holds synthetic and test data only.
 
 ## Business Context
 
 - BR-16 (privacy and security of potentially PHI-derived feature data): D-27 requires TLS 1.2+ including `sslmode=require`, encryption at rest, least privilege and no secrets in code.
-- D-28 / AGT-014 (hard rule): no real resident data on the interim Netlify/Railway/Neon stack; interim API keys are never issued to devices at Edgewood (SEC-003).
+- D-28 / AGT-014 (hard rule): no real resident data on the interim Netlify/Render/Neon stack; interim API keys are never issued to devices at Edgewood (SEC-003).
 
 ## Referenced TRDs
 
@@ -47,7 +47,7 @@ Define, document and verify how every secret of every environment is created, st
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-083-FR-01 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* values, database role passwords, platform deploy tokens) shall be stored only in local `.env` (gitignored), Railway service variables, the GitHub Actions `staging` environment secrets, the GitHub Actions `production` environment (deploy tokens only) and, on AWS, Secrets Manager; never in `netlify.toml`, `railway.toml`, Dockerfiles, `docker-compose.yml` or any committed file except the `local-dev-only-*` / `ci-only-*` placeholders. | SEC-050, ENV-005, AGT-016 |
+| FEAT-083-FR-01 | Secrets (JWT_SECRET, DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, SENTRY_DSN, the test-only SEED_* values, database role passwords, platform deploy tokens) shall be stored only in local `.env` (gitignored), Render environment variables and environment groups (`sync: false` in `render.yaml`), the GitHub Actions `staging` environment secrets, the GitHub Actions `production` environment (deploy tokens only) and, on AWS, Secrets Manager; never in `netlify.toml`, `render.yaml`, Dockerfiles, `docker-compose.yml` or any committed file except the `local-dev-only-*` / `ci-only-*` placeholders. | SEC-050, ENV-005, AGT-016 |
 | FEAT-083-FR-02 | Secret settings shall be `pydantic.SecretStr` so they are masked in `repr()`, logs and error messages. | ENV-004, AC-ENV-09 |
 | FEAT-083-FR-03 | `NEXT_PUBLIC_*` variables shall contain no secret. | SEC-054 |
 | FEAT-083-FR-04 | Each environment shall have its own JWT_SECRET, API keys, user accounts and database role passwords; a credential issued in one environment shall be rejected in every other. | DEP-006, ENV-051, SEC-056 |
@@ -55,19 +55,19 @@ Define, document and verify how every secret of every environment is created, st
 | FEAT-083-FR-06 | Database role passwords of staging, production and AWS shall differ per environment and role, be ≥ 32 random characters and be rotated every 180 days and on team-member departure; `echowell_migrator_login` shall also be rotated after each environment rebuild. | SEC-056, RSK-15 |
 | FEAT-083-FR-07 | Device API keys shall be rotated every 365 days, on device replacement and on suspected exposure (create new, deploy, revoke old). | SEC-057 |
 | FEAT-083-FR-08 | Each rotation shall be recorded as an `audit_logs` row `config.changed` with the secret name and `{"rotated": true}` (never the value) or, for platform-side secrets, in the operations log of `docs/deployment.md`. | SEC-058, TRD 12 §4.12 |
-| FEAT-083-FR-09 | The only GitHub Actions secrets shall be `STAGING_DATABASE_URL` and the four `STAGING_SEED_*` secrets in environment `staging`, and `RAILWAY_PRODUCTION_TOKEN` and `NETLIFY_AUTH_TOKEN` in environment `production` (required reviewer); no production database URL, JWT secret or application credential shall be stored in GitHub; fork PRs get no secrets; secrets are passed via `env:` and never echoed. | CIC-090, CIC-091, CIC-092, DEP-033 |
+| FEAT-083-FR-09 | The only GitHub Actions secrets shall be `STAGING_DATABASE_URL` and the four `STAGING_SEED_*` secrets in environment `staging`, and `RENDER_API_KEY` and `NETLIFY_AUTH_TOKEN` in environment `production` (required reviewer); no production database URL, JWT secret or application credential shall be stored in GitHub; fork PRs get no secrets; secrets are passed via `env:` and never echoed. | CIC-090, CIC-091, CIC-092, DEP-033 |
 | FEAT-083-FR-10 | All external traffic shall use HTTPS with TLS 1.2 or higher, HTTP redirected; device-to-API traffic HTTPS only. | SEC-060, SEC-064, DEP-009 |
 | FEAT-083-FR-11 | The backend shall refuse to start in staging and production unless every database URL uses `sslmode=require` (or `verify-full`); every non-local connection uses TLS. | SEC-061, DEP-034, DB-053, AC-ENV-02 |
 | FEAT-083-FR-12 | The backend and every CLI command shall refuse to start when JWT_SECRET, any SEED_* value or a database URL password contains `local-dev-only` or `ci-only` and APP_ENV is `staging` or `production`. | ENV-041, AC-ENV-03 |
 | FEAT-083-FR-13 | A TLS check (TLS 1.1 refused, TLS 1.2 accepted) shall be part of the staging and production smoke tests, together with the HSTS header on both origins. | SEC-066, SEC-062, DEP-045 |
-| FEAT-083-FR-14 | Data at rest shall rely on provider-managed encryption on Neon and Railway (KMS on AWS), recorded per provider in `docs/deployment.md`. | SEC-063, DB-052, PGS-039 |
+| FEAT-083-FR-14 | Data at rest shall rely on provider-managed encryption on Neon (and Render Postgres if used; the Render services keep no data) (KMS on AWS), recorded per provider in `docs/deployment.md`. | SEC-063, DB-052, PGS-039 |
 | FEAT-083-FR-15 | The interim stack shall hold synthetic and test data only; interim API keys shall be bound to test devices or harnesses, never issued to devices deployed at Edgewood; DATA_SOURCE_LABEL shall name the synthetic or test source. | SEC-001, SEC-003, SEC-004, DEP-008, AGT-014 |
-| FEAT-083-FR-16 | All hosted data shall reside in US East regions (Neon `aws-us-east-1`, Railway US East, AWS `us-east-1`). | SEC-007 |
+| FEAT-083-FR-16 | All hosted data shall reside in US East regions (Neon `aws-us-east-1`, Render Virginia (US East), AWS `us-east-1`). | SEC-007 |
 | FEAT-083-FR-17 | GitHub secret scanning with push protection shall be enabled where the plan allows. | SEC-053 |
 
 ## Inputs
 
-- Railway and Neon configuration (FEAT-081), Netlify configuration (FEAT-082), TRD 21 §4.7 matrix, TRD 16 §4.9 secrets table.
+- Render and Neon configuration (FEAT-081), Netlify configuration (FEAT-082), TRD 21 §4.7 matrix, TRD 16 §4.9 secrets table.
 - Backend settings module `backend/core/config.py`.
 
 ## Outputs
@@ -77,13 +77,13 @@ Define, document and verify how every secret of every environment is created, st
 
 ## Data Flow
 
-Operator generates a secret locally → enters it directly in the platform store (Railway variable, GitHub `staging` environment secret) → platform injects it as an environment variable → `Settings` loads it as `SecretStr` → validation refuses placeholders and non-TLS URLs → application uses it. Rotation: new value set → redeploy → old tokens/keys invalid → `config.changed` audit row or operations-log entry.
+Operator generates a secret locally → enters it directly in the platform store (Render environment variable or environment group, GitHub `staging` environment secret) → platform injects it as an environment variable → `Settings` loads it as `SecretStr` → validation refuses placeholders and non-TLS URLs → application uses it. Rotation: new value set → redeploy → old tokens/keys invalid → `config.changed` audit row or operations-log entry.
 
 ## Dependencies
 
 Required before implementation (BACKLOG.md): FEAT-081, FEAT-082
 
-- [FEAT-081](FEAT-081-Railway-Backend-And-Nightly-Cron-Services.md) Railway and Neon configuration (where the secrets live).
+- [FEAT-081](FEAT-081-Render-Backend-And-Nightly-Cron-Services.md) Render and Neon configuration (where the secrets live).
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify configuration and header set (HSTS on the frontend origin).
 
 Features that build directly on this one (BACKLOG.md §4): FEAT-086.
@@ -132,7 +132,7 @@ This feature is itself the security control set listed in the Functional Require
 | FEAT-083-AC-01 | Starting the backend with APP_ENV=staging and a DATABASE_URL without `sslmode=require` exits with code 1; with APP_ENV=local it starts. Verified by: Unit (staging with a URL lacking `sslmode=require` exits 1 (AC-ENV-02)). | AC-ENV-02, SEC-061 |
 | FEAT-083-AC-02 | Starting with APP_ENV=production and the JWT_SECRET of `.env.development.example` exits with code 1 and the log does not contain the value. Verified by: Unit (production with the development JWT_SECRET exits 1 without logging it (AC-ENV-03)). | AC-ENV-03, ENV-041 |
 | FEAT-083-AC-03 | `repr(get_settings())` shows `**********` for the five secret settings. Verified by: Unit (`repr(get_settings())` masks DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN (AC-ENV-09)). | AC-ENV-09, ENV-004 |
-| FEAT-083-AC-04 | `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (in `deploy-staging.yml`), `RAILWAY_PRODUCTION_TOKEN` and `NETLIFY_AUTH_TOKEN` (in `deploy-production.yml` only) and `GITHUB_TOKEN`. Verified by: Inspection (run the command in the criterion and check its output). | AC-CIC-06, CIC-090 |
+| FEAT-083-AC-04 | `grep -r "secrets\." .github/workflows` lists only `STAGING_DATABASE_URL`, `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` (in `deploy-staging.yml`), `RENDER_API_KEY` and `NETLIFY_AUTH_TOKEN` (in `deploy-production.yml` only) and `GITHUB_TOKEN`. Verified by: Inspection (run the command in the criterion and check its output). | AC-CIC-06, CIC-090 |
 | FEAT-083-AC-05 | `tests/smoke/test_tls.py` passes against a TLS 1.2-only test endpoint and fails when TLS 1.1 is accepted. | SEC-066 |
 | FEAT-083-AC-06 | `docs/deployment.md` contains the secret inventory with store, owner and rotation interval for every secret of TRD 21 §4.2 and no secret value (`gitleaks detect` on the file finds nothing). Verified by: Inspection (the inspection method of SEC-050, applied to the condition stated in the criterion). | SEC-050, SEC-058 |
 
@@ -144,5 +144,5 @@ This feature is itself the security control set listed in the Functional Require
 ## Implementation Notes
 
 - JWT_SECRET is generated with `openssl rand -hex 32`, as TRD 21 §4.2/§4.6 and CI use; TRD 12 SEC-055 was aligned to it in the PR #2 consistency fixes (it exceeds the 32-byte minimum, AC-ENV-04).
-- Record platform-side rotations (Railway variables, Neon role passwords) in the operations log because they have no CLI and therefore no audit row (SEC-058).
+- Record platform-side rotations (Render environment variables, Neon role passwords, `RENDER_API_KEY`) in the operations log because they have no CLI and therefore no audit row (SEC-058).
 - Credentials are never migrated between environments; AWS cut-over creates them anew (DEP-117 step 4).

@@ -58,7 +58,7 @@ Offer optional backend error monitoring through Sentry on the interim staging an
 ## Inputs
 
 - `SENTRY_DSN`, `APP_ENV`, `GIT_SHA` settings; logging redaction filters of FEAT-018.
-- Railway service variables (FEAT-081); Netlify configuration (FEAT-082) only to confirm no frontend DSN is set.
+- Render environment variables (FEAT-081); Netlify configuration (FEAT-082) only to confirm no frontend DSN is set.
 
 ## Outputs
 
@@ -73,7 +73,7 @@ Exception or `nightly_run_missing` → backend logging (ERROR) → if SDK initia
 
 Required before implementation (BACKLOG.md): FEAT-081, FEAT-082, FEAT-018
 
-- [FEAT-081](FEAT-081-Railway-Backend-And-Nightly-Cron-Services.md) Railway backend and nightly services (where SENTRY_DSN is set).
+- [FEAT-081](FEAT-081-Render-Backend-And-Nightly-Cron-Services.md) Render backend and nightly services (where SENTRY_DSN is set).
 - [FEAT-082](FEAT-082-Netlify-Frontend-Configuration-Security-Headers-And.md) Netlify configuration (no frontend SDK; CSP has no Sentry origin).
 - [FEAT-018](FEAT-018-Structured-JSON-Logging-Redaction-And-Request.md) Structured logging and redaction filters reused by `before_send`.
 

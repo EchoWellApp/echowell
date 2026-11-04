@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -755,11 +755,13 @@ In production `alarm_timing` is null and `review_outcomes` is
 
 ```yaml
 servers:
-  - url: http://localhost:8000/api/v1
-    description: local (docker-compose)
   - url: /api/v1
-    description: relative to the deployed Railway API origin (staging, production)
+    description: current deployment
 ```
+
+One relative server only: it resolves against whichever origin serves the document (the Render API origins of staging
+and production, TRD 15 §4.5; `http://localhost:8000` locally), so Swagger UI on a deployed service never calls
+`localhost` (aligned with `backend/api/openapi.py` as deployed to Render from `main`, TRD 24 D-153).
 
 ### 4.5 OpenAPI 3.1 skeleton
 
@@ -777,7 +779,6 @@ info:
     EchoWell research system API. Detects a change in a resident's voice measurements relative to their own
     frozen baseline; a prompt to check in, not a diagnosis. No audio endpoints exist.
 servers:
-  - url: http://localhost:8000/api/v1
   - url: /api/v1
 security: []
 tags:
@@ -2168,3 +2169,4 @@ components:
 | 0.8 | 27 Oct 2026 | Checkpoint 4: three YAML quoting fixes so the §8 skeleton parses as intended (the `/scores` 200 description, `IngestBatchAccepted.accepted.description` and `CheckinEvent.detail.description` contained an unquoted comma); no contract change | — |
 | 0.9 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-9, Q-11; TRD 24 D-126): §4.2 universal responses add 415 and are documented once rather than per operation; global `audio/*` content-type rule | — |
 | 0.10 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-9, TRD 24 D-134): four §4.3 examples written out in full so every example validates against its schema (OAS-015): E-05 set-aside response (UUIDs instead of `"..."`), E-10 (null-valued properties), E-11 (all 7 scored features, values from the engine on SRC-05), E-19 (`meta` in full) | — |
+| 0.11 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §4.4 servers reduced to the one relative server `/api/v1` ("current deployment") of `backend/api/openapi.py`; §4.5 skeleton and `tests/fixtures/trd19_openapi_skeleton.yaml` follow | — |
