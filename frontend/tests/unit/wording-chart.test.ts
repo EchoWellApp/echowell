@@ -178,15 +178,6 @@ describe("chart wording", () => {
     );
     expect(
       logLine(
-        ev({
-          event_type: "device_silent",
-          detail: "all residents on shared device D11 have no record",
-        }),
-        ctx,
-      ),
-    ).toBe("Shared device D11 silent all day. Check-in missed.");
-    expect(
-      logLine(
         ev({ event_type: "quarantined", detail: "possible other speaker (F0 z=-7.34)" }),
         ctx,
       ),

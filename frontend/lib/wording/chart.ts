@@ -308,11 +308,9 @@ export interface LogLineContext {
   currentDeviceCode: string | null;
 }
 
-/** The shared device of a `device_silent` event: its code, else the one named in the detail. */
+/** The silent device of a `device_silent` event: the API's device_code (TRD 24 D-145). */
 function silentDevice(e: CheckinEvent, ctx: LogLineContext): string {
-  if (e.device_code) return e.device_code;
-  const named = /device (\S+?)(?:\s|$)/.exec(e.detail ?? "");
-  return named?.[1] ?? ctx.currentDeviceCode ?? "";
+  return e.device_code ?? ctx.currentDeviceCode ?? "";
 }
 
 /** The line text of one check-in event (UX-142, FE-101). */

@@ -695,6 +695,7 @@ export interface components {
             cusum_tally: number | null;
             /** @description pipeline reason text or progress, e.g. "16 of 16" */
             detail: string | null;
+            /** @description checkins_started: device of the resident's first non-duplicate record (TRD 24 D-114); device_silent: the silent device (D-145); null on other events */
             device_code: string | null;
             epoch_number: number | null;
             event_type: components["schemas"]["CheckinEventType"];

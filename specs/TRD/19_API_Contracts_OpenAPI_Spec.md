@@ -1,6 +1,6 @@
 # 19 API Contracts OpenAPI Spec
 
-Document ID: ECHOWELL-TRD-19 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 3 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-19 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 3 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -1616,7 +1616,7 @@ components:
         previous_device_code: {type: [string, "null"], description: "baseline_restarted only: device of the previous epoch"}
         from_value: {type: [string, "null"], description: "baseline_restarted only: previous value of the restart_cause part"}
         to_value: {type: [string, "null"], description: "baseline_restarted only: new value of the restart_cause part"}
-        device_code: {type: [string, "null"], description: "checkins_started only: device of the resident's first non-duplicate record (TRD 24 D-114); null on other events"}
+        device_code: {type: [string, "null"], description: "checkins_started: device of the resident's first non-duplicate record (TRD 24 D-114); device_silent: the silent device (D-145); null on other events"}
     CheckinEventList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}
@@ -2169,3 +2169,4 @@ components:
 | 0.9 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-9, Q-11; TRD 24 D-126): §4.2 universal responses add 415 and are documented once rather than per operation; global `audio/*` content-type rule | — |
 | 0.10 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-9, TRD 24 D-134): four §4.3 examples written out in full so every example validates against its schema (OAS-015): E-05 set-aside response (UUIDs instead of `"..."`), E-10 (null-valued properties), E-11 (all 7 scored features, values from the engine on SRC-05), E-19 (`meta` in full) | — |
 | 0.11 | 3 Nov 2026 | §4.4 and the §4.5 skeleton: one relative server `/api/v1` ("current deployment") instead of the localhost and Railway entries, matching the change on `main` (TRD 24 D-140); OAS-002 wording | — |
+| 0.12 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-145): `CheckinEvent.device_code` also set on `device_silent` events | — |

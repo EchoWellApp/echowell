@@ -1131,7 +1131,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "checkins_started: device of the resident's first non-duplicate record (TRD 24 D-114); device_silent: the silent device (D-145); null on other events"
           },
           "epoch_number": {
             "anyOf": [

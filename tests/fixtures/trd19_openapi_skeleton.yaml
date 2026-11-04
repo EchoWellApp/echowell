@@ -844,7 +844,7 @@ components:
         previous_device_code: {type: [string, "null"], description: "baseline_restarted only: device of the previous epoch"}
         from_value: {type: [string, "null"], description: "baseline_restarted only: previous value of the restart_cause part"}
         to_value: {type: [string, "null"], description: "baseline_restarted only: new value of the restart_cause part"}
-        device_code: {type: [string, "null"], description: "checkins_started only: device of the resident's first non-duplicate record (TRD 24 D-114); null on other events"}
+        device_code: {type: [string, "null"], description: "checkins_started: device of the resident's first non-duplicate record (TRD 24 D-114); device_silent: the silent device (D-145); null on other events"}
     CheckinEventList:
       allOf:
         - {$ref: "#/components/schemas/PageMeta"}

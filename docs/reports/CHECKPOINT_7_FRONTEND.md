@@ -1,6 +1,6 @@
 # Checkpoint 7 Report — Phase 13 Implement Frontend
 
-Block 3 "Implement Features", checkpoint 7 of 9, its own PR (branch `feat/cp7-frontend`, created from `main` at 753d32a after GitHub PR #22 was merged on 2 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 13: Implement Frontend" · TRD 25 Phase 8 · Features: FEAT-062..FEAT-076 · Date: 2 November 2026 · Status: in review (GitHub PR #28).
+Block 3 "Implement Features", checkpoint 7 of 9, its own PR (branch `feat/cp7-frontend`, created from `main` at 753d32a after GitHub PR #22 was merged on 2 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 13: Implement Frontend" · TRD 25 Phase 8 · Features: FEAT-062..FEAT-076 · Date: 2 November 2026 · Status: in review (GitHub PR #28); review round 1 answered and applied, section 10.
 
 Build order followed roadmap §5.7: [FEAT-062, FEAT-063, FEAT-064] → [FEAT-065] → [FEAT-066, FEAT-067, FEAT-068] → [FEAT-069, FEAT-070, FEAT-071] → [FEAT-072, FEAT-073, FEAT-074] → [FEAT-075, FEAT-076]. Specs read: TRD 04, TRD 11, TRD 19 (through the generated types), TRD 13 §4.10, TRD 24 D-73, D-74 and D-108..D-119, and the wireframe v0.2 with `WIREFRAMES.md`. The pipeline-validation gate passed on `main` before work started (AGT-023, CI green on 753d32a).
 
@@ -109,3 +109,25 @@ None. Decisions from this review will be recorded in TRD 24 from D-141 (D-140 is
 | Q-11 | Firefox, WebKit and the `@isolated` run were not run here. They will run in `e2e.yml` (FEAT-080, checkpoint 8). Agree? |
 | Q-12 | Size: about 45,500 added lines, of which about 25,300 are generated fixtures and types and about 10,400 are tests, for 15 features. Accept as one PR? |
 | Q-13 | N-4: someone deployed to Render from `main`. Is that intended, and should Block 4 plan for it? |
+
+## 10. Review round 1 resolutions (4 November 2026)
+
+Shaba (algorithm lead) answered all 13 questions in her review of GitHub PR #28, requesting changes. The decisions are recorded in TRD 24 as D-141..D-151, plus D-153 for Q-13.
+
+| Q | Answer | Change made |
+|---|---|---|
+| Q-1 | Accept the texts that no spec defined; a PI/lead review can come later | D-141; no code change |
+| Q-2 | Add the three tokens to the specs | TRD 04 §4.12 and TRD 11 §4.15 list `--badge-ink`, `--nav-active`, `--nav-hover` (D-142) |
+| Q-3 | Agree with the CSS-drawn badge digit | D-143; no code change |
+| Q-4 | Align UX-411 with FE-210 | UX-411 now names `alarm_reviewed === false` as the source of truth (D-144) |
+| Q-5 | The API should fill `device_code` on `device_silent` events | `backend/services/checkin_service.py` sets it from the day-ledger device; the schema description, `docs/api_reference/openapi.json`, TRD 19 and the skeleton fixture, `lib/api-types.ts` and the R02/R03 DS-07 fixtures are updated; the integration test now expects `device_code: "D02"`; the check-in log uses the field and no longer reads the code from the detail text (D-145) |
+| Q-6 | Keep showing the replacement device's resident for D07 | TRD 11 §4.13.4 notes the rule (D-146) |
+| Q-7 | Agree: the three most recent dates | UX-056 wording and example (D-147) |
+| Q-8 | Correct TST-100 | TRD 13 TST-100 and §8, and TRD 16 CIC-030, now give the D-118 order (D-148) |
+| Q-9 | Update the feature files | FEAT-068-AC-07 (Baseline sentence) and FEAT-073 (neutral pills) (D-149) |
+| Q-10 | Update TRD 04 §4.8 to the implemented props | 19 component rows updated from the code; `StaffNotes` noted as fetching its own notes (D-150) |
+| Q-11 | Firefox, WebKit and `@isolated` in `e2e.yml` satisfy the requirement | D-151 |
+| Q-12 | Accept as one PR | D-151 |
+| Q-13 | Render (not Railway) is the intended backend host; update all deployment documentation and Block 4 planning | Done in its own documentation PR (branch `docs/render-deployment`, D-153), because it touches about 45 deployment documents and none of the frontend code |
+
+Checks after the changes: Vitest 429 passed; contract tests, `test_residents.py` and the DS-07 UI fixture checks passed (54); `ruff check` and `ruff format --check` clean; the live API returns `device_code: "D02"` for R03's Oct 12 `device_silent` event.
