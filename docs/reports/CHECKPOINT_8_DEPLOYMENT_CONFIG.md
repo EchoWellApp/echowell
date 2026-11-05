@@ -1,6 +1,6 @@
 # Checkpoint 8 Report — Phase 14A Generate Deployment Configuration & Infrastructure Files
 
-Block 3 "Implement Features", checkpoint 8 of 9, its own PR (branch `feat/cp8-deployment-config`, created from `main` at fa00286 after GitHub PRs #28, #29 and #30 were merged on 5 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 14A" · TRD 25 Phase 9 · Features: FEAT-077..FEAT-087 · Date: 5 November 2026 · Status: in review.
+Block 3 "Implement Features", checkpoint 8 of 9, its own PR (branch `feat/cp8-deployment-config`, created from `main` at fa00286 after GitHub PRs #28, #29 and #30 were merged on 5 November 2026) · Prompt: `specs/prompts/Implement_Feature_Batches.md` "Phase 14A" · TRD 25 Phase 9 · Features: FEAT-077..FEAT-087 · Date: 5 November 2026 · Status: in review (GitHub PR #31).
 
 Build order followed roadmap §5.8: [FEAT-077..FEAT-080] → [FEAT-081..FEAT-083] → [FEAT-084, FEAT-085] → [FEAT-086, FEAT-087]. TRDs read in the roadmap order: 15, 16, 21, 22, 12, 17, then SRC-01. Hosting follows the decisions merged in PR #30: Netlify for the frontend, Render for the backend (the existing `echowell-api` service as staging, region `ohio`, Starter; production created later and released manually), Neon `aws-us-east-1` for the database (TRD 24 D-153..D-158).
 
