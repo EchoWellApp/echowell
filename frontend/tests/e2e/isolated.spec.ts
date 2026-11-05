@@ -153,7 +153,9 @@ async function waitForRun(request: APIRequestContext, runId: string): Promise<vo
 }
 
 test.describe("@isolated demo path", () => {
-  test.describe.configure({ mode: "serial" });
+  // Serial, and longer than the 30 s default: TST-187 waits for the next minute and E2E-19 uploads
+  // SRC-05 and runs the pipeline before its checks.
+  test.describe.configure({ mode: "serial", timeout: 120_000 });
 
   let firstPostMs = 0;
   let firstLast = "";
