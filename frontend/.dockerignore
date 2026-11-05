@@ -1,0 +1,15 @@
+# Frontend image build context (frontend/, TRD 15 DEP-023): no local installs, build output, test output,
+# stored E2E sessions or environment files.
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+tests/e2e/.auth
+.env
+.env.*
+.netlify
+tsconfig.tsbuildinfo
+Dockerfile
+.dockerignore
