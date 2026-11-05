@@ -271,7 +271,7 @@ Test levels and the E2E scenario list are in docs/design/Testing_Architecture.md
 - Residents are study IDs only; no names, photos or rooms (no room numbers, D-116) (UX-001, FE-068, AGT-017).
 - No audio player, waveform or audio link on any page; the data bar on every page states "No audio is stored or played anywhere in EchoWell." (UX-400, UX-006, FE-007, FE-208).
 - Wording says "Changed from their usual" and "a prompt to check in, not a diagnosis"; forbidden stems of UX-161 never appear (AGT-018, UX-160..UX-167).
-- Facility named only from `meta.facility_name`; "Edge4Care" never appears (UX-012, AGT-019).
+- Facility named only from `meta.facility_name`; the old facility name of AGT-019 never appears (UX-012).
 - No EWMA chart (OQ-18); no control to edit, reset or delete baselines, scores, change scores, alarms or records (UX-009).
 - No request to any host other than the frontend origin and the API origin (FE-192).
 

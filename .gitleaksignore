@@ -1,0 +1,10 @@
+# Findings reviewed as synthetic test-only values committed before the gitleaks gate (FEAT-078, CIC-115).
+# Fingerprint format <commit>:<file>:<rule>:<line>; new entries need a reviewer and a tracking issue.
+1b0644266f0c0339776d78dcac1417d896de66b8:tests/security/test_deployed_cors.py:generic-api-key:22
+1b0644266f0c0339776d78dcac1417d896de66b8:tests/security/test_transport_and_secrets.py:generic-api-key:32
+1b0644266f0c0339776d78dcac1417d896de66b8:tests/unit/test_render_blueprint.py:generic-api-key:257
+1eb487aab26d4af863795993e93063eb81c12d94:tests/contract/test_openapi_contract.py:generic-api-key:264
+971a651baafeb25197c6b28dbb0bcd561ae2bc7a:tests/integration/api/test_users.py:generic-api-key:18
+faf0afd9e6565862a30bd5f7f427e3733523abc4:tests/integration/test_auth_coverage.py:generic-api-key:65
+e0d2c44837c6031e5291800e6cd011da29fa2606:tests/integration/api/test_http_middleware.py:generic-api-key:200
+6ab635fa0d3db2c46e382f5119247aede67db448:tests/unit/backend/core/test_config.py:generic-api-key:26

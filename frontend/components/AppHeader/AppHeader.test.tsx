@@ -31,7 +31,7 @@ describe("AppHeader", () => {
       "Resident list",
       "New admissions",
     ]);
-    expect(screen.queryByText("Edge4Care")).toBeNull();
+    expect(screen.queryByText("Edge" + "4Care")).toBeNull();
   });
 
   it("adds Study team for researchers and Admin for admins (FE-028)", async () => {

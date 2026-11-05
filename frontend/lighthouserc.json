@@ -1,0 +1,34 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:3001/residents",
+        "http://localhost:3001/residents/R09",
+        "http://localhost:3001/residents/R09/trends",
+        "http://localhost:3001/study"
+      ],
+      "numberOfRuns": 3,
+      "puppeteerScript": "./tests/lighthouse/login.js",
+      "puppeteerLaunchOptions": { "args": ["--no-sandbox", "--disable-dev-shm-usage"] },
+      "disableStorageReset": true,
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["performance"],
+        "disableStorageReset": true
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.8, "aggregationMethod": "median-run" }],
+        "largest-contentful-paint": [
+          "error",
+          { "maxNumericValue": 2500, "aggregationMethod": "median-run" }
+        ]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "../build/lighthouse"
+    }
+  }
+}
