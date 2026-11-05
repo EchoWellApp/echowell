@@ -65,7 +65,7 @@ flowchart LR
 | Database | `postgres:16-alpine`, volume `pgdata` | Neon project `echowell`, branch `staging` | Neon project `echowell`, branch `main` | DEP-005, DEP-030, DEP-031 |
 | `APP_ENV` / `PIPELINE_PROFILE` | `local` / `test_v0_1` | `staging` / `test_v0_1` | `production` / `production` | TRD 15 §4.1, ENV-050 |
 | Seed data | `seed test_v0_1` allowed | `seed test_v0_1 --reset` after migrations or analytics changes | never | DEP-007, DEP-070..DEP-074 |
-| Regions | — | Neon `aws-us-east-1`, Render: the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156) | same | ARC-084, D-54 |
+| Regions | — | Neon `aws-us-east-1`, Render: `ohio` (US East), the region of the existing `echowell-api` service (TRD 24 D-156) | same | ARC-084, D-54 |
 
 Each environment has its own `JWT_SECRET`, API keys and users; no credential works across environments (DEP-006, ENV-051).
 

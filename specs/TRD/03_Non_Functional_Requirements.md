@@ -106,7 +106,7 @@ Live feature data is extracted from residents' speech and is treated as sensitiv
 | NFR-049 | Security-relevant actions shall be recorded in `audit_logs` (events listed in TRD 12) within the same transaction as the action. | Must | BR-16 | Test |
 | NFR-050 | Data export (FR-244) shall be limited to roles `researcher` and `admin` and shall contain study IDs only and no staff-note text. | Must | BR-16 | Test |
 | NFR-051 | Data shall not be deleted by the application in the MVP; any retention or deletion behaviour awaits OQ-01 and withdrawal handling awaits OQ-11. | Must | BR-02, OQ-01, OQ-11 | Inspection |
-| NFR-052 | Hosting regions shall be Neon `aws-us-east-1` and Render Virginia (US East) (current) and AWS `us-east-1` (target); data shall not be replicated outside the United States. | Must | BR-16, BR-17, R25 | Inspection (provider settings) |
+| NFR-052 | Hosting regions shall be Neon `aws-us-east-1` and Render `ohio` (US East; D-156) (current) and AWS `us-east-1` (target); data shall not be replicated outside the United States. | Must | BR-16, BR-17, R25 | Inspection (provider settings) |
 
 Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate limits, secrets) are specified in TRD 12 (SEC).
 

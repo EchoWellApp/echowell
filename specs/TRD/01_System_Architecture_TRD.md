@@ -344,7 +344,7 @@ flowchart LR
         LF["frontend :3000"] --> LB["backend :8000"] --> LP[("postgres:16")]
     end
     subgraph Staging
-        SF["Netlify site 'echowell-und-staging'"] --> SB["Render staging web service<br/>+ nightly cron job (region of echowell-api, D-156)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
+        SF["Netlify site 'echowell-und-staging'"] --> SB["Render staging web service<br/>+ nightly cron job (ohio, US East)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
     end
     subgraph Production
         PF["Netlify site 'echowell-und'"] --> PB["Render production web service<br/>+ nightly cron job"] --> PP[("Neon database branch 'main'")]
@@ -359,7 +359,7 @@ flowchart LR
 | ARC-081 | The local environment shall run the same backend, analytics and frontend code as the cloud environments and shall be usable as the demo fallback. | Must | BR-17, RSK-12, SRC-15 item 8 | Demo |
 | ARC-082 | Database schema changes shall be applied only through Alembic migrations using `DATABASE_MIGRATION_URL` (`echowell_migrator` role), run as a deploy step before the new backend version serves traffic. | Must | BR-17, TRD 15, R20 | Inspection |
 | ARC-083 | The backend shall expose `GET /api/v1/health` returning `{status, database, version, time}` for platform health checks, with HTTP 503 and status "degraded" when the database check fails. | Must | BR-17, TRD 05, R19 | Test |
-| ARC-084 | Hosting regions shall be Neon `aws-us-east-1` and Render Virginia (US East) for the current stack and AWS `us-east-1` for the target stack. | Must | BR-17, R25 | Inspection |
+| ARC-084 | Hosting regions shall be Neon `aws-us-east-1` and Render `ohio` (US East; D-156) for the current stack and AWS `us-east-1` for the target stack. | Must | BR-17, R25 | Inspection |
 
 ### 4.10 Current (interim) versus target (AWS) architecture
 
@@ -384,7 +384,7 @@ flowchart LR
 | Backend hosting | Render | AWS App Runner | Containerized via `backend/Dockerfile`; listens on `$PORT`; stateless |
 | Database | Neon / Render Postgres 16 | AWS RDS PostgreSQL 16 | Standard PostgreSQL only; no Neon-specific SQL; connection via `DATABASE_URL` |
 | Scheduler | Separate Render cron job running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, recorded as `trigger = nightly` (D-47, D-70) | Trigger calls the same `pipeline_runner` entry |
-| Region | Neon `aws-us-east-1`, Render Virginia (US East) | AWS `us-east-1` | Region set only in hosting configuration (R25) |
+| Region | Neon `aws-us-east-1`, Render `ohio` (US East; D-156) | AWS `us-east-1` | Region set only in hosting configuration (R25) |
 | Secrets | Netlify/Render env vars, GitHub secrets | AWS Secrets Manager injected as App Runner environment variables | Read only from environment variables |
 | Encryption at rest | Provider-managed storage encryption (Neon/Render) | RDS storage encryption with AWS KMS key; encrypted automated backups and snapshots; any S3 objects encrypted (SSE-KMS) | No application-level dependency on the mechanism |
 | Encryption in transit | Platform TLS; `sslmode=require` to PostgreSQL | ACM TLS; `sslmode=require` (RDS CA) to PostgreSQL | TLS settings via configuration only |
@@ -478,4 +478,4 @@ flowchart LR
 | 0.8 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-3, Q-4, Q-5, Q-7): §4.6 router list aligned with TRD 05 §4.1 (data alerts in `alarms`, notes in `residents`, facility reference ranges in `admissions`; `config` added); service names `health_service`, `config_service`, `auth_service`, `audit_service`; repository module names from docs/design/Database_ERD.md §5; root `scripts/` added | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend routes in §4.2 (Resident chart sections, `/study`; `/alerts` and `/analytics` pages retired); SRC-21 replaces SRC-09/10/11/18/19 in references and traces (ARC-032, ARC-035, ARC-040, §4.5) | — |
 | 0.10 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
-| 0.11 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region of `echowell-api` to be recorded; Starter tier; confirmed Render rollback and health-check behaviour | — |
+| 0.11 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region `ohio` (US East); Starter tier; confirmed Render rollback and health-check behaviour | — |

@@ -88,7 +88,7 @@ B4 API → PostgreSQL; B5 GitHub Actions → hosting platforms; B6 admin worksta
 | SEC-003 | Team 2 shall not issue interim-stack API keys to devices deployed at Edgewood; interim-stack API keys shall be bound to test devices or used only by test harnesses. | Must | D-OWNER-4 | Inspection |
 | SEC-004 | On the interim stack, DATA_SOURCE_LABEL shall name the synthetic/test source (for example "pipeline test data v0.1") and the frontend data bar (TRD 11 UX-400) shall display it on every page. | Must | D-OWNER-4, contract §11 | Demo |
 | SEC-005 | The go-live checklist (TRD 15) shall include a signed-off item "hosting approved for PHI-derived data (AWS)" by the PI and UND IT before any live device is pointed at the API. | Must | D-OWNER-3, D-OWNER-4 | Inspection |
-| SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Render Virginia (US East), AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
+| SEC-007 | All hosted data shall reside in US East regions: Neon `aws-us-east-1`, Render `ohio` (US East; D-156), AWS target `us-east-1`. | Must | contract §21 R25, D-OWNER-3 | Inspection |
 | SEC-006 | Application code shall remain portable to AWS (App Runner, Amplify, RDS PostgreSQL, KMS, Secrets Manager, CloudWatch) with configuration changes only: no Render-, Netlify- or Neon-specific SDKs in application code. | Must | D-OWNER-3, SRC-01 | Inspection |
 
 ### 4.3 Authentication: dashboard users
