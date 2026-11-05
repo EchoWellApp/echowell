@@ -46,8 +46,9 @@ def test_database_assigned_columns_are_refused(column: str) -> None:
 def test_repository_has_no_update_or_delete() -> None:
     public = {name for name in dir(RawSessionRepository) if not name.startswith("_")}
     assert public == {
-        "insert", "by_resident", "by_session_id", "exists_session_id", "first_payload",
-        "latest_timestamp_for_device",
+        "insert", "insert_many", "by_resident", "by_session_id", "exists_session_id",
+        "first_payload", "first_payloads", "latest_timestamp_for_device",
+        "latest_timestamps_for_devices",
     }  # fmt: skip
 
 
@@ -60,3 +61,13 @@ def test_insert_returns_id_and_sequence() -> None:
     sql = str(session.statements[0])
     assert "RETURNING raw_sessions.id, raw_sessions.arrival_seq" in sql
     assert "arrival_seq" not in sql.split("RETURNING")[0]
+
+
+@pytest.mark.req("DB-001", "D-09")
+def test_insert_many_refuses_database_assigned_columns() -> None:
+    session = FakeSession()
+    with pytest.raises(ValueError, match="assigned by the database"):
+        RawSessionRepository(session).insert_many(  # type: ignore[arg-type]
+            [{"session_id": "S1"}, {"session_id": "S2", "arrival_seq": 5}]
+        )
+    assert session.statements == []

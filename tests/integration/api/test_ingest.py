@@ -11,11 +11,13 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
+from sqlalchemy import event, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from backend.repositories.config_repository import ConfigRepository
 from backend.services.ingestion import check_startup_name_map
+from backend.services.pipeline_runner import PipelineRunner
 from backend.services.validation import CANONICAL_FIELDS, NameMapError
 from tests.conftest import make_settings
 from tests.integration.api.conftest import Principals
@@ -270,3 +272,58 @@ def test_invalid_name_map_stops_startup(roster: Session) -> None:
     roster.commit()
     with pytest.raises(NameMapError):
         check_startup_name_map(factory, settings)
+
+
+@pytest.mark.req("ING-037", "ING-038", "ING-039", "API-123", "TST-124", "FEAT-026-FR-12")
+def test_batch_duplicates_and_statement_count(
+    api: TestClient, roster: Session, principals: Principals, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In-batch duplicates are judged against earlier rows of the same batch, and the number of
+    SQL statements of a batch does not grow with its records (no per-record round trips)."""
+    headers = principals.api_key("ingest")
+    first = src05_record("R01-20261001-01")
+    assert api.post(INGEST, json={"records": [first]}, headers=headers).status_code == 202
+    changed = {**src05_record("R03-20261001-01"), "loudness_dbfs": -31.5}
+    records = [
+        first,  # duplicate of an earlier batch, same payload
+        src05_record("R03-20261001-01"),
+        {**src05_record("R02-20261001-01"), "audio_quality_flag": "bad"},  # rejected
+        changed,  # duplicate of row 2 with different values
+        src05_record("R03-20261001-01"),  # duplicate of row 2, same payload
+    ]
+    # Only the request is counted: the background run (statements per resident) is not started.
+    monkeypatch.setattr(PipelineRunner, "execute", lambda self, handle: None)
+    statements: list[str] = []
+
+    def count(*args: Any) -> None:
+        statements.append(args[2])
+
+    event.listen(Engine, "before_cursor_execute", count)
+    try:
+        small = api.post(INGEST, json={"records": records}, headers=headers)
+        small_count = len(statements)
+        with SRC_05.open(newline="", encoding="utf-8") as handle:
+            session_ids = [row["session_id"] for row in csv.DictReader(handle)][:120]
+        large_records = [src05_record(s) for s in session_ids]
+        statements.clear()
+        large = api.post(INGEST, json={"records": large_records}, headers=headers)
+        large_count = len(statements)
+    finally:
+        event.remove(Engine, "before_cursor_execute", count)
+    assert small.status_code == 202, small.text
+    body = small.json()
+    assert (body["accepted"], body["rejected"], body["duplicates"]) == (4, 1, 3)
+    rows = roster.execute(
+        text("SELECT session_id, ingest_warnings FROM raw_sessions "
+             "WHERE ingest_batch_id = :b ORDER BY arrival_seq"),
+        {"b": body["ingest_batch_id"]},
+    ).all()  # fmt: skip
+    assert [r.session_id for r in rows] == [
+        "R01-20261001-01", "R03-20261001-01", "R03-20261001-01", "R03-20261001-01",
+    ]  # fmt: skip
+    codes = [[w["code"] for w in r.ingest_warnings] for r in rows]
+    assert "duplicate_payload_differs" not in codes[0]
+    assert codes[1] == codes[3]
+    assert codes[2] == [*codes[1], "duplicate_payload_differs"]
+    assert large.status_code == 202, large.text
+    assert large_count <= small_count + 5, (small_count, large_count)

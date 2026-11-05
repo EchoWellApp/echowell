@@ -131,11 +131,14 @@ def resident_facts(
     attention = rm.attention_kinds(session, ids)
     counts = rm.activity_counts(session, residents, ctx.as_of_date)
     last = rm.last_checkin(session, ids)
+    progresses = rm.baseline_progress_many(session, epochs.values(), ctx.baseline_n)
+    devices = rm.device_labels(session, residents, ctx.as_of_date, ctx.shared_device_min_residents)
+    no_epoch = rm.baseline_progress(session, None, ctx.baseline_n)
     facts = []
     for resident in residents:
         epoch = epochs.get(resident.id)
         alert = alerts.get(epoch.id) if epoch is not None else None
-        progress = rm.baseline_progress(session, epoch, ctx.baseline_n)
+        progress = progresses[epoch.id] if epoch is not None else no_epoch
         if alert is not None:
             status = "alarm_on"
         elif not progress.frozen:
@@ -155,9 +158,7 @@ def resident_facts(
                 progress=progress,
                 restart=restart,
                 restarted_on=rm.baseline_restarted(epoch, ctx.tz.key),
-                device=rm.device_label(
-                    session, resident, ctx.as_of_date, ctx.shared_device_min_residents
-                ),
+                device=devices[resident.id],
                 last_checkin_at=last.get(resident.id),
                 counts=counts.get(resident.id, rm.ActivityCounts()),
                 window=rm.window_for(resident.enrolled_on, ctx.as_of_date),
