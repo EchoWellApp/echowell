@@ -1,7 +1,8 @@
-# CI core jobs (TRD 16 §4.2, CIC-010..CIC-017, CIC-024..CIC-027; TRD 24 D-94, D-99).
-# Phase 3 state of ci.yml: jobs backend-lint, backend-test and frontend replace the legacy stub.
-# repo-hygiene, openapi-contract, security-audit, docker-build, the migration round trip and the
-# coverage gates are added by FEAT-008 and FEAT-078. No repository secret is used (CIC-026).
+# CI quality, security and hygiene gates (TRD 16 §4.2, CIC-010..CIC-027, CIC-036, CIC-070, CIC-080..CIC-083,
+# CIC-100..CIC-102, CIC-110..CIC-115; TRD 13 TST-006, TST-126, TST-140..TST-144, TST-150, TST-153, TST-191;
+# TRD 12 SEC-052, SEC-128, SEC-151..SEC-154; TRD 24 D-39, D-51, D-72, D-99; FEAT-007, FEAT-078, FEAT-079).
+# Job ids are the required status checks of CIC-070 (with `playwright` from e2e.yml); do not rename them.
+# No repository secret is used (CIC-026); every credential below is a CI-only throwaway value.
 name: CI
 on:
   pull_request:
@@ -17,6 +18,49 @@ env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
 jobs:
+  repo-hygiene:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: No audio files (CIC-020, BR-01)
+        run: |
+          if git ls-files | grep -Ei '\.(wav|mp3|flac|m4a|ogg|opus|aac|wma|aif|aiff|amr|webm|caf|pcm)$'; then
+            echo "::error::Audio files are forbidden in this repository"; exit 1; fi
+      - name: No env files (CIC-021)
+        run: |
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.example$'; then
+            echo "::error::.env files must not be committed"; exit 1; fi
+      - name: File size limit 10 MB (CIC-021)
+        run: |
+          git ls-files -z | xargs -0 du -k | awk '$1 > 10240 {print; bad=1} END {exit bad}'
+      - name: Forbidden terms (CIC-114, TRD 00 VIS-008, TRD 03 NFR-067, AGT-019)
+        # The facility-name pattern is written as a character class so this file never contains the term.
+        run: |
+          if git grep -n -I -i -E "edge[4]care" -- . ':!specs/' ':!docs/reports/'; then
+            echo "::error::The old facility name must not be used (the facility is Edgewood)"; exit 1; fi
+          if git grep -n -I -w -i -E "diagnoses|severity" -- frontend/app frontend/components frontend/lib/wording.ts; then
+            echo "::error::Forbidden wording in UI copy (detection, not diagnosis)"; exit 1; fi
+      - name: No LLM SDK or ML model dependencies (CIC-114, SEC-128, ARC-104, AGT-004, AGT-005)
+        run: |
+          llm_py='openai|anthropic|langchain[a-z_-]*|llama[-_]index[a-z_-]*|google-generativeai|google-genai|cohere|mistralai'
+          ml_py='torch[a-z_-]*|tensorflow[a-z_-]*|keras|scikit-learn|sklearn|transformers|sentence-transformers|xgboost|lightgbm|onnxruntime[a-z_-]*|huggingface[-_]hub|llama-cpp-python|spacy'
+          if grep -n -i -E "^($llm_py|$ml_py)([=<>~ !;\[]|$)" backend/requirements*.txt; then
+            echo "::error::LLM SDKs and machine-learning model packages are not allowed"; exit 1; fi
+          llm_js='openai|@anthropic-ai/[a-z-]+|langchain|@langchain/[a-z-]+|@google/generative-ai|@google/genai|cohere-ai|@mistralai/[a-z-]+'
+          ml_js='@tensorflow/[a-z-]+|onnxruntime-(web|node|common)|@xenova/transformers|@huggingface/[a-z-]+|ml5|brain\.js'
+          if grep -n -E "\"($llm_js|$ml_js)\"" frontend/package.json; then
+            echo "::error::LLM SDKs and machine-learning model packages are not allowed"; exit 1; fi
+          if git grep -n -I -E "^\s*(import|from)\s+(openai|anthropic|langchain|torch|tensorflow|sklearn|transformers|keras|xgboost|lightgbm|onnxruntime)\b" -- backend analytics; then
+            echo "::error::LLM or ML imports in the processing path"; exit 1; fi
+          if git grep -n -I -E "from ['\"]($llm_js|$ml_js)['\"]" -- frontend ':!frontend/package-lock.json'; then
+            echo "::error::LLM or ML imports in the frontend"; exit 1; fi
+      - name: PR title is a Conventional Commit (CIC-022)
+        if: github.event_name == 'pull_request'
+        env: { TITLE: "${{ github.event.pull_request.title }}" }
+        run: |
+          if ! printf '%s\n' "$TITLE" | grep -Eq '^(feat|fix|docs|chore|refactor|test|ci|build|perf|release)(\([a-z0-9-]+\))?!?: .{3,}$'; then
+            echo "::error::PR title must be a Conventional Commit header, e.g. 'feat(api): add device panel endpoint'"; exit 1; fi
   backend-lint:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
@@ -31,10 +75,10 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy analytics backend
-      - run: lint-imports # import-linter contracts in pyproject.toml (TRD 01 ARC-041, AC-ARC-01)
+      - run: lint-imports # import-linter contracts in pyproject.toml (TRD 01 ARC-041, AC-ARC-01, CIC-115)
   backend-test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -66,31 +110,73 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
-      - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql # as superuser: extensions + timezone UTC (D-72), then roles
-      - run: alembic upgrade head && alembic downgrade base && alembic upgrade head # TST-040 round trip (FEAT-008-AC-01)
+      - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV" # per run, never stored (CIC-026)
+      - run: psql -h localhost -U echowell -d echowell_test -v ON_ERROR_STOP=1 -f database/roles/provision_login_roles.sql # as superuser: extensions + timezone UTC (D-72), then roles (CIC-015)
+      - run: alembic upgrade head
+      - run: alembic downgrade base && alembic upgrade head # migrations reversible (TST-040, FEAT-008-AC-01)
       - run: alembic check # models match migrations (PGS-023)
+      # One invocation, fixed order (CIC-013, TST-005); R01-R10 at 1e-6 with exact strings (CIC-014, TST-083);
+      # a skip without a requirement or OQ ID fails collection (TST-153, tests/conftest.py). The validation
+      # suite writes docs/reports/ALGORITHM_VALIDATION_REPORT.md and validation_results.json itself after a
+      # full run (CIC-100, TRD 24 D-137).
       - run: >
           pytest -p no:randomly tests/unit tests/integration tests/contract tests/security tests/validation
           --cov=analytics --cov=backend --cov-branch --cov-report=xml:build/coverage.xml
-          --junitxml=build/junit.xml
+          --cov-report=html:build/htmlcov --junitxml=build/junit.xml
+      - run: coverage report --include='analytics/*' --fail-under=95 # CIC-016, TST-140
+      - run: coverage report --include='backend/*' --fail-under=85 # CIC-016, TST-141
+      - run: pytest -p no:randomly tests/performance -m budget # PR-scope budgets TST-120, TST-121 (50), TST-124 (CIC-036, TST-126); writes build/performance.json
       - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: backend-reports
-          path: build/
-          retention-days: 30
-      - if: always() # TRD 16 CIC-100: the validation report is uploaded even when tests fail
-        uses: actions/upload-artifact@v7
-        with:
-          name: algorithm-validation-report
           path: |
+            build/
             docs/reports/ALGORITHM_VALIDATION_REPORT.md
             docs/reports/validation_results.json
           if-no-files-found: warn
           retention-days: 30
-      - if: always() # CIC-102: R01-R10 pass/fail table in the job summary
-        run: python -m tests.validation.report >> "$GITHUB_STEP_SUMMARY"
+      - if: always() # CIC-102: R01-R10 pass/fail table and coverage percentages in the job summary
+        run: |
+          python -m tests.validation.report >> "$GITHUB_STEP_SUMMARY" || true
+          if [ -f .coverage ]; then
+            {
+              echo ""
+              echo "### Coverage (line and branch)"
+              echo ""
+              echo "| Package | Coverage | Gate |"
+              echo "|---|---|---|"
+              echo "| analytics/ | $(coverage report --include='analytics/*' --format=total) % | 95 % |"
+              echo "| backend/ | $(coverage report --include='backend/*' --format=total) % | 85 % |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+  openapi-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt
+      - name: Export the OpenAPI document without a database (CIC-018, D-51)
+        run: APP_ENV=test JWT_SECRET=$(openssl rand -hex 32) DATABASE_URL=postgresql+psycopg://x:x@localhost/x python -m backend.cli export-openapi > /tmp/openapi.json
+      - name: Committed contract is up to date (docs/api_reference/openapi.json)
+        run: |
+          if ! diff -u docs/api_reference/openapi.json /tmp/openapi.json; then
+            echo "::error::The API changed: run 'python -m backend.cli export-openapi > docs/api_reference/openapi.json' and 'cd frontend && npm run gen:api', and commit both (CIC-018)"; exit 1; fi
+      - uses: actions/setup-node@v7
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci # the lockfile's openapi-typescript 7.x is the generator (CIC-081)
+        working-directory: frontend
+      - name: Generated frontend types are up to date (frontend/lib/api-types.ts, TRD 04 FE-012)
+        working-directory: frontend
+        run: |
+          npx --yes openapi-typescript@7 ../docs/api_reference/openapi.json -o lib/api-types.ts
+          if ! git diff --exit-code lib/api-types.ts; then
+            echo "::error::frontend/lib/api-types.ts differs from openapi-typescript output: run 'npm run gen:api' and commit"; exit 1; fi
   frontend:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -100,11 +186,74 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - uses: actions/cache@v4 # Next.js build cache (CIC-083)
+        with:
+          path: frontend/.next/cache
+          key: nextjs-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/**/*.ts', 'frontend/**/*.tsx', 'frontend/**/*.js', 'frontend/**/*.css', '!frontend/node_modules/**', '!frontend/.next/**') }}
+          restore-keys: nextjs-${{ hashFiles('frontend/package-lock.json') }}-
       - run: npm ci
-      - run: npm run lint
+      - run: npm run lint # next lint --max-warnings 0 (CIC-017)
       - run: npm run typecheck
       - run: npm run format:check # Prettier (TRD 04 FE-202, TRD 18 GIT-042)
-      - run: npm run test:coverage # = vitest run --coverage; thresholds in vitest.config.ts (TRD 04 FE-180)
+      - run: npm run test:coverage # = vitest run --coverage; line threshold 80 % in vitest.config.ts (TRD 04 FE-180, TST-142)
       - run: npm run build
-      - uses: actions/upload-artifact@v7
-        with: { name: frontend-coverage, path: frontend/coverage/, retention-days: 30 }
+      - run: npm run check:bundle # initial JS per dashboard route <= 300 KB gzip (TRD 03 NFR-012, TRD 13 TST-191)
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with: { name: frontend-coverage, path: frontend/coverage/, if-no-files-found: warn, retention-days: 30 }
+  security-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 } # full history for gitleaks (CIC-115)
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Install pip-audit and Bandit at the versions pinned in requirements-dev.txt
+        run: |
+          grep -E '^(pip-audit|bandit)==' backend/requirements-dev.txt > /tmp/audit-tools.txt
+          pip install -r /tmp/audit-tools.txt
+      # Runtime and dev requirements (CIC-019, SEC-151). Time-boxed waivers (<= 7 days, CIC-072, TST-136) are rows
+      # of SECURITY_EXCEPTIONS.md, applied by scripts/ci/audit_gate.py until their expiry date.
+      - run: python scripts/ci/audit_gate.py pip -r backend/requirements.txt -r backend/requirements-dev.txt # exceptions: SECURITY_EXCEPTIONS.md (CIC-072)
+      - uses: actions/setup-node@v7
+        with: { node-version: "${{ env.NODE_VERSION }}" }
+      - run: python ../scripts/ci/audit_gate.py npm # high/critical, --omit=dev (CIC-019, SEC-152); exceptions: SECURITY_EXCEPTIONS.md (CIC-072)
+        working-directory: frontend
+      - name: Secret scan over the full history (TRD 12 SEC-052, CIC-115; allow-list in .gitleaks.toml)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.18.4 detect --source /repo --redact --no-banner
+      - name: Bandit, medium severity or higher fails (TRD 12 SEC-153, CIC-115)
+        run: bandit -r backend analytics -ll -q
+  docker-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          load: true
+          tags: echowell-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Backend image runs as non-root and holds no .env, tests, specs or frontend (CIC-023, DEP-021)
+        run: |
+          test "$(docker run --rm --entrypoint id echowell-backend:ci -u)" = "10001"
+          if docker run --rm --entrypoint sh echowell-backend:ci -c 'ls -a /app' | grep -E '^(\.env.*|tests|specs|frontend)$'; then
+            echo "::error::The backend image contains files excluded by DEP-021"; exit 1; fi
+      - uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          load: true
+          tags: echowell-frontend:ci
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+            NEXT_PUBLIC_APP_ENV=local
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend

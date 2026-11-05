@@ -81,6 +81,23 @@ class IngestRepository:
         self.session.flush()
         return rejection
 
+    def insert_rejections(self, rejections: list[dict[str, Any]]) -> list[IngestRejection]:
+        """`insert_rejection` for several records (keyword dicts) with one flush, in order."""
+        rows = [
+            IngestRejection(
+                raw_body=r["raw_body"],
+                errors=ingest_errors_json(r["errors"]),
+                ingest_batch_id=r.get("ingest_batch_id"),
+                api_key_id=r.get("api_key_id"),
+                row_number=r.get("row_number"),
+            )
+            for r in rejections
+        ]
+        if rows:
+            self.session.add_all(rows)
+            self.session.flush()
+        return rows
+
     def rejections_for_batch(self, batch_id: uuid.UUID) -> list[IngestRejection]:
         return list(
             self.session.scalars(

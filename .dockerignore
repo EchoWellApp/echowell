@@ -1,18 +1,23 @@
-# Keep the backend image free of secrets, tests, specs and the frontend (TRD 15 DEP-021).
+# Backend image build context (repository root): keep the image free of secrets, tests, specs, docs and the
+# frontend (TRD 15 DEP-021, TRD 16 CIC-023). The frontend image uses frontend/.dockerignore (context frontend/).
 .git
 .github
+.claude
 .env
 .env.*
 **/__pycache__
 **/*.py[cod]
+.coverage
 .venv
 venv
 .mypy_cache
 .ruff_cache
 .pytest_cache
+.import_linter_cache
 build
 frontend
 tests
 specs
 docs
+scripts
 node_modules

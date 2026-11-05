@@ -195,7 +195,7 @@ flowchart TB
 - Migrations `NNNN_<snake_case_summary>.py`, linear history (DB-027).
 - No secrets, `.env` files, audio files, files over 10 MB or licensed documents are committed (CIC-020, CIC-021, AGT-016).
 - No resident names or PII in code, fixtures, logs or seeds; study IDs only (AGT-017).
-- "Edge4Care" never appears outside `specs/` and `docs/reports/` (CIC-114, AGT-019).
+- The old facility name of AGT-019 never appears outside `specs/` and `docs/reports/` (CIC-114, AGT-019).
 - No LLM dependency anywhere (`grep -rniE "openai|anthropic|langchain|llama|gpt" frontend backend analytics` returns nothing; AGT-004).
 
 ## 10. Reviewer questions raised by this document

@@ -105,5 +105,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     # The keys are this module's constants, not input.
     keys = ", ".join(f"'{key}'" for key in SEEDED_KEYS)
-    statement = f"DELETE FROM config_parameters WHERE profile IN ('production', 'test_v0_1') AND key IN ({keys})"  # noqa: S608
+    statement = f"DELETE FROM config_parameters WHERE profile IN ('production', 'test_v0_1') AND key IN ({keys})"  # noqa: S608  # nosec B608
     op.execute(statement)
