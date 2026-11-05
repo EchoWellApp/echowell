@@ -84,7 +84,7 @@ Environment: Linux container, Python 3.12, PostgreSQL 16 (local cluster), Node 2
 
 ## 7. New OQ and D IDs
 
-None. Decisions from this review will be recorded in TRD 24 from D-159.
+None. D-159 (security-audit exceptions until 20 Dec 2026, project coordinator). Decisions from this review will be recorded in TRD 24 from D-160.
 
 ## 8. Notes
 
@@ -99,7 +99,7 @@ None. Decisions from this review will be recorded in TRD 24 from D-159.
 
 | ID | Question |
 |---|---|
-| Q-1 | **Security advisories (RSK-16, due now).** Next.js 14.2.35 has 25 critical advisories (several unauthenticated remote-code-execution and request-smuggling issues) and its PostCSS 4 high; Starlette 0.46 (required by FastAPI 0.115) has 7. All fixes need a major upgrade (Next.js 16, FastAPI/Starlette 1.x), which D-105 reserves for you and the repository owner. They are time-boxed exceptions in `SECURITY_EXCEPTIONS.md` until **12 Nov**, after which `security-audit` fails again. I recommend upgrading Next.js before anything is deployed publicly (Netlify previews are public already) and FastAPI/Starlette with it, as a separate PR right after this one. Approve the upgrades, or extend the exceptions? |
+| Q-1 | **Security advisories (RSK-16, due now).** Next.js 14.2.35 has 25 critical advisories (several unauthenticated remote-code-execution and request-smuggling issues) and its PostCSS 4 high; Starlette 0.46 (required by FastAPI 0.115) has 7. All fixes need a major upgrade (Next.js 16, FastAPI/Starlette 1.x), which D-105 reserves for you and the repository owner. They are time-boxed exceptions in `SECURITY_EXCEPTIONS.md`. The project coordinator extended them to **20 Dec 2026** (D-159), because only synthetic data is held; after that date `security-audit` fails again. The upgrades are still required before any real data or public demo. When should they be scheduled, and do you agree to do them as a separate PR? |
 | Q-2 | TRD 21 recommends `openssl rand -hex 32` for `JWT_SECRET` but also requires ≥ 16 distinct characters; about 1 in 4 hex secrets has fewer, so a correctly generated secret can be refused. Change the rule (for example ≥ 10 distinct characters) or the generator (`openssl rand -base64 48`)? |
 | Q-3 | Branch protection on `main` (1 approval, CODEOWNERS, the 8 required checks, no force-push, no bypass) needs a repository admin; the exact settings are in the guide §6.2. It would also stop direct pushes to `main`. Who sets it, and when? |
 | Q-4 | `.gitleaksignore` exempts eight historic test-only values by fingerprint; CIC-115 says the only allow-list entries are the `local-dev-only-*` / `ci-only-*` placeholders. Accept the fingerprints (the alternative is rewriting history)? |

@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.27 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.28 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -328,6 +328,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-156 | The Render services run in `ohio` (US East), the region of the existing `echowell-api` service, because a Render region cannot be changed after creation; any production service is created in the same region (US data residency, TPS-004; Neon stays in `aws-us-east-1`). | PR #30 review (GitHub PR #30, Q-3) | 01, 15, 22 |
 | D-157 | The Render web services use the paid Starter instance type (the Free tier's lack of Shell and pre-deploy commands and its sleeping caused deployment friction in testing); Render is a temporary staging and prototyping platform until the AWS target (D-OWNER-3), and the monthly cost increase (DEP-100) is accepted. | PR #30 review (GitHub PR #30, Q-4) | 15, 22 |
 | D-158 | Render behaviour confirmed by the algorithm lead: deploys happen only after the required CI checks pass and the PR is merged; `RENDER_GIT_COMMIT` is available at runtime; rollbacks are manual and a failed deploy keeps the previous healthy version serving; a failed health check marks the deploy failed and traffic stays on the previous version; rollbacks do not re-run pre-deploy or other operational commands (migrations, seeding, bootstrap are run by hand when needed). The workspace-scoped Render API key is recorded as temporary risk RSK-17, and Render Postgres as a contingency needs its role and permission requirements validated first (DEP-035). | PR #30 review (GitHub PR #30, Q-5, Q-6, Q-7) | 15, 22, 24 |
+| D-159 | The `security-audit` exceptions for the advisories that need a major upgrade (Next.js 14.2.35 and its PostCSS; Starlette 0.46 via FastAPI 0.115; D-105, RSK-16) run until 20 Dec 2026 instead of the 7 days of TRD 16 CIC-072, because the interim stack holds synthetic test data only (D-28) and no real resident data or public demo is planned before then. The upgrades are still required before any real data or public demo, whichever comes first. The exceptions are rows of `SECURITY_EXCEPTIONS.md` applied by `scripts/ci/audit_gate.py`, and the gate fails again after 20 Dec. | Project coordinator, 5 Nov 2026 (checkpoint 8, GitHub PR #31, Q-1) | 16, 24 |
 
 ## 5. Assumptions
 
@@ -395,3 +396,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-32). OQ-21 and OQ-23 (
 | 0.25 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28): D-141 (UI texts accepted), D-142 (three tokens), D-143 (CSS badge digit), D-144 (`alarm_reviewed` drives the review badge), D-145 (`device_code` on `device_silent` events), D-146 (retired device shows its replacement's residents), D-147 (latest three dates), D-148 (`@mutating` order), D-149 (feature files follow TRD 11), D-150 (§4.8 documents the implemented props), D-151 (confirmations) | — |
 | 0.26 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153; checkpoint 7 review, GitHub PR #28, Q-13): D-153 added; D-27, D-28, D-47, D-54, D-58, D-65, D-72, D-99, D-100 marked amended; OQ-07 working assumption, OQ-23, RSK-07, RSK-14, RSK-15 and DSC-03 name Render | — |
 | 0.27 | 5 Nov 2026 | PR #30 review: D-154 (`echowell-api` is staging), D-155 (manual production release), D-156 (region `ohio`), D-157 (Starter tier, Render temporary), D-158 (confirmed Render behaviour); RSK-17 (workspace-scoped Render API key) | — |
+| 0.28 | 5 Nov 2026 | D-159 (security-audit exceptions until 20 Dec 2026) | — |
