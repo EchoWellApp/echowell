@@ -1,6 +1,6 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -344,7 +344,7 @@ flowchart LR
         LF["frontend :3000"] --> LB["backend :8000"] --> LP[("postgres:16")]
     end
     subgraph Staging
-        SF["Netlify site 'echowell-und-staging'"] --> SB["Render staging web service<br/>+ nightly cron job (virginia, US East)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
+        SF["Netlify site 'echowell-und-staging'"] --> SB["Render staging web service<br/>+ nightly cron job (region of echowell-api, D-156)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
     end
     subgraph Production
         PF["Netlify site 'echowell-und'"] --> PB["Render production web service<br/>+ nightly cron job"] --> PP[("Neon database branch 'main'")]
@@ -478,3 +478,4 @@ flowchart LR
 | 0.8 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-3, Q-4, Q-5, Q-7): §4.6 router list aligned with TRD 05 §4.1 (data alerts in `alarms`, notes in `residents`, facility reference ranges in `admissions`; `config` added); service names `health_service`, `config_service`, `auth_service`, `audit_service`; repository module names from docs/design/Database_ERD.md §5; root `scripts/` added | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend routes in §4.2 (Resident chart sections, `/study`; `/alerts` and `/analytics` pages retired); SRC-21 replaces SRC-09/10/11/18/19 in references and traces (ARC-032, ARC-035, ARC-040, §4.5) | — |
 | 0.10 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.11 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region of `echowell-api` to be recorded; Starter tier; confirmed Render rollback and health-check behaviour | — |

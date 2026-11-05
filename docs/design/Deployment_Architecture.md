@@ -36,7 +36,7 @@ flowchart LR
   end
   subgraph STG["staging (synthetic data, test_v0_1)"]
     NS["Netlify site echowell-und-staging"]
-    RS["Render env staging: web service echowell-backend-staging + cron job echowell-nightly-staging"]
+    RS["Render env staging: web service echowell-api + cron job echowell-nightly-staging"]
     DS[("Neon branch staging, aws-us-east-1")]
     NS --> RS --> DS
   end
@@ -60,12 +60,12 @@ flowchart LR
 |---|---|---|---|---|
 | Git source | working tree | `main`, automatically on every merge | a `main` commit chosen for a release | DEP-002..DEP-004, D-99 |
 | Frontend | `next dev` :3000 (Compose) | Netlify `echowell-und-staging` (production branch `main`) + PR deploy previews | Netlify `echowell-und`, published only by `deploy-production.yml` | DEP-050..DEP-054 |
-| Backend | uvicorn :8000 `--reload` | Render project `echowell`, environment `staging`, web service `echowell-backend-staging` (`https://echowell-backend-staging.onrender.com`) | Render environment `production`, web service `echowell-backend-production` (`https://echowell-backend-production.onrender.com`) | DEP-040..DEP-045 |
+| Backend | uvicorn :8000 `--reload` | Render project `echowell`, environment `staging`, web service `echowell-api` (`https://echowell-api.onrender.com`) | Render environment `production`, web service `echowell-backend-production` (`https://echowell-backend-production.onrender.com`) | DEP-040..DEP-045 |
 | Nightly | manual CLI | Render cron job `echowell-nightly-staging`, `0 7,8 * * *` UTC | Render cron job `echowell-nightly-production`, same schedule | DEP-046, DEP-047, D-47 |
 | Database | `postgres:16-alpine`, volume `pgdata` | Neon project `echowell`, branch `staging` | Neon project `echowell`, branch `main` | DEP-005, DEP-030, DEP-031 |
 | `APP_ENV` / `PIPELINE_PROFILE` | `local` / `test_v0_1` | `staging` / `test_v0_1` | `production` / `production` | TRD 15 §4.1, ENV-050 |
 | Seed data | `seed test_v0_1` allowed | `seed test_v0_1 --reset` after migrations or analytics changes | never | DEP-007, DEP-070..DEP-074 |
-| Regions | — | Neon `aws-us-east-1`, Render `virginia` (US East) | same | ARC-084, D-54 |
+| Regions | — | Neon `aws-us-east-1`, Render: the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156) | same | ARC-084, D-54 |
 
 Each environment has its own `JWT_SECRET`, API keys and users; no credential works across environments (DEP-006, ENV-051).
 

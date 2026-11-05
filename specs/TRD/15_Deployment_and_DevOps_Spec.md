@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -75,7 +75,7 @@ flowchart LR
   end
   subgraph Staging
     NS[Netlify site echowell-und-staging.netlify.app]
-    RS[Render env staging / web service echowell-backend-staging]
+    RS[Render env staging / web service echowell-api]
     DS[(Neon database branch staging)]
     NS --> RS --> DS
   end
@@ -99,7 +99,7 @@ flowchart LR
 |---|---|---|---|
 | Git source | working tree | `main` (every merge, automatic) | a `main` commit chosen for a release (`deploy-production.yml`, manual, approved, tagged `vX.Y.Z`) |
 | Frontend | `next dev` on :3000 (container) | Netlify site `echowell-und-staging` (production branch `main`, auto-publish) + deploy previews of PRs | Netlify site `echowell-und` (builds stopped; published only by `deploy-production.yml`) |
-| Backend | uvicorn :8000 with `--reload` (container) | Render project `echowell`, environment `staging`, web service `echowell-backend-staging` + cron job `echowell-nightly-staging` (branch `main`, auto-deploy "After CI checks pass") | Render project `echowell`, environment `production`, web service `echowell-backend-production` + cron job `echowell-nightly-production` (auto-deploy off; deployed only by `deploy-production.yml`) |
+| Backend | uvicorn :8000 with `--reload` (container) | Render project `echowell`, environment `staging`, web service `echowell-api` + cron job `echowell-nightly-staging` (branch `main`, auto-deploy "After CI checks pass") | Render project `echowell`, environment `production`, web service `echowell-backend-production` + cron job `echowell-nightly-production` (auto-deploy off; deployed only by `deploy-production.yml`) |
 | Database | `postgres:16-alpine` container, volume `pgdata` | Neon project `echowell`, database branch `staging` | Neon project `echowell`, database branch `main` |
 | APP_ENV | `local` | `staging` | `production` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `production` |
@@ -242,7 +242,7 @@ Procedure (performed once by the DevOps owner; results recorded in `docs/deploym
 | DEP-032 | The runtime backend shall connect with role `echowell_app` through the Neon pooled endpoint; Alembic shall connect with role `echowell_migrator` through the direct (non-pooled) endpoint supplied in DATABASE_MIGRATION_URL (TRD 21). | Must | BR-16, TRD 12, TRD 21 | Test |
 | DEP-033 | Database connection strings shall be stored only in Render environment variables (service variables or the environment's environment group, never in `render.yaml`) and, for staging re-seeding only, in the GitHub Actions secret `STAGING_DATABASE_URL`; the production connection string shall never be stored in GitHub. | Must | BR-16, TRD 12, TRD 16 | Inspection |
 | DEP-034 | All connections to Neon shall use TLS (`sslmode=require` in the connection string). | Must | BR-16, TRD 12 | Test |
-| DEP-035 | Render Postgres 16 (paid instance type in region `virginia`; the free instance type expires and is not used) may replace Neon for either environment only if Neon is unavailable to the team; the switch shall require only the D-72 provisioning step run as the database's admin user first (verify before switching that this user may create the extensions and roles) (extensions, `timezone` = `UTC`, group and login roles, `echowell_migrator` as schema owner; TRD 20 §4.2–§4.3), then a change of DATABASE_URL, DATABASE_MIGRATION_URL and DATABASE_READONLY_URL, followed by `pg_dump`/`pg_restore` of the data (restored as `echowell_migrator`, `--no-owner`). | May | SRC-01, D-72 | Analysis |
+| DEP-035 | Render Postgres 16 (paid instance type in the region of `echowell-api`; the free instance type expires and is not used) may replace Neon for either environment only if Neon is unavailable to the team; the switch shall require only the D-72 provisioning step run as the database's admin user first (verify before switching that this user may create the extensions and roles) (extensions, `timezone` = `UTC`, group and login roles, `echowell_migrator` as schema owner; TRD 20 §4.2–§4.3), then a change of DATABASE_URL, DATABASE_MIGRATION_URL and DATABASE_READONLY_URL, followed by `pg_dump`/`pg_restore` of the data (restored as `echowell_migrator`, `--no-owner`). | May | SRC-01, D-72 | Analysis |
 
 ### 4.5 Backend service (Render)
 
@@ -250,9 +250,9 @@ Render replaces Railway as the interim backend host (TRD 24 D-153). Team members
 
 Procedure:
 
-1. In Render (team-owned workspace, TRD 22) create project `echowell` with two environments: `production` and `staging`. Each environment holds one web service, one cron job and one environment group.
+1. In Render (team-owned workspace, TRD 22) create project `echowell` with two environments: `production` and `staging`. Each environment holds one web service, one cron job and one environment group. The existing web service `echowell-api` (already deployed from `main`, URL `https://echowell-api.onrender.com`) is the staging web service and is kept, not recreated; it is moved from the Free to the Starter instance type (DEP-042). The production web service `echowell-backend-production` is created later, when production is needed, in the same region (TRD 24 D-154, D-156). Render is a temporary staging and prototyping platform until the AWS move (D-OWNER-3, D-157).
 2. Create the web services from the Blueprint `/render.yaml` (Dashboard → New → Blueprint, repository `EchoWellApp/echowell`, branch `main`) or, equivalently, by hand (New → Web Service). Settings per service:
-   - Name: `echowell-backend-staging` (environment `staging`) and `echowell-backend-production` (environment `production`).
+   - Name: `echowell-api` (environment `staging`) and `echowell-backend-production` (environment `production`).
    - Runtime: Docker; Dockerfile path `./backend/Dockerfile`; Docker build context `.` (repository root).
    - Branch: `main`. Auto-deploy: "After CI checks pass" in `staging` (`autoDeployTrigger: checksPass`: a commit on `main` deploys only after its GitHub checks pass, TRD 16). In `production` auto-deploy is off (`autoDeployTrigger: off`); the service is deployed only by `deploy-production.yml` through the Render API with the released commit (§4.10, D-99).
    - Pre-deploy command: `alembic upgrade head` (runs in a separate instance from the new image, with the service's environment variables, after the build and before the new version starts; a failure aborts the deploy and the previous version keeps serving, DEP-065).
@@ -260,12 +260,12 @@ Procedure:
    - Health check path `/api/v1/health` (DEP-041).
    - Build filters (included paths): `backend/**`, `analytics/**`, `database/**`, `alembic.ini` (other changes do not redeploy the backend; `database/` is in the image since the seed files were added to it).
    - Instance type: Starter (always on). The Free instance type shall not be used: it spins down after 15 minutes without traffic and offers no pre-deploy command, Shell or SSH (RSK-07).
-   - Instances: 1 (no autoscaling). Region: `virginia` (US East); the region cannot be changed after creation, so a service created in another region is recreated.
+   - Instances: 1 (no autoscaling). Region: the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156); the region cannot be changed after creation, so the production service is created in the same region.
    - Restart: Render restarts a crashed instance automatically; there is no restart-policy setting.
-3. Default domains: `echowell-backend-staging.onrender.com` and `echowell-backend-production.onrender.com` (Render derives the `onrender.com` subdomain from the service name; if Render appends a suffix because the name is taken, the assigned name is recorded in `docs/deployment.md` and in GitHub Actions variables `STAGING_API_BASE_URL` / `PRODUCTION_API_BASE_URL`, and the CSP of TRD 12 §4.9 is updated). TLS certificates are issued and renewed automatically. A custom domain (Settings → Custom Domains, with a CNAME to the `onrender.com` name) is out of scope until OQ-07 decides one. The web service created by the team before D-153 is `echowell-api` (`https://echowell-api.onrender.com`, see README); FEAT-088 either recreates it under the names above or records `echowell-api` as the staging service name and origin in `docs/deployment.md`, the GitHub variables and the CSP (decision pending with the DevOps owner). An `onrender.com` subdomain is fixed when the service is created; renaming the service does not change it.
+3. Default domains: `echowell-api.onrender.com` (staging, existing) and `echowell-backend-production.onrender.com` (production, once created) (Render derives the `onrender.com` subdomain from the service name; if Render appends a suffix because the name is taken, the assigned name is recorded in `docs/deployment.md` and in GitHub Actions variables `STAGING_API_BASE_URL` / `PRODUCTION_API_BASE_URL`, and the CSP of TRD 12 §4.9 is updated). TLS certificates are issued and renewed automatically. A custom domain (Settings → Custom Domains, with a CNAME to the `onrender.com` name) is out of scope until OQ-07 decides one. The web service created by the team before D-153 is `echowell-api` (`https://echowell-api.onrender.com`, see README); FEAT-088 either recreates it under the names above or records `echowell-api` as the staging service name and origin in `docs/deployment.md`, the GitHub variables and the CSP (decision pending with the DevOps owner). An `onrender.com` subdomain is fixed when the service is created; renaming the service does not change it.
 4. Set environment variables per the TRD 21 §4.7 matrix: the variables shared by the web service and the cron job go into the environment group `echowell-staging-shared` / `echowell-production-shared` (DATABASE_URL, APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF (staging only), FACILITY_NAME, FACILITY_TZ, NIGHTLY_RUN_HOUR_LOCAL, LOG_LEVEL, LOG_FORMAT, SENTRY_DSN); the web-only variables (DATABASE_MIGRATION_URL, DATABASE_READONLY_URL (staging only), JWT_SECRET, JWT_EXPIRES_MINUTES, CORS_ORIGINS, CORS_ORIGIN_REGEX (staging only), RATE_LIMIT_LOGIN, RATE_LIMIT_INGEST, DATA_SOURCE_LABEL) are set on the web service only. Secrets are declared `sync: false` in `render.yaml` and entered only in the dashboard. Secret files are not used (every setting is an environment variable, TRD 21). `GIT_SHA` is not set as a variable: the Docker command exports it from `RENDER_GIT_COMMIT`, which Render sets to the deployed commit in both environments (for production the commit passed by `deploy-production.yml`). `PORT` is injected by Render (default 10000) and not set by hand.
 5. Deploy; verify `GET https://<backend-domain>/api/v1/health` returns 200 and `version` equals the deployed commit SHA.
-6. Add a cron job per environment (New → Cron Job, or from the Blueprint): `echowell-nightly-staging` and `echowell-nightly-production`, same repository, branch `main`, runtime Docker, Dockerfile `./backend/Dockerfile`, build context `.`, region `virginia`, deployed like the web service (staging: auto-deploy "After CI checks pass"; production: auto-deploy off, deployed by `deploy-production.yml`), schedule `0 7,8 * * *` (Render cron schedules are always UTC), command `sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec python -m backend.jobs.nightly_run'`, no pre-deploy command, no public URL, no health check. Its only variables are those of the environment group (step 4; DATABASE_URL is the app role) — never DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET or CORS settings (TRD 12 SEC-111, TRD 21 ENV-053). Render runs at most one run of a cron job at a time and does not retry a failed run. The job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe), otherwise it exits 0 after the missing-run check of TRD 17 LOG-111.
+6. Add a cron job per environment (New → Cron Job, or from the Blueprint): `echowell-nightly-staging` and `echowell-nightly-production`, same repository, branch `main`, runtime Docker, Dockerfile `./backend/Dockerfile`, build context `.`, the region of `echowell-api`, deployed like the web service (staging: auto-deploy "After CI checks pass"; production: auto-deploy off, deployed by `deploy-production.yml`), schedule `0 7,8 * * *` (Render cron schedules are always UTC), command `sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec python -m backend.jobs.nightly_run'`, no pre-deploy command, no public URL, no health check. Its only variables are those of the environment group (step 4; DATABASE_URL is the app role) — never DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET or CORS settings (TRD 12 SEC-111, TRD 21 ENV-053). Render runs at most one run of a cron job at a time and does not retry a failed run. The job proceeds only when facility-local time is 02:xx and that night has not yet run (DST-safe), otherwise it exits 0 after the missing-run check of TRD 17 LOG-111.
 7. Workspace settings: Notifications → e-mail (and optionally Slack) for failed deploys and service failures to the DevOps owner (TRD 17 §4.8); record the outbound IP ranges shown under the service's Connect → Outbound in `docs/deployment.md` (needed only if a provider later restricts inbound IPs; Neon Free does not, so the database is protected by password and TLS).
 
 `render.yaml` outline (Blueprint; staging shown, production identical except the `-production` names, `APP_ENV`/`PIPELINE_PROFILE` values, no `PIPELINE_AS_OF`/`DATABASE_READONLY_URL`/`CORS_ORIGIN_REGEX`, and `autoDeployTrigger: off`):
@@ -286,12 +286,12 @@ envVarGroups:
       - { key: SENTRY_DSN, sync: false }    # optional secret
 services:
   - type: web
-    name: echowell-backend-staging
+    name: echowell-api
     runtime: docker
     repo: https://github.com/EchoWellApp/echowell
     branch: main
     autoDeployTrigger: checksPass           # production: off (deployed by deploy-production.yml)
-    region: virginia
+    region: <echowell-api region>  # to be recorded (D-156); a region cannot be changed
     plan: starter
     numInstances: 1
     dockerfilePath: ./backend/Dockerfile
@@ -315,7 +315,7 @@ services:
     repo: https://github.com/EchoWellApp/echowell
     branch: main
     autoDeployTrigger: checksPass           # production: off
-    region: virginia
+    region: <echowell-api region>  # to be recorded (D-156); a region cannot be changed
     plan: starter
     schedule: "0 7,8 * * *"                 # UTC
     dockerfilePath: ./backend/Dockerfile
@@ -378,7 +378,7 @@ Two Netlify sites are built from the same repository, one per environment (D-99)
     X-Frame-Options = "DENY"
     Referrer-Policy = "no-referrer"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-backend-staging.onrender.com https://echowell-backend-production.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-api.onrender.com https://echowell-backend-production.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -467,7 +467,7 @@ Smoke tests live in `tests/smoke/` (pytest marker `smoke`) and read their target
 | Frontend broken, backend fine | Netlify → Deploys → select last good deploy → "Publish deploy". Then revert the commit on `main` by PR. | 5 min |
 | Backend fails health check or pre-deploy | Nothing to do immediately; Render keeps the previous deploy serving and reports the failed deploy (notification e-mail). Fix forward by PR. | 0 min |
 | Backend healthy but functionally broken, no migration | Render dashboard → web service → Events → last good deploy → "Rollback" (re-runs that deploy's image without a rebuild; current environment variables apply), and the same for the cron job. Render then turns auto-deploy off on the rolled-back service: re-enable it in `staging` after the revert is merged. Revert the commit on `main` by PR; for production, run `deploy-production.yml` for the fixed commit. | 10 min |
-| Backend broken after an additive migration | Roll back as above (schema is backward compatible, DEP-061). Render runs the pre-deploy command for the rollback too; if `alembic upgrade head` of the older image refuses the newer database revision, the rollback stops with the broken deploy still live, so revert on `main` by PR and deploy forward instead. The first rehearsal (DEP-085) records which case applies. Do not run `alembic downgrade` in production. | 10 min |
+| Backend broken after an additive migration | Roll back as above (schema is backward compatible, DEP-061). A rollback does not re-run the pre-deploy command or any other operational command (migrations, seeding, bootstrap); run them by hand if needed (confirmed by the algorithm lead, TRD 24 D-158). If the older image cannot work with the newer database revision, revert on `main` by PR and deploy forward instead. Do not run `alembic downgrade` in production. | 10 min |
 | Data damaged by a migration or bug | Stop ingestion (deactivate API keys with `python -m backend.cli revoke-api-key --name N`, §4.8), restore Neon `main` from `pre-<short-sha>` branch or PITR timestamp (4.13), redeploy the matching backend, re-run `run-pipeline --scope all`, then issue new device keys with `python -m backend.cli create-api-key` (revoked keys stay revoked; there is no re-activate command) and give them to Team 1. Record incident in GitHub issue labelled `incident`. | 60 min |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -628,3 +628,4 @@ Mapping from the current interim stack:
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): DEP-016 Resident list filter counts and order; DEP-080 (d) summary counts 2 / 2 / 0 / 6; local procedure step 6 and 8, release step 6, AC-DEP-01 | — |
 | 0.14 | 27 Oct 2026 | Checkpoint 3 review (GitHub PR #17, Q-1): DEP-064 lock is transaction-scoped (TRD 24 D-120) | — |
 | 0.15 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §2, §4.1 topology, DEP-003/004/009/020/033/035, §4.5 rewritten for Render (web services, cron jobs, environment groups, `render.yaml` Blueprint), DEP-040–046/048, DEP-065, DEP-075, §4.9–4.10, §4.12 rollback, DEP-100/101/110/111/117, AC-DEP-03/10, §8 | — |
+| 0.16 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region of `echowell-api` to be recorded; Starter tier; confirmed Render rollback and health-check behaviour | — |

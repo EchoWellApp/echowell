@@ -524,7 +524,7 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 |---|---|---|---|---|
 | `STAGING_DATABASE_URL` | secret | environment `staging` | deploy-staging.yml (re-seed) | Neon `staging` database branch direct URL of role `echowell_migrator` |
 | `STAGING_SEED_ADMIN_PASSWORD`, `STAGING_SEED_CLINICIAN_PASSWORD`, `STAGING_SEED_RESEARCHER_PASSWORD`, `STAGING_SEED_INGEST_API_KEY` | secret | environment `staging` | deploy-staging.yml (re-seed step 4 as SEED_*; smoke step 5 uses the researcher password) | credentials of the seeded staging users and API key (TRD 21 SEED_*) |
-| `STAGING_API_BASE_URL` | variable | repository | deploy-staging.yml, uptime.yml | e.g. `https://echowell-backend-staging.onrender.com/api/v1` |
+| `STAGING_API_BASE_URL` | variable | repository | deploy-staging.yml, uptime.yml | e.g. `https://echowell-api.onrender.com/api/v1` |
 | `STAGING_FRONTEND_URL` | variable | repository | deploy-staging.yml | e.g. `https://echowell-und-staging.netlify.app` |
 | `PRODUCTION_API_BASE_URL` | variable | repository | deploy-production.yml, uptime.yml | e.g. `https://echowell-backend-production.onrender.com/api/v1` |
 | `PRODUCTION_FRONTEND_URL` | variable | repository | deploy-production.yml, uptime.yml | e.g. `https://echowell-und.netlify.app` |

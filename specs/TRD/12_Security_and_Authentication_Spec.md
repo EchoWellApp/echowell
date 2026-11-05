@@ -224,12 +224,12 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
     X-Frame-Options = "DENY"
     Referrer-Policy = "no-referrer"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-backend-staging.onrender.com https://echowell-backend-production.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://echowell-api.onrender.com https://echowell-backend-production.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 ```
 
 The `connect-src` origins are the Render default (`onrender.com`) domains of the staging and production API web services, which
-are `echowell-backend-staging.onrender.com` and `echowell-backend-production.onrender.com`
-(TRD 15 §4.5 step 3; Render derives them from the service names `echowell-backend-staging` and `echowell-backend-production`). They are exactly the
+are `echowell-api.onrender.com` and `echowell-backend-production.onrender.com`
+(TRD 15 §4.5 step 3; Render derives them from the service names `echowell-api` and `echowell-backend-production`). They are exactly the
 values of NEXT_PUBLIC_API_BASE_URL (an origin, TRD 21) of the two Netlify sites; if Render assigns other names,
 the recorded names replace both entries here and in TRD 15 in the same change. Local development (`next dev` on :3000 against
 :8000) is not served through Netlify and therefore not subject to this header. When the API moves to AWS, the

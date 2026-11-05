@@ -239,7 +239,7 @@ NEXT_PUBLIC_APP_ENV=production
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
 | GIT_SHA | `unknown` | `${{ github.sha }}` | from `RENDER_GIT_COMMIT` (start command) | from `RENDER_GIT_COMMIT` = released SHA deployed by `deploy-production.yml` | image build arg |
 | DATA_SOURCE_LABEL | `pipeline test data v0.1` | `pipeline test data v0.1` | `pipeline test data v0.1` | `demo data (synthetic)` | `Edgewood check-ins` |
-| NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000` | `http://localhost:8000` | `https://echowell-backend-staging.onrender.com` | `https://echowell-backend-production.onrender.com` | App Runner origin |
+| NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000` | `http://localhost:8000` | `https://echowell-api.onrender.com` | `https://echowell-backend-production.onrender.com` | App Runner origin |
 | NEXT_PUBLIC_APP_ENV | `local` | `local` | `staging` | `production` | `production` |
 
 | ID | Requirement | Priority | Trace | Verification |

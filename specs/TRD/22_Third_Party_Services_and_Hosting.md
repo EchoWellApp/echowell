@@ -1,6 +1,6 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.5 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -62,7 +62,7 @@ the services that are explicitly excluded.
 | TPS-001 | EchoWell shall use no third-party service other than those listed in §4.1; adding a service requires a PR updating this TRD, approved by the project coordinator. | Must | BR-16, BR-18 | Inspection |
 | TPS-002 | No real resident data (feature records, study IDs of enrolled residents, staff notes about residents, alerts) shall be stored on or transmitted through Netlify, Render, Neon or Sentry at any time; these services hold only synthetic and team-test data. | Must | D-OWNER-4, RSK-14 | Inspection |
 | TPS-003 | EchoWell shall go live (accept real resident data) only on the AWS target platform, after AWS budget approval, acceptance of the AWS BAA, and the checks of TRD 15 DEP-112 to DEP-114 and DEP-117. | Must | D-OWNER-3, D-OWNER-4, OQ-07 | Inspection |
-| TPS-004 | All services that store EchoWell data shall be located in the United States (Neon `aws-us-east-1`, Render `virginia` (US East), AWS `us-east-1`; Netlify serves static/SSR content from its global edge but stores no data). | Must | BR-16 | Inspection |
+| TPS-004 | All services that store EchoWell data shall be located in the United States (Neon `aws-us-east-1`, Render: the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156), AWS `us-east-1`; Netlify serves static/SSR content from its global edge but stores no data). | Must | BR-16 | Inspection |
 | TPS-005 | Every service account shall be owned by the project (team-controlled shared mailbox or UND-managed identity), not by an individual's personal account, and shall have at least 2 administrators with multi-factor authentication enabled. | Must | BR-16, OQ-07 | Inspection |
 | TPS-006 | The account owner, administrators, plan and the date limits were last verified shall be recorded per service in `docs/deployment.md` (no credentials). | Must | RSK-07 | Inspection |
 | TPS-007 | Plan limits below are indicative as of October 2026; at account creation the DevOps owner shall verify them on the provider's pricing page and record the actual values in `docs/deployment.md`. | Must | RSK-07 | Inspection |
@@ -90,11 +90,11 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 
 | Aspect | Specification |
 |---|---|
-| Purpose | Build `backend/Dockerfile` (Docker runtime, build context = repository root) and run the FastAPI backend with the analytics engine as a web service, plus one cron job for the nightly run, in the Render project `echowell` with environments `staging` (`echowell-backend-staging`, `echowell-nightly-staging`; auto-deploy from `main` "After CI checks pass") and `production` (`echowell-backend-production`, `echowell-nightly-production`; auto-deploy off; deployed only by the release workflow through the Render API, D-99); configuration as code in the Blueprint `render.yaml`; environment groups for the variables shared by web service and cron job; TLS edge with automatic certificates on `*.onrender.com` (TRD 15 §4.5) |
+| Purpose | Build `backend/Dockerfile` (Docker runtime, build context = repository root) and run the FastAPI backend with the analytics engine as a web service, plus one cron job for the nightly run, in the Render project `echowell` with environments `staging` (`echowell-api`, `echowell-nightly-staging`; auto-deploy from `main` "After CI checks pass") and `production` (`echowell-backend-production`, `echowell-nightly-production`; auto-deploy off; deployed only by the release workflow through the Render API, D-99); configuration as code in the Blueprint `render.yaml`; environment groups for the variables shared by web service and cron job; TLS edge with automatic certificates on `*.onrender.com` (TRD 15 §4.5) |
 | Plan | Hobby workspace; web services on the Starter instance type (always on); cron jobs on the Starter instance type. The Free instance type is not used: it spins down after 15 minutes without traffic (cold start of up to about a minute) and has no pre-deploy command, Shell or SSH (TRD 15 DEP-042). |
 | Relevant limits | Fixed price per instance (Starter web service about USD 7 per month per environment); cron jobs billed per running second with a minimum of about USD 1 per month each (TRD 15 DEP-100); build minutes and outbound bandwidth allowances of the workspace plan; one cron run at a time per cron job, no automatic retry. The health check must pass before a new deploy receives traffic (TRD 15 DEP-041). Log retention in the dashboard is short on the Hobby workspace (TRD 17 §4.10); longer retention needs a log stream to an external syslog provider, which is not used in the MVP (it would add a service, TPS-001). Team members beyond the workspace plan's limit, and some team features, may require the Professional workspace plan; that upgrade follows OQ-07. |
 | Data stored | Built images, environment variables and environment groups (secrets: DATABASE_URL, DATABASE_MIGRATION_URL, DATABASE_READONLY_URL, JWT_SECRET, SENTRY_DSN), application logs (IDs only, TRD 17), deploy history. Synthetic/test data only passes through (D-OWNER-4). |
-| Region | `virginia` (US East), next to Neon `aws-us-east-1`; a service's region cannot be changed after creation |
+| Region | the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156); a service's region cannot be changed after creation, so a production service is created in the same region |
 | Network | Public HTTPS only on the web services; cron jobs have no inbound URL; outbound connections use the region's shared outbound IP ranges shown on the service's Connect → Outbound tab (recorded in `docs/deployment.md`; not used for allow-listing on Neon Free) |
 | Ownership | Render workspace owned by the project mailbox; DevOps owner + 1 other admin; the deploy account that owns `RENDER_API_KEY` (TRD 16 §4.9) is a member of this workspace only |
 | Exit path | AWS App Runner running the same image from ECR (TRD 15 §4.16, DEP-116 for the nightly run) |
@@ -113,7 +113,7 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 | Relevant limits | Small storage allowance per project (about 0.5 GB on Free; EchoWell synthetic data is < 50 MB); monthly compute allowance; scale-to-zero after about 5 min idle with sub-second to few-second cold start on first query (RSK-07); limited number of branches; short point-in-time restore window on Free (hours, not days), accepted for the interim synthetic/test-data stack under the waiver of TRD 03 NFR-024 (TRD 24 D-60); live data requires the AWS target (RDS automated backups, ≥ 7 days) | Single instance with fixed monthly price; backups and point-in-time recovery depend on the instance type and workspace plan (verify, TPS-007); no branching; always on |
 | Data stored | All EchoWell tables (synthetic/test data only on the interim stack, D-OWNER-4) | Same |
 | Encryption | TLS required (`sslmode=require`), provider-managed encryption at rest | TLS required for external connections, provider-managed encryption at rest per Render documentation |
-| Region | `aws-us-east-1` | `virginia` (US East) |
+| Region | `aws-us-east-1` | region of `echowell-api` (to be recorded, D-156) |
 | Ownership | Neon organisation owned by the project mailbox; 2 admins | Render workspace (as §4.3) |
 | Exit path | `pg_dump`/`pg_restore` or fresh Alembic schema to RDS PostgreSQL 16 (TRD 15 DEP-117) | Same |
 
@@ -260,3 +260,4 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 | 0.3 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.4 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): fonts: Source Sans 3 replaces IBM Plex Sans and Mono (§2, §4.1 table, §4.6, TPS-050, §8; D-112) | — |
 | 0.5 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §1, §2, §4.1 table, TPS-002, TPS-004, §4.3 rewritten for Render (TPS-020, TPS-021), §4.4 alternative database Render Postgres (TPS-030), §8 | — |
+| 0.6 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region of `echowell-api` to be recorded; Starter tier; confirmed Render rollback and health-check behaviour | — |

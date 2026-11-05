@@ -554,7 +554,7 @@ Required tests and commands:
 
 Exit criteria for approving the checkpoint:
 
-- Configuration validated against SRC-01 and TRD 22; every TRD 21 variable documented; CI runs unit, integration and validation tests and the frontend build on every PR; production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; `DATABASE_URL` and `DATABASE_MIGRATION_URL` use `sslmode=require`; regions Neon aws-us-east-1 and Render `virginia` (US East) (D-54); CI fails on OpenAPI drift (D-51); no deployment performed (TRD 25 Phase 9 definition of done).
+- Configuration validated against SRC-01 and TRD 22; every TRD 21 variable documented; CI runs unit, integration and validation tests and the frontend build on every PR; production templates set `PIPELINE_PROFILE=production` and no `PIPELINE_AS_OF`; `DATABASE_URL` and `DATABASE_MIGRATION_URL` use `sslmode=require`; regions Neon aws-us-east-1 and Render: the region of the existing `echowell-api` service (US; to be recorded, TRD 24 D-156) (D-54); CI fails on OpenAPI drift (D-51); no deployment performed (TRD 25 Phase 9 definition of done).
 - Every feature of this checkpoint meets the Definition of Done of its feature file; the algorithm lead approves the checkpoint PR and it is merged to `main` (D-101).
 
 Pitfalls:
