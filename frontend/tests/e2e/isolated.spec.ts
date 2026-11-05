@@ -175,8 +175,14 @@ test.describe("@isolated demo path", () => {
 
     await page.goto("/residents/R11/log");
     expect((await logCounts(page))[0]).toBe(1);
-    // "Check-ins started." is dated by the first record of the enrolment (TRD 24 D-113).
-    expect(await logLines(page)).toEqual([`${localMonD(ms)} Check-ins started.`]);
+    // "Check-ins started." is dated by the first record of the enrolment (TRD 24 D-113) and is the
+    // newest line; there is no event for the usable check-in itself. R11 is enrolled on 2026-10-01
+    // (demo overlay) and this scenario runs at the current time, so every earlier line in the window
+    // is a day without a record ("Check-in missed."), however many days that is.
+    const lines = await logLines(page);
+    expect(lines[0]).toBe(`${localMonD(ms)} Check-ins started.`);
+    for (const line of lines.slice(1))
+      expect(line).toMatch(/^[A-Z][a-z]{2} \d{1,2} Check-in missed\.$/);
     expect(await pillTexts(banner(page))).toEqual(["○ Learning"]);
 
     await page.goto("/residents/R11/trends");
