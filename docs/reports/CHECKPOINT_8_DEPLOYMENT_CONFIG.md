@@ -58,7 +58,7 @@ Environment: Linux container, Python 3.12, PostgreSQL 16 (local cluster), Node 2
 | 5 | `cd frontend && npx vitest run` | 429 passed; line coverage 99.41 % |
 | 6 | `ruff check .`; `ruff format --check .`; `mypy analytics backend`; `lint-imports`; `bandit -r backend analytics -ll` | all clean |
 | 7 | `python -m backend.cli export-openapi \| diff - docs/api_reference/openapi.json` | identical |
-| 8 | `python scripts/ci/audit_gate.py pip …` / `npm` | 7 and 29 advisories, all excepted until 12 Nov, 0 blocking (Q-1) |
+| 8 | `python scripts/ci/audit_gate.py pip …` / `npm` | 7 and 29 advisories, all excepted until 20 Dec 2026 (D-159), 0 blocking (Q-1) |
 | 9 | gitleaks v8.18.4 over the full history with `.gitleaks.toml` and `.gitleaksignore` | no leaks; a planted fake key is caught |
 | 10 | `docker compose config -q` (with `.env.development.example`) | exit 0 |
 | 11 | `docker compose --profile demo up -d --wait db backend frontend-prod`, then `seed test_v0_1` and the DS-10 loader | all healthy; health 200, `/login` 200, summary 2 / 2 / 0 / 6 |
@@ -99,7 +99,7 @@ None. D-159 (security-audit exceptions until 20 Dec 2026, project coordinator). 
 
 | ID | Question |
 |---|---|
-| Q-1 | **Security advisories (RSK-16, due now).** Next.js 14.2.35 has 25 critical advisories (several unauthenticated remote-code-execution and request-smuggling issues) and its PostCSS 4 high; Starlette 0.46 (required by FastAPI 0.115) has 7. All fixes need a major upgrade (Next.js 16, FastAPI/Starlette 1.x), which D-105 reserves for you and the repository owner. They are time-boxed exceptions in `SECURITY_EXCEPTIONS.md`. The project coordinator extended them to **20 Dec 2026** (D-159), because only synthetic data is held; after that date `security-audit` fails again. The upgrades are still required before any real data or public demo. When should they be scheduled, and do you agree to do them as a separate PR? |
+| Q-1 | **Security advisories (RSK-16; exceptions until 20 Dec 2026, D-159).** Next.js 14.2.35 has 25 critical advisories (several unauthenticated remote-code-execution and request-smuggling issues) and its PostCSS 4 high; Starlette 0.46 (required by FastAPI 0.115) has 7. All fixes need a major upgrade (Next.js 16, FastAPI/Starlette 1.x), which D-105 reserves for you and the repository owner. They are time-boxed exceptions in `SECURITY_EXCEPTIONS.md`. The project coordinator extended them to **20 Dec 2026** (D-159), because only synthetic data is held; after that date `security-audit` fails again. The upgrades are still required before any real data or public demo. When should they be scheduled, and do you agree to do them as a separate PR? |
 | Q-2 | TRD 21 recommends `openssl rand -hex 32` for `JWT_SECRET` but also requires ≥ 16 distinct characters; about 1 in 4 hex secrets has fewer, so a correctly generated secret can be refused. Change the rule (for example ≥ 10 distinct characters) or the generator (`openssl rand -base64 48`)? |
 | Q-3 | Branch protection on `main` (1 approval, CODEOWNERS, the 8 required checks, no force-push, no bypass) needs a repository admin; the exact settings are in the guide §6.2. It would also stop direct pushes to `main`. Who sets it, and when? |
 | Q-4 | `.gitleaksignore` exempts eight historic test-only values by fingerprint; CIC-115 says the only allow-list entries are the `local-dev-only-*` / `ci-only-*` placeholders. Accept the fingerprints (the alternative is rewriting history)? |
