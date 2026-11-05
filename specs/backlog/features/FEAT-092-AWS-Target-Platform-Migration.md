@@ -13,7 +13,7 @@
 
 ## Purpose
 
-Move EchoWell from the interim Netlify + Railway + Neon stack to its target production platform on AWS (Amplify, App Runner from ECR, RDS for PostgreSQL 16 with a KMS customer-managed key, Secrets Manager, CloudWatch Logs and alarms, EventBridge Scheduler for the nightly run) under an AWS Business Associate Addendum, following the DEP-117 cut-over steps with deployment-configuration changes only. AWS is the only platform on which EchoWell may go live with real resident data; this feature is the go-live path.
+Move EchoWell from the interim Netlify + Render + Neon stack to its target production platform on AWS (Amplify, App Runner from ECR, RDS for PostgreSQL 16 with a KMS customer-managed key, Secrets Manager, CloudWatch Logs and alarms, EventBridge Scheduler for the nightly run) under an AWS Business Associate Addendum, following the DEP-117 cut-over steps with deployment-configuration changes only. AWS is the only platform on which EchoWell may go live with real resident data; this feature is the go-live path.
 
 ## Business Context
 
@@ -47,7 +47,7 @@ Decided by the TRDs (implementable once the gate opens):
 - Logs and monitoring: CloudWatch Logs (JSON unchanged) with 90-day retention and KMS; alarms on health-check failure and 5xx rate > 5 % over 10 minutes, RDS CPU and storage; SNS topic to the DevOps owner.
 - Nightly: EventBridge Scheduler `cron(0 2 * * ? *)` America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run` (recorded as trigger `nightly` with the once-per-night dedupe), or an ECS scheduled task running `python -m backend.jobs.nightly_run`.
 - Network: only App Runner and Amplify public; RDS security group allows 5432 only from the App Runner VPC connector.
-- Cut-over (DEP-117): (1) provision; (2) deploy the same `main` commit to Amplify and App Runner; (3) extensions, timezone, roles as RDS master, then `alembic upgrade head` (one-off task); (4) `bootstrap`, users and API keys created anew; (5) DEP-081 smoke tests against AWS URLs; (6) re-point Team 1 devices to the App Runner URL; (7) keep the interim stack read-only for 14 days, then delete the Neon project and Railway services. No data is migrated (interim holds synthetic/test data only).
+- Cut-over (DEP-117): (1) provision; (2) deploy the same `main` commit to Amplify and App Runner; (3) extensions, timezone, roles as RDS master, then `alembic upgrade head` (one-off task); (4) `bootstrap`, users and API keys created anew; (5) DEP-081 smoke tests against AWS URLs; (6) re-point Team 1 devices to the App Runner URL; (7) keep the interim stack read-only for 14 days, then delete the Neon project and Render services. No data is migrated (interim holds synthetic/test data only).
 - Before go-live: every service on the live-data path confirmed on the AWS HIPAA Eligible Services Reference; restore drill on AWS; go-live checklist item signed by the PI and UND IT (SEC-005); Sentry disabled in production unless approved (TPS-061).
 - GitHub: `deploy-production.yml` gains an AWS OIDC role; Actions variables point to AWS URLs; smoke tests unchanged.
 - Nonce-based CSP adopted with the move to Amplify (SEC-075, D-65).
@@ -70,7 +70,7 @@ Trigger for starting: OQ-07 answered (budget approved and account owner named) a
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-092-FR-01 | No application code shall depend on a Netlify-, Railway- or Neon-specific SDK or API; the backend reads its port only from PORT and its databases only from the three database URLs, so the same image runs on App Runner. | DEP-110, DEP-111, ARC-090, SEC-006 |
+| FEAT-092-FR-01 | No application code shall depend on a Netlify-, Render- or Neon-specific SDK or API; the backend reads its port only from PORT and its databases only from the three database URLs, so the same image runs on App Runner. | DEP-110, DEP-111, ARC-090, SEC-006 |
 | FEAT-092-FR-02 | The migration shall change only deployment configuration (environment variables, workflow files, infrastructure settings); no source change in `frontend/`, `backend/` or `analytics/`. | ARC-094, NFR-093 |
 | FEAT-092-FR-03 | The production database shall be RDS for PostgreSQL 16 with KMS customer-managed storage encryption, `rds.force_ssl = 1`, no public access, automated backups ≥ 14 days and deletion protection. | DEP-112, SEC-061, SEC-161, SEC-063 |
 | FEAT-092-FR-04 | All production secrets shall be in Secrets Manager (KMS) and injected with TRD 21 names; no secret in Amplify build settings or the image; DATABASE_MIGRATION_URL only in the one-off migration task. | DEP-113, NFR-094, D-58, RSK-15 |
@@ -169,7 +169,7 @@ None. The pipeline runs unchanged with profile `production` (D-01).
 
 - All FEAT-092 acceptance criteria pass.
 - OQ-07 answered and recorded; all FEAT-092 acceptance criteria pass; go-live record in `DEPLOYMENT_REPORT.md`.
-- Interim Neon project and Railway services deleted after the 14-day read-only period.
+- Interim Neon project and Render services deleted after the 14-day read-only period.
 
 ## Implementation Notes
 

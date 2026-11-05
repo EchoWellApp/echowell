@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Produce the deployable artefacts every later deployment feature builds on: the final backend image (`python:3.12-slim`, non-root UID 10001, `uvicorn` only, no migration step), the multi-stage frontend image used for local demo and E2E, the complete `docker-compose.yml` with the `demo` profile (`frontend-prod` on port 3001) replacing the legacy stub, and the three environment templates that match the TRD 21 per-environment matrix. The same backend image must run unchanged on Docker Compose, Railway and AWS App Runner.
+Produce the deployable artefacts every later deployment feature builds on: the final backend image (`python:3.12-slim`, non-root UID 10001, `uvicorn` only, no migration step), the multi-stage frontend image used for local demo and E2E, the complete `docker-compose.yml` with the `demo` profile (`frontend-prod` on port 3001) replacing the legacy stub, and the three environment templates that match the TRD 21 per-environment matrix. The same backend image must run unchanged on Docker Compose, Render and AWS App Runner.
 
 ## Business Context
 
@@ -42,7 +42,7 @@ Produce the deployable artefacts every later deployment feature builds on: the f
 
 ## Out of Scope
 
-- Railway, Netlify and Neon configuration (`railway.toml`, `railway.nightly.toml`, `netlify.toml`; FEAT-081, FEAT-082).
+- Render, Netlify and Neon configuration (`render.yaml`, `netlify.toml`; FEAT-081, FEAT-082).
 - CI jobs that build and inspect the images (`docker-build` in `ci.yml`, FEAT-078) and the E2E workflow (FEAT-080).
 - The development stack basics already delivered by FEAT-006 (kept and extended, not rewritten).
 - Any deployment to a hosted environment (Phase 10, FEAT-088); AWS ECR/App Runner set-up (FEAT-092).
@@ -81,7 +81,7 @@ Produce the deployable artefacts every later deployment feature builds on: the f
 
 ## Data Flow
 
-Source tree → `docker build -f backend/Dockerfile .` → backend image (no tests, non-root) → Compose `backend` service (local, with mounts and `--reload`) or Railway/App Runner (same image, `PORT` injected, migrations run by the platform pre-deploy step, FEAT-081/FEAT-092). `frontend/` → `docker build frontend` with build args → `frontend-prod` on :3001 → browser → backend :8000. Templates → copied to `.env` locally or used as the key checklist for Railway/Netlify (FEAT-081, FEAT-082, FEAT-088).
+Source tree → `docker build -f backend/Dockerfile .` → backend image (no tests, non-root) → Compose `backend` service (local, with mounts and `--reload`) or Render/App Runner (same image, `PORT` injected, migrations run by the platform pre-deploy step, FEAT-081/FEAT-092). `frontend/` → `docker build frontend` with build args → `frontend-prod` on :3001 → browser → backend :8000. Templates → copied to `.env` locally or used as the key checklist for Render/Netlify (FEAT-081, FEAT-082, FEAT-088).
 
 ## Dependencies
 
@@ -156,7 +156,7 @@ None. `analytics/` is copied into the backend image unchanged (D-61).
 ## Implementation Notes
 
 - Start uvicorn from the repository root module path `backend.main:app`; `analytics` must import as a top-level package (TRD 15 §8).
-- Keep the `sh -c` wrapper so `${PORT:-8000}` is expanded on Railway and App Runner.
+- Keep the `sh -c` wrapper so `${PORT:-8000}` is expanded on Render and App Runner.
 - Normalise `postgres://` and `postgresql://` URLs to `postgresql+psycopg://` in settings, not in templates (TRD 15 §8, AC-ENV-05).
 - `frontend-prod` must not inherit `next dev` settings; build args are baked at build time, so rebuild after changing `NEXT_PUBLIC_*` (TRD 21 §8).
 - The `db` provisioning script runs only on an empty volume; `docker compose down -v` resets it (TRD 15 §4.2 step 9).

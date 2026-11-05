@@ -47,17 +47,17 @@ flowchart LR
 | No audio anywhere | no endpoint, column, file store or message type accepts or returns audio; `extra="forbid"` rejects unknown fields such as `audio_base64`; media types other than JSON and CSV multipart are refused with 415 | ARC-003, AGT-006, ING-012, AC-API-07 |
 | Authentication methods | devices: `X-API-Key` scope `ingest:write`; scheduler: scope `pipeline:run`; users: JWT bearer | ARC-004, API-012..API-015, D-47 |
 | Transport security | HTTPS TLS 1.2+ on every external hop, terminated by the platform; database connection `sslmode=require` (or `verify-full`) outside local and test | ARC-005, ARC-006, ARC-057, API-059, D-88 |
-| Encryption at rest | provider-managed on Neon/Railway; RDS with KMS on AWS | ARC-007, D-27 |
-| Synthetic data only on the interim stack | no real resident data is ingested on Netlify/Railway/Neon; go-live only on AWS | ARC-008, AGT-014, D-28 |
+| Encryption at rest | provider-managed on Neon (or Render Postgres); RDS with KMS on AWS | ARC-007, D-27 |
+| Synthetic data only on the interim stack | no real resident data is ingested on Netlify/Render/Neon; go-live only on AWS | ARC-008, AGT-014, D-28 |
 | No LLM, no ML on the critical path | deterministic robust statistics plus CUSUM only | ARC-104, AGT-004, AGT-005 |
 
 ## 3. Processes
 
 | Process | Entry point | Connection strings | Responsibility | Source |
 |---|---|---|---|---|
-| Web service | image default `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"` (DEP-022); Railway start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040); the image default carries the same flags, so the client IP is the left-most `X-Forwarded-For` address behind the hosting edge (API-001, API-103; Q-10 resolved in PR #3 review); the local Compose command omits them | `DATABASE_URL`; `DATABASE_READONLY_URL` only in `analytics_summary.py` | REST API, ingest, synchronous and background pipeline runs | API-001, API-103, DEP-022, DEP-040, ARC-015 |
+| Web service | image default `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"` (DEP-022); Render start (Docker) command in `render.yaml` exports `GIT_SHA` from `RENDER_GIT_COMMIT`, then `uvicorn backend.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"` (DEP-040); the image default carries the same flags, so the client IP is the left-most `X-Forwarded-For` address behind the hosting edge (API-001, API-103; Q-10 resolved in PR #3 review); the local Compose command omits them | `DATABASE_URL`; `DATABASE_READONLY_URL` only in `analytics_summary.py` | REST API, ingest, synchronous and background pipeline runs | API-001, API-103, DEP-022, DEP-040, ARC-015 |
 | Pre-deploy migration | `alembic upgrade head` (repository root) | `DATABASE_MIGRATION_URL` | schema changes before traffic | ARC-082, DEP-040, D-58 |
-| Nightly job | `python -m backend.jobs.nightly_run` (Railway Cron Job service `nightly`, `0 7,8 * * *` UTC) | `DATABASE_URL` | runs only in facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` once per night; scope `all`, trigger `nightly` | ARC-061, API-060..API-062, DEP-046, DEP-047, AGT-059 |
+| Nightly job | `python -m backend.jobs.nightly_run` (Render cron job `echowell-nightly-<env>`, `0 7,8 * * *` UTC) | `DATABASE_URL` | runs only in facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` once per night; scope `all`, trigger `nightly` | ARC-061, API-060..API-062, DEP-046, DEP-047, AGT-059 |
 | Operator CLI | `python -m backend.cli <command>` | `DATABASE_URL`, or `DATABASE_MIGRATION_URL` for the closed list | users, API keys, master data, seed, set-config, rebuild, export-openapi | TRD 15 §4.8, ARC-067 |
 | Ground-truth loader | `python database/seeds/load_evaluation_ground_truth.py <csv_path>` | `DATABASE_MIGRATION_URL` | fills `evaluation_ground_truth` in profile test_v0_1 only | ARC-034, D-38 |
 
@@ -239,7 +239,7 @@ Naming (Q-3 resolved in PR #3 review): the service modules are `auth_service.py`
 |---|---|---|---|---|---|
 | Single-record ingest | ingest | resident + residents sharing the device that day | synchronous in the request | E-05 | ARC-022, API-045, ANL-043 |
 | Batch or CSV ingest | ingest | residents with a first arrival + co-assigned residents | `BackgroundTasks` after 202 | E-06 | ARC-023, API-053, ANL-044 |
-| Nightly (interim) | nightly | all active residents | separate Railway cron service | `python -m backend.jobs.nightly_run` | ARC-061, DEP-046, DEP-047 |
+| Nightly (interim) | nightly | all active residents | separate Render cron job | `python -m backend.jobs.nightly_run` | ARC-061, DEP-046, DEP-047 |
 | Nightly (AWS target) | nightly | all | background task, once per facility-local night | EventBridge → E-20 with `pipeline:run` key | D-47, D-70, DEP-116 |
 | Manual | manual | `{scope, profile, as_of?}` | background task | E-20 (admin JWT); CLI `run-pipeline`, `rebuild`, `seed` | ARC-066, ARC-070 |
 | Test | test | all | synchronous | validation suite | ANL-046 |
@@ -316,3 +316,4 @@ Environment variables are exactly those of TRD 21 §4.2–§4.5 (for example `AP
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §9 service catalogue — `resident_service` summary counts, D-109 default order, attention flag and `alarm_reviewed` (reads `data_alerts`); `checkin_service` `checkins_started`; `device_service` `uploaded_on_as_of_date`; `data_alert_service` consumer is the Study team page | — |
+| 0.3 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

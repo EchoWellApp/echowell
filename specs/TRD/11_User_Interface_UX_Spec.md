@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -480,7 +480,7 @@ Not drawn in SRC-21; kept from v0.12 in the v0.2 style (TRD 24 D-111).
 | UX-217 | When an upload is rejected as a whole (for example the legacy SRC-06 file, 422 schema mismatch, contract §20 R12), the Upload tab shall show "The file was not accepted: <detail>. Nothing was stored." and list `errors[]` messages. | Must | contract §20 R12, §21 R19 | T |
 | UX-219 | When no pipeline run with trigger `nightly` and status `succeeded` started within the previous 26 hours (read at page load from GET /pipeline/runs with `trigger=nightly`, `status=succeeded`, `limit=1`), the Admin page shall show above the tabs the banner "Nightly run missing for <Mon D>", where the date is the most recent facility-local date (`meta.facility_tz`) whose 02:00 has passed (TRD 17 LOG-111; TRD 24 D-96). | Must | TRD 17 LOG-111, RSK-05 | T |
 | UX-218 | The Admin page shall not offer creation or editing of residents, devices, device assignments or API keys (managed by CLI and seed files in the MVP, contract §20 R4). | Must | contract §20 R4 | I |
-| UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Railway/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
+| UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Render/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
 | UX-215 | Users without the admin role shall see "You do not have access to this page." and the link "← Resident list". | Must | BR-16 | T |
 | UX-216 | The Admin page shall show at its end "API status: ok · version <version>" when GET /health returns 200, "API status: degraded (database unavailable) · version <version>" when it returns 503 with status "degraded", and "API status: unavailable" when unreachable (14px, `--muted`). | Should | TRD 17, contract §21 R19 | T |
 
@@ -922,3 +922,4 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21) replaces SRC-09/10/11/18/19 (TRD 24 D-108 to D-114): Resident list with four display statuses and filters; Resident chart with Summary, Review and notes, Voice trends, Baseline, Check-in log and Device sections; Alert review page retired (review form, reminder and previous reviews moved to the chart, data alerts to Study team); Analytics renamed Study team, with Devices and data problems; v0.2 tokens (Source Sans 3, light and dark); UI wording changes; retired IDs kept as "Retired"; new UX-400–UX-433; OQ-31, OQ-32 | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): PR #5 review: UX-001 and OQ-32 answered (no room numbers, D-116); UX-433 and OQ-31 answered (silent device never changes the status, D-115); UX-185 neutral "Out of range" / "In range" pills (D-117); UX-003 and every date-time example with "CT" (D-119) | — |
 | 0.15 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-142, D-144, D-146, D-147): §4.15 tokens `--badge-ink`, `--nav-active`, `--nav-hover`; UX-411 follows `alarm_reviewed`; §4.13.4 retired-device residents; UX-056 latest three dates | — |
+| 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

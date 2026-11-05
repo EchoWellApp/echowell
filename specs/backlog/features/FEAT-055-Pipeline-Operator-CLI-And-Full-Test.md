@@ -111,7 +111,7 @@ None. Failed runs caused by `config_changed_requires_rebuild` appear in the `/ad
 
 ## Security Requirements
 
-- `set-config` and `rebuild` run only with `DATABASE_MIGRATION_URL` (role `echowell_migrator`, the only role allowed to DELETE `baselines`) from an operator workstation (`railway run`), never from the web service (TRD 15 §4.8, DB-009).
+- `set-config` and `rebuild` run only with `DATABASE_MIGRATION_URL` (role `echowell_migrator`, the only role allowed to DELETE `baselines`) by an operator from the Render Shell (or SSH, or a one-off job) of the environment's web service, never from the web service process (TRD 15 §4.8, DB-009).
 - `seed` belongs to the closed list of commands that connect as `echowell_migrator` (TRD 20 §4.3, SEC-111) and is refused in production (DEP-070); the interim stack holds synthetic data only (AGT-014).
 - Audit rows record the operator name and never secrets (SEC-103, SEC-104).
 

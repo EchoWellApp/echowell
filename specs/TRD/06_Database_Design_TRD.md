@@ -1,6 +1,6 @@
 # 06 Database Design TRD
 
-Document ID: ECHOWELL-TRD-06 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-06 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -37,7 +37,7 @@ Out of scope:
 
 | ID | Reference |
 |---|---|
-| SRC-01 | Deployment Architecture: PostgreSQL on Neon (preferred) or Railway; future AWS RDS |
+| SRC-01 | Deployment Architecture: PostgreSQL on Neon (preferred) or Render Postgres; future AWS RDS |
 | SRC-02 | Daily Data Storage and Processing Flowcharts (raw store never edited; every other table rebuildable; answer key separate) |
 | SRC-03 | Pipeline test workbook v0.1 (Annotated_sessions, Exp_status_counts, Exp_resident_outcomes, Exp_baselines, Exp_scores) |
 | SRC-04 | Pipeline test generator v0.1 (residents, sex, devices, D02 sharing, R07 move) |
@@ -50,7 +50,7 @@ Out of scope:
 | TRD 15 / TRD 21 / TRD 22 | Deployment, Environment configuration, Hosting |
 | TRD 20 | PostgreSQL Schema Definition (PGS-xxx, executable DDL) |
 | TRD 23 | Data Model and Entity Definitions (DME-xxx) |
-| Owner decisions D-OWNER-2, D-OWNER-3 (18 Oct 2026) | Production baseline_n = 30; feature data treated as potentially PHI-derived; AWS target, interim Neon/Railway |
+| Owner decisions D-OWNER-2, D-OWNER-3 (18 Oct 2026) | Production baseline_n = 30; feature data treated as potentially PHI-derived; AWS target, interim Neon/Railway (backend host amended to Render, alternative database Render Postgres, TRD 24 D-153) |
 | Contract §19–§21 (lead, 18 Oct 2026) | Alert review, data alerts, evaluation answer key, natural-key upserts (R15), DB roles and DATABASE_MIGRATION_URL (R20), as_of precedence (R21), performance budgets (R8) |
 
 ## 4. Requirements
@@ -471,7 +471,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | DB-026 | Alembic migrations under `backend/alembic/versions/` shall be the only mechanism that changes the schema of staging and production; `database/schema.sql` shall be a generated reference (TRD 20 PGS-016, PGS-017). | Must | SRC-01, contract §3 | Inspection; Test |
 | DB-027 | Migration files shall be named `NNNN_<snake_case_summary>.py` with a four-digit sequential revision id (`0001`, `0002`, …) and a linear history (exactly one head). | Must | TRD 18 | Test (`alembic heads` returns one revision) |
-| DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall use `DATABASE_MIGRATION_URL`, which TRD 21 sets in every environment; locally and in CI it is `echowell_migrator_login` created by `database/roles/provision_login_roles.sql`), before the new backend version receives traffic (Railway pre-deploy command `alembic upgrade head`, never the web start command; TRD 15 DEP-040), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
+| DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall use `DATABASE_MIGRATION_URL`, which TRD 21 sets in every environment; locally and in CI it is `echowell_migrator_login` created by `database/roles/provision_login_roles.sql`), before the new backend version receives traffic (Render pre-deploy command `alembic upgrade head`, never the web start command; TRD 15 DEP-040), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
 | DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments, with one exception: on staging the D-71 `reset-test-db` (`alembic downgrade base` then `alembic upgrade head`) may run, only from the re-seed step of the `deploy-staging.yml` GitHub Actions workflow that runs after merges to `main` (TRD 16 §4.4), only against the staging database and only with PIPELINE_PROFILE=`test_v0_1`; it is never executed in production (TRD 24 D-71). No downgrade drops the extensions (TRD 24 D-72). Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
 | DB-030 | No migration shall UPDATE or DELETE rows of `raw_sessions` or `audit_logs`; a schema change to `raw_sessions` shall be additive (new nullable column or new CHECK validated `NOT VALID` then `VALIDATE`). | Must | BR-02, SRC-02 | Inspection; Test (migration test greps for UPDATE/DELETE on those tables) |
 | DB-031 | Before every production migration the deploy job shall create a Neon branch named `pre-migration-<git sha>` (on AWS RDS: a manual snapshot with the same name). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
@@ -581,7 +581,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 |---|---|---|---|---|
 | DB-050 | Backup retention, recovery point and recovery time objectives shall be those of TRD 03 NFR-024 and NFR-025 (AWS target: RDS automated backups with point-in-time recovery, ≥ 7 days retention, RPO ≤ 24 h, RTO ≤ 8 working hours; interim stack: Neon plan restore window plus weekly dump, waived per TRD 24 D-60). | Must | BR-02, BR-16, D-OWNER-3 | Inspection (plan settings recorded in TRD 22); Demo (restore drill) |
 | DB-051 | A restore drill shall be run at the cadence of TRD 03 NFR-025 (interim: once before 15 Nov 2026, ahead of the 1 Dec 2026 demo; AWS: before go-live and every 6 months) exactly as TRD 15 DEP-097 defines it (the single definition, TRD 24 D-77: restore to a new Neon branch or RDS instance, schema diff test, health check, full pipeline run, row counts of `raw_sessions`, `audit_logs` and `alerts` compared with the source, R01–R10 suite); the result shall be recorded in `docs/deployment.md`. | Should | BR-02 | Demo; Inspection |
-| DB-052 | All database storage and backups holding non-synthetic data shall be encrypted at rest (provider-managed encryption on Neon/Railway; RDS storage and snapshot encryption with a customer-managed KMS key on AWS). | Must | D-OWNER-3, BR-16 | Inspection |
+| DB-052 | All database storage and backups holding non-synthetic data shall be encrypted at rest (provider-managed encryption on Neon/Render Postgres; RDS storage and snapshot encryption with a customer-managed KMS key on AWS). | Must | D-OWNER-3, BR-16 | Inspection |
 | DB-053 | Every connection to a non-local database shall use TLS (`sslmode=require` or `verify-full`) (TRD 20 PGS-027); "non-local" means every environment whose `APP_ENV` is not `local` or `test`, i.e. `staging` and `production`, where startup refuses a URL without it (TRD 21 ENV-011; TRD 24 D-88). | Must | D-OWNER-3, BR-16 | Test |
 | DB-054 | Logical exports (`pg_dump`) of a database holding non-synthetic data shall be written only to storage approved for that data (D-28; retention OQ-01) and never to GitHub Actions artifacts, the repository or personal devices. | Must | D-OWNER-3, BR-16 | Inspection |
 
@@ -593,7 +593,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | DB-056 | `python -m backend.cli seed test_v0_1` (refused in production, DB-059) shall first load the roster CSV files of `database/seeds/test_v0_1/` (`facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv`; TRD 20 §4.12) through the `import-master-data` step (DB-060) and create the users and API key below, in one transaction: facility `Edgewood` (timezone America/Chicago; `meta.facility_name` is read from `facilities.name`); residents R01–R10 (cohort `longitudinal`, `enrolled_on` 2026-10-01, sex R01 F, R02 M, R03 F, R04 M, R05 F, R06 M, R07 F, R08 M, R09 F, R10 M per SRC-04); devices D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (`firmware_version_last` fw-1.0.0; D07 `active = false`); the 11 assignments of TRD 20 section 4.12 including R02 and R03 sharing D02 from 2026-10-01 and R07 on D07 2026-10-01..2026-10-12 then D07B from 2026-10-13; users `admin@example.com` (admin), `clinician@example.com` (clinician), `researcher@example.com` (researcher); API key `test-ingest` (credentials per DB-057). The 10 `evaluation_ground_truth` rows (R09 `Sudden step` 2026-10-21, R10 `Slow drift` 2026-10-17, others `None`) are not part of the seed: they are loaded separately by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv`, which refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`. | Must | SRC-04, BR-15, contract §19 | Test (counts facilities/residents/devices/assignments/users/api_keys = 1/10/10/11/3/1; `evaluation_ground_truth` = 10 only after the separate loader) |
 | DB-057 | The seed command shall create or update (upsert by email, and by key name) the users `admin@example.com` (admin), `clinician@example.com` (clinician), `researcher@example.com` (researcher) and the API key `test-ingest` (scopes `ingest:write` and `pipeline:run`); the addresses use the RFC 2606 domain `example.com`, which the standard `format: email` validator (Pydantic `EmailStr`, email-validator 2.x) accepts (special-use domains such as `.test` are rejected and shall not be used); it takes the secrets from the environment variables SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY (TRD 21); it shall store only their argon2id / SHA-256 hashes, shall never print or log a secret, shall exit 2 without writing when any of these variables is missing or when APP_ENV is `production`, and running it twice shall leave one row per user and key (TRD 24 D-71). No credential shall be committed to the repository; the only exception is obviously fake local/CI-only placeholders following the patterns `local-dev-only-*` and `ci-only-*`: the SEED_* values and JWT_SECRET of `.env.development.example`, and the local/CI database passwords (Postgres superuser and login roles) in `docker-compose.yml`, `ci.yml` and the `.env.development.example` connection URLs (TRD 15 DEP-018, TRD 16 `ci.yml`, TRD 21); they are never valid in staging or production, and startup refuses them when APP_ENV is `staging` or `production` (TRD 21 ENV-041). | Must | BR-16, TRD 12 | Inspection; Test |
 | DB-058 | After DB-056, `python -m backend.cli seed test_v0_1` shall ingest SRC-05 (`tests/fixtures/pipeline_input/EchoWell_pipeline_test_input_v0_1.csv`) through the ingestion service as one `ingest_batches` row with `source = 'seed'` and then run the pipeline with trigger `manual` (`test` is reserved for the automated validation suite, TRD 07 ANL-046) and explicit `as_of` 2026-10-30 15:00 America/Chicago (2026-10-30T20:00:00Z), as POST /api/v1/pipeline/run `{as_of}` would (contract R21), giving a fully populated test system; with `--master-only` it stops after DB-056 (roster, users, API key only). There is no `--with-input` option (TRD 24 D-68). | Must | BR-15, SRC-05 | Test (283 raw rows; counts of DB-020) |
-| DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Railway/Neon stack only synthetic or test data shall ever be loaded (OQ-23 closed by D-OWNER-4 / D-28). | Must | D-OWNER-3, OQ-23 | Test |
+| DB-059 | Seed commands shall exit with code 2 and write nothing when `APP_ENV=production`; on the interim Netlify/Render/Neon stack only synthetic or test data shall ever be loaded (OQ-23 closed by D-OWNER-4 / D-28). | Must | D-OWNER-3, OQ-23 | Test |
 | DB-060 | Every roster (production and the `test_v0_1` roster in `database/seeds/test_v0_1/`) shall be loaded by `python -m backend.cli import-master-data --dir D` (TRD 15 §4.8) from `facilities.csv` (`name,timezone`), `residents.csv` (`resident_code,sex,cohort,enrolled_on,admitted_on`), `devices.csv` (`device_code,room_label,active,firmware_version_last`) and `device_assignments.csv` (`resident_code,device_code,valid_from,valid_to`), as one transaction, writing one `audit_logs` row `action = 'roster.loaded'` with row counts; the file shall contain study IDs only. | Should | BR-16, ASM-03 | Test |
 
 ### 4.11 Retention and withdrawal
@@ -623,7 +623,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 - TRD 12 for roles, audit action vocabulary and credential hashing.
 - TRD 15 / TRD 16 for the deploy step that runs migrations and the CI schema diff job.
 - TRD 21 for `DATABASE_URL` (app role), `DATABASE_MIGRATION_URL` (migrator role), `DATABASE_READONLY_URL` (readonly role, R27), `APP_ENV`, `PIPELINE_PROFILE`, `PIPELINE_AS_OF`, `FACILITY_TZ`, `GIT_SHA`.
-- TRD 22 for Neon/Railway/RDS plan features (PITR window, encryption, branching).
+- TRD 22 for Neon/Render Postgres/RDS plan features (PITR window, encryption, branching).
 - PostgreSQL 16, Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x.
 
 ## 7. Acceptance Criteria
@@ -677,7 +677,7 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 - OQ-10 Handling of late records that predate a frozen baseline (DB-016, DB-017 implement the interim rule).
 - OQ-11 Data handling on withdrawal (DB-062..DB-064).
 - OQ-13 Alarm-limit calibration on the larger dataset (changes `config_parameters`, not schema).
-- OQ-23 (closed by D-OWNER-4 / D-28): no live PHI-derived feature data on the interim Netlify/Railway/Neon stack; DB-059 enforces it.
+- OQ-23 (closed by D-OWNER-4 / D-28): no live PHI-derived feature data on the interim Netlify/Render/Neon stack; DB-059 enforces it.
 - OQ-24 Data-alert thresholds (config keys `data_alert_*`) — provisional values seeded.
 - OQ-25 Explanation checklist (`review_explanations`) — provisional list seeded.
 - OQ-26 Who may review alarms and how soon — no SLA column or job in the MVP.
@@ -697,3 +697,4 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | 0.9 | 20 Oct 2026 | PR #2 backlog consistency fixes (DB-016 baseline_mismatch; DB-051 refers to DEP-097 (D-77); DB-053 non-local (D-88); DB-066 in_use_since (D-82)) | — |
 | 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/18/19 superseded; §4.7 query patterns renamed for the Resident list, Resident chart and Study team and extended with the attention-flag, `checkins_started` and `uploaded_on_as_of_date` reads (existing indexes; no table, enum or index change); DB-040 (attention flag), DB-041, DB-044, DB-045, DB-065, DB-066 traces and AC-DB-05 updated | — |
+| 0.12 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

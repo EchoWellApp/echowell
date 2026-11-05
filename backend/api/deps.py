@@ -140,7 +140,7 @@ def get_audit_writer(
 
 
 def client_ip(request: Request) -> str | None:
-    """Left-most `X-Forwarded-For` behind the Railway edge, else the socket peer (API-103).
+    """Left-most `X-Forwarded-For` behind the Render edge, else the socket peer (API-103).
 
     Only a valid IP address is returned (the audit `ip` column is INET); anything else, such
     as a forged header value, is recorded as unknown (None).

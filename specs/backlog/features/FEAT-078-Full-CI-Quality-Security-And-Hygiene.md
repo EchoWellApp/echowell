@@ -86,7 +86,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 
 ## Data Flow
 
-Pull request or push → seven parallel `ci.yml` jobs → each posts a status check named by its job id → branch protection compares the set with the eight required checks (the eighth, `playwright`, comes from `e2e.yml`, FEAT-080) → merge allowed only when all are green → Railway "Wait for CI" (FEAT-081) deploys only commits whose checks passed.
+Pull request or push → seven parallel `ci.yml` jobs → each posts a status check named by its job id → branch protection compares the set with the eight required checks (the eighth, `playwright`, comes from `e2e.yml`, FEAT-080) → merge allowed only when all are green → Render auto-deploy "After CI checks pass" (FEAT-081) deploys only commits whose checks passed.
 
 ## Dependencies
 

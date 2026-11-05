@@ -1,6 +1,6 @@
 # 00 Project Vision and Scope
 
-Document ID: ECHOWELL-TRD-00 · Version 0.5 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-00 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ Every requirement in TRDs 01 to 25 SHALL trace to at least one BR-xx defined in 
 | S-06 | Study team page (KPIs, data problems to follow up, check-ins per day, loss funnel, usable check-ins by resident, alarm timing check on test data / review outcomes in production, devices) and researcher read-outs and CSV export in the shape of the test workbook answer key | 02, 05, 11, 14 |
 | S-07 | Authentication, roles (admin, clinician, researcher), audit trail, HTTPS, secrets management | 12 |
 | S-08 | Automated validation against the pipeline test workbook v0.1 (residents R01 to R10) | 13, 14 |
-| S-09 | Monorepo, CI/CD with GitHub Actions, deployment to the current (interim) hosting — Netlify (frontend), Railway (backend), Neon or Railway PostgreSQL (database) — and a local Docker Compose environment, designed for migration to the target AWS platform (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) without significant code change | 01, 15, 16, 18, 21, 22 |
+| S-09 | Monorepo, CI/CD with GitHub Actions, deployment to the current (interim) hosting — Netlify (frontend), Render (backend), Neon or Render Postgres (database) — and a local Docker Compose environment, designed for migration to the target AWS platform (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) without significant code change | 01, 15, 16, 18, 21, 22 |
 | S-10 | Data model for the future new-admission arm (facility reference ranges, admission cohort) and an experimental UI page | 02, 06, 11 |
 | S-11 | Protection of live feature data as sensitive, potentially PHI-derived data: encryption in transit and at rest, least privilege, audit logging, no PII in logs | 03, 12, 17 |
 | S-12 | Rule-based data-quality alerts for the study team (baseline stalled, possible other speaker, many check-ins set aside, device silent, review-flagged data problem), separate from health alarms | 02, 07, 09 |
@@ -61,7 +61,7 @@ Every requirement in TRDs 01 to 25 SHALL trace to at least one BR-xx defined in 
 | X-16 | integrate with external records systems (EHR, facility systems) or smart-home platforms | Not requested; smart-home activation is OQ-16 | SRC-15 item 5, OQ-16 |
 | X-17 | support multiple facilities in the user interface | Single facility (Edgewood) in MVP; the schema supports more | ASM-03 |
 | X-18 | claim regulatory clearance | EchoWell is a research system, not an FDA-cleared device | SRC-14 |
-| X-19 | load any real resident data onto the interim Netlify/Railway/Neon stack, or go live with real residents anywhere other than the approved AWS platform | Interim stack = synthetic and test data only; EchoWell goes live only on AWS after approval (OQ-23 closed) | D-OWNER-3, D-OWNER-4, RSK-14 |
+| X-19 | load any real resident data onto the interim Netlify/Render/Neon stack, or go live with real residents anywhere other than the approved AWS platform | Interim stack = synthetic and test data only; EchoWell goes live only on AWS after approval (OQ-23 closed) | D-OWNER-3, D-OWNER-4, RSK-14 |
 | X-20 | use the `test_v0_1` profile (baseline_n = 16) in production | The test profile exists only because the 30-day build/test dataset must reach scoring | D-OWNER-2 |
 | X-21 | commit third-party-licensed documents (for example the JMIR preprint PDF) to the repository | Licence prohibits redistribution; such documents are linked in specs/business-requirements/REFERENCES.md | D-OWNER-1 |
 
@@ -87,7 +87,7 @@ Every requirement in TRDs 01 to 25 SHALL trace to at least one BR-xx defined in 
 | SRC-16 | Team 2 Gantt plan (E4C-TEAM2-PLAN v0.2) | Milestone dates |
 | SRC-17 | Later-stage build prompts | Downstream use of these TRDs |
 | Contract §19–§20 | Owner wireframe decision and lead reconciliation decisions R1–R17 (18 Oct 2026) | Alarm review and study team views in MVP scope (pages reorganised by SRC-21, TRD 24 D-110); review model; budgets |
-| D-OWNER-1..4 | Owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator): preprint link-only; production baseline 30 with test 16 for build/test only; AWS target with Netlify/Railway/Neon as interim hosting and PHI-derived data protection; OQ-23 closed — no real resident data on the interim stack, go-live on AWS only | Overrides earlier statements where they differ |
+| D-OWNER-1..4 | Owner decisions of 18 Oct 2026 (Megan Stubbs, project coordinator): preprint link-only; production baseline 30 with test 16 for build/test only; AWS target with Netlify/Railway/Neon as interim hosting (backend host amended to Render by TRD 24 D-153) and PHI-derived data protection; OQ-23 closed — no real resident data on the interim stack, go-live on AWS only | Overrides earlier statements where they differ |
 
 Related TRDs: all of 01 to 25. TRD 24 is the master list of OQ, ASM and RSK identifiers cited here.
 
@@ -196,7 +196,7 @@ These are the trace parents for all TRDs. Wording is fixed by the shared contrac
 | BR-14 | Support the future new-admission arm (facility range until own baseline forms), marked experimental. | Should | Second analysis arm in scope but method undefined | SRC-21, SRC-12, SRC-14 B.2, OQ-08 | 02, 04, 06, 11 |
 | BR-15 | Reproduce the pipeline test workbook answer key exactly (R01–R10). | Must | Demo "done means" step 4: pipeline passes the test set answer key | SRC-03, SRC-04, SRC-05, SRC-15 item 2 | 13, 14 |
 | BR-16 | Protect research data: authenticated access, roles, audit trail, HTTPS, no PII, no audio. | Must | Research data under IRB | SRC-14 B.2/B.3, SRC-12 (Security Requirements) | 12, 17 |
-| BR-17 | Deploy as a monorepo: Next.js on Netlify, FastAPI on Railway, PostgreSQL on Neon/Railway, GitHub Actions CI/CD. | Must | Fixed architecture decision | SRC-01, SRC-12 | 01, 15, 16, 18, 21, 22 |
+| BR-17 | Deploy as a monorepo: Next.js on Netlify, FastAPI on Render, PostgreSQL on Neon/Render Postgres, GitHub Actions CI/CD. | Must | Fixed architecture decision | SRC-01, SRC-12 | 01, 15, 16, 18, 21, 22 |
 | BR-18 | Respect study constraints: detection not diagnosis, no LLMs, no ML on the critical path. | Must | Fixed constraints | SRC-14 B.2 | all |
 
 Note on BR-12, BR-13 and BR-15 (contract §19, R17; TRD 24 D-110): the alarm review in the Resident chart's "Review and notes" section (SRC-21) traces to BR-11 and BR-13 (staff review of alarms); the Study team page (SRC-21) traces to BR-12 and BR-15 and, for its "Data problems to follow up" list, to BR-04..BR-06. Both are MVP scope.
@@ -216,10 +216,10 @@ Note on BR-17 and BR-16 (D-OWNER-3, 18 Oct 2026): the hosting named in BR-17 is 
 | C-07 | Mixed-effects regression is the primary method; ML exploratory | MVP pipeline uses deterministic robust statistics and CUSUM only | SRC-14 B.2 |
 | C-08 | Cloud/edge split accepted; Team 1 owns device side | Team 1 parts described only as interfaces | SRC-14 B.2, B.3 |
 | C-09 | Public datasets for development only | Validation uses SRC-03 synthetic data, never DAIC-WOZ/E-DAIC as ground truth | SRC-14 B.2 |
-| C-10 | Architecture fixed by SRC-01 and D-OWNER-3 | Current (interim): Next.js/Netlify, FastAPI/Railway, PostgreSQL Neon/Railway, GitHub Actions. Target: AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) once the budget is approved (OQ-07). Regions: Neon aws-us-east-1 and Railway US East (current), AWS us-east-1 (target) | SRC-01, D-OWNER-3, R25 |
+| C-10 | Architecture fixed by SRC-01 and D-OWNER-3 | Current (interim): Next.js/Netlify, FastAPI/Render, PostgreSQL Neon/Render Postgres, GitHub Actions. Target: AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) once the budget is approved (OQ-07). Regions: Neon aws-us-east-1 and Render `ohio` (US East; D-156) (current), AWS us-east-1 (target) | SRC-01, D-OWNER-3, R25 |
 | C-11 | Research system, not FDA-cleared; IRB handled by faculty | Design-control-style traceability as good practice; no regulatory claims | SRC-14 |
 | C-12 | Low cost until AWS budget approval | Free or trial tiers for the interim stack (RSK-07) | SRC-01, D-OWNER-3 |
-| C-13 | Live feature data is potentially PHI-derived | Encryption in transit (TLS 1.2+ everywhere, including `sslmode=require` to PostgreSQL) and at rest (provider-managed on Neon/Railway; RDS with KMS and encrypted backups on AWS); least privilege; audit logging; no PII in logs | D-OWNER-3 |
+| C-13 | Live feature data is potentially PHI-derived | Encryption in transit (TLS 1.2+ everywhere, including `sslmode=require` to PostgreSQL) and at rest (provider-managed on Neon/Render; RDS with KMS and encrypted backups on AWS); least privilege; audit logging; no PII in logs | D-OWNER-3 |
 | C-14 | Interim data rule (decided) | The interim stack holds synthetic and test data only, permanently; go-live with real resident data happens only on AWS once approved | D-OWNER-3, D-OWNER-4, RSK-14 |
 | C-15 | Production baseline length | baseline_n = 30 in production (confirmed); `test_v0_1` (16) for build-out and testing only and refused when APP_ENV=production | D-OWNER-2 |
 | C-16 | Third-party-licensed documents | Linked, never committed (SRC-07 by link only) | D-OWNER-1 |
@@ -262,7 +262,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | VIS-013 | Alerts shall be presented as flags "for clinician review" in the dashboard only; no outbound notification channel shall exist in the MVP. | Must | BR-11, SRC-02, OQ-06 | Inspection, Test |
 | VIS-014 | Every TRD requirement shall carry a trace to at least one BR-xx and at least one SRC-xx or another TRD requirement ID. | Must | All BRs, C-11 | Inspection (TRD 13 traceability check) |
 | VIS-015 | Each component boundary with Team 1 shall be specified as an interface (record schema, transport endpoint, authentication) and shall not specify Team 1 internals. | Must | BR-01, C-08, SRC-14 B.3 | Inspection |
-| VIS-016 | The system shall deploy on the current (interim) hosting fixed in SRC-01 (Netlify, Railway, Neon or Railway PostgreSQL, GitHub Actions, single monorepo) until the AWS budget is approved. | Must | BR-17, C-10, D-OWNER-3 | Inspection, Demo |
+| VIS-016 | The system shall deploy on the current (interim) hosting fixed in SRC-01 (Netlify, Render, Neon or Render Postgres, GitHub Actions, single monorepo) until the AWS budget is approved. | Must | BR-17, C-10, D-OWNER-3 | Inspection, Demo |
 | VIS-017 | Validation of the analytics shall use the synthetic SRC-03/SRC-05 data and later Team 1 synthetic data; public datasets shall not be used as evidence that the study works. | Must | BR-15, C-09 | Inspection (TRD 14) |
 | VIS-018 | The application shall be deployable to the target AWS platform (Amplify, App Runner, RDS PostgreSQL with KMS, Secrets Manager, CloudWatch) with changes limited to deployment configuration and no significant application code change. | Must | BR-17, SRC-01, D-OWNER-3 | Analysis (TRD 01 migration mapping) |
 | VIS-019 | Missing days shall remain visible to staff and shall never be backfilled, carried forward or imputed. | Must | BR-06, SRC-12 | Test |
@@ -270,7 +270,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | VIS-021 | Personas PER-01 to PER-07 and user needs UN-01 to UN-13 shall be reviewed against the Ann and Lovette interview findings, and this document revised, within 2 weeks after the interviews conclude. | Should | SRC-14 Part D §2.2, SRC-15 item 1 | Inspection (revision history) |
 | VIS-022 | Requirements that depend on an unresolved open question shall reference the OQ-xx identifier and shall implement the documented interim behaviour, not a guessed final behaviour. | Must | BR-18, SRC-14 B.6 | Inspection |
 | VIS-023 | All live feature data shall be treated as sensitive, potentially PHI-derived data and protected by encryption in transit (TLS 1.2 or higher on every hop, including `sslmode=require` to PostgreSQL) and encryption at rest (provider-managed on the interim stack; RDS with KMS and encrypted backups on AWS). | Must | BR-16, C-13, D-OWNER-3 | Inspection, Test (TRD 03, 12) |
-| VIS-024 | Only synthetic and test data shall be loaded on the interim Netlify/Railway/Neon stack; real resident data shall not be loaded there at any time. | Must | BR-16, C-14, D-OWNER-4, RSK-14 | Inspection (data-source label and ingest-batch audit) |
+| VIS-024 | Only synthetic and test data shall be loaded on the interim Netlify/Render/Neon stack; real resident data shall not be loaded there at any time. | Must | BR-16, C-14, D-OWNER-4, RSK-14 | Inspection (data-source label and ingest-batch audit) |
 | VIS-025 | Third-party-licensed documents shall be cited by link in specs/business-requirements/REFERENCES.md and shall not be committed to the repository. | Must | C-16, D-OWNER-1, TRD 18 | Inspection |
 | VIS-026 | The backend shall refuse to start when APP_ENV=production and PIPELINE_PROFILE=test_v0_1. | Must | BR-09, D-OWNER-2 | Test |
 | VIS-027 | EchoWell shall go live with real resident data only on the approved target AWS platform. | Must | BR-16, BR-17, D-OWNER-4, OQ-07 | Inspection (go-live checklist, TRD 15) |
@@ -287,7 +287,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | SC-03 | End-to-end demo | One record posted with a valid API key shows on the dashboard: (a) the Resident list "Last check-in" of that resident shows the record's local time and its 30-day "used" count (Resident chart) rises by 1; and (b) when the resident's baseline is frozen, the Resident chart's change score chart gains one bar for that session (usable check-ins are not check-in log events, TRD 11 UX-144; TRD 24 D-67) | Within 5 s of the POST returning (warm services) | E2E timing test (TRD 13 TST-187); demo (TST-181) |
 | SC-04 | No audio, no PII | Audio-like fields or endpoints; name-like fields | 0 | Inspection, schema test |
 | SC-05 | Reproducibility | Two full rebuilds of SRC-05 with the same config produce identical derived tables | Byte-identical comparison of exported derived tables | Test |
-| SC-06 | Deployed | Frontend on Netlify and backend on Railway reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
+| SC-06 | Deployed | Frontend on Netlify and backend on Render reachable over HTTPS with green CI on `main` | Both environments (staging, production) | Demo |
 | SC-07 | Accessibility | Automated axe-core checks on the 12 routes of TRD 13 TST-110 | 0 serious or critical violations | Test (TRD 13) |
 | SC-08 | Traceability | Requirements without BR trace | 0 | Inspection |
 
@@ -379,7 +379,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | Ann and Lovette interview findings | Confirming personas and user needs | Team 2 customer discovery |
 | PI review of clinical wording (OQ-12) | Final "Right now" and status text | PI |
 | IRB decisions on retention (OQ-01) and withdrawal (OQ-11) | Data lifecycle features | Faculty |
-| Free/trial hosting accounts (Netlify, Railway, Neon) | Current (interim) deployment | Team 2 |
+| Free/trial hosting accounts (Netlify, Render, Neon) | Current (interim) deployment | Team 2 |
 | AWS budget approval timing and account ownership (OQ-07) | Target AWS deployment | Grant team / UND IT |
 | AWS approval and account (OQ-07) | Go-live with any real resident data (D-OWNER-4) | Grant team / UND IT / IRB |
 
@@ -439,3 +439,4 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | 0.3 | 19 Oct 2026 | Phase 1 round-2 fixes (R2-01) | — |
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |
 | 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): S-04..S-06, S-13 pages (Resident list, Resident chart, Study team; Alert review page retired); SRC-21 added and SRC-09/10/11/18/19 marked superseded; display-status wording; UN, BR-12..BR-14 and VIS traces to SRC-21; VIS-009, VIS-012, VIS-020 (data bar), VIS-028; SC-02, SC-03, AC-VIS-02, AC-VIS-03, AC-VIS-06, AC-VIS-10 | — |
+| 0.6 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

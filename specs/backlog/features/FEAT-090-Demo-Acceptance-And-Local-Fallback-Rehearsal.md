@@ -115,7 +115,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-091.
 ## Error Handling
 
 - Step 4b returns 422 → inspect `ingest_rejections` reason with Team 1, fix the record format (schema v0.1), repost with a new session ID.
-- Step 5 exceeds 60 s because of cold starts → disable app sleeping (DEP-042) and repeat; the automated 5 s check is TST-187.
+- Step 5 exceeds 60 s because of cold starts → confirm the Render web service runs on the always-on Starter instance type, not Free (DEP-042), wake the Neon compute with a health check, and repeat; the automated 5 s check is TST-187.
 - Production not passing DEP-081 by 5 Nov 2026 → switch to the rehearsed local fallback (DEP-090).
 - Device access windows at Edgewood are not needed (team-member speaker), but re-pointing a device to the laptop depends on OQ-17 where a site device is involved.
 

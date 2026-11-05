@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -235,7 +235,7 @@ All protected data is fetched in the browser with the user's Bearer token. The J
 Decision: the access token returned by `POST /api/v1/auth/login` is kept **in memory** (a module-scoped variable in `lib/auth.ts`) and **mirrored to `sessionStorage`** under the key `echowell.auth` so that a page reload in the same tab keeps the user signed in. It is never written to `localStorage`, cookies, URLs, logs or analytics.
 
 Justification:
-- Contract section 10 and 12 define Bearer JWT (HS256, 60 min, no refresh token) for dashboard users. The frontend (Netlify origin) and backend (Railway origin) are different sites; an httpOnly cookie would need a cross-site `SameSite=None; Secure` cookie issued by the backend, CSRF protection and backend changes that the contract does not define. A Bearer token sent in the `Authorization` header is therefore the only mechanism consistent with the contract.
+- Contract section 10 and 12 define Bearer JWT (HS256, 60 min, no refresh token) for dashboard users. The frontend (Netlify origin) and backend (Render origin) are different sites; an httpOnly cookie would need a cross-site `SameSite=None; Secure` cookie issued by the backend, CSRF protection and backend changes that the contract does not define. A Bearer token sent in the `Authorization` header is therefore the only mechanism consistent with the contract.
 - Memory-only storage would sign the user out on every reload, which is unworkable on a dashboard that staff reload. `sessionStorage` is scoped to one tab and is cleared when the tab closes, unlike `localStorage` which persists and is shared by all tabs.
 - Residual risk: script injection (XSS) could read the token. Mitigations FE-060 to FE-068 reduce this risk, and the 60-minute expiry limits the window of misuse.
 
@@ -658,7 +658,7 @@ The v0.1 tokens (IBM Plex fonts, `--color-*` palette, 1200px content width) are 
 
 | Variable | Example | Required | Use |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` (local); the HTTPS origin of the Railway staging or production service (interim) or of the AWS App Runner service (target), as set in TRD 21 | Yes | API origin; also inserted in CSP `connect-src` |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` (local); the HTTPS origin of the Render staging or production service (interim) or of the AWS App Runner service (target), as set in TRD 21 | Yes | API origin; also inserted in CSP `connect-src` |
 | `NEXT_PUBLIC_APP_ENV` | `local` \| `staging` \| `production` \| `test` | Yes | Environment marker |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -840,3 +840,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; routes `/residents` (Resident list, `?show=` filter), `/residents/[residentCode]` with sections `review`, `trends`, `baseline`, `log`, `device` (Resident chart), `/study` (Study team, replaces `/analytics`, with `#devices`); `/alerts` retired; component inventory updated (FilterButtons, StatusPill, WhatsHappening, StatusLegend, ChartBanner, ChartSectionNav, SummaryPanel, MoreDetailTiles, ChangeScoreChart, MeasurementCards, BaselinePanel, CheckinCounts, DevicePanel, AlarmReviewPanel, StaffNotes, DataBar, DataProblemsList, DevicesSection; SummaryTiles, SortSelect, DeviceCell, Footer, alerts-page components and ReviewDialog retired); D-114 API fields; Source Sans 3 and light/dark v0.2 tokens; UX-167 wording; FE-103, FE-131, FE-139 retired; FE-206 to FE-211 added; E2E specs renamed (`resident-list`, `resident-chart`, `review`, `study-team`) | — |
 | 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): `RangePill` and FE-092 neutral New admissions pills (D-117); FE-187 runs E2E-09 on R10 after the FE-193 reminder step, FE-193 is step 2 (D-118); FE-151 and the §4.11 format with "CT" (D-119); OQ-31, OQ-32 answered (D-115, D-116) | — |
 | 0.13 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-142, D-150): tokens `--badge-ink`, `--nav-active`, `--nav-hover` in §4.12; §4.8 props match the implemented components | — |
+| 0.14 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

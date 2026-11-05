@@ -366,3 +366,4 @@ Pydantic modules per TRD 23 §4.6: `common.py` (`Meta`, `PageMeta`, `Problem`, `
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §6.2 E-08 default order (D-109) and summary, attention flag, `alarm_reviewed`, `checkins_started`, `uploaded_on_as_of_date`, v0.2 data-alert details and the nav badge consumer; §8 `ResidentOverviewRow`, `OverviewSummary`, `DateWindow`, `EpochInfo`, `ResidentDetail`, `CheckinEvent`, `CheckinEventType`, `Device` and new `AttentionReason` per TRD 19 v0.6; OQ-31; PR #5 review round 1: OQ-31 answered (D-115) | — |
+| 0.3 | 4 Nov 2026 | Servers: one relative server `/api/v1` (TRD 19 §4.4 v0.11, TRD 24 D-153) | — |

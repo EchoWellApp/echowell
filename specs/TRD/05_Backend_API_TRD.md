@@ -1,10 +1,10 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
-This document specifies the EchoWell backend HTTP service: a FastAPI application hosted on Railway that
+This document specifies the EchoWell backend HTTP service: a FastAPI application hosted on Render that
 receives acoustic feature records from Team 1 devices, stores them unaltered, triggers the deterministic
 analytics pipeline, and serves the dashboard (Next.js on Netlify) with resident status, scores, alerts,
 staff notes, device health and research analytics. It defines the application structure, dependency
@@ -42,7 +42,7 @@ Out of scope:
 
 | ID | Document |
 |---|---|
-| SRC-01 | Deployment Architecture (FastAPI on Railway, PostgreSQL on Neon/Railway, monorepo) |
+| SRC-01 | Deployment Architecture (FastAPI on Render, PostgreSQL on Neon/Render Postgres, monorepo) |
 | SRC-02 | Daily Data Storage and Processing Flowcharts (raw store kept as received; 6-stage processing) |
 | SRC-03 | Pipeline test workbook v0.1 (answer key used in examples and acceptance) |
 | SRC-05 | Pipeline test input CSV v0.1 (exact CSV header accepted by `POST /ingest`) |
@@ -68,7 +68,7 @@ Out of scope:
 backend/
   main.py                    create_app(): FastAPI instance, middleware, exception handlers, routers
   cli.py                     admin CLI: create-user, create-api-key, revoke-api-key, export-openapi, seed, … (full list TRD 15 §4.8)
-  jobs/nightly_run.py        nightly pipeline entry point (Railway cron service)
+  jobs/nightly_run.py        nightly pipeline entry point (Render cron job)
   api/                       routers (thin: parse, authorise, call one service, map DTO)
     health.py                GET /health (calls health_service.get_health)
     auth.py                  /auth/login, /auth/logout, /auth/me
@@ -204,14 +204,14 @@ sequenceDiagram
 
 ### 4.5 Pipeline triggering and scheduling
 
-Decision: the nightly full run is executed by a **Railway Cron Job service** (`echowell-nightly`) that runs
+Decision: the nightly full run is executed by a **Render cron job** (`echowell-nightly-staging`, `echowell-nightly-production`) that runs
 `python -m backend.jobs.nightly_run` and exits, not by any in-process scheduler (no APScheduler, no
 `NIGHTLY_SCHEDULER_ENABLED` flag) (contract §21 R18). On AWS (target, D-47) EventBridge Scheduler calls `POST /api/v1/pipeline/run` with a `pipeline:run` API key at 02:00
 America/Chicago (TRD 15 DEP-116).
 Justification: (1) the web service may sleep or restart on free/trial tiers (RSK-07), which would silently
 skip in-process schedules; (2) more than one uvicorn worker or replica would run an in-process scheduler
-more than once; (3) a cron service gives a separate log stream and exit code per run. Railway cron
-expressions are UTC, so the job is scheduled at `0 7,8 * * *` (02:00 America/Chicago is 07:00 UTC in
+more than once; (3) a cron service gives a separate log stream and exit code per run. Render cron job
+schedules are UTC, so the job is scheduled at `0 7,8 * * *` (02:00 America/Chicago is 07:00 UTC in
 CDT and 08:00 UTC in CST) and the job itself decides whether this firing is the 02:00 local one.
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -348,7 +348,7 @@ Error code catalogue (complete; no other codes may be emitted):
 | API-100 | Every list endpoint (`/residents`, `/checkins`, `/scores`, `/alerts`, `/alerts/{id}/reviews`, `/data-alerts`, `/notes`, `/devices`, `/analytics/baselines`, `/pipeline/runs`, `/admissions`, `/facility/reference-ranges`, `/users`) shall return `{"meta": {...}, "items": [...], "total": n, "limit": l, "offset": o}` plus any endpoint-specific top-level fields defined in TRD 19. | Must | contract §10, §20 R3 | Test |
 | API-101 | CORS shall be implemented with Starlette `CORSMiddleware` using `allow_origins` = the comma-separated CORS_ORIGINS list (exact origins, no wildcard) and, only when CORS_ORIGIN_REGEX is non-empty (staging; refused in production, TRD 21 ENV-012), `allow_origin_regex` = CORS_ORIGIN_REGEX for Netlify deploy previews, `allow_credentials=False`, `allow_methods=["GET","POST","PATCH","OPTIONS"]`, `allow_headers=["Authorization","Content-Type","X-Request-ID"]`, `expose_headers=["X-Request-ID","Retry-After","X-EchoWell-Experimental"]`, `max_age=600`. | Must | contract §12, TRD 12 | Test |
 | API-102 | Rate limiting shall use slowapi with in-memory storage: `POST /auth/login` limited to RATE_LIMIT_LOGIN per client IP (default 5/minute; always 5/minute in staging and production, 60/minute only on the E2E stack, TRD 21 ENV-054, TRD 24 D-74); `POST /sessions` and `POST /ingest` limited to RATE_LIMIT_INGEST per API key hash or per admin user id (default 600/minute); all other authenticated endpoints limited to 300/minute per user id. | Must | contract §12, §13 | Test |
-| API-103 | The client IP for rate limiting and audit shall be the left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040); locally the Compose command (DEP-012) omits these flags and it is the socket peer. | Must | TRD 12 | Inspection |
+| API-103 | The client IP for rate limiting and audit shall be the left-most `X-Forwarded-For` address set by the Render edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040); locally the Compose command (DEP-012) omits these flags and it is the socket peer. | Must | TRD 12 | Inspection |
 | API-104 | A request-size middleware shall reject bodies larger than 64 KB on all endpoints except `POST /ingest` (limit 5 MB) with 413 `PAYLOAD_TOO_LARGE`, checking `Content-Length` and the streamed byte count. | Must | TRD 12 | Test |
 | API-105 | A request-ID middleware shall reuse an incoming `X-Request-ID` matching `^[A-Za-z0-9-]{8,64}$`, otherwise generate a UUID4, store it in a context variable used by logging and audit, and set `X-Request-ID` on every response including errors and 429s. | Must | contract §10, TRD 17 | Test |
 | API-139 | Any request whose `Content-Type` is `audio/*` shall be refused with 415 `UNSUPPORTED_MEDIA_TYPE` before routing, whatever the method (GET included); no endpoint accepts audio (TRD 12 SEC-121, TRD 13 TST-133, TRD 19 §4.2, TRD 24 D-126). | Must | BR-01 | Test |
@@ -367,7 +367,7 @@ Error code catalogue (complete; no other codes may be emitted):
 
 ### 4.10 Performance budgets
 
-Budgets apply to a warm Railway service with the database in the same region, measured server-side
+Budgets apply to a warm Render service with the database in the same region, measured server-side
 (`duration_ms` in the access log), at the ASM-08 scale (< 100 residents, ≤ 120 days of data each, < 25 users).
 Cold start after the service sleeps (RSK-07) is excluded and handled in TRD 15.
 
@@ -468,7 +468,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - ASM-06 New epoch closes any open alert of the previous epoch (pipeline behaviour; the API only reads it).
 - ASM-07 Frozen baselines are never recomputed; late arrivals flagged as pipeline warnings.
 - ASM-08 < 25 users, < 100 residents, < 1 session/resident/day (sizing of rate limits, pools and budgets).
-- Note for lead (TRD-local): a single Railway web replica is assumed, so in-memory rate-limit storage is
+- Note for lead (TRD-local): a single Render web instance is assumed, so in-memory rate-limit storage is
   sufficient; adding replicas requires a shared store (TRD 22).
 
 ## 6. Dependencies
@@ -478,7 +478,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
   tzdata/zoneinfo; pytest 8.x and httpx for tests.
 - `analytics/` package (TRD 07) exposing the binding signature `analytics.pipeline.run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines=None) -> PipelineResult` (TRD 07 §4.5).
 - PostgreSQL 16 schema from TRD 06/20, including the `raw_sessions` and `audit_logs` immutability triggers.
-- Railway web service and Railway Cron Job service (TRD 15, TRD 22); environment variables from TRD 21.
+- Render web service and Render cron job (TRD 15, TRD 22); environment variables from TRD 21.
 - Seed scripts in `database/seeds/` that register residents, devices and device assignments (TRD 14).
 - Owner decisions D-OWNER-2 (test_v0_1 never in production), D-OWNER-3 (AWS target) and D-OWNER-4 (interim stack synthetic/test data only; go-live on AWS only) from the shared contract §18.
 - Note: the current `backend/requirements.txt` lists `psycopg2-binary`; it shall be replaced by `psycopg[binary]` 3.x (contract §21 R24).
@@ -544,7 +544,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 - OQ-26 Who may review alarms and how soon (clinician and admin in MVP; no SLA enforced).
 - OQ-06 Alert delivery beyond the dashboard (no push endpoints in MVP).
 - OQ-07 AWS budget approval timing and account ownership (UND IT); the code is portable to AWS App Runner + RDS with no significant change (configuration only).
-- OQ-23 is closed by owner decision D-OWNER-4: the interim Netlify/Railway/Neon stack holds synthetic and test data only and go-live happens on AWS only (requirement in TRD 12).
+- OQ-23 is closed by owner decision D-OWNER-4: the interim Netlify/Render/Neon stack holds synthetic and test data only and go-live happens on AWS only (requirement in TRD 12).
 - OQ-08 Facility norm definition (admissions endpoints return empty items until defined).
 - OQ-10 Late-arriving records that predate a frozen baseline (accepted; pipeline warning).
 - OQ-11 Data handling on withdrawal (ingest refused; existing data kept and readable).
@@ -570,3 +570,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; API-071 default order per D-109 (R09, R10, R03, R08, R01, R02, R04, R05, R06, R07); API-073 summary `changed`/`needs_attention`/`learning`/`usual` (2/2/0/6); API-075, API-077 (`checkins_started`), API-086 (`uploaded_on_as_of_date`), API-133 (v0.2 data-alert details) updated; new API-138 (attention flag, `alarm_reviewed`, `restart_cause`, detail `window`); endpoint summary UI consumers moved from `/alerts` and `/analytics` to the Resident list, Resident chart and Study team page; AC-API-02, -03, -15 updated | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
 | 0.15 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-11, TRD 24 D-126): API-139 global `audio/*` content-type rule (415 on any method) | — |
+| 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
