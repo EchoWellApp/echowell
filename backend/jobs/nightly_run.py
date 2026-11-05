@@ -113,7 +113,8 @@ def run_night(
 
 
 def main() -> int:
-    settings = load_settings_or_exit()
+    # The cron job has only the environment-group variables (DEP-046, SEC-111).
+    settings = load_settings_or_exit(operator=True)
     configure_logging(settings.log_level, settings.log_format, settings.app_env, settings.git_sha)
     engine = db.create_engine_for(settings.database_url, app_env=settings.app_env)
     try:
