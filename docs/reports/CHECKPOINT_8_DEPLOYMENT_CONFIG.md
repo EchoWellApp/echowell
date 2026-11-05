@@ -34,6 +34,7 @@ Build order followed roadmap §5.8: [FEAT-077..FEAT-080] → [FEAT-081..FEAT-083
 | F-3 | TST-124 | `POST /ingest` made about 5 database round trips per record (1,432 statements for SRC-05; 202 in 1.6–1.9 s, budget 2 s) | Records stored per batch: 24 statements, about 0.5 s |
 | F-4 | TST-122 on DS-08 | `GET /residents` p95 720 ms and `GET /analytics` 2,930 ms (budget 500 ms): per-resident queries and a read of every stored day | Batched read models; analytics reads only its window: 218 ms and 294 ms |
 | F-5 | `security-audit` | PyJWT 2.9.0 and python-multipart 0.0.17 had advisories | PyJWT 2.15.1, python-multipart 0.0.33 (same majors) |
+| F-7 | `docker-build` on GitHub | The frontend image build failed in `next/font/google` (font download during the build; the same download made the `frontend` job flaky earlier) | Source Sans 3 (SIL OFL) is committed as `frontend/app/fonts/SourceSans3-latin-variable.woff2` and loaded with `next/font/local`; builds no longer fetch fonts (Q-13) |
 | F-6 | `repo-hygiene`, Bandit | The old facility name in three design docs and a test; Bandit B608 on a constant-key migration statement | Reworded; `# nosec B608` with the existing reason |
 
 API responses are unchanged (contract, DS-07 and validation suites pass; OpenAPI identical).
@@ -110,3 +111,4 @@ None. Decisions from this review will be recorded in TRD 24 from D-159.
 | Q-10 | The backend image now runs as a non-root user (DEP-021) and includes `sentry-sdk` (off unless `SENTRY_DSN` is set). The existing `echowell-api` Render service rebuilds from this Dockerfile on the next merge to `main`; the image still starts with the same command. Any concern? |
 | Q-11 | The performance fixes change backend code (rate limiting, ingest batching, read models) inside a configuration checkpoint, because the budget tests found the defects. Accept them here? |
 | Q-12 | Size: about 6,000 added lines (half tests) for 11 features. Accept as one PR? |
+| Q-13 | TRD 04 §4.2 names `next/font/google` for Source Sans 3. The image build on GitHub failed downloading the font, so the font file (SIL Open Font License) is now committed and loaded with `next/font/local`: same font and weights, no network at build time, still self-hosted (FE-192, UX-252). Update TRD 04 §4.2 to `next/font/local`? |
