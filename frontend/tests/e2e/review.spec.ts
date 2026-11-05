@@ -26,6 +26,9 @@ async function summaryFacts(page: Page, code: string): Promise<string> {
   await page.goto(`/residents/${code}`);
   const now = page.getByRole("region", { name: "Right now" });
   await expect(now.getByRole("link", { name: "Review this alert" })).toBeVisible();
+  // Wait for the alarm facts, which load separately (no "Loading …" text, no "—" placeholders).
+  await expect(now).toContainText("Alarm started");
+  await expect(now).not.toContainText(/Loading|—/);
   return norm(await now.innerText());
 }
 
@@ -33,6 +36,7 @@ async function changeScoreTile(page: Page): Promise<string> {
   const tile = page
     .getByRole("region", { name: "More detail" })
     .getByRole("link", { name: /^Voice trends/ });
+  await expect(tile).toContainText("Change score"); // loaded, not the "—" placeholder
   return norm(await tile.innerText());
 }
 
