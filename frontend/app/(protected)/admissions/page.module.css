@@ -1,0 +1,22 @@
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.title {
+  font-size: 22px;
+}
+.intro {
+  padding: 16px 18px 0;
+}
+.body {
+  padding-top: 12px;
+}
+.body > [role="status"],
+.body > [role="alert"] {
+  padding: 8px 18px 16px;
+}

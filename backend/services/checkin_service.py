@@ -76,8 +76,8 @@ def _build(
         )
     if kind == "missed":
         return _event(day, kind, detail=MISSED_DETAIL)
-    if kind == "device_silent":
-        return _event(day, kind, detail=d["reason"] or None)
+    if kind == "device_silent":  # device_code: the silent device (TRD 24 D-145)
+        return _event(day, kind, detail=d["reason"] or None, device_code=codes.get(d["device_id"]))
     return _event(  # checkins_started (D-113, D-114)
         day, kind, epoch_number=epoch_number, session_id=d["session_id"],
         device_code=codes.get(d["device_id"]),

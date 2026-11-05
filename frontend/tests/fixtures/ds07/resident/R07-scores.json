@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 2,
+  "limit": 50,
+  "offset": 0,
+  "cusum_k": 0.5,
+  "baseline_periods": [
+    {
+      "resident_code": "R07",
+      "epoch_number": 2,
+      "first_local_date": "2026-10-13",
+      "frozen_after_local_date": "2026-10-28",
+      "frozen_after_session_id": "R07-20261028-01",
+      "n_sessions": 16
+    }
+  ],
+  "items": [
+    {
+      "session_id": "R07-20261029-01",
+      "resident_code": "R07",
+      "epoch_number": 2,
+      "local_date": "2026-10-29",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 3.0249265463111925,
+        "z_total_phrase_duration_s": -0.16862268986914442,
+        "z_speech_rate_syl_per_s": 0.3533046835353576,
+        "z_articulation_rate_syl_per_s": -0.48563334682315257,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": 0.44966050631773014,
+        "z_voiced_fraction": -0.6744907594765938
+      },
+      "composite_raw": -0.5624384724426027,
+      "composite_z": -0.5080916015717029,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R07-20261030-01",
+      "resident_code": "R07",
+      "epoch_number": 2,
+      "local_date": "2026-10-30",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.7917040926783206,
+        "z_total_phrase_duration_s": 1.2927739556634705,
+        "z_speech_rate_syl_per_s": -0.1605930379706202,
+        "z_articulation_rate_syl_per_s": 0,
+        "z_number_of_pauses": 2,
+        "z_pause_fraction": -0.7494341771962159,
+        "z_voiced_fraction": -0.2997736708784874
+      },
+      "composite_raw": 0.31600034209114886,
+      "composite_z": 0.37227656358116273,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    }
+  ]
+}

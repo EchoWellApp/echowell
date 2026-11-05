@@ -1131,7 +1131,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "checkins_started: device of the resident's first non-duplicate record (TRD 24 D-114); device_silent: the silent device (D-145); null on other events"
           },
           "epoch_number": {
             "anyOf": [
@@ -7327,11 +7328,7 @@
   "security": [],
   "servers": [
     {
-      "description": "local (docker-compose)",
-      "url": "http://localhost:8000/api/v1"
-    },
-    {
-      "description": "relative to the deployed Railway API origin (staging, production)",
+      "description": "current deployment",
       "url": "/api/v1"
     }
   ],

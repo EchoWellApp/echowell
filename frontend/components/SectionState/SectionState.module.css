@@ -1,0 +1,17 @@
+.state {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+}
+.ref {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}

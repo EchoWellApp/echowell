@@ -18,7 +18,9 @@
     "test:e2e:readonly": "playwright test --grep-invert \"@isolated|@mutating\"",
     "test:e2e:mutating": "playwright test --grep @mutating --workers=1",
     "test:e2e:isolated": "playwright test -c playwright.isolated.config.ts --project=chromium --workers=1",
-    "gen:api": "openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts"
+    "gen:api": "openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts",
+    "fixtures:capture": "node tests/fixtures/capture.mjs",
+    "test:tz": "TZ=Pacific/Kiritimati vitest run tests/unit/format.test.ts --coverage.enabled=false && TZ=America/Los_Angeles vitest run tests/unit/format.test.ts --coverage.enabled=false"
   },
   "dependencies": {
     "@tanstack/react-query": "5.105.0",

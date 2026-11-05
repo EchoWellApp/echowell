@@ -1,0 +1,1863 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "resident_code": "R05",
+  "epoch_number": 1,
+  "scored_features": [
+    {
+      "feature_key": "loudness_dbfs",
+      "label": "Quieter (loudness)",
+      "unit": "dBFS",
+      "composite_sign": -1,
+      "baseline_median": -29.89,
+      "baseline_robust_spread": 2.031161999999999,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": -34.74,
+          "adjusted_value": -34.74,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": -29.43,
+          "adjusted_value": -29.43,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": -30.35,
+          "adjusted_value": -30.35,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": -31.18,
+          "adjusted_value": -31.18,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": -28.66,
+          "adjusted_value": -28.66,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": -28.44,
+          "adjusted_value": -28.44,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": -34.1,
+          "adjusted_value": -34.1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": -29.76,
+          "adjusted_value": -29.76,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": -29.51,
+          "adjusted_value": -29.51,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": -26.19,
+          "adjusted_value": -26.19,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": -31.48,
+          "adjusted_value": -31.48,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": -30.02,
+          "adjusted_value": -30.02,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": -32.15,
+          "adjusted_value": -32.15,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": -27.78,
+          "adjusted_value": -27.78,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": -31.15,
+          "adjusted_value": -31.15,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": -25.76,
+          "adjusted_value": -25.76,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": -33.89,
+          "adjusted_value": -33.89,
+          "z": -1.9693160860630528,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": -30.02,
+          "adjusted_value": -30.02,
+          "z": -0.06400277279704872,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": -31.75,
+          "adjusted_value": -31.75,
+          "z": -0.9157319800193192,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": -31.52,
+          "adjusted_value": -31.52,
+          "z": -0.8024963050706935,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": -32.5,
+          "adjusted_value": -32.5,
+          "z": -1.2849787461561417,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": -32.39,
+          "adjusted_value": -32.39,
+          "z": -1.230822553789408,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": -33.54,
+          "adjusted_value": -33.54,
+          "z": -1.797000928532535,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": -33.17,
+          "adjusted_value": -33.17,
+          "z": -1.6148391905717039,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": -23.73,
+          "adjusted_value": -23.73,
+          "z": 3.0327467725371013,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": -26.35,
+          "adjusted_value": -26.35,
+          "z": 1.7428447361658013,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": -34.51,
+          "adjusted_value": -34.51,
+          "z": -2.2745600794028245,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": -33.24,
+          "adjusted_value": -33.24,
+          "z": -1.6493022220778073,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "total_phrase_duration_s",
+      "label": "Slower to say the phrase (phrase duration)",
+      "unit": "s",
+      "composite_sign": 1,
+      "baseline_median": 3.205,
+      "baseline_robust_spread": 0.22238999999999987,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 3.42,
+          "adjusted_value": 3.42,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 3.36,
+          "adjusted_value": 3.36,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 3.01,
+          "adjusted_value": 3.01,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 3.45,
+          "adjusted_value": 3.45,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 3.13,
+          "adjusted_value": 3.13,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 3.18,
+          "adjusted_value": 3.18,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 3.35,
+          "adjusted_value": 3.35,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 3.31,
+          "adjusted_value": 3.31,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 3.23,
+          "adjusted_value": 3.23,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 3.09,
+          "adjusted_value": 3.09,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 3.16,
+          "adjusted_value": 3.16,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 3.18,
+          "adjusted_value": 3.18,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 3.51,
+          "adjusted_value": 3.51,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 3.43,
+          "adjusted_value": 3.43,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 3.02,
+          "adjusted_value": 3.02,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 3.05,
+          "adjusted_value": 3.05,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 3.53,
+          "adjusted_value": 3.53,
+          "z": 1.4613966455326226,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 3.19,
+          "adjusted_value": 3.19,
+          "z": -0.06744907594766011,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 3.44,
+          "adjusted_value": 3.44,
+          "z": 1.0567021898466658,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 2.99,
+          "adjusted_value": 2.99,
+          "z": -0.9667700885831196,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 3.73,
+          "adjusted_value": 3.73,
+          "z": 2.360717658168084,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 3.26,
+          "adjusted_value": 3.26,
+          "z": 0.24731327847475043,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 3.45,
+          "adjusted_value": 3.45,
+          "z": 1.10166824047844,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 3.4,
+          "adjusted_value": 3.4,
+          "z": 0.8768379873195735,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 2.91,
+          "adjusted_value": 2.91,
+          "z": -1.3264984936373043,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 2.87,
+          "adjusted_value": 2.87,
+          "z": -1.5063626961643966,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 3.22,
+          "adjusted_value": 3.22,
+          "z": 0.06744907594766011,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 3.41,
+          "adjusted_value": 3.41,
+          "z": 0.9218040379513476,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "speech_rate_syl_per_s",
+      "label": "Fewer syllables per second (speech rate)",
+      "unit": "syllables/s",
+      "composite_sign": -1,
+      "baseline_median": 3.82,
+      "baseline_robust_spread": 0.1334340000000001,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 3.61,
+          "adjusted_value": 3.61,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 3.81,
+          "adjusted_value": 3.81,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 3.94,
+          "adjusted_value": 3.94,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 3.74,
+          "adjusted_value": 3.74,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 3.91,
+          "adjusted_value": 3.91,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 3.87,
+          "adjusted_value": 3.87,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 3.9,
+          "adjusted_value": 3.9,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 4.04,
+          "adjusted_value": 4.04,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 3.7,
+          "adjusted_value": 3.7,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 3.93,
+          "adjusted_value": 3.93,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 3.71,
+          "adjusted_value": 3.71,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 3.73,
+          "adjusted_value": 3.73,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 3.76,
+          "adjusted_value": 3.76,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 3.82,
+          "adjusted_value": 3.82,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 4.02,
+          "adjusted_value": 4.02,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 3.82,
+          "adjusted_value": 3.82,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 3.55,
+          "adjusted_value": 3.55,
+          "z": -2.023472278429784,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 4.03,
+          "adjusted_value": 4.03,
+          "z": 1.5738117721120573,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 3.9,
+          "adjusted_value": 3.9,
+          "z": 0.5995473417569736,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 3.9,
+          "adjusted_value": 3.9,
+          "z": 0.5995473417569736,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 3.6,
+          "adjusted_value": 3.6,
+          "z": -1.648755189831674,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 3.73,
+          "adjusted_value": 3.73,
+          "z": -0.6744907594765935,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 3.98,
+          "adjusted_value": 3.98,
+          "z": 1.199094683513947,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 3.71,
+          "adjusted_value": 3.71,
+          "z": -0.824377594915837,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 4.06,
+          "adjusted_value": 4.06,
+          "z": 1.7986420252709172,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 4,
+          "adjusted_value": 4,
+          "z": 1.3489815189531904,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 3.89,
+          "adjusted_value": 3.89,
+          "z": 0.5246039240373535,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 3.68,
+          "adjusted_value": 3.68,
+          "z": -1.0492078480747002,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "articulation_rate_syl_per_s",
+      "label": "Slower while talking (articulation rate)",
+      "unit": "syllables/s",
+      "composite_sign": -1,
+      "baseline_median": 5.359999999999999,
+      "baseline_robust_spread": 0.2520419999999999,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 5.04,
+          "adjusted_value": 5.04,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 5.28,
+          "adjusted_value": 5.28,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 5.14,
+          "adjusted_value": 5.14,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 5.17,
+          "adjusted_value": 5.17,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 5.41,
+          "adjusted_value": 5.41,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 5.58,
+          "adjusted_value": 5.58,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 5.38,
+          "adjusted_value": 5.38,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 5.64,
+          "adjusted_value": 5.64,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 5.29,
+          "adjusted_value": 5.29,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 5.68,
+          "adjusted_value": 5.68,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 5.84,
+          "adjusted_value": 5.84,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 5.34,
+          "adjusted_value": 5.34,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 5.27,
+          "adjusted_value": 5.27,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 5.1,
+          "adjusted_value": 5.1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 5.5,
+          "adjusted_value": 5.5,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 5.51,
+          "adjusted_value": 5.51,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 5.24,
+          "adjusted_value": 5.24,
+          "z": -0.4761111243364172,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 5.65,
+          "adjusted_value": 5.65,
+          "z": 1.1506018838130194,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 5.34,
+          "adjusted_value": 5.34,
+          "z": -0.07935185405606837,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 5.34,
+          "adjusted_value": 5.34,
+          "z": -0.07935185405606837,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 5.47,
+          "adjusted_value": 5.47,
+          "z": 0.4364351973083866,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 5.53,
+          "adjusted_value": 5.53,
+          "z": 0.6744907594765988,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 5.22,
+          "adjusted_value": 5.22,
+          "z": -0.5554629783924891,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 5.14,
+          "adjusted_value": 5.14,
+          "z": -0.8728703946167696,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 5.73,
+          "adjusted_value": 5.73,
+          "z": 1.4680093000373,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 5.81,
+          "adjusted_value": 5.81,
+          "z": 1.785416716261577,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 5.49,
+          "adjusted_value": 5.49,
+          "z": 0.5157870513644585,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 4.85,
+          "adjusted_value": 4.85,
+          "z": -2.023472278429786,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "number_of_pauses",
+      "label": "More pauses (number of pauses)",
+      "unit": "count",
+      "composite_sign": 1,
+      "baseline_median": 1,
+      "baseline_robust_spread": 0.5,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 0,
+          "adjusted_value": 0,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 3,
+          "adjusted_value": 3,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 0,
+          "adjusted_value": 0,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 0,
+          "adjusted_value": 0,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": 2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": 2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 0,
+          "adjusted_value": 0,
+          "z": -2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": 0,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": 2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": 0,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": 2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 3,
+          "adjusted_value": 3,
+          "z": 4,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": 0,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 1,
+          "adjusted_value": 1,
+          "z": 0,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 2,
+          "adjusted_value": 2,
+          "z": 2,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 3,
+          "adjusted_value": 3,
+          "z": 4,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "pause_fraction",
+      "label": "More time in pauses (pause fraction)",
+      "unit": "proportion",
+      "composite_sign": 1,
+      "baseline_median": 0.1925,
+      "baseline_robust_spread": 0.026686799999999983,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 0.219,
+          "adjusted_value": 0.219,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 0.208,
+          "adjusted_value": 0.208,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 0.202,
+          "adjusted_value": 0.202,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 0.269,
+          "adjusted_value": 0.269,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 0.163,
+          "adjusted_value": 0.163,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 0.213,
+          "adjusted_value": 0.213,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 0.197,
+          "adjusted_value": 0.197,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 0.203,
+          "adjusted_value": 0.203,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 0.178,
+          "adjusted_value": 0.178,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 0.17,
+          "adjusted_value": 0.17,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 0.181,
+          "adjusted_value": 0.181,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 0.158,
+          "adjusted_value": 0.158,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 0.188,
+          "adjusted_value": 0.188,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 0.206,
+          "adjusted_value": 0.206,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 0.158,
+          "adjusted_value": 0.158,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 0.118,
+          "adjusted_value": 0.118,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 0.196,
+          "adjusted_value": 0.196,
+          "z": 0.13115098100933814,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 0.161,
+          "adjusted_value": 0.161,
+          "z": -1.1803588290840423,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 0.169,
+          "adjusted_value": 0.169,
+          "z": -0.8805851582055552,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 0.15,
+          "adjusted_value": 0.15,
+          "z": -1.5925476265419622,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 0.211,
+          "adjusted_value": 0.211,
+          "z": 0.6932266139065006,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 0.167,
+          "adjusted_value": 0.167,
+          "z": -0.9555285759251769,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 0.206,
+          "adjusted_value": 0.206,
+          "z": 0.5058680696074461,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 0.237,
+          "adjusted_value": 0.237,
+          "z": 1.667491044261583,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 0.167,
+          "adjusted_value": 0.167,
+          "z": -0.9555285759251769,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 0.152,
+          "adjusted_value": 0.152,
+          "z": -1.5176042088223405,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 0.227,
+          "adjusted_value": 0.227,
+          "z": 1.292773955663475,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 0.216,
+          "adjusted_value": 0.216,
+          "z": 0.8805851582055552,
+          "in_baseline": false
+        }
+      ]
+    },
+    {
+      "feature_key": "voiced_fraction",
+      "label": "Less voiced sound (voiced fraction)",
+      "unit": "proportion",
+      "composite_sign": -1,
+      "baseline_median": 0.547,
+      "baseline_robust_spread": 0.01186080000000001,
+      "points": [
+        {
+          "session_id": "R05-20261001-01",
+          "local_date": "2026-10-01",
+          "is_morning": false,
+          "raw_value": 0.493,
+          "adjusted_value": 0.493,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261002-01",
+          "local_date": "2026-10-02",
+          "is_morning": false,
+          "raw_value": 0.547,
+          "adjusted_value": 0.547,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261003-01",
+          "local_date": "2026-10-03",
+          "is_morning": false,
+          "raw_value": 0.547,
+          "adjusted_value": 0.547,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261004-01",
+          "local_date": "2026-10-04",
+          "is_morning": false,
+          "raw_value": 0.548,
+          "adjusted_value": 0.548,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261005-01",
+          "local_date": "2026-10-05",
+          "is_morning": false,
+          "raw_value": 0.554,
+          "adjusted_value": 0.554,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261006-01",
+          "local_date": "2026-10-06",
+          "is_morning": false,
+          "raw_value": 0.546,
+          "adjusted_value": 0.546,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261007-01",
+          "local_date": "2026-10-07",
+          "is_morning": false,
+          "raw_value": 0.52,
+          "adjusted_value": 0.52,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261009-01",
+          "local_date": "2026-10-09",
+          "is_morning": false,
+          "raw_value": 0.552,
+          "adjusted_value": 0.552,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261010-01",
+          "local_date": "2026-10-10",
+          "is_morning": false,
+          "raw_value": 0.481,
+          "adjusted_value": 0.481,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261011-01",
+          "local_date": "2026-10-11",
+          "is_morning": false,
+          "raw_value": 0.53,
+          "adjusted_value": 0.53,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261012-01",
+          "local_date": "2026-10-12",
+          "is_morning": false,
+          "raw_value": 0.541,
+          "adjusted_value": 0.541,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261013-01",
+          "local_date": "2026-10-13",
+          "is_morning": false,
+          "raw_value": 0.519,
+          "adjusted_value": 0.519,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261014-01",
+          "local_date": "2026-10-14",
+          "is_morning": false,
+          "raw_value": 0.55,
+          "adjusted_value": 0.55,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261015-01",
+          "local_date": "2026-10-15",
+          "is_morning": false,
+          "raw_value": 0.556,
+          "adjusted_value": 0.556,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261016-01",
+          "local_date": "2026-10-16",
+          "is_morning": false,
+          "raw_value": 0.565,
+          "adjusted_value": 0.565,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261017-01",
+          "local_date": "2026-10-17",
+          "is_morning": false,
+          "raw_value": 0.559,
+          "adjusted_value": 0.559,
+          "z": null,
+          "in_baseline": true
+        },
+        {
+          "session_id": "R05-20261018-01",
+          "local_date": "2026-10-18",
+          "is_morning": false,
+          "raw_value": 0.5,
+          "adjusted_value": 0.5,
+          "z": -3.962633211924997,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261019-01",
+          "local_date": "2026-10-19",
+          "is_morning": false,
+          "raw_value": 0.515,
+          "adjusted_value": 0.515,
+          "z": -2.697963037906381,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261020-01",
+          "local_date": "2026-10-20",
+          "is_morning": false,
+          "raw_value": 0.518,
+          "adjusted_value": 0.518,
+          "z": -2.4450290031026576,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261021-01",
+          "local_date": "2026-10-21",
+          "is_morning": false,
+          "raw_value": 0.538,
+          "adjusted_value": 0.538,
+          "z": -0.7588021044111696,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261023-01",
+          "local_date": "2026-10-23",
+          "is_morning": false,
+          "raw_value": 0.506,
+          "adjusted_value": 0.506,
+          "z": -3.4567651423175505,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261024-01",
+          "local_date": "2026-10-24",
+          "is_morning": false,
+          "raw_value": 0.52,
+          "adjusted_value": 0.52,
+          "z": -2.2764063132335086,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261025-01",
+          "local_date": "2026-10-25",
+          "is_morning": false,
+          "raw_value": 0.511,
+          "adjusted_value": 0.511,
+          "z": -3.0352084176446783,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261026-01",
+          "local_date": "2026-10-26",
+          "is_morning": false,
+          "raw_value": 0.51,
+          "adjusted_value": 0.51,
+          "z": -3.119519762579253,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261027-01",
+          "local_date": "2026-10-27",
+          "is_morning": false,
+          "raw_value": 0.554,
+          "adjusted_value": 0.554,
+          "z": 0.5901794145420208,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261028-01",
+          "local_date": "2026-10-28",
+          "is_morning": false,
+          "raw_value": 0.568,
+          "adjusted_value": 0.568,
+          "z": 1.770538243626053,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261029-01",
+          "local_date": "2026-10-29",
+          "is_morning": false,
+          "raw_value": 0.537,
+          "adjusted_value": 0.537,
+          "z": -0.8431134493457441,
+          "in_baseline": false
+        },
+        {
+          "session_id": "R05-20261030-01",
+          "local_date": "2026-10-30",
+          "is_morning": false,
+          "raw_value": 0.515,
+          "adjusted_value": 0.515,
+          "z": -2.697963037906381,
+          "in_baseline": false
+        }
+      ]
+    }
+  ],
+  "stored_feature_keys": [
+    "mean_f0_hz",
+    "f0_variability_st",
+    "jitter_local_pct",
+    "shimmer_local_pct",
+    "hnr_db",
+    "cpps_db",
+    "alpha_ratio_db",
+    "hammarberg_index_db",
+    "mfcc1",
+    "mfcc2",
+    "mfcc3",
+    "mfcc4"
+  ]
+}

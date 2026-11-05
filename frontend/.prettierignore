@@ -7,3 +7,4 @@ node_modules/
 package-lock.json
 next-env.d.ts
 lib/api-types.ts
+tests/e2e/.auth/

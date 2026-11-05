@@ -1,0 +1,85 @@
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 28px;
+  border-bottom: 1px solid var(--rule);
+}
+.label {
+  font-size: 14px;
+}
+.track {
+  position: relative;
+  height: 20px;
+}
+.band {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  background: var(--grey-bg);
+  border-radius: 3px;
+}
+.dot {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border-radius: 50%;
+}
+.in {
+  background: var(--ink);
+}
+.out {
+  background: var(--red);
+}
+.glyph {
+  position: absolute;
+  left: 10px;
+  top: -5px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--red);
+}
+.details {
+  font-size: 14px;
+}
+.summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  cursor: pointer;
+  color: var(--link);
+  font-weight: 600;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--surface-2);
+}
+.table tbody th {
+  font-weight: 400;
+}

@@ -1,0 +1,25 @@
+/* Chart grid: 200px section navigation | content; one column below 760px (UX-241, FE-165). */
+.chart {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+.notFound {
+  font-size: 26px;
+}
+.notice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--yellow-edge);
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border-radius: 4px;
+  font-weight: 600;
+}
+@media (max-width: 759px) {
+  .chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
