@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 from backend.core import db
 from backend.core.config import Settings, load_settings_or_exit
 from backend.core.logging import configure_logging
+from backend.core.monitoring import init_sentry
 from backend.models import PipelineRunStatus, PipelineTrigger
 from backend.services.pipeline_runner import PipelineRunner, nightly_run_for_local_date
 
@@ -116,6 +117,7 @@ def main() -> int:
     # The cron job has only the environment-group variables (DEP-046, SEC-111).
     settings = load_settings_or_exit(operator=True)
     configure_logging(settings.log_level, settings.log_format, settings.app_env, settings.git_sha)
+    init_sentry(settings)
     engine = db.create_engine_for(settings.database_url, app_env=settings.app_env)
     try:
         return run_night(settings, db.session_factory(engine))
