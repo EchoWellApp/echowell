@@ -27,10 +27,10 @@ Result values: **PASS** · **FAIL** (with reason) · **RESULT: pending integrati
 | M. Secrets in GitHub (CIC-090, AC-CIC-06) | 2 | 2 | 0 | 0 | 0 |
 | N. Sentry (TRD 17, TRD 22) | 6 | 6 | 0 | 0 | 0 |
 | O. Documentation (FEAT-087) | 6 | 6 | 0 | 0 | 0 |
-| P. Phase 9 commands | 4 | 3 | 0 | 0 | 1 |
-| **Total** | **96** | **95** | **0** | **0** | **1** |
+| P. Phase 9 commands | 4 | 4 | 0 | 0 | 0 |
+| **Total** | **96** | **96** | **0** | **0** | **0** |
 
-No open FAIL (B.02 is documented in the guide, not the TRD-verbatim template; §4 item 7). Pending: P.02 (`docker compose up -d && pytest -q`). Checks whose final evidence needs real accounts or GitHub (the `sslmode` content of the `STAGING_DATABASE_URL` secret in C.04, branch protection in O.05, the first CI run confirming the action tags in I.07) are verified here on the committed configuration only and repeated in Phase 10 / Block 4.
+No open FAIL (B.02 is documented in the guide, not the TRD-verbatim template; §4 item 7). Checks whose final evidence needs real accounts or GitHub (the `sslmode` content of the `STAGING_DATABASE_URL` secret in C.04, branch protection in O.05, the first CI run confirming the action tags in I.07) are verified here on the committed configuration only and repeated in Phase 10 / Block 4.
 
 ## 2. Results
 
@@ -210,7 +210,7 @@ No open FAIL (B.02 is documented in the guide, not the TRD-verbatim template; §
 | ID | Command | Result |
 |---|---|---|
 | P.01 | `docker compose config` | **PASS**: `cp .env.development.example .env && docker compose config -q` → exit 0; `--profile demo config --services` → `db backend frontend frontend-prod`; `.env` deleted afterwards |
-| P.02 | `docker compose up -d && pytest -q` | RESULT: pending integration |
+| P.02 | `docker compose up -d && pytest -q` | **PASS**: the Compose `db` and `backend` services came up healthy (and the `demo` profile with `frontend-prod`, P.03); `pytest -q -p randomly` on this branch: 757 passed, 19 skipped (smoke tests need a deployed URL), 16 deselected (performance), 5 Nov 2026 |
 | P.03 | `ruff check . && ruff format --check .` and `mypy analytics backend` on the files of FEAT-084..FEAT-087 | PASS |
 | P.04 | `pytest tests/unit/backend/core/test_monitoring.py tests/unit/test_deploy_wait.py tests/unit/test_markers.py -q` | PASS (17 passed) |
 

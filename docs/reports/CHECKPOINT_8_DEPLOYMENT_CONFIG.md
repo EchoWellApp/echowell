@@ -10,7 +10,7 @@ Build order followed roadmap §5.8: [FEAT-077..FEAT-080] → [FEAT-081..FEAT-083
 
 | Measure | Value |
 |---|---|
-| Configuration validation report | 96 checks: 95 PASS, 0 FAIL, P.02 see §5 (`docs/reports/CONFIGURATION_VALIDATION_REPORT.md`) |
+| Configuration validation report | 96 checks: 96 PASS, 0 FAIL (`docs/reports/CONFIGURATION_VALIDATION_REPORT.md`) |
 | Local demo stack (`docker compose --profile demo up -d --wait db backend frontend-prod`) | all three services healthy; DS-07 seeded; `/api/v1/health` 200 with `"database":"ok"`; `/login` on :3001 200; resident summary 2 / 2 / 0 / 6 |
 | Performance budgets (TST-120..TST-124, TST-190) | all pass after three backend fixes (§3); PR-scope budgets: pipeline 120 ms (≤ 5 s), `POST /sessions` p95 541 ms (≤ 1 s), ingest 202 499 ms (≤ 2 s) |
 | Post-deploy smoke tests (run against a local stack) | staging set 8 passed, production set 4 passed; HTTPS-only checks skip on http (SEC-065) |
@@ -46,7 +46,26 @@ API responses are unchanged (contract, DS-07 and validation suites pass; OpenAPI
 
 ## 5. Commands run and results
 
-PENDING-RESULTS
+Environment: Linux container, Python 3.12, PostgreSQL 16 (local cluster), Node 22, Docker Engine 29 (daemon started locally).
+
+| # | Command | Result |
+|---|---|---|
+| 1 | `pytest -q -p randomly` (whole suite: unit, integration, contract, security, validation; smoke and performance deselected/skipped by design) | 757 passed, 19 skipped (smoke tests without `SMOKE_API_BASE_URL`), 16 deselected (performance) in 4 min 20 s |
+| 2 | Full `backend-test` command with coverage | 752 passed; `analytics/` 98 %, `backend/` 96 % (line + branch) |
+| 3 | `pytest -p no:randomly tests/performance -m budget` | 3 passed (pipeline 120 ms, `POST /sessions` p95 541 ms, ingest 202 499 ms) |
+| 4 | Targeted nightly budgets (TST-122 on DS-08, TST-124, TST-190) | 8 passed after F-2..F-4 |
+| 5 | `cd frontend && npx vitest run` | 429 passed; line coverage 99.41 % |
+| 6 | `ruff check .`; `ruff format --check .`; `mypy analytics backend`; `lint-imports`; `bandit -r backend analytics -ll` | all clean |
+| 7 | `python -m backend.cli export-openapi \| diff - docs/api_reference/openapi.json` | identical |
+| 8 | `python scripts/ci/audit_gate.py pip …` / `npm` | 7 and 29 advisories, all excepted until 12 Nov, 0 blocking (Q-1) |
+| 9 | gitleaks v8.18.4 over the full history with `.gitleaks.toml` and `.gitleaksignore` | no leaks; a planted fake key is caught |
+| 10 | `docker compose config -q` (with `.env.development.example`) | exit 0 |
+| 11 | `docker compose --profile demo up -d --wait db backend frontend-prod`, then `seed test_v0_1` and the DS-10 loader | all healthy; health 200, `/login` 200, summary 2 / 2 / 0 / 6 |
+| 12 | Backend image checks (`id -u`, `/app` contents, CMD) | UID 10001; only `alembic.ini`, `analytics`, `backend`, `database`; DEP-022 command |
+| 13 | `pytest tests/smoke -m smoke` against a local stack | staging set 8 passed; production set 4 passed |
+| 14 | actionlint 1.7.12 with shellcheck on the five workflows | 0 errors (6 info notes on intentionally unquoted variables in `e2e.yml`) |
+| 15 | `node frontend/scripts/check-csp.mjs` with each Render origin / a wrong origin | 0 / 1 |
+
 
 ## 6. Exit criteria (roadmap §5.8)
 
