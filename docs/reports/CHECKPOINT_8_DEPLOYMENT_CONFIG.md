@@ -84,7 +84,7 @@ Environment: Linux container, Python 3.12, PostgreSQL 16 (local cluster), Node 2
 
 ## 7. New OQ and D IDs
 
-None. D-159 (security-audit exceptions until 20 Dec 2026, project coordinator). Decisions from this review will be recorded in TRD 24 from D-160.
+None. D-159 (security-audit exceptions until 20 Dec 2026, project coordinator). Review round 1 (algorithm lead, 7 Nov 2026) added D-160..D-170 (§10).
 
 ## 8. Notes
 
@@ -113,3 +113,33 @@ None. D-159 (security-audit exceptions until 20 Dec 2026, project coordinator). 
 | Q-12 | Size: about 6,000 added lines (half tests) for 11 features. Accept as one PR? |
 | Q-13 | TRD 04 §4.2 names `next/font/google` for Source Sans 3. The image build on GitHub failed downloading the font, so the font file (SIL Open Font License) is now committed and loaded with `next/font/local`: same font and weights, no network at build time, still self-hosted (FE-192, UX-252). Update TRD 04 §4.2 to `next/font/local`? |
 | Q-14 | E2E-15 (TRD 13, FEAT-076-FR-09) expects R11's check-in log to show only "<Mon D> Check-ins started.". R11 is enrolled on 2026-10-01 in the demo overlay and the scenario runs at the current time, so the log correctly also lists every day since enrolment without a record as "Check-in missed." (29 lines on 5 Nov). The test now checks that the newest line is "Check-ins started." and every other line is a missed day. Update E2E-15's wording, or enrol R11 on the run date instead? |
+
+## 10. Review round 1 resolutions
+
+Review by the algorithm lead on GitHub PR #31, 7 Nov 2026 (changes requested). Her rule for this round (TRD 24 D-170): where the deployed implementation works, update the TRDs, acceptance criteria, guides and test documentation to match it, and avoid any change that needs a re-migration or re-seed of existing environments.
+
+**Migration and re-seed: none needed.** This round changes documentation only. The only file under `backend/alembic/versions/` that checkpoint 8 touches is `0002_seed_config_parameters.py`, and that change is a `# nosec B608` comment (F-6); the schema, the migration chain and the seed data are unchanged, so staging needs no `alembic upgrade` and no re-seed.
+
+| Q | Answer | Change | D-ID |
+|---|---|---|---|
+| Q-1 | Keep the exceptions until 20 Dec; do the major upgrades in a separate PR before any real data or public demo | None (D-159 stands) | D-160 |
+| Q-2 | Name a stronger generator in the docs; keep the validation rule | `openssl rand -base64 48` in TRD 12 SEC-055, TRD 21 §4.2 and §4.6, `.env.example`, `.env.production.example`, FEAT-083, `docs/deployment.md`; CI keeps `-hex 32` for `APP_ENV=test` | D-161 |
+| Q-3 | Branch protection is already configured by an admin | None | D-162 |
+| Q-4 | Accept the gitleaks fingerprints | None | D-162 |
+| Q-5 | Agree with the split deploy jobs | None | D-163 |
+| Q-6 | Update FEAT-086-AC-03 | AC-03 now expects exactly `RENDER_API_KEY` and `NETLIFY_AUTH_TOKEN` in the `deploy` job (CIC-050) | D-164 |
+| Q-7 | Agree with verifying before approval | TRD 15 §4.10 steps 3–4, TRD 16 CIC-053, `docs/deployment.md` and the configuration guide describe `verify` running before the approval | D-165 |
+| Q-8 | Update the tile counts | TRD 21 ENV-017 and the TRD 15 §5 note: 2 / 2 / 0 / 6 | D-166 |
+| Q-9 | Agree with the `e2e.yml` choices; update the docs | TRD 16 §4.3 and CIC-037 and FEAT-080: `python -m tests.validation.robustness`; FEAT-080-FR-09: the four Lighthouse pages; CIC-033: a failed `main` manual dispatch also files the issue | D-167 |
+| Q-10 | No concern about the non-root image | None | D-163 |
+| Q-11 | Accept the performance fixes | None | D-163 |
+| Q-12 | Accept the size | None | D-163 |
+| Q-13 | Update TRD 04 to `next/font/local` | TRD 04 §4.2, FE-004, §4.3 tree and §8 note; TRD 22 font decision; `docs/design/Frontend_Architecture.md` | D-168 |
+| Q-14 | Update the E2E-15 wording | TRD 13 E2E-15 and FEAT-076-FR-09: newest line "Check-ins started.", earlier lines "Check-in missed." | D-169 |
+
+Also: the configuration validation report §4 notes that findings 1, 3 and 4 are now resolved. TRD versions: 04 0.15, 12 0.16, 13 0.18, 15 0.17, 16 0.17, 21 0.14, 22 0.7, 24 0.29.
+
+CI fixes made after the PR was opened (already in §3 and the commit history): F-7 (self-hosted font), the E2E-15 test allowing R11's missed days, the E2E-17 waits for loaded data, and the 120 s timeout for the `@isolated` scenarios.
+
+Verification: `pytest tests/unit/backend/core/test_env_templates.py tests/unit/test_env_templates.py` 30 passed (templates still byte-identical to TRD 21 §4.6); no code, workflow or test file changed in this round.
+

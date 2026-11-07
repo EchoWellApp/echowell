@@ -1,6 +1,6 @@
 # 22 Third-Party Services and Hosting
 
-Document ID: ECHOWELL-TRD-22 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-22 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -145,7 +145,7 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 | Aspect | Specification |
 |---|---|
 | Purpose | The v0.2 design tokens require "Source Sans 3" for all text (TRD 11 §4.15, TRD 24 D-112; replaces IBM Plex Sans and Mono of contract §11); request IDs use the system monospace stack, no second web font |
-| Decision | Self-host through `next/font/google` (`Source_Sans_3` weights 400/600/700 (TRD 04 FE-004), subset `latin`, `display: "swap"`). Font files are downloaded once at build time and served from the EchoWell frontend origin. |
+| Decision | Self-host through `next/font/local` from the committed variable font `frontend/app/fonts/SourceSans3-latin-variable.woff2` (weights 400/600/700 (TRD 04 FE-004), subset `latin`, `display: "swap"`; SIL OFL 1.1, `frontend/app/fonts/OFL.txt`). Neither the build nor the browser contacts Google; the file is served from the EchoWell frontend origin (TRD 24 D-168). |
 | Data stored | None; browsers never contact Google; no user data reaches Google |
 | Limits / caveat | Build machines (Netlify, CI, Docker build) need outbound access to Google Fonts at build time; if unavailable, the build falls back to the CSS fallback stack (`"Segoe UI", Helvetica, Arial, sans-serif`; monospace `ui-monospace, Menlo, monospace`). The checkpoint 2 skeleton still loads IBM Plex until FEAT-062 switches it in checkpoint 7 (D-112). |
 | Exit path | Switch to `next/font/local` with the OFL-licensed Source Sans 3 files if build-time network access is restricted (e.g. on AWS with no egress); fonts are not committed unless this switch happens (TRD 18 GIT-097) |
@@ -237,7 +237,7 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 
 ## 8. Implementation Notes
 
-- `frontend/app/layout.tsx`: `import { Source_Sans_3 } from "next/font/google"`; expose it as the CSS variable `--font-source-sans-3`, used by `--font-sans` in the design tokens (TRD 04 FE-004); `--font-mono` is the system monospace stack.
+- `frontend/app/layout.tsx`: `import localFont from "next/font/local"` loading `./fonts/SourceSans3-latin-variable.woff2` (TRD 24 D-168); expose it as the CSS variable `--font-source-sans-3`, used by `--font-sans` in the design tokens (TRD 04 FE-004); `--font-mono` is the system monospace stack.
 - Do not add `@sentry/nextjs`; only the Python `sentry-sdk` (optional import guarded by SENTRY_DSN).
 - When creating accounts, use the project mailbox as the owner and invite individuals as members; never transfer ownership to a student's personal account, because accounts must survive team changes at semester end.
 - Keep a single page in `docs/deployment.md` titled "Service accounts" for TPS-006; it must never contain passwords or tokens.
@@ -261,3 +261,4 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 | 0.4 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): fonts: Source Sans 3 replaces IBM Plex Sans and Mono (§2, §4.1 table, §4.6, TPS-050, §8; D-112) | — |
 | 0.5 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §1, §2, §4.1 table, TPS-002, TPS-004, §4.3 rewritten for Render (TPS-020, TPS-021), §4.4 alternative database Render Postgres (TPS-030), §8 | — |
 | 0.6 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region `ohio` (US East); Starter tier; confirmed Render rollback and health-check behaviour | — |
+| 0.7 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-13; TRD 24 D-168): Source Sans 3 self-hosted with `next/font/local` from the committed woff2 | — |

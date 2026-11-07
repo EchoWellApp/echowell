@@ -31,7 +31,7 @@ This document describes the Next.js dashboard that the Phase 3 scaffold (FEAT-00
 | @playwright/test, @axe-core/playwright | 1.48+ / 4.x (dev) | E2E and accessibility | TRD 04 §4.1 |
 | eslint (+ next, typescript-eslint, jsx-a11y), prettier | 8.x, 3.x (dev) | lint and format | FE-200, FE-201 |
 
-No UI component library or icon set (CSS Modules and custom properties only; glyphs "▲", "!", "●", "○", "←" as text), font "Source Sans 3" 400/600/700 self-hosted through `next/font/google` with light and dark tokens of TRD 11 §4.15 (TRD 24 D-112), no audio component, no LLM feature (FE-003, FE-004, FE-007, FE-008, FE-211, AGT-004). The checkpoint 2 skeleton still loads IBM Plex in `frontend/app/layout.tsx`; it is switched to Source Sans 3 and the v0.2 tokens in checkpoint 7 (FEAT-062).
+No UI component library or icon set (CSS Modules and custom properties only; glyphs "▲", "!", "●", "○", "←" as text), font "Source Sans 3" 400/600/700 self-hosted through `next/font/local` (committed woff2, TRD 24 D-168) with light and dark tokens of TRD 11 §4.15 (TRD 24 D-112), no audio component, no LLM feature (FE-003, FE-004, FE-007, FE-008, FE-211, AGT-004). The checkpoint 2 skeleton still loads IBM Plex in `frontend/app/layout.tsx`; it is switched to Source Sans 3 and the v0.2 tokens in checkpoint 7 (FEAT-062).
 
 ## 3. Source layout
 

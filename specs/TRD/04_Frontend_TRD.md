@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -77,14 +77,14 @@ Priority: Must / Should / May. Verification: T = Test, I = Inspection, A = Analy
 | prettier | 3.x (dev) | Formatting |
 | eslint-config-prettier | 9.x (dev) | Turns off ESLint rules that conflict with Prettier |
 
-The font "Source Sans 3" (weights 400, 600 and 700; TRD 11 §4.15, TRD 24 D-112) is loaded with `next/font/google` so that the font files are self-hosted at build time and no request goes to Google at runtime. Request IDs and the environment ribbon use the system monospace stack; no second web font is loaded. The checkpoint 2 skeleton still loads IBM Plex Sans and Mono in `frontend/app/layout.tsx`; the switch to Source Sans 3 and the v0.2 tokens of section 4.12 is made in checkpoint 7 (FEAT-062), not in this documentation change.
+The font "Source Sans 3" (weights 400, 600 and 700; TRD 11 §4.15, TRD 24 D-112) is self-hosted with `next/font/local` from the committed file `frontend/app/fonts/SourceSans3-latin-variable.woff2` (variable font, SIL OFL 1.1, licence in `frontend/app/fonts/OFL.txt`; TRD 24 D-168), so neither the build nor the browser makes any request to Google. Request IDs and the environment ribbon use the system monospace stack; no second web font is loaded. The checkpoint 2 skeleton still loads IBM Plex Sans and Mono in `frontend/app/layout.tsx`; the switch to Source Sans 3 and the v0.2 tokens of section 4.12 is made in checkpoint 7 (FEAT-062), not in this documentation change.
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | FE-001 | The frontend shall be a Next.js 14.2.x App Router application written in TypeScript 5.x with `compilerOptions.strict` set to `true`, located in `frontend/`. | Must | BR-17, SRC-01 | I |
 | FE-002 | The frontend shall pin the package versions in section 4.1 in `frontend/package.json` and commit `frontend/package-lock.json`. | Must | BR-17 | I |
 | FE-003 | The frontend shall use React 18.3.x and shall not depend on any UI component library or icon set; components shall be built in `frontend/components/` with CSS Modules and CSS custom properties, and the only glyphs shall be the text characters of TRD 11 UX-251 ("▲", "!", "●", "○", "←"). | Must | SRC-21, UX-251 | I |
-| FE-004 | The frontend shall load "Source Sans 3" (weights 400, 600 and 700, subset `latin`, `display: "swap"`, CSS variable `--font-source-sans-3`) through `next/font/google`, shall load no other web font, and shall make no runtime request to `fonts.googleapis.com` or `fonts.gstatic.com` (TRD 11 UX-252). | Must | SRC-21, D-112, UX-252 | T |
+| FE-004 | The frontend shall load "Source Sans 3" (weights 400, 600 and 700, subset `latin`, `display: "swap"`, CSS variable `--font-source-sans-3`) through `next/font/local` from the committed file `frontend/app/fonts/SourceSans3-latin-variable.woff2` (TRD 24 D-168), shall load no other web font, and shall make no runtime request to `fonts.googleapis.com` or `fonts.gstatic.com` (TRD 11 UX-252). | Must | SRC-21, D-112, UX-252 | T |
 | FE-005 | The frontend shall use Recharts 2.x for all charts and shall not include any other charting library. | Must | SRC-21, contract §3 | I |
 | FE-006 | The frontend shall use @tanstack/react-query 5.x for all server-state reads and writes. | Must | BR-12, BR-13 | I |
 | FE-007 | The frontend shall contain no component, route, API call or dependency that records, uploads, stores, plays or renders audio. | Must | BR-01, BR-16 | I |
@@ -97,7 +97,7 @@ Rationale for TanStack Query 5.x over SWR 2.x: the dashboard has write paths (st
 ```
 frontend/
   app/
-    layout.tsx                      Root layout: <html lang="en">, Source Sans 3 (next/font/google), <Providers>
+    layout.tsx                      Root layout: <html lang="en">, Source Sans 3 (next/font/local), <Providers>
     providers.tsx                   "use client": QueryClientProvider + AuthProvider
     page.tsx                        Redirects "/" to "/residents"
     not-found.tsx                   Global 404
@@ -803,7 +803,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 - The change-score chart's "Baseline" slot is a categorical x value `"__baseline__"` placed before the first scored date; render its tick label with the baseline date range (e.g. "Baseline Oct 1–16"). Keep it even when the epoch has many scored sessions so the baseline period is always visible (kept although not drawn in SRC-21; TRD 24 D-111).
 - `--c-aside` vs `--red` bars follow `alarm_state` from `/scores`, not a client-side comparison with `h`: after a first crossing the alarm persists ("on") even if the change score later drops below the line, and the bars must stay red to show persistence (the wireframe colours by ≥ 5, which gives the same result on the test data; D-111).
 - Do not compute the resident-list order client-side (FE-084); the API implements the TRD 24 D-109 order. Test fixtures are captured for the default sort `alarm` only.
-- Fonts and tokens: the checkpoint 2 skeleton (`frontend/app/layout.tsx`) still loads IBM Plex; checkpoint 7 (FEAT-062) replaces it with `Source_Sans_3` from `next/font/google` (weights 400, 600, 700) and the tokens of section 4.12.
+- Fonts and tokens: the checkpoint 2 skeleton (`frontend/app/layout.tsx`) still loads IBM Plex; checkpoint 7 (FEAT-062) replaces it with Source Sans 3 (weights 400, 600, 700; `next/font/google` at checkpoint 7, `next/font/local` from checkpoint 8, D-168) and the tokens of section 4.12.
 - MSW: register handlers for every endpoint in section 4.6.2; unhandled requests must fail the test (`onUnhandledRequest: "error"`).
 - Playwright: set `timezoneId: "America/Los_Angeles"` in the browser context to prove the UI uses the facility zone, not the browser zone.
 - Netlify: `netlify.toml` at the repository root (TRD 15) sets `base = "frontend"`, `command = "npm run build"`, `publish = ".next"`; details in TRD 15.
@@ -841,3 +841,4 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): `RangePill` and FE-092 neutral New admissions pills (D-117); FE-187 runs E2E-09 on R10 after the FE-193 reminder step, FE-193 is step 2 (D-118); FE-151 and the §4.11 format with "CT" (D-119); OQ-31, OQ-32 answered (D-115, D-116) | — |
 | 0.13 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-142, D-150): tokens `--badge-ink`, `--nav-active`, `--nav-hover` in §4.12; §4.8 props match the implemented components | — |
 | 0.14 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.15 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-13; TRD 24 D-168): §4.2 and FE-004 name `next/font/local` with the committed Source Sans 3 woff2, as implemented | — |

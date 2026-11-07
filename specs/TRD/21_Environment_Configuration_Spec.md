@@ -1,6 +1,6 @@
 # 21 Environment Configuration Specification
 
-Document ID: ECHOWELL-TRD-21 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-21 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -59,7 +59,7 @@ the AWS target.
 |---|---|---|---|---|---|---|---|
 | `APP_ENV` | Deployment environment name | Yes | — | `staging` | all | No | one of `local`, `staging`, `production`, `test` |
 | `DATABASE_URL` | Runtime DB connection (role `echowell_app`; Neon pooled endpoint) | Yes | — | `postgresql+psycopg://echowell_app:****@ep-xyz-pooler.us-east-1.aws.neon.tech/echowell?sslmode=require` | all | Yes | scheme `postgres`, `postgresql`, `postgresql+psycopg` (normalised to `postgresql+psycopg`); must contain `sslmode=require` (or `verify-full`) when APP_ENV is `staging` or `production` |
-| `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 hex chars from `openssl rand -hex 32` | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
+| `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 characters from `openssl rand -base64 48` (TRD 24 D-161) | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
 | `JWT_EXPIRES_MINUTES` | Access token lifetime | No | `60` | `60` | all | No | integer 5–1440 |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated | Yes in staging/production | `http://localhost:3000,http://localhost:3001` (local/test only) | `https://echowell-und.netlify.app` | all | No | each item a valid origin without path; `*` forbidden; `http://` allowed only for `localhost` origins and only when APP_ENV is `local` or `test` |
 | `FACILITY_NAME` | Name used only by `backend.cli bootstrap`/`seed` to create the `facilities` row; the app bar facility line ("<name>, Assisted living", TRD 11 UX-011) shows `facilities.name` via `meta.facility_name` | Yes in staging/production | `Edgewood` | `Edgewood` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
@@ -94,7 +94,7 @@ the AWS target.
 | ENV-014 | DATABASE_URL values starting `postgres://` or `postgresql://` shall be normalised to `postgresql+psycopg://` before engine creation, preserving all query parameters. | Must | TRD 15 | Test |
 | ENV-015 | FACILITY_NAME shall be rejected if it contains the string `Edge4Care` (case-insensitive). | Must | RSK-10, contract §2 | Test |
 | ENV-016 | The backend shall expose `facilities.name` (`meta.facility_name`; FACILITY_NAME only seeds that row), FACILITY_TZ (`meta.facility_tz`), DATA_SOURCE_LABEL (`meta.data_source_label`), the effective as-of (`meta.as_of`), `meta.baseline_n`, `meta.cusum_h` and `meta.pipeline_profile` in the `meta` object of every list/detail/analytics response (contract R3, TRD 05), never through frontend build variables. | Must | contract §11 header subline | Test |
-| ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps tiles 2 / 7 / 1 / 19 indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
+| ENV-017 | As-of resolution (contract R21, superseding R11): an explicit `as_of` in `POST /api/v1/pipeline/run` (or the seed command) wins; otherwise PIPELINE_AS_OF when set (local/staging/test only); otherwise the current time (always the case in production); read endpoints use the as-of of the latest succeeded run (contract R21). With PIPELINE_AS_OF set, nightly and ingest-triggered runs, the day ledger and 30-day windows use it, so the `test_v0_1` seed keeps the resident summary 2 / 2 / 0 / 6 (changed, needs attention, learning, usual; D-114, TRD 24 D-166) indefinitely in local and staging. Records timestamped after PIPELINE_AS_OF are excluded from those runs (TRD 07 ANL-015), so live demo check-ins are posted to the interim production environment, where the as-of is the current time (TRD 15 DEP-093, TRD 24 D-59). | Must | BR-15, SRC-03, TRD 15 DEP-016 | Test |
 | ENV-018 | GIT_SHA shall appear as `version` in `/api/v1/health`, in every log record (TRD 17) and in `pipeline_runs.code_version`. | Must | TRD 17, contract §9 | Test |
 | ENV-054 | RATE_LIMIT_LOGIN may differ from `5/minute` only when APP_ENV ∈ {`local`, `test`} (the E2E stack sets `60/minute`, TRD 16 `e2e.yml`, TRD 24 D-74); with APP_ENV `staging` or `production` the backend shall refuse to start (exit code 1) unless it is `5/minute`. | Must | contract §12, BR-16 | Test |
 | ENV-053 | Operator commands (`python -m backend.cli ...` and `database/seeds/load_evaluation_ground_truth.py`) shall validate only the variables they use: DATABASE_URL and DATABASE_MIGRATION_URL (both may be the migrator URL), APP_ENV, PIPELINE_PROFILE, PIPELINE_AS_OF, FACILITY_NAME, FACILITY_TZ, LOG_LEVEL, LOG_FORMAT, and for `seed` the four SEED_* variables; JWT_SECRET, CORS_ORIGINS, CORS_ORIGIN_REGEX and DATABASE_READONLY_URL are required only by the web application (the ground-truth loader connects with DATABASE_MIGRATION_URL). | Must | TRD 15 §4.8, TRD 16 §4.4 | Test (seed with only these variables succeeds) |
@@ -192,7 +192,7 @@ APP_ENV=production                 # staging for the staging environment
 DATABASE_URL=                      # secret: Neon pooled URL, role echowell_app, must include sslmode=require
 DATABASE_MIGRATION_URL=            # secret: Neon direct URL, role echowell_migrator, must include sslmode=require
 DATABASE_READONLY_URL=             # secret: Neon pooled URL, role echowell_readonly, sslmode=require; staging only (test_v0_1); must be empty in production (TRD 12 SEC-116)
-JWT_SECRET=                        # secret: openssl rand -hex 32 (different per environment)
+JWT_SECRET=                        # secret: openssl rand -base64 48 (different per environment)
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://echowell-und-staging.netlify.app)
 CORS_ORIGIN_REGEX=                 # staging only: ^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$ ; empty in production
@@ -311,3 +311,4 @@ NEXT_PUBLIC_APP_ENV=production
 | 0.11 | 26 Oct 2026 | Checkpoint 2 review Q-4: ENV-012 refuses LOG_FORMAT=`console` in staging as well as production, matching the §4.2 table and TRD 17 LOG-002 (D-103) | — |
 | 0.12 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): FACILITY_NAME row names the app bar facility line instead of the v0.1 header subline; AC-ENV-06 summary counts | — |
 | 0.13 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): ENV-005, GIT_SHA from `RENDER_GIT_COMMIT`, DATABASE_MIGRATION_URL on the web service only, PORT, `.env.production.example`, §4.7 matrix, `onrender.com` origins, CI names (`RENDER_API_KEY`, service-ID variables) | — |
+| 0.14 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-2, Q-8; TRD 24 D-161, D-166): JWT_SECRET generator `openssl rand -base64 48` (§4.2, §4.6 and both templates); ENV-017 resident summary 2 / 2 / 0 / 6 | — |
