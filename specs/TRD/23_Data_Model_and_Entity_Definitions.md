@@ -1,6 +1,6 @@
 # 23 Data Model and Entity Definitions
 
-Document ID: ECHOWELL-TRD-23 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-23 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 2 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -424,7 +424,7 @@ Data-quality alert for the study team (not a health alarm), listed on the Study 
 | `detail` | text | no | Row text after "<code>: " (v0.2 wording, TRD 09 §4.9, TRD 24 D-114), e.g. `baseline stuck at 13 of 16. 12 missed and 5 set aside in 30 days.`, `silent all day Oct 12. Affected R02 and R03.` (≤ 500 chars) | Same |
 | `days` | date[] | no | Facility-local days the alert is about: silent days (device_silent), dates of the quarantined (possible_other_speaker) or set-aside (high_set_aside) check-ins; empty for baseline_stalled and review_flagged_data_problem. The detail text is written from it, never parsed (migration 0004, TRD 24 D-130) | Data-alert rules |
 | `first_detected_at` | timestamptz | no | as_of of the run that first detected it (review time for review-flagged) | Same |
-| `last_detected_at` | timestamptz | no | as_of of the latest run that detected it | Same |
+| `last_detected_at` | timestamptz | no | Latest as_of of a run that detected it; never moves backwards, and `first_detected_at` is never rewritten (TRD 24 D-135) | Same |
 | `status` | data_alert_status | no | `open` or `resolved` | Same |
 | `resolved_at` | timestamptz | yes | as_of of the run that no longer detected it, or CLI resolution time | Pipeline / `backend.cli resolve-data-alert` |
 | `pipeline_run_id` | uuid | yes | Run that last detected it; NULL for review_flagged_data_problem | Pipeline service |
@@ -962,3 +962,4 @@ Rows exist only for epochs with at least one usable session (11 rows in the test
 | 0.11 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115); last check-in example with "CT" (D-119) | — |
 | 0.12 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.2.7 `ingest_batches.pipeline_run_id` | — |
 | 0.13 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20; TRD 24 D-130, D-131): §4.2.19 `data_alerts.days`; `pipeline_runs.started_at` from the application clock | — |
+| 0.14 | 2 Nov 2026 | Checkpoint 6 review (GitHub PR #22, TRD 24 D-135): `data_alerts.last_detected_at` never moves backwards; `first_detected_at` is never rewritten | — |

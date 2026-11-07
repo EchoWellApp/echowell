@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -35,7 +35,7 @@ Out of scope:
 
 | ID | Reference |
 |---|---|
-| SRC-01 | Deployment Architecture (PostgreSQL on Neon preferred or Railway; AWS RDS target) |
+| SRC-01 | Deployment Architecture (PostgreSQL on Neon preferred or Render Postgres; AWS RDS target) |
 | SRC-02 | Daily Data Storage and Processing Flowcharts ("Only the raw store receives data from Team 1. Every other table can be rebuilt from it, and the answer key never touches the analytics.") |
 | SRC-03 | Pipeline test workbook v0.1 (Parameters, Data_dictionary, Annotated_sessions, Exp_baselines, Exp_scores) |
 | SRC-04 | Pipeline test generator v0.1 (feature list, residents and sex, device moves) |
@@ -99,18 +99,18 @@ Out of scope:
 | PGS-042 | `alert_reviews` shall be append-only for the application (SELECT, INSERT), shall require an `outcome` of enum `review_outcome`, shall store `explanations` as an array of 0–20 lower-case codes, and `note` NULL or 1–2000 characters. | Must | Contract §19, R5 | Test |
 | PGS-043 | `alerts.snoozed_until` and `alerts.snoozed_by` shall be both NULL or both set. | Must | Contract §19 | Test |
 | PGS-044 | `audit_logs.action` shall match `^[a-z_]+(\.[a-z_]+){1,2}$` (CHECK `audit_logs_action_ck`), which admits every action of the TRD 12 §4.12 audit vocabulary (one or two dots, e.g. `auth.logout`, `auth.login.succeeded`) and nothing else is written by the application (TRD 12 SEC-109). | Must | BR-16, TRD 12 | Test (insert of each TRD 12 action succeeds; `Auth.Login` and `login` fail with SQLSTATE 23514) |
-| PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Railway provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Inspection (provider settings recorded in TRD 22) |
+| PGS-039 | Storage of every environment that holds non-synthetic data shall be encrypted at rest by the provider (Neon/Render provider-managed encryption on the interim stack; RDS storage encryption with a customer-managed KMS key on the AWS target). | Must | D-OWNER-3, D-OWNER-4 (OQ-23 closed, D-28) | Inspection (provider settings recorded in TRD 22) |
 
 ### 4.2 Extensions
 
 Created by the provisioning step that has owner/superuser rights, before any migration (TRD 24 D-72): locally and in CI
 by `database/roles/provision_login_roles.sql` run as the PostgreSQL superuser; on Neon once by the project owner role
-(TRD 15 §4.4); on Railway PostgreSQL (TRD 15 DEP-035) by its superuser `postgres`; on AWS RDS by the master user.
+(TRD 15 §4.4); on Render Postgres (TRD 15 DEP-035) by its admin (database owner) user; on AWS RDS by the master user.
 `echowell_migrator` has no `CREATE` privilege on the database, does not own it, and never creates or drops an extension
 or sets database-level parameters.
 
 ```sql
--- Provisioning step (superuser / Neon project owner / Railway postgres / RDS master user), never Alembic:
+-- Provisioning step (superuser / Neon project owner / Render Postgres admin user / RDS master user), never Alembic:
 CREATE EXTENSION IF NOT EXISTS pgcrypto;     -- gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- uuid equality inside GiST exclusion constraints
 DO $$ BEGIN EXECUTE format('ALTER DATABASE %I SET timezone = %L', current_database(), 'UTC'); END $$;  -- PGS-001, current database
@@ -1190,12 +1190,12 @@ ALTER TABLE data_alerts ADD COLUMN days date[] NOT NULL DEFAULT '{}';
 - ASM-03 Single facility in the MVP; every resident and device carries `facility_id` so more facilities need no migration.
 - ASM-08 Fewer than 100 residents, fewer than 25 users, at most one session per resident per day.
 - Note for lead (TRD-local): the managed PostgreSQL service permits `CREATE ROLE` and `CREATE EXTENSION btree_gist`
-  for the project owner role (true for Neon, Railway PostgreSQL and RDS PostgreSQL 16); that role, not the migrator, therefore
+  for the project owner role (true for Neon, Render Postgres and RDS PostgreSQL 16); that role, not the migrator, therefore
   runs the extension step of section 4.2 (D-72).
 
 ## 6. Dependencies
 
-- PostgreSQL 16 server (local docker image `postgres:16`; Neon; Railway; target AWS RDS PostgreSQL 16).
+- PostgreSQL 16 server (local docker image `postgres:16`; Neon; Render Postgres (contingency); target AWS RDS PostgreSQL 16).
 - Alembic 1.13.x, SQLAlchemy 2.0.x, psycopg 3.x (TRD 05, TRD 06).
 - `pg_dump` 16 client in CI for PGS-016/PGS-017.
 - TRD 10 for the validation that guarantees inserts into `raw_sessions` satisfy these constraints.
@@ -1255,7 +1255,7 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 - OQ-10 Late records before a frozen baseline.
 - OQ-11 Data handling on withdrawal.
 - OQ-13 Alarm-limit calibration (values of `cusum_h`, `cusum_k` may change through `config_parameters`, not DDL).
-- OQ-23 (closed by D-OWNER-4 / D-28): live PHI-derived feature data is never stored on the interim Neon/Railway stack.
+- OQ-23 (closed by D-OWNER-4 / D-28): live PHI-derived feature data is never stored on the interim Neon/Render stack (Render replaced Railway, TRD 24 D-153).
 - OQ-24 Data-alert thresholds (`data_alert_*` keys) confirmation by the study team.
 - OQ-25 Explanation checklist (`review_explanations`) confirmation by the clinical team.
 - OQ-26 Who may review alarms and how soon (affects `alert_reviews` writers, not schema).
@@ -1276,3 +1276,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): references only (SRC-18/19 superseded, alarm timing check on the Study team page); no table, enum, index or constraint change (the D-114 fields `needs_attention`, `attention_reasons`, `alarm_reviewed`, `checkins_started` and `uploaded_on_as_of_date` are derived on read) | — |
 | 0.10 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.13 migration 0003 adds `ingest_batches.pipeline_run_id` (nullable FK to `pipeline_runs`, index `ingest_batches_pipeline_run_idx`); §4.10 row updated | — |
 | 0.11 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-1, Q-3; TRD 24 D-129, D-130): §4.14 migration 0004 grants `echowell_app` SELECT on `alembic_version` and adds `data_alerts.days`; §4.6.19 and §4.8 updated | — |
+| 0.12 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

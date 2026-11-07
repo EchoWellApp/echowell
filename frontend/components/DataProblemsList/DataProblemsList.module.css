@@ -1,0 +1,26 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.tagStaff,
+.tagTeam {
+  font-size: 14px;
+  font-weight: 700;
+}
+.tagStaff {
+  color: var(--yellow);
+}
+.tagTeam {
+  color: var(--muted);
+}

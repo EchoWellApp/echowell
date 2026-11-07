@@ -1,0 +1,68 @@
+/* Design tokens (TRD 04 §4.12, TRD 11 §4.15; wireframe v0.2, TRD 24 D-112). The only place colour
+   literals are allowed (FE-160). */
+:root {
+  color-scheme: light dark;
+  --font-sans:
+    var(--font-source-sans-3), "Segoe UI", Helvetica, Arial, sans-serif; /* 400/600/700, tabular numerals */
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* request ids, environment ribbon */
+  --chrome: #1f3a52; /* app bar, primary button, pressed filter, current section link */
+  --chrome-ink: #ffffff; /* text on chrome */
+  --chrome-muted: #b9cadb; /* facility line, user name */
+  --canvas: #edf1f4; /* page background */
+  --surface: #ffffff; /* panels, cards, tables, secondary buttons */
+  --surface-2: #f6f8fa; /* table header, row hover, stored-not-scored card */
+  --ink: #17232e; /* text */
+  --muted: #556677; /* secondary text, labels, captions */
+  --rule: #c8d2db; /* borders, separators */
+  --link: #1d5f99; /* links, focus ring */
+  --red: #b3261e;
+  --red-bg: #fce9e7; /* Changed, alarm bars, alarm line, count badges */
+  --yellow: #7a5000;
+  --yellow-bg: #fff3d1;
+  --yellow-edge: #d9a22b; /* Needs attention, data bar, admissions note */
+  --green: #22694a;
+  --green-bg: #e3f3ea; /* Usual, "● Online" */
+  --grey: #5c6b78;
+  --grey-bg: #eef1f4; /* Learning, meters, baseline slot, facility range band */
+  --c-used: #1d5f99; /* "Used" segments and meters */
+  --c-aside: #9fb0bf; /* "Set aside" segments; change-score bars before the alarm */
+  --c-quar: #c98a1a; /* "Held back" segments */
+  --content-max: 1240px;
+  --page-pad: 20px; /* 12px below 640px */
+  --panel-pad: 16px 18px;
+  --panel-radius: 6px;
+  --gap: 16px;
+  --touch-min: 44px;
+  --focus-ring: 3px solid var(--link);
+  --badge-ink: #ffffff; /* text on the red count badge */
+  --nav-active: rgba(255, 255, 255, 0.16);
+  --nav-hover: rgba(255, 255, 255, 0.1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chrome: #0f2233;
+    --chrome-ink: #eaf1f7;
+    --chrome-muted: #8ea6bc;
+    --canvas: #121a21;
+    --surface: #1a242d;
+    --surface-2: #202c36;
+    --ink: #e6edf3;
+    --muted: #9db0c0;
+    --rule: #33424f;
+    --link: #7db8ec;
+    --red: #ff8a80;
+    --red-bg: #3a1d1b;
+    --yellow: #f2c35b;
+    --yellow-bg: #352a10;
+    --yellow-edge: #a87f22;
+    --green: #7fd3a6;
+    --green-bg: #16301f;
+    --grey: #a7b4c0;
+    --grey-bg: #26313b;
+    --c-used: #5ca3e0;
+    --c-aside: #5e7080;
+    --c-quar: #e0a740;
+    --badge-ink: #1a0a08;
+  }
+}

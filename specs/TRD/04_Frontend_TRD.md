@@ -1,6 +1,6 @@
 # 04 Frontend TRD
 
-Document ID: ECHOWELL-TRD-04 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-04 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -235,7 +235,7 @@ All protected data is fetched in the browser with the user's Bearer token. The J
 Decision: the access token returned by `POST /api/v1/auth/login` is kept **in memory** (a module-scoped variable in `lib/auth.ts`) and **mirrored to `sessionStorage`** under the key `echowell.auth` so that a page reload in the same tab keeps the user signed in. It is never written to `localStorage`, cookies, URLs, logs or analytics.
 
 Justification:
-- Contract section 10 and 12 define Bearer JWT (HS256, 60 min, no refresh token) for dashboard users. The frontend (Netlify origin) and backend (Railway origin) are different sites; an httpOnly cookie would need a cross-site `SameSite=None; Secure` cookie issued by the backend, CSRF protection and backend changes that the contract does not define. A Bearer token sent in the `Authorization` header is therefore the only mechanism consistent with the contract.
+- Contract section 10 and 12 define Bearer JWT (HS256, 60 min, no refresh token) for dashboard users. The frontend (Netlify origin) and backend (Render origin) are different sites; an httpOnly cookie would need a cross-site `SameSite=None; Secure` cookie issued by the backend, CSRF protection and backend changes that the contract does not define. A Bearer token sent in the `Authorization` header is therefore the only mechanism consistent with the contract.
 - Memory-only storage would sign the user out on every reload, which is unworkable on a dashboard that staff reload. `sessionStorage` is scoped to one tab and is cleared when the tab closes, unlike `localStorage` which persists and is shared by all tabs.
 - Residual risk: script injection (XSS) could read the token. Mitigations FE-060 to FE-068 reduce this risk, and the 60-minute expiry limits the window of misuse.
 
@@ -468,50 +468,50 @@ Query keys (`lib/queryKeys.ts`):
 
 ### 4.8 Component inventory
 
-All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located `<Name>.module.css` and `<Name>.test.tsx`. Props are listed as TypeScript. Content and copy are defined in TRD 11 (UX IDs in the last column).
+The props below are the implemented contracts (TRD 24 D-150). All components live in `frontend/components/<Name>/<Name>.tsx` with a co-located `<Name>.module.css` and `<Name>.test.tsx`. Props are listed as TypeScript. Content and copy are defined in TRD 11 (UX IDs in the last column).
 
 | Component | Props (TypeScript) | Responsibility | UX ref |
 |---|---|---|---|
-| `AppHeader` | `{ meta: Meta \| undefined; active: "residents" \| "admissions" \| "study" \| "admin" \| null; variant?: "full" \| "brand-only" }` | Brand "EchoWell", facility line, nav "Resident list" (+ `CountBadge`), "New admissions", "Study team", "Admin", user name, Sign out | UX-010..UX-018 |
+| `AppHeader` | `{ meta: Meta \| undefined; active: ActivePage; variant?: "full" \| "brand-only" }` | Brand "EchoWell", facility line, nav "Resident list" (+ `CountBadge`), "New admissions", "Study team", "Admin", user name, Sign out | UX-010..UX-018 |
 | `DataBar` | `{ meta: Meta \| undefined }` | Yellow data bar under the app bar: test-data sentence on `test_v0_1`, no-audio sentence always | UX-400 |
 | `CountBadge` | `{ count: number; label: string /* accessible-name suffix */ }` | Red count badge after a link ("2" on "Resident list", "1" on "Review and notes"); renders nothing for 0 | UX-018, UX-411 |
 | `BackLink` | `{ href?: string /* default "/residents" plus last ?show= */ }` | "← Resident list" | UX-060 |
-| `FilterButtons` | `{ summary: ResidentsResponse["summary"]; total: number; value: UiStatus \| "all"; onChange(v): void }` | `role="group"` "Show" of toggle buttons "All (<n>)", "Changed (<n>)", "Needs attention (<n>)", "Learning (<n>)" (only when n > 0), "Usual (<n>)" with `aria-pressed`; polite announcement | UX-401..UX-404 |
-| `ResidentsTable` | `{ rows: ResidentRow[]; meta: Meta; filter: UiStatus \| "all"; isFetching: boolean }` | Four columns "Status", "Resident", "What's happening", "Last check-in"; row click opens the chart; empty-filter row; horizontal scroll container | UX-034..UX-046, UX-405, UX-408 |
+| `FilterButtons` | `{ summary: ResidentsResponse["summary"] \| undefined; total: number \| undefined; value: ListFilter; onChange(v: ListFilter): void }` | `role="group"` "Show" of toggle buttons "All (<n>)", "Changed (<n>)", "Needs attention (<n>)", "Learning (<n>)" (only when n > 0), "Usual (<n>)" with `aria-pressed`; polite announcement | UX-401..UX-404 |
+| `ResidentsTable` | `{ rows: ResidentRow[]; meta: Meta; filter: ListFilter; isFetching: boolean }` | Four columns "Status", "Resident", "What's happening", "Last check-in"; row click opens the chart; empty-filter row; horizontal scroll container | UX-034..UX-046, UX-405, UX-408 |
 | `StatusPill` | `{ status: UiStatus; size?: "sm" \| "lg" }` | Pill with glyph ("▲", "!", "○", "●", `aria-hidden`), label from `statusLabel()`, colour, background and border of TRD 11 §4.3.4 | UX-004, UX-036, UX-062, TRD 11 §4.3.4 |
 | `RangePill` | `{ inRange: boolean }` | Neutral pill for New admissions: label "In range" / "Out of range", `--ink` text on `--surface`, 1px `--ink` border, no glyph and no status colour (compared with the facility range, not the resident's own usual) | UX-185, TRD 24 D-117 |
 | `WhatsHappening` | `{ row: ResidentRow \| ResidentDetail; meta: Meta }` | One sentence from the templates of TRD 11 §4.3.6 (`whatsHappening()` in `lib/wording.ts`) | UX-405 |
 | `StatusLegend` | `{ meta: Meta }` | The four pills with their meaning texts | UX-406 |
-| `ChartBanner` | `{ resident: ResidentDetail; meta: Meta }` | `<section aria-label="Resident">`: `<h1>` code, facts "Device", "Last check-in", "Usable check-ins, last 30 days", "Baseline", large `StatusPill` | UX-061..UX-063 |
-| `ChartSectionNav` | `{ residentCode: string; current: "summary" \| "review" \| "trends" \| "baseline" \| "log" \| "device"; unreviewedAlarm: boolean }` | `<nav aria-label="Resident chart">` with the six links, `aria-current`, `CountBadge` on "Review and notes"; scrolling row below 760px | UX-410, UX-411, UX-241 |
-| `SummaryPanel` | `{ resident: ResidentDetail; alarm: ChangeAlarm \| null; meta: Meta }` | "Right now": lead text, Changed facts and buttons, Needs-attention buttons, `LeaningMost`, note with the PI marker | UX-070..UX-077, UX-312 |
-| `LeaningMost` | `{ featureKeys: string[] }` | "Leaning most: <labels>" — plain-language, lower-cased, comma-joined labels, or "no single measurement stands out." | UX-312 |
-| `MoreDetailTiles` | `{ resident: ResidentDetail; latestTally: number \| null; device: DeviceItem \| null; meta: Meta }` | Four link tiles "Voice trends", "Baseline", "Check-ins, last 30 days", "Device" | UX-078 |
+| `ChartBanner` | `{ resident: ResidentDetail \| null; meta?: Meta; residentCode?: string }` | `<section aria-label="Resident">`: `<h1>` code, facts "Device", "Last check-in", "Usable check-ins, last 30 days", "Baseline", large `StatusPill` | UX-061..UX-063 |
+| `ChartSectionNav` | `{ residentCode: string; current: ChartSectionKey; unreviewedAlarm: boolean }` | `<nav aria-label="Resident chart">` with the six links, `aria-current`, `CountBadge` on "Review and notes"; scrolling row below 760px | UX-410, UX-411, UX-241 |
+| `SummaryPanel` | `{ resident: ResidentDetail; alarm: ChangeAlarm \| null; meta: Meta; scored?: boolean; alarmState?: ReactNode }` | "Right now": lead text, Changed facts and buttons, Needs-attention buttons, `LeaningMost`, note with the PI marker | UX-070..UX-077, UX-312 |
+| `LeaningMost` | `{ featureKeys: readonly string[] }` | "Leaning most: <labels>" — plain-language, lower-cased, comma-joined labels, or "no single measurement stands out." | UX-312 |
+| `MoreDetailTiles` | `{ resident: ResidentDetail; latestTally: number \| null \| undefined; device: DeviceItem \| null; meta: Meta }` | Four link tiles "Voice trends", "Baseline", "Check-ins, last 30 days", "Device" | UX-078 |
 | `ChangeScoreChart` | `{ points: ScorePoint[]; baselinePeriod: BaselinePeriod \| null; h: number; residentCode: string; tz: string; restartedOn: string \| null }` | "Change score" chart (CUSUM tally; renamed from the running change tally chart) | UX-080..UX-092 |
 | `ChangeScoreTable` | `{ points: ScorePoint[]; h: number }` | Text alternative table "Date", "Change score", "Alarm" | UX-090 |
 | `MeasurementCards` | `{ features: FeaturesResponse /* TRD 19 */; residentCode: string; baselineForming: boolean }` | Panel "The 7 voice measurements behind the score": 7 `FeatureCard`s, `OtherMeasurementsCard`, caption | UX-100..UX-108 |
 | `FeatureCard` | `{ label: string; technicalName: string; sign: 1 \| -1; series: { localDate: string; z: number }[]; baselineForming: boolean }` | One of the 7 scored measurements with sparkline or "Not scored yet" | UX-101..UX-105 |
 | `Sparkline` | `{ values: number[]; ariaLabel: string; width?: number /* 110 */; height?: number /* 28 */ }` | Recharts `LineChart` without axes, zero reference line | UX-102, UX-103 |
 | `OtherMeasurementsCard` | `{ storedKeys: string[] /* 12 */ }` | "12 other measurements (pitch, jitter, MFCCs and others)" / "Stored, not scored" | UX-106..UX-107 |
-| `BaselinePanel` | `{ resident: ResidentDetail; restart: CheckinEvent \| null; meta: Meta }` | "Baseline: <R>’s usual", baseline text, native `<progress>` meter and caption, explanation | UX-420..UX-423 |
-| `CheckinCounts` | `{ counts: ResidentDetail["last_30_days"] }` | "Check-ins, last 30 days" tiles "Used", "Set aside (noise, poor quality or too short)", "Held back (possible other voice)", "Missed" | UX-140, TRD 11 §4.3.5 |
-| `CheckinLog` | `{ events: CheckinEvent[]; h: number; tz: string; residentCode: string; currentDeviceCode: string \| null }` | "Events" list newest first, caption "Duplicate records are removed quietly and not shown.", "Show earlier entries" | UX-140..UX-150 |
+| `BaselinePanel` | `{ resident: ResidentDetail; restart: CheckinEvent \| null; meta: Meta; firstScoredDate?: string \| null }` | "Baseline: <R>’s usual", baseline text, native `<progress>` meter and caption, explanation | UX-420..UX-423 |
+| `CheckinCounts` | `{ counts: ResidentDetail["last_30_days"] \| null }` | "Check-ins, last 30 days" tiles "Used", "Set aside (noise, poor quality or too short)", "Held back (possible other voice)", "Missed" | UX-140, TRD 11 §4.3.5 |
+| `CheckinLog` | `{ events: readonly CheckinEvent[]; h: number; tz: string; residentCode: string; currentDeviceCode: string \| null; asOf?: string \| null; baselineN?: number; hasEarlier?: boolean; onShowEarlier?: () => void; loadingEarlier?: boolean; earlierState?: ReactNode; state?: ReactNode }` | "Events" list newest first, caption "Duplicate records are removed quietly and not shown.", "Show earlier entries" | UX-140..UX-150 |
 | `DevicePanel` | `{ device: DeviceItem; residentCode: string; events: CheckinEvent[]; meta: Meta }` | Chart section "Device <D>": facts Status / Last upload / Firmware / Used by, "History", caption | UX-430..UX-433 |
-| `AlarmReviewPanel` | `{ alarm: ChangeAlarm; reviews: AlertReview[]; uiConfig: UiConfig; canReview: boolean; meta: Meta }` | "Review alert: changed since <Mon D>": `AlertReviewForm` (or the researcher message), reminder line, `ReviewHistory`, open-questions note | UX-310, UX-313..UX-322 |
-| `AlertReviewForm` | `{ alertId: string; snoozeHours: number /* UiConfig.alert_snooze_hours */; explanations: ReviewExplanation[] /* UiConfig.review_explanations */; snoozedUntil: string \| null; onSaved(): void }` | "Anything that could explain it?" checklist and hint, "What did you find?" radios, "Note", "Save review", "Remind me in <h> hours" | UX-313..UX-318, UX-324 |
-| `ReviewHistory` | `{ reviews: AlertReview[]; tz: string }` | "Previous reviews" list or "Not reviewed yet." | UX-320 |
-| `StaffNotes` | `{ residentCode: string; openAlertId: string \| null; canWrite: boolean }` | "Staff notes": "Type of note", textarea "New note", counter, "Add note", messages; read-only message for researchers | UX-120..UX-133 |
-| `NotesList` | `{ notes: StaffNote[]; tz: string }` | "Previous notes" newest first, empty text, "Show all notes (<count>)" | UX-134..UX-135 |
-| `AdmissionsTable` | `{ rows: AdmissionRow[]; meta: Meta; selected: string \| null; onSelect(code): void }` | New admissions table "Status", "Resident", "Admitted", "Compared with facility range", "Own baseline", "Show comparison" | UX-182..UX-188 |
+| `AlarmReviewPanel` | `{ alarm: ChangeAlarm; reviews: AlertReview[]; uiConfig: UiConfig; canReview: boolean; meta: Meta; historyState?: ReactNode }` | "Review alert: changed since <Mon D>": `AlertReviewForm` (or the researcher message), reminder line, `ReviewHistory`, open-questions note | UX-310, UX-313..UX-322 |
+| `AlertReviewForm` | `{ alertId: string; snoozeHours: number; explanations: ReviewExplanation[]; snoozedUntil: string \| null; onSaved(result?: { snoozedUntil?: string \| null }): void; tz: string; asOf?: string \| null }` | "Anything that could explain it?" checklist and hint, "What did you find?" radios, "Note", "Save review", "Remind me in <h> hours" | UX-313..UX-318, UX-324 |
+| `ReviewHistory` | `{ reviews: AlertReview[]; tz: string; asOf?: string \| null; explanations?: ReviewExplanation[] }` | "Previous reviews" list or "Not reviewed yet." | UX-320 |
+| `StaffNotes` | `{ residentCode: string; openAlertId: string \| null; canWrite: boolean }` | Fetches its own notes (`getNotes`) and saves new ones; "Staff notes": "Type of note", textarea "New note", counter, "Add note", messages; read-only message for researchers | UX-120..UX-133 |
+| `NotesList` | `{ notes: StaffNote[]; tz: string; asOf?: string \| null }` | "Previous notes" newest first, empty text, "Show all notes (<count>)" | UX-134..UX-135 |
+| `AdmissionsTable` | `{ rows: AdmissionRow[]; meta: Meta; selected: string \| null; onSelect(code: string): void }` | New admissions table "Status", "Resident", "Admitted", "Compared with facility range", "Own baseline", "Show comparison" | UX-182..UX-188 |
 | `FacilityRangeChart` | `{ comparison: AdmissionComparison; residentCode: string; N: number }` | One row per feature: resident dot vs grey band, table disclosure | UX-189..UX-195 |
-| `ExperimentalBanner` | `{ children?: React.ReactNode }` | Dashed yellow note "Future / experimental. …" | UX-181 |
+| `ExperimentalBanner` | `{ children?: ReactNode }` | Dashed yellow note "Future / experimental. …" | UX-181 |
 | `StudyTeamPage` | route component `app/(protected)/study/page.tsx` | Header panel, `KpiTiles`, `DataProblemsList`, `DailyCheckinsChart`, `LossFunnel` + `UsableByResidentChart`, `AlarmTimingTable` or `ReviewOutcomesTable`, `DevicesSection`, Downloads; 403 view for clinicians | UX-017, UX-350..UX-384 |
-| `KpiTiles` | `{ kpis: AnalyticsKpis }` | Four Study team tiles | UX-351–UX-355 |
+| `KpiTiles` | `{ kpis: AnalyticsKpis \| null }` | Four Study team tiles | UX-351–UX-355 |
 | `DataProblemsList` | `{ alerts: DataAlert[]; meta: Meta }` | "Data problems to follow up": tag ("Staff can help" / "Study team"), bold code link, `detail` text; never "▲" or red | UX-306–UX-309 |
 | `DailyCheckinsChart` | `{ series: DailySeriesPoint[] /* local_date, used, set_aside, quarantined, missed, silent_device_codes */; meta: Meta }` | Stacked bars per day + legend + table alternative | UX-356–UX-361 |
 | `LossFunnel` | `{ funnel: Funnel }` | "Where check-ins are lost" | UX-362–UX-366 |
 | `UsableByResidentChart` | `{ rows: ByResidentRow[] /* resident_code, days, used_days, set_aside_days, quarantined_days, missed_days, used_percent */ }` | "Usable check-ins by resident": one `--c-used` meter per resident, lowest first | UX-367–UX-370 |
-| `AlarmTimingTable` | `{ rows: { label: string; planted_change: string; change_began: string \| null; alarm_rang: string \| null; delay: string }[] }` | Test-profile panel | UX-371–UX-374 |
+| `AlarmTimingTable` | `{ rows: AlarmTimingDisplayRow[] }` | Test-profile panel | UX-371–UX-374 |
 | `ReviewOutcomesTable` | `{ outcomes: ReviewOutcomes /* alarms_raised, reviewed, by_outcome */ }` | Production-profile panel | UX-375 |
 | `DevicesSection` | `{ devices: DeviceItem[]; meta: Meta }` | Study team "Devices" (`id="devices"`): tagged rows (grouped, shared, replacement, needing attention), "Show all devices (<n>)" table | UX-050..UX-058 |
 | `SectionState` | `{ state: "loading" \| "empty" \| "error"; message: string; onRetry?: () => void; requestId?: string }` | Uniform loading/empty/error rendering inside a panel | UX-200..UX-206 |
@@ -623,6 +623,9 @@ All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, 
   --panel-pad: 16px 18px; --panel-radius: 6px; --gap: 16px;
   --touch-min: 44px;
   --focus-ring: 3px solid var(--link);
+  --badge-ink: #FFFFFF;    /* digit on the red count badge (TRD 24 D-142) */
+  --nav-active: rgba(255, 255, 255, 0.16); /* current app-bar link (UX-013) */
+  --nav-hover: rgba(255, 255, 255, 0.1);   /* hovered app-bar link */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -634,6 +637,7 @@ All formatting uses `Intl.DateTimeFormat("en-US", { timeZone: meta.facility_tz, 
     --green: #7FD3A6; --green-bg: #16301F;
     --grey: #A7B4C0; --grey-bg: #26313B;
     --c-used: #5CA3E0; --c-aside: #5E7080; --c-quar: #E0A740;
+    --badge-ink: #1A0A08;  /* white fails contrast on the dark --red */
   }
 }
 ```
@@ -654,7 +658,7 @@ The v0.1 tokens (IBM Plex fonts, `--color-*` palette, 1200px content width) are 
 
 | Variable | Example | Required | Use |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` (local); the HTTPS origin of the Railway staging or production service (interim) or of the AWS App Runner service (target), as set in TRD 21 | Yes | API origin; also inserted in CSP `connect-src` |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` (local); the HTTPS origin of the Render staging or production service (interim) or of the AWS App Runner service (target), as set in TRD 21 | Yes | API origin; also inserted in CSP `connect-src` |
 | `NEXT_PUBLIC_APP_ENV` | `local` \| `staging` \| `production` \| `test` | Yes | Environment marker |
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -835,3 +839,5 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (FE-100 field names low/high; FE-191, AC-FE-08 widths (D-78); FE-036 count fallback (D-97)) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; routes `/residents` (Resident list, `?show=` filter), `/residents/[residentCode]` with sections `review`, `trends`, `baseline`, `log`, `device` (Resident chart), `/study` (Study team, replaces `/analytics`, with `#devices`); `/alerts` retired; component inventory updated (FilterButtons, StatusPill, WhatsHappening, StatusLegend, ChartBanner, ChartSectionNav, SummaryPanel, MoreDetailTiles, ChangeScoreChart, MeasurementCards, BaselinePanel, CheckinCounts, DevicePanel, AlarmReviewPanel, StaffNotes, DataBar, DataProblemsList, DevicesSection; SummaryTiles, SortSelect, DeviceCell, Footer, alerts-page components and ReviewDialog retired); D-114 API fields; Source Sans 3 and light/dark v0.2 tokens; UX-167 wording; FE-103, FE-131, FE-139 retired; FE-206 to FE-211 added; E2E specs renamed (`resident-list`, `resident-chart`, `review`, `study-team`) | — |
 | 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): `RangePill` and FE-092 neutral New admissions pills (D-117); FE-187 runs E2E-09 on R10 after the FE-193 reminder step, FE-193 is step 2 (D-118); FE-151 and the §4.11 format with "CT" (D-119); OQ-31, OQ-32 answered (D-115, D-116) | — |
+| 0.13 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-142, D-150): tokens `--badge-ink`, `--nav-active`, `--nav-hover` in §4.12; §4.8 props match the implemented components | — |
+| 0.14 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

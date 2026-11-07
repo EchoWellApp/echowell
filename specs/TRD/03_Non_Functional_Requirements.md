@@ -1,6 +1,6 @@
 # 03 Non-Functional Requirements
 
-Document ID: ECHOWELL-TRD-03 · Version 0.10 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-03 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -8,7 +8,7 @@ This document specifies the measurable quality attributes of EchoWell: performan
 
 ## 2. Scope
 
-**In scope:** quality attributes of the Team 2 system (frontend, backend, analytics, database, CI/CD) in the local, staging and production environments, on both the current (interim) Netlify/Railway/Neon hosting and the target AWS hosting (D-OWNER-3).
+**In scope:** quality attributes of the Team 2 system (frontend, backend, analytics, database, CI/CD) in the local, staging and production environments, on both the current (interim) Netlify/Render/Neon hosting and the target AWS hosting (D-OWNER-3).
 
 **Out of scope:** device-side quality (Team 1: capture latency, battery, wake-word accuracy); clinical performance of the alarm (sensitivity/specificity), which is a research question calibrated on Team 1's larger dataset (OQ-13), not a software NFR; detailed security controls (TRD 12) and logging formats (TRD 17), which are referenced here.
 
@@ -40,7 +40,7 @@ The canonical performance budgets are fixed by lead decision R8 (contract §20).
 - server-side, from request receipt to last response byte, as recorded in backend request logs (TRD 17), over at least 200 requests per endpoint;
 - excluding Team 1 network transit and the browser's network latency unless the NFR says "end to end".
 
-Interim free/trial tiers may suspend idle compute (Neon auto-suspend, Railway sleep; RSK-07). Cold-start behaviour has its own NFR (NFR-008) and is excluded from p95 figures.
+Interim free/trial tiers may suspend idle compute (Neon auto-suspend; the spinning-down Render Free instance type is not used, TRD 15 DEP-042; RSK-07). Cold-start behaviour has its own NFR (NFR-008) and is excluded from p95 figures.
 
 ### 4.2 Performance
 
@@ -98,15 +98,15 @@ Live feature data is extracted from residents' speech and is treated as sensitiv
 | NFR-041 | The system shall hold no resident PII: residents are identified only by study ID; free-text inputs (staff notes) shall be displayed with a reminder "Do not enter names or other identifying details." | Must | BR-16, VIS-006 | Inspection, Test |
 | NFR-042 | All network connections carrying feature data or credentials shall use TLS 1.2 or higher: device → backend, browser → frontend, frontend → backend, backend → database (`sslmode=require` or stricter), CI → hosting APIs. | Must | BR-16, D-OWNER-3 | Test (TLS scan of staging/production endpoints; startup check of `DATABASE_URL`) |
 | NFR-043 | Plain HTTP requests to frontend and backend shall be redirected to HTTPS or refused, and responses shall carry `Strict-Transport-Security: max-age=31536000`. | Must | BR-16, TRD 12 | Test |
-| NFR-044 | All persistent storage of feature data, including database volumes, backups and snapshots, shall be encrypted at rest: provider-managed encryption on Neon/Railway (interim); RDS storage encryption with an AWS KMS key, encrypted automated backups and snapshots, and SSE-KMS for any S3 objects (target). | Must | BR-16, D-OWNER-3 | Inspection (provider configuration evidence recorded in TRD 22) |
-| NFR-045 | The interim Netlify/Railway/Neon environments shall contain only synthetic and test data; no real resident data shall be ingested there at any time. | Must | BR-16, D-OWNER-4, RSK-14 | Inspection (ingest batch sources, DATA_SOURCE_LABEL, release checklist) |
+| NFR-044 | All persistent storage of feature data, including database volumes, backups and snapshots, shall be encrypted at rest: provider-managed encryption on Neon/Render (interim); RDS storage encryption with an AWS KMS key, encrypted automated backups and snapshots, and SSE-KMS for any S3 objects (target). | Must | BR-16, D-OWNER-3 | Inspection (provider configuration evidence recorded in TRD 22) |
+| NFR-045 | The interim Netlify/Render/Neon environments shall contain only synthetic and test data; no real resident data shall be ingested there at any time. | Must | BR-16, D-OWNER-4, RSK-14 | Inspection (ingest batch sources, DATA_SOURCE_LABEL, release checklist) |
 | NFR-046 | Real resident data shall be ingested only after go-live on the approved AWS platform, with encryption (NFR-042, NFR-044), least-privilege access (NFR-047) and audit logging (NFR-049) verified in a go-live checklist. | Must | BR-16, D-OWNER-4, OQ-07 | Inspection (go-live checklist, TRD 15) |
 | NFR-047 | Access shall follow least privilege: database roles `echowell_migrator` (schema owner, migrations only), `echowell_app` (DML; no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes`; no SELECT on `evaluation_ground_truth`) and `echowell_readonly` (SELECT for researcher read-outs); dashboard roles per TRD 02 §4.26; cloud console access limited to named Team 2 administrators. | Must | BR-16, TRD 12, R20 | Test (privilege tests), Inspection |
 | NFR-048 | Logs, error reports and error-tracking events shall not contain feature values, raw ingest bodies, staff-note text, passwords, tokens or API keys. | Must | BR-16, D-OWNER-3, TRD 17 | Test (log capture assertions) |
 | NFR-049 | Security-relevant actions shall be recorded in `audit_logs` (events listed in TRD 12) within the same transaction as the action. | Must | BR-16 | Test |
 | NFR-050 | Data export (FR-244) shall be limited to roles `researcher` and `admin` and shall contain study IDs only and no staff-note text. | Must | BR-16 | Test |
 | NFR-051 | Data shall not be deleted by the application in the MVP; any retention or deletion behaviour awaits OQ-01 and withdrawal handling awaits OQ-11. | Must | BR-02, OQ-01, OQ-11 | Inspection |
-| NFR-052 | Hosting regions shall be Neon `aws-us-east-1` and Railway US East (current) and AWS `us-east-1` (target); data shall not be replicated outside the United States. | Must | BR-16, BR-17, R25 | Inspection (provider settings) |
+| NFR-052 | Hosting regions shall be Neon `aws-us-east-1` and Render `ohio` (US East; D-156) (current) and AWS `us-east-1` (target); data shall not be replicated outside the United States. | Must | BR-16, BR-17, R25 | Inspection (provider settings) |
 
 Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate limits, secrets) are specified in TRD 12 (SEC).
 
@@ -145,11 +145,11 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| NFR-090 | The backend shall run unchanged as a container on Railway (current) and AWS App Runner (target), configured only by environment variables. | Must | BR-17, SRC-01, D-OWNER-3, ARC-090 | Test (container run in CI) |
-| NFR-091 | The database layer shall run unchanged on Neon, Railway PostgreSQL, Docker `postgres:16` and AWS RDS PostgreSQL 16. | Must | BR-17, ARC-092 | Test (CI on `postgres:16`), Analysis |
+| NFR-090 | The backend shall run unchanged as a container on Render (current) and AWS App Runner (target), configured only by environment variables. | Must | BR-17, SRC-01, D-OWNER-3, ARC-090 | Test (container run in CI) |
+| NFR-091 | The database layer shall run unchanged on Neon, Render Postgres, Docker `postgres:16` and AWS RDS PostgreSQL 16. | Must | BR-17, ARC-092 | Test (CI on `postgres:16`), Analysis |
 | NFR-092 | The frontend shall build with `next build` and deploy to Netlify (current) and AWS Amplify (target) without source change. | Must | BR-17, ARC-093 | Analysis, Test (build) |
 | NFR-093 | Moving to AWS shall require changes only to deployment configuration and workflows, estimated ≤ 5 person-days, with no change to `frontend/`, `backend/` or `analytics/` source. | Should | BR-17, SRC-01, ARC-094 | Analysis (migration runbook, TRD 15) |
-| NFR-094 | Secrets shall be read only from environment variables so that they can be supplied by Netlify/Railway settings (current) or AWS Secrets Manager (target). | Must | BR-16, BR-17, D-OWNER-3 | Inspection |
+| NFR-094 | Secrets shall be read only from environment variables so that they can be supplied by Netlify/Render settings (current) or AWS Secrets Manager (target). | Must | BR-16, BR-17, D-OWNER-3 | Inspection |
 
 ### 4.9 Observability
 
@@ -196,7 +196,7 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | NFR-131 | Local date, local time and morning classification shall be correct across daylight-saving transitions: test vectors 2026-11-01 06:30:00 UTC → 01:30 CDT, and 2026-11-01 07:30:00 UTC → 01:30 CST, both local date 2026-11-01 and morning; 2027-03-14 08:30:00 UTC → 03:30 CDT, morning. | Must | BR-06, BR-07 | Test |
 | NFR-132 | Records with local time just before and after midnight shall be assigned to the correct local date (e.g. 2026-10-02 04:59:59 UTC → 2026-10-01 23:59:59 CDT, local date 2026-10-01). | Must | BR-06 | Test |
 | NFR-133 | The dashboard shall display all dates and times in the facility timezone, with its abbreviation on every date-time value, in the formats of TRD 11 UX-002 and UX-003 (e.g. "Oct 30, 2:28 PM CT"), independent of the viewer's browser timezone (TRD 24 D-119). | Must | BR-12, SRC-21, D-119 | Test (Playwright with browser timezone set to Europe/London) |
-| NFR-134 | The nightly run (separate Railway Cron Job service, `0 7,8 * * *` UTC) shall run exactly once per local day, in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx), including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
+| NFR-134 | The nightly run (separate Render cron job, `0 7,8 * * *` UTC) shall run exactly once per local day, in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx), including on DST transition days (2026-11-01, 2027-03-14). | Must | BR-06, ARC-061, R18 | Test |
 
 ### 4.13 Browser and device support
 
@@ -277,3 +277,4 @@ Security controls in detail (authentication, JWT, argon2id, API keys, CORS, rate
 | 0.8 | 20 Oct 2026 | PR #2 backlog consistency fixes (NFR-001, NFR-010, NFR-012, NFR-151 verification (D-98); NFR-068 widths (D-78); NFR-023, NFR-134 NIGHTLY_RUN_HOUR_LOCAL) | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): NFR-010 four pages (Resident list, chart Summary, chart Voice trends, Study team); NFR-011, NFR-013 (review in the chart), NFR-061 status pills, NFR-062 v0.2 tokens light and dark, NFR-063 change-score bar contrast, NFR-066, NFR-068, NFR-070, NFR-105, NFR-128, NFR-133, AC-NFR-04 (9 routes), AC-NFR-10; SRC-21 replaces SRC-09/10/11/18/19 | — |
 | 0.10 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): NFR-133 and AC-NFR-10 keep the time-zone abbreviation ("Oct 30, 2:28 PM CT", D-119) | — |
+| 0.11 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

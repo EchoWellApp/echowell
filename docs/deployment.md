@@ -28,4 +28,4 @@ The backend then connects as `echowell_app_login` (DATABASE_URL), Alembic as `ec
 `analytics_summary.py` as `echowell_readonly_login` (DATABASE_READONLY_URL).
 
 
-The local Compose command runs uvicorn without `--proxy-headers`, so the client IP is the socket peer (TRD 05 API-103); the image default command and the Railway start command add `--proxy-headers --forwarded-allow-ips="*"` (TRD 15 DEP-022, DEP-040).
+The local Compose command runs uvicorn without `--proxy-headers`, so the client IP is the socket peer (TRD 05 API-103); the image default command and the Render start (Docker) command in `render.yaml` add `--proxy-headers --forwarded-allow-ips="*"` (TRD 15 DEP-022, DEP-040).

@@ -1,0 +1,307 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 14,
+  "limit": 50,
+  "offset": 0,
+  "cusum_k": 0.5,
+  "baseline_periods": [
+    {
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "first_local_date": "2026-10-01",
+      "frozen_after_local_date": "2026-10-16",
+      "frozen_after_session_id": "R01-20261016-01",
+      "n_sessions": 16
+    }
+  ],
+  "items": [
+    {
+      "session_id": "R01-20261017-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-17",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.08255891513223934,
+        "z_total_phrase_duration_s": -1.0850503522014796,
+        "z_speech_rate_syl_per_s": -1.3759611493322537,
+        "z_articulation_rate_syl_per_s": -1.4164305949008524,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 0.12646701740186161,
+        "z_voiced_fraction": -1.0531522384810001
+      },
+      "composite_raw": 0.4242170804352468,
+      "composite_z": 0.5310507205246151,
+      "cusum_tally": 0.031050720524615105,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261018-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-18",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.45952603705680334,
+        "z_total_phrase_duration_s": 0.029325685194633952,
+        "z_speech_rate_syl_per_s": 1.160124106299741,
+        "z_articulation_rate_syl_per_s": 1.5063626961643966,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.4637123971401592,
+        "z_voiced_fraction": 0.011833171218886345
+      },
+      "composite_raw": -0.5103189603836217,
+      "composite_z": -0.7243721119958622,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261019-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-19",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.8707628973381457,
+        "z_total_phrase_duration_s": -0.9090962410336707,
+        "z_speech_rate_syl_per_s": -1.537838931606635,
+        "z_articulation_rate_syl_per_s": -0.8318719366878035,
+        "z_number_of_pauses": 2,
+        "z_pause_fraction": -0.7588021044111685,
+        "z_voiced_fraction": 0.011833171218886345
+      },
+      "composite_raw": 0.25988806489893823,
+      "composite_z": 0.3102969035084991,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261020-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-20",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.07944348437253172,
+        "z_total_phrase_duration_s": -1.1437017225907475,
+        "z_speech_rate_syl_per_s": 1.1061648455416144,
+        "z_articulation_rate_syl_per_s": -0.6969737847924832,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": 0.12646701740186161,
+        "z_voiced_fraction": -0.43782733509884203
+      },
+      "composite_raw": -0.415593563780949,
+      "composite_z": -0.5971213474235818,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261021-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-21",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.8084542821440032,
+        "z_total_phrase_duration_s": 0.08797705558390445,
+        "z_speech_rate_syl_per_s": -0.24281667341157584,
+        "z_articulation_rate_syl_per_s": -0.2922793291065265,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -1.2646701740186148,
+        "z_voiced_fraction": 0.059165856094436975
+      },
+      "composite_raw": -0.2703298128381489,
+      "composite_z": -0.401979135988522,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261022-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-22",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.15732925336521017,
+        "z_total_phrase_duration_s": 0.7331421298658644,
+        "z_speech_rate_syl_per_s": -0.7284500202347227,
+        "z_articulation_rate_syl_per_s": -0.5171095822653909,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 0.5058680696074465,
+        "z_voiced_fraction": 0.17749756828331356
+      },
+      "composite_raw": 0.3520573552936173,
+      "composite_z": 0.43411388494594116,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261023-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-23",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.020250299938096798,
+        "z_total_phrase_duration_s": 1.0850503522014796,
+        "z_speech_rate_syl_per_s": 0.8363685417509731,
+        "z_articulation_rate_syl_per_s": -0.9667700885831196,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.5480237420747325,
+        "z_voiced_fraction": 0.2721629380344148
+      },
+      "composite_raw": 0.053573559855197406,
+      "composite_z": 0.03314125728524656,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261024-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-24",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.9704566816487731,
+        "z_total_phrase_duration_s": -0.8504448706444028,
+        "z_speech_rate_syl_per_s": -0.6205314987184676,
+        "z_articulation_rate_syl_per_s": -0.02248302531588604,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -1.096047484149466,
+        "z_voiced_fraction": 0.03549951365666166
+      },
+      "composite_raw": -0.05264580896677196,
+      "composite_z": -0.10955010511332784,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261025-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-25",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.09813606893077415,
+        "z_total_phrase_duration_s": -0.3225825371409813,
+        "z_speech_rate_syl_per_s": -0.18885741265344708,
+        "z_articulation_rate_syl_per_s": -1.0117361392148958,
+        "z_number_of_pauses": 2,
+        "z_pause_fraction": -0.3372453797382976,
+        "z_voiced_fraction": -0.2721629380344148
+      },
+      "composite_raw": 0.41586637742203614,
+      "composite_z": 0.5198326799435412,
+      "cusum_tally": 0.01983267994354121,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261026-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-26",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.7679536822678096,
+        "z_total_phrase_duration_s": -1.2610044633692858,
+        "z_speech_rate_syl_per_s": -0.40469445568595735,
+        "z_articulation_rate_syl_per_s": -0.20234722784297834,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.9274247942803172,
+        "z_voiced_fraction": 0.7691561292276965
+      },
+      "composite_raw": -0.5117985744400791,
+      "composite_z": -0.7263597734542339,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261027-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-27",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.24144588387730387,
+        "z_total_phrase_duration_s": -0.7917935002551323,
+        "z_speech_rate_syl_per_s": 1.1061648455416144,
+        "z_articulation_rate_syl_per_s": 0.9218040379513476,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -3.5832321597194086,
+        "z_voiced_fraction": 1.3608146901720795
+      },
+      "composite_raw": -1.4293221596452692,
+      "composite_z": -1.9589286717423422,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261028-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-28",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 1.185421404068566,
+        "z_total_phrase_duration_s": -1.2610044633692858,
+        "z_speech_rate_syl_per_s": 0.1888574126534447,
+        "z_articulation_rate_syl_per_s": 0.5171095822653909,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.0843113449345744,
+        "z_voiced_fraction": 0.36682830778551606
+      },
+      "composite_raw": -0.8005046450109684,
+      "composite_z": -1.1141973495892052,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261029-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-29",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 1.001610989245845,
+        "z_total_phrase_duration_s": -0.6158393890873259,
+        "z_speech_rate_syl_per_s": -0.5126129772022124,
+        "z_articulation_rate_syl_per_s": 0.2922793291065225,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -1.4332928638877636,
+        "z_voiced_fraction": -0.15383122584553824
+      },
+      "composite_raw": -0.6680826240399581,
+      "composite_z": -0.9363062663198619,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R01-20261030-01",
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "local_date": "2026-10-30",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.2850619145132029,
+        "z_total_phrase_duration_s": 0.6744907594765965,
+        "z_speech_rate_syl_per_s": -0.5126129772022124,
+        "z_articulation_rate_syl_per_s": -0.4271774810018428,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 2.6558073654390912,
+        "z_voiced_fraction": 0.011833171218886345
+      },
+      "composite_raw": 0.6490453323448656,
+      "composite_z": 0.8330770828205853,
+      "cusum_tally": 0.33307708282058535,
+      "alarm_state": "off"
+    }
+  ]
+}

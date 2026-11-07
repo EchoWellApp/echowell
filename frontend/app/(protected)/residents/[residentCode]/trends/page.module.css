@@ -1,0 +1,20 @@
+.forming {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+.epoch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+.select {
+  min-height: var(--touch-min);
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}

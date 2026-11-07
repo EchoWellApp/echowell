@@ -23,7 +23,7 @@ echowell/                       single GitHub monorepo EchoWellApp/echowell (ARC
 ├── docs/                       architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
 │                               team_workflow.md, api_reference/openapi.json, design/, reports/
 ├── specs/                      requirement sources, TRD/, prompts/, TEMPLATES/, backlog/
-├── alembic.ini  pyproject.toml  netlify.toml  railway.toml  docker-compose.yml  .dockerignore
+├── alembic.ini  pyproject.toml  netlify.toml  render.yaml  docker-compose.yml  .dockerignore
 ├── .env.example  .env.development.example  .env.production.example
 └── .editorconfig  .gitignore  .gitattributes  README.md  LICENSE
 ```
@@ -36,7 +36,7 @@ New top-level directories require a change to TRD 18 and TRD 01 in the same PR (
 backend/
 ├── main.py                     create_app(), middleware, handlers, routers under /api/v1      [skeleton, kept]
 ├── cli.py                      python -m backend.cli … (TRD 15 §4.8)
-├── jobs/nightly_run.py         nightly entry point (Railway cron)
+├── jobs/nightly_run.py         nightly entry point (Render cron job)
 ├── Dockerfile, requirements.txt (psycopg[binary] 3.x, pinned; D-53), requirements-dev.txt
 ├── api/
 │   ├── health.py               E-01                                                            [skeleton, kept]
@@ -209,3 +209,4 @@ flowchart TB
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.2 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend route folders `residents/[residentCode]/{layout, review, trends, baseline, log, device}` and `study/` replace `alerts/` and `analytics/`; `lib/status.ts` added; tokens note | — |
+| 0.3 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

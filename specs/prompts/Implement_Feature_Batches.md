@@ -508,11 +508,11 @@ Frontend:
 - Netlify
 
 Backend:
-- Railway
+- Render (web service from backend/Dockerfile and a cron job for the nightly run; TRD 24 D-153)
 
 Database:
 - Neon PostgreSQL (preferred)
-  or Railway PostgreSQL
+  or Render Postgres
 
 Generate:
 
@@ -522,7 +522,7 @@ Frontend:
 - build configuration
 
 Backend:
-- Railway configuration
+- Render Blueprint render.yaml (web services, cron jobs, environment groups)
 - environment templates
 - startup configuration
 
@@ -569,7 +569,7 @@ Requirements:
 1. Do not perform deployment.
 2. Only generate configuration files and documentation.
 3. Validate configurations against Deployment_Architecture.md.
-4. Verify compatibility with FastAPI, PostgreSQL, Railway, Netlify, and GitHub Actions.
+4. Verify compatibility with FastAPI, PostgreSQL, Render, Netlify, and GitHub Actions.
 5. Generate CONFIGURATION_VALIDATION_REPORT.md summarizing all generated infrastructure artifacts.
 
 # Phase 14B: Deploy Application
@@ -598,11 +598,11 @@ Frontend:
 - Netlify
 
 Backend:
-- Railway
+- Render (web service from backend/Dockerfile and a cron job for the nightly run; TRD 24 D-153)
 
 Database:
 - Neon PostgreSQL
-  or Railway PostgreSQL
+  or Render Postgres
 
 Deployment Tasks:
 

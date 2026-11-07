@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -62,7 +62,7 @@ echowell/
 ├── docs/                     architecture.md, algorithm.md, api_reference.md, database_design.md, deployment.md,
 │                             team_workflow.md, api_reference/openapi.json, design/, reports/
 ├── specs/                    requirement sources, TRD/, prompts/, TEMPLATES/
-├── alembic.ini  pyproject.toml  netlify.toml  railway.toml  docker-compose.yml  .dockerignore
+├── alembic.ini  pyproject.toml  netlify.toml  render.yaml  docker-compose.yml  .dockerignore
 ├── .env.example  .env.development.example  .env.production.example
 ├── .editorconfig  .gitignore  .gitattributes  README.md  LICENSE (see GIT-090)
 ```
@@ -137,7 +137,7 @@ environment (TRD 15), which deploys from `main` (TRD 24 D-99).
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-030 | Work shall follow the team plan (SRC-20, TRD 24 D-100, D-101): Block 1 TRD generation (merged as PR #1); Block 2 feature backlog (merged as PR #2); Block 3 implement features — every prompt of SRC-17 `Implement_Feature_Batches.md` Phases 7–13, 14A and 15, run one at a time, each prompt being one review checkpoint with its own PR to `main` on its own feature branch created from the latest `main` (checkpoint 1: `feat/implement-features`, GitHub PR #3); Block 4 deployment (Phase 14B plus the manual Netlify, Railway and Neon setup), one PR; Block 5 test cases (`Test_Case_Generation_Prompt.md`), one PR. Other changes are separate short-lived `fix/`, `docs/` or `chore/` PRs. | Must | contract §13, SRC-17, SRC-20, D-100, D-101 | Inspection |
+| GIT-030 | Work shall follow the team plan (SRC-20, TRD 24 D-100, D-101): Block 1 TRD generation (merged as PR #1); Block 2 feature backlog (merged as PR #2); Block 3 implement features — every prompt of SRC-17 `Implement_Feature_Batches.md` Phases 7–13, 14A and 15, run one at a time, each prompt being one review checkpoint with its own PR to `main` on its own feature branch created from the latest `main` (checkpoint 1: `feat/implement-features`, GitHub PR #3); Block 4 deployment (Phase 14B plus the manual Netlify, Render and Neon setup), one PR; Block 5 test cases (`Test_Case_Generation_Prompt.md`), one PR. Other changes are separate short-lived `fix/`, `docs/` or `chore/` PRs. | Must | contract §13, SRC-17, SRC-20, D-100, D-101 | Inspection |
 | GIT-031 | Within Block 3 the next checkpoint prompt shall not start until the previous checkpoint's PR is approved by the algorithm lead (an approving review) and merged to `main`; the next checkpoint branch is then created from the updated `main`. Block 4 starts after the checkpoint 9 (Phase 15) PR is merged, and Block 5 after the Block 4 PR is merged. | Must | contract §13, D-100, D-101 | Inspection |
 | GIT-032 | Any PR that changes `analytics/`, `tests/validation/`, `database/seeds/`, `backend/alembic/` or `specs/TRD/0[7-9]_*`/`14_*` shall be approved by the algorithm lead (enforced by CODEOWNERS). | Must | BR-15, BR-18 | Inspection |
 | GIT-033 | PR descriptions shall follow `.github/pull_request_template.md` (below); a PR with an empty "Requirements implemented" or "Testing" section shall not be approved. | Must | SRC-12 | Inspection |
@@ -194,7 +194,7 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 /specs/TRD/14_*                @EchoWellApp/team2-algorithm
 /.github/                      @EchoWellApp/team2-devops
 /netlify.toml                  @EchoWellApp/team2-devops
-/railway.toml                  @EchoWellApp/team2-devops
+/render.yaml                   @EchoWellApp/team2-devops
 /docker-compose.yml            @EchoWellApp/team2-devops
 ```
 
@@ -454,3 +454,4 @@ updates:
 | 0.13 | 23 Oct 2026 | PR #3 review: SRC-20 units named Block 1–Block 5 and one PR per Block 3 checkpoint (D-101): §3 references, branch table, §4.2 diagram, GIT-010, GIT-012, GIT-014, GIT-020, GIT-030, GIT-031, GIT-034, PR template, AC-GIT-01, §8; root `scripts/` added to the §4.1 layout (checkpoint 1 Q-4) | — |
 | 0.14 | 26 Oct 2026 | Checkpoint 2 review Q-3: §4.4 CODEOWNERS block lists `/netlify.toml` and `/railway.toml` on separate lines (one pattern per line, as GitHub parses CODEOWNERS); ownership unchanged | — |
 | 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): GIT-097 names the v0.2 font Source Sans 3 (D-112) | — |
+| 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

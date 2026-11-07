@@ -1,6 +1,6 @@
 # 07 Analytics Engine TRD
 
-Document ID: ECHOWELL-TRD-07 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-07 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -24,7 +24,7 @@ In scope:
 - Determinism and full-rebuild guarantees, late-arrival handling (ASM-07, OQ-10).
 - Configuration profiles `production` and `test_v0_1` (`analytics/config.py::PipelineConfig`).
 - The backend persistence service that loads inputs, calls the engine and writes derived tables.
-- Triggers (after ingest, nightly in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 02:xx) via the Railway Cron Job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
+- Triggers (after ingest, nightly in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL` (default 02:xx) via the Render cron job `backend.jobs.nightly_run`, manual or `pipeline:run` key), performance, error handling, logging.
 - Data-alert generation (stage 11, rules in TRD 09 section 4.9; its open `baseline_stalled` and `high_set_aside` alerts
   also drive the API attention flag, TRD 23 §4.4.3) and Study team page aggregates (stage 12: KPIs, daily series, funnel,
   by-resident shares; `GET /api/v1/analytics`), and the "Leaning most" computation shown in the Resident chart Summary
@@ -327,7 +327,7 @@ transaction; the derived rows of each resident are then written in exactly one d
 
 ```mermaid
 sequenceDiagram
-  participant T as Trigger (ingest / Railway cron nightly_run / admin or pipeline:run key)
+  participant T as Trigger (ingest / Render cron job nightly_run / admin or pipeline:run key)
   participant S as pipeline_runner
   participant DB as PostgreSQL
   participant E as analytics.run_pipeline
@@ -365,7 +365,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | ANL-043 | After a successful single-record ingest (`POST /api/v1/sessions`) the backend shall run the pipeline synchronously for that record's resident (scope = that resident plus device-sharing residents for the ledger) with `trigger = ingest` and `as_of` per ANL-046 precedence (request time in production), before returning the response; if that run fails, the record stays stored and the response carries `status_after_processing = "pending"` (contract §21 R23), and the next ingest or nightly run processes it. | Must | contract §7, §21 R21, R23, TRD 10 ING-002 | Test |
 | ANL-044 | After a batch ingest (`POST /api/v1/ingest`) the backend shall enqueue one background run (FastAPI `BackgroundTasks`) scoped as TRD 05 API-053 defines (all residents that received a first-arrival record in the batch plus the residents co-assigned to their devices, ANL-016), with `trigger = ingest`. | Must | contract §7 | Test |
-| ANL-045 | The nightly full run (scope `all`, `trigger = nightly`) shall be started by a separate Railway Cron Job service executing `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` (UTC); the job shall proceed only when the facility-local hour (`FACILITY_TZ`) is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047) (DST-safe), and shall otherwise exit 0; there is no in-process scheduler. On AWS the same command runs from EventBridge Scheduler, or the scheduler calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, which records the run as `trigger = nightly` and applies the same dedupe (TRD 05 API-065, TRD 24 D-70). | Must | contract §21 R18, TRD 15 | Test |
+| ANL-045 | The nightly full run (scope `all`, `trigger = nightly`) shall be started by a separate Render cron job executing `python -m backend.jobs.nightly_run` on schedule `0 7,8 * * *` (UTC); the job shall proceed only when the facility-local hour (`FACILITY_TZ`) is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047) (DST-safe), and shall otherwise exit 0; there is no in-process scheduler. On AWS the same command runs from EventBridge Scheduler, or the scheduler calls `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, which records the run as `trigger = nightly` and applies the same dedupe (TRD 05 API-065, TRD 24 D-70). | Must | contract §21 R18, TRD 15 | Test |
 | ANL-046 | `POST /api/v1/pipeline/run {scope, profile?, as_of?}` shall accept an admin JWT or an API key with scope `pipeline:run`. The run's `as_of` shall be chosen by precedence: explicit `as_of` in the request → env `PIPELINE_AS_OF` (refused, run not started, when `APP_ENV = production`) → current time; ingest and nightly runs use `PIPELINE_AS_OF` if set (non-production only), else the current time. Tests use 2026-10-30T15:00:00-05:00; in-process tests freeze the clock (time-machine). Read endpoints shall use the `as_of` of the latest succeeded run. The `test` trigger value is used only by the automated validation suite. | Must | TRD 05 API-065, §21 R18, R21 | Test |
 
 ### 4.10 Performance
@@ -451,7 +451,7 @@ Oct 12 = 8 used + 2 missed. All values equal the Study team expected rendering o
   `baselines`, `scores`, `cusum_state`, `alerts`, `day_ledger`, `pipeline_runs`, `config_parameters`, `audit_logs`.
 - numpy 2.x, Python 3.12 `zoneinfo` with system tzdata (the backend image shall install the `tzdata` package so
   `America/Chicago` resolves on slim images).
-- Backend env vars: `DATABASE_URL` (role echowell_app), `DATABASE_READONLY_URL` (analytics summary only), `PIPELINE_PROFILE`, `PIPELINE_AS_OF` (non-production only), `FACILITY_TZ`, `GIT_SHA`, `LOG_FORMAT`, `LOG_LEVEL` (TRD 21); Railway Cron Job service for `backend.jobs.nightly_run` (TRD 15).
+- Backend env vars: `DATABASE_URL` (role echowell_app), `DATABASE_READONLY_URL` (analytics summary only), `PIPELINE_PROFILE`, `PIPELINE_AS_OF` (non-production only), `FACILITY_TZ`, `GIT_SHA`, `LOG_FORMAT`, `LOG_LEVEL` (TRD 21); Render cron job for `backend.jobs.nightly_run` (TRD 15).
 - Test fixtures: SRC-03 workbook and SRC-05 CSV copied to `tests/fixtures/` (TRD 14); the workbook is read only by tests.
 
 ## 7. Acceptance Criteria
@@ -506,3 +506,4 @@ Oct 12 = 8 used + 2 missed. All values equal the Study team expected rendering o
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (assign_epochs signature; ANL-045 NIGHTLY_RUN_HOUR_LOCAL; ANL-047 ubuntu-24.04; ANL-053 log events (D-80); ANL-056 step reference; ANL-057 run ownership (D-76)) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-18/19 superseded; stage 12 aggregates feed the Study team page and "Leaning most" the chart Summary; `AnalyticsSummary` notes use the v0.2 wording ("neither reviewed yet", "Oct 12: D02 silent", "held back as possible other voice"); ANL-059, ANL-061 to ANL-063 traces; OQ-31 | — |
 | 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
+| 0.13 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

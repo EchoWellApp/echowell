@@ -1,0 +1,43 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 44px;
+  gap: 12px;
+  align-items: center;
+}
+.meter {
+  display: block;
+  height: 14px;
+  background: var(--grey-bg);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.meter i {
+  display: block;
+  height: 100%;
+  background: var(--c-used);
+}
+.value {
+  text-align: right;
+}
+.note {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 2px 0 4px 182px;
+}
+@media (max-width: 639px) {
+  .row {
+    grid-template-columns: 120px minmax(0, 1fr) 44px;
+  }
+  .note {
+    margin-left: 0;
+  }
+}

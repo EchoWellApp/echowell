@@ -1,6 +1,6 @@
 # 14 Test Data and Validation Spec
 
-Document ID: ECHOWELL-TRD-14 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-14 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 2 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -151,7 +151,7 @@ sequenceDiagram
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | TDV-030 | Tier A shall run `analytics.pipeline` in-process on the DS-01 records with profile `test_v0_1`, facility timezone America/Chicago, enrollment start 2026-10-01 for R01–R10 and as-of 2026-10-30 15:00 America/Chicago, with the device assignments of §4.9, and compare its result with DS-02. | Must | BR-15 | Test |
-| TDV-031 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry of §4.9, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token), wait for the batch's pipeline run to finish, then call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s), and compare API responses and database rows with DS-02. The explicit as-of run is required because ingest-triggered runs use the R21 as-of (PIPELINE_AS_OF when set, otherwise the current time) and exclude records after it (TRD 07 ANL-015, ANL-043). | Must | BR-15, BR-01 | Test |
+| TDV-031 | Tier B shall start from an empty migrated PostgreSQL 16 database, load the registry of §4.9, upload DS-01 through `POST /api/v1/ingest` (multipart CSV, admin token) with PIPELINE_AS_OF set to the test as-of (2026-10-30T20:00:00Z, so the ingest-triggered run already evaluates 30 Oct; TRD 24 D-135), wait for the batch's pipeline run to finish, then call `POST /api/v1/pipeline/run` with `{"scope": "all", "profile": "test_v0_1", "as_of": "2026-10-30T15:00:00-05:00"}`, wait until that run is `succeeded` (timeout 60 s), and compare API responses and database rows with DS-02. The explicit as-of run is required because ingest-triggered runs use the R21 as-of (PIPELINE_AS_OF when set, otherwise the current time) and exclude records after it (TRD 07 ANL-015, ANL-043). | Must | BR-15, BR-01 | Test |
 | TDV-032 | Floating-point values (median, MAD, robust_spread, z, composite_raw, composite_z, cusum_tally, adjusted and raw feature values) shall be computed in float64 and compared with absolute tolerance 1e-6: pass iff `abs(actual − expected) ≤ 1e-6`. NaN or missing actual where a number is expected fails. | Must | contract §7 | Test |
 | TDV-033 | Strings (statuses, reasons, session_ids, device_ids, alarm labels, feature keys after mapping) shall compare exactly (case-sensitive, no trimming other than the workbook-blank rule in TDV-035). | Must | contract §7 | Test |
 | TDV-034 | Integers and counts (epoch, n_sessions, usable_in_epoch, scored_sessions, status counts, row counts) and booleans (morning, floor_applied, baseline_formed) shall compare exactly. | Must | contract §7 | Test |
@@ -460,7 +460,7 @@ Table 4.7-C Expected scored sessions per resident-epoch (Exp_scores).
 | 13 | R10-20261029-01 | 2.623978 | 2.252973 | 12.569108 | on |
 | 14 | R10-20261030-01 | 1.586069 | 1.349075 | 13.418183 | on |
 
-- Frozen-baseline check VC-R10-FRZ: (a) Exp_baselines R10 rows match; (b) Tier A run on DS-01 truncated to R10 records with local date ≤ 2026-10-16 yields R10 baseline rows identical (exact equality) to the full run; (c) Tier B incremental (in-process `TestClient`, clock frozen with `time-machine` at each record's timestamp + 1 minute): after ingesting R10 days 1–16 one record at a time the persisted R10 `baselines` rows (values and `frozen_at`) are recorded, and after ingesting days 17–30 they are unchanged.
+- Frozen-baseline check VC-R10-FRZ: (a) Exp_baselines R10 rows match; (b) Tier A run on DS-01 truncated to R10 records with local date ≤ 2026-10-16 yields R10 baseline rows identical (exact equality) to the full run; (c) Tier B incremental (in-process `TestClient`, application clock frozen at each record's timestamp + 1 minute, TRD 24 D-136): after ingesting R10 days 1–16 one record at a time the persisted R10 `baselines` rows (values and `frozen_at`) are recorded, and after ingesting days 17–30 they are unchanged.
 - Compare: Exp_resident_outcomes R10, Exp_baselines R10, Exp_scores R10, alerts (VC-G10).
 
 | ID | Requirement | Priority | Trace | Verification |
@@ -533,7 +533,7 @@ Resident chart R09 (TRD 11 §4.13.3): banner "R09", Device "D09", Last check-in 
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TDV-061 | The DS-07 "as of" shall be set without any clock override in the running services: after loading DS-01, an admin call `POST /api/v1/pipeline/run` with `as_of` `2026-10-30T15:00:00-05:00` and profile `test_v0_1` makes every read endpoint use that as-of (TRD 05 API-069; contract R11/R21 precedence: explicit `as_of` → `PIPELINE_AS_OF` env, refused when `APP_ENV=production` → current time); `DATA_SOURCE_LABEL` is "pipeline test data v0.1". In-process tests (Tier A, integration tests using `TestClient`) shall instead freeze the clock with `time-machine` at the needed instant (e.g. each record's timestamp + 1 minute for incremental ingestion). | Must | contract §7 (test as-of), §13 | Test |
+| TDV-061 | The DS-07 "as of" shall be set without any clock override in the running services: after loading DS-01, an admin call `POST /api/v1/pipeline/run` with `as_of` `2026-10-30T15:00:00-05:00` and profile `test_v0_1` makes every read endpoint use that as-of (TRD 05 API-069; contract R11/R21 precedence: explicit `as_of` → `PIPELINE_AS_OF` env, refused when `APP_ENV=production` → current time); `DATA_SOURCE_LABEL` is "pipeline test data v0.1". In-process tests (Tier A, integration tests using `TestClient`) shall instead freeze the application clock (the `get_clock` dependency, TRD 24 D-136) at the needed instant (e.g. each record's timestamp + 1 minute for incremental ingestion). | Must | contract §7 (test as-of), §13 | Test |
 | TDV-062 | With DS-07 loaded, `GET /api/v1/residents` (default sort) shall return the rows and order of Table 4.9-B with their `status`, `needs_attention`, `attention_reasons` and `alarm_reviewed` values, and the summary changed 2 / needs_attention 2 / learning 0 / usual 6 (TRD 24 D-114). | Must | BR-12, SRC-21 | Test |
 | TDV-063 | The default order (`sort=alarm`) shall follow TRD 24 D-109, which amends contract §8, R16 and D-17: Changed (alarm date oldest first, then natural resident code), then Needs attention, Learning and Usual, each by natural resident code: R09, R10, R03, R08, R01, R02, R04, R05, R06, R07. | Must | contract §8, D-109, SRC-21 | Test |
 | TDV-064 | "Last 30 days" counts shall cover the as-of local date and the 29 preceding local dates; "missed" = missing_resident + missing_device_gap; duplicates are excluded. | Must | contract §8, BR-06 | Test |
@@ -687,7 +687,7 @@ Latest nightly run: seeds, residents, false alarms, rate, per-resident counts
 | TDV-070 | The report shall contain the sections and fields above; "Overall: PASS" only when all 22 cases pass in both tiers and VC-R04-INV and VC-R10-FRZ pass. | Must | SRC-17 Phase 12 | Test |
 | TDV-071 | `checks` shall equal the number of individual value comparisons performed for the case; a case with 0 checks shall be FAIL. | Must | BR-15 | Test |
 | TDV-072 | Sections 4 and 5 shall be completed by the engineer in the PR for every failed case before requesting review. | Must | SRC-17 Phase 12 | Inspection |
-| TDV-073 | The report shall be regenerated by every CI run and uploaded as an artifact; the committed copies in `docs/reports/` shall be refreshed in each Block 3 checkpoint PR (and any later PR) that touches `analytics/` (D-101). | Should | TRD 16 | Inspection |
+| TDV-073 | The report shall be regenerated by every full-suite run (every CI run; partial selections such as `-k r09` do not write the canonical files, TRD 24 D-137) and uploaded as an artifact; the committed copies in `docs/reports/` shall be refreshed in each Block 3 checkpoint PR (and any later PR) that touches `analytics/` (D-101). | Should | TRD 16 | Inspection |
 
 ### 4.11 Informational false-alarm robustness check (not gating)
 
@@ -789,3 +789,4 @@ timestamp_utc, mic noise, quality flag, extraction software version, firmware ve
 | 0.10 | 23 Oct 2026 | PR #3 review: TDV-073 refresh in each Block 3 checkpoint PR (one PR per checkpoint, D-101) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §4.9 UI fixture rewritten — Table 4.9-B Resident list with display statuses, "What's happening" and the D-109 order R09, R10, R03, R08, R01, R02, R04, R05, R06, R07; summary 2/2/0/6; Study team devices; Resident chart R09; Table 4.9-C alarms in the chart Summary and nav badge; Table 4.9-D v0.2 details and tags; Table 4.9-E Study team; TDV-062, TDV-063, TDV-066–TDV-069, TDV-074–TDV-076, TDV-104, AC-TDV-07, AC-TDV-10, AC-TDV-11 updated; §9 OQ-31; SRC-21 replaces SRC-09/10/18/19 | — |
 | 0.12 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): Table 4.9-B and §4.13 times with "CT" (D-119); OQ-31 answered (D-115) | — |
+| 0.13 | 2 Nov 2026 | Checkpoint 6 review (GitHub PR #22; TRD 24 D-135..D-137): TDV-031 sets PIPELINE_AS_OF for the ingest-triggered run; TDV-061 and §4.7.10 VC-R10-FRZ (c) freeze the application clock instead of naming time-machine; TDV-073 canonical report written only by full-suite runs | — |
