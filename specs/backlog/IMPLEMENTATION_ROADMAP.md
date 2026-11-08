@@ -24,7 +24,7 @@ The Instructions document (SRC-20) names its five units "Block 1" to "Block 5" (
 |---|---|---|---|---|---|
 | Block 1 | TRD Generation | GitHub PR #1, `trd-generation` | `TRD_Generation_Prompt.md`; the prompts of `TRD_Implementation_Audit_Checklist.md` one by one | All TRDs and the audit report reviewed | Merged |
 | Block 2 | Feature Backlog | GitHub PR #2, `backlog-generation` | `Generate_Backlog.md` Prompts 1–3 one by one; then `Generate_Documentation_Audit_Prompt.md` | `BACKLOG.md`, the feature files, this roadmap, both checklists; audit pass/fail | Merged |
-| Block 3 | Implement Features | nine PRs, one per checkpoint, each on its own branch created from the latest `main` (branch table below) | `Implement_Feature_Batches.md` Phases 7, 8, 9, 10, 11, 12, 13, 14A and 15: one prompt per checkpoint (section 5) | Each checkpoint PR reviewed, approved and merged before the next prompt runs (section 2.2) | Checkpoints 1 to 7 merged (GitHub PRs #3, #4, #17, #18, #20, #22 and #28); checkpoint 8 in review (GitHub PR #31) |
+| Block 3 | Implement Features | nine PRs, one per checkpoint, each on its own branch created from the latest `main` (branch table below) | `Implement_Feature_Batches.md` Phases 7, 8, 9, 10, 11, 12, 13, 14A and 15: one prompt per checkpoint (section 5) | Each checkpoint PR reviewed, approved and merged before the next prompt runs (section 2.2) | Checkpoints 1 to 8 merged (GitHub PRs #3, #4, #17, #18, #20, #22, #28 and #31); checkpoint 9 in review (GitHub PR #32) |
 | Block 4 | Deployment | one PR, a `feat/` branch created from `main` after the checkpoint 9 PR is merged (e.g. `feat/deployment`) | `Implement_Feature_Batches.md` Phase 14B, plus the manual Netlify, Render and Neon setup of `DEPLOYMENT_CHECKLIST.md` (section 6; backend host Render since TRD 24 D-153) | Deployment report, checklist evidence, re-checked audit items | Not started |
 | Block 5 | Test Cases | one PR, a `docs/` branch created from `main` after the Block 4 PR is merged (e.g. `docs/test-cases`) | `Test_Case_Generation_Prompt.md` (section 7) | One test-case file per feature | Not started |
 
@@ -40,7 +40,7 @@ Block 3 checkpoint branches (GIT-011: `feat/` plus a kebab-case name of at most 
 | 6 | Phase 12 Pass R01-R10 Validation Tests | `feat/cp6-validation` | GitHub PR #22 |
 | 7 | Phase 13 Implement Frontend | `feat/cp7-frontend` | GitHub PR #28 |
 | 8 | Phase 14A Generate Deployment Configuration | `feat/cp8-deployment-config` | GitHub PR #31 |
-| 9 | Phase 15 Run Final Audit | `feat/cp9-final-audit` | opened when checkpoint 9 is ready |
+| 9 | Phase 15 Run Final Audit | `feat/cp9-final-audit` | GitHub PR #32 |
 
 Branching (TRD 18 §4.2, D-99): the repository has only `main` and feature branches, and every PR above targets `main` directly; there is no `staging` branch. Every merge to `main` deploys the staging environment automatically (once Block 4 has set it up); production is deployed only by a deliberate, approved manual run of `deploy-production.yml` for a chosen `main` commit (TRD 15 §4.10).
 
