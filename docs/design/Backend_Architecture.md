@@ -279,7 +279,7 @@ Naming (Q-3 resolved in PR #3 review): the service modules are `auth_service.py`
 | Production with test profile | `create_app()` and the nightly job exit non-zero when `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` | ARC-056, API-058, ENV-010, AGT-015 |
 | Fixed as-of in production | refused when `APP_ENV=production` and `PIPELINE_AS_OF` is set | ENV-012, AGT-015 |
 | TLS to the database | refused in staging and production when any database URL lacks `sslmode=require` or `verify-full` | ARC-057, API-059, ENV-011, PGS-027 |
-| Facility name | rejected when `FACILITY_NAME` contains "Edge4Care" (case-insensitive) | ENV-015, AGT-019 |
+| Facility name | rejected when `FACILITY_NAME` contains the old facility name of AGT-019 (case-insensitive) | ENV-015, AGT-019 |
 | Profile rows | startup verifies that `config_parameters` holds the active profile | ENV-021 |
 | `.env` loading | only when `APP_ENV` is `local` or `test` | ENV-006 |
 

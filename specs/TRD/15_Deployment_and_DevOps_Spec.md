@@ -1,6 +1,6 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -445,8 +445,8 @@ Production is not touched by any of these steps.
 
 1. Choose a `main` commit whose required checks passed and whose `deploy-staging.yml` run succeeded (step 4.9.5), and the version `vX.Y.Z` (TRD 18 §4.7).
 2. If the release contains a migration, create Neon restore database branch `pre-<short-sha>` from `main` (DEP-063) and take the DEP-096 dump.
-3. Run the GitHub Actions workflow `deploy-production.yml` manually (`workflow_dispatch`, inputs `sha` and `version`; TRD 16 §4.5). The job uses the GitHub environment `production`, so it waits until a required reviewer approves the run.
-4. After approval the workflow verifies the commit is on `main`, its required checks passed and its staging deploy succeeded ("Wait for CI" semantics, TRD 16 CIC-053); triggers a Render deploy of that commit for the production web service and cron job through the Render API (`commitId` = SHA; pre-deploy `alembic upgrade head`, health check; `GIT_SHA` comes from `RENDER_GIT_COMMIT`) and waits until both deploys are `live`; publishes the Netlify production site with `netlify deploy --build --prod` from the same commit; waits for `version` = released SHA; runs the production smoke tests (DEP-081); then creates the Git tag `vX.Y.Z` and a GitHub Release.
+3. Run the GitHub Actions workflow `deploy-production.yml` manually (`workflow_dispatch`, inputs `sha` and `version`; TRD 16 §4.5). The workflow first verifies, before any approval is asked for, that the commit is on `main`, its required checks passed and its staging deploy succeeded (job `verify`, "Wait for CI" semantics, TRD 16 CIC-053; TRD 24 D-165); if any check fails the run stops and no reviewer is asked. Only the following `deploy` job uses the GitHub environment `production`, so it then waits until a required reviewer approves.
+4. After approval the workflow triggers a Render deploy of that commit for the production web service and cron job through the Render API (`commitId` = SHA; pre-deploy `alembic upgrade head`, health check; `GIT_SHA` comes from `RENDER_GIT_COMMIT`) and waits until both deploys are `live`; publishes the Netlify production site with `netlify deploy --build --prod` from the same commit; waits for `version` = released SHA; runs the production smoke tests (DEP-081); then creates the Git tag `vX.Y.Z` and a GitHub Release.
 5. If smoke tests fail, follow the rollback procedure (4.12) within 30 minutes; no tag is created.
 
 ### 4.11 Post-deploy smoke tests
@@ -564,7 +564,7 @@ Mapping from the current interim stack:
 - ASM-07 Frozen baselines are never recomputed after freeze; restore + rebuild relies on this.
 - RSK-14 Interim hosting providers may not offer a BAA / HIPAA-eligible plan on the tiers used; mitigated by DEP-008 (synthetic/test data only) and the ready AWS path (§4.16).
 - ASM-08 Fewer than 25 users and 100 residents: one backend replica and the smallest Neon compute are sufficient.
-- Note for lead (TRD-local): the `test_v0_1` seed uses a fixed pipeline as-of `2026-10-30T15:00:00-05:00` via PIPELINE_AS_OF (TRD 21) so staging tiles remain 2 / 7 / 1 / 19 after Oct 30.
+- Note for lead (TRD-local): the `test_v0_1` seed uses a fixed pipeline as-of `2026-10-30T15:00:00-05:00` via PIPELINE_AS_OF (TRD 21) so the staging resident summary remains 2 / 2 / 0 / 6 (changed, needs attention, learning, usual; TRD 24 D-166) after Oct 30.
 
 ## 6. Dependencies
 
@@ -629,3 +629,4 @@ Mapping from the current interim stack:
 | 0.14 | 27 Oct 2026 | Checkpoint 3 review (GitHub PR #17, Q-1): DEP-064 lock is transaction-scoped (TRD 24 D-120) | — |
 | 0.15 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §2, §4.1 topology, DEP-003/004/009/020/033/035, §4.5 rewritten for Render (web services, cron jobs, environment groups, `render.yaml` Blueprint), DEP-040–046/048, DEP-065, DEP-075, §4.9–4.10, §4.12 rollback, DEP-100/101/110/111/117, AC-DEP-03/10, §8 | — |
 | 0.16 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region `ohio` (US East); Starter tier; confirmed Render rollback and health-check behaviour | — |
+| 0.17 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-7, Q-8; TRD 24 D-165, D-166): §4.10 verifies the commit before approval is asked for; §5 note: resident summary 2 / 2 / 0 / 6 | — |

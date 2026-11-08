@@ -1,0 +1,128 @@
+# Render Blueprint (TRD 15 §4.5 outline; FEAT-081; TRD 24 D-153..D-158).
+# Four services and two environment groups. Secret values are never stored here: secret keys are
+# declared `sync: false` and entered in the Render dashboard only (DEP-033, DEP-044, ENV-005).
+# Dashboard-only settings (project `echowell` with environments `staging` and `production`, secret
+# values, notifications, Blueprint sync) are listed in docs/deployment.md.
+# Staging: the existing web service `echowell-api` (https://echowell-api.onrender.com, D-154),
+# auto-deploy "After CI checks pass". Production: `echowell-backend-production`, auto-deploy off,
+# deployed only by deploy-production.yml through the Render API (D-99, D-155).
+# Region `ohio` (US East) for every service: the region of `echowell-api`, fixed at creation (D-156).
+# GIT_SHA is not a variable: the Docker commands export it from RENDER_GIT_COMMIT (TRD 21 §4.2).
+# The `sh -c '...'` wrappers are required so $PORT and RENDER_GIT_COMMIT expand (TRD 15 §8).
+
+envVarGroups:
+  # Variables shared by the web service and the cron job of an environment (DEP-046 list).
+  - name: echowell-staging-shared
+    envVars:
+      - { key: APP_ENV, value: staging }
+      - { key: PIPELINE_PROFILE, value: test_v0_1 }
+      - { key: PIPELINE_AS_OF, value: "2026-10-30T15:00:00-05:00" }
+      - { key: FACILITY_NAME, value: Edgewood }
+      - { key: FACILITY_TZ, value: America/Chicago }
+      - { key: NIGHTLY_RUN_HOUR_LOCAL, value: "2" }
+      - { key: LOG_LEVEL, value: INFO }
+      - { key: LOG_FORMAT, value: json }
+      - { key: DATABASE_URL, sync: false } # secret: Neon `staging` pooled, echowell_app, sslmode=require
+      - { key: SENTRY_DSN, sync: false } # optional secret
+  - name: echowell-production-shared
+    envVars:
+      - { key: APP_ENV, value: production }
+      - { key: PIPELINE_PROFILE, value: production }
+      - { key: FACILITY_NAME, value: Edgewood }
+      - { key: FACILITY_TZ, value: America/Chicago }
+      - { key: NIGHTLY_RUN_HOUR_LOCAL, value: "2" }
+      - { key: LOG_LEVEL, value: INFO }
+      - { key: LOG_FORMAT, value: json }
+      - { key: DATABASE_URL, sync: false } # secret: Neon `main` pooled, echowell_app, sslmode=require
+      - { key: SENTRY_DSN, sync: false } # optional secret
+
+services:
+  # --- staging -----------------------------------------------------------------------------------
+  - type: web
+    name: echowell-api # existing staging web service (D-154); moved from Free to Starter (DEP-042)
+    runtime: docker
+    repo: https://github.com/EchoWellApp/echowell
+    branch: main
+    autoDeployTrigger: checksPass # "After CI checks pass" (DEP-043)
+    region: ohio # region of echowell-api (D-156); a region cannot be changed
+    plan: starter
+    numInstances: 1
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec uvicorn backend.main:app --host 0.0.0.0 --port "${PORT:-8000}" --proxy-headers --forwarded-allow-ips="*"'
+    preDeployCommand: alembic upgrade head # DEP-040: migrations never run in the web start command
+    healthCheckPath: /api/v1/health
+    buildFilter:
+      paths: ["backend/**", "analytics/**", "database/**", "alembic.ini"]
+    envVars:
+      - fromGroup: echowell-staging-shared
+      - { key: DATABASE_MIGRATION_URL, sync: false } # web service only (SEC-111): Neon direct, migrator
+      - { key: DATABASE_READONLY_URL, sync: false } # staging only (SEC-116)
+      - { key: JWT_SECRET, sync: false }
+      - { key: JWT_EXPIRES_MINUTES, value: "60" }
+      - { key: CORS_ORIGINS, value: https://echowell-und-staging.netlify.app }
+      - { key: CORS_ORIGIN_REGEX, value: '^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$' }
+      - { key: RATE_LIMIT_LOGIN, value: 5/minute }
+      - { key: RATE_LIMIT_INGEST, value: 600/minute }
+      - { key: DATA_SOURCE_LABEL, value: pipeline test data v0.1 }
+
+  - type: cron
+    name: echowell-nightly-staging
+    runtime: docker
+    repo: https://github.com/EchoWellApp/echowell
+    branch: main
+    autoDeployTrigger: checksPass
+    region: ohio # region of echowell-api (D-156); a region cannot be changed
+    plan: starter
+    schedule: "0 7,8 * * *" # UTC; the job runs only at facility-local 02:xx (DEP-047)
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec python -m backend.jobs.nightly_run'
+    buildFilter:
+      paths: ["backend/**", "analytics/**", "database/**", "alembic.ini"]
+    envVars:
+      - fromGroup: echowell-staging-shared # nothing else (SEC-111, ENV-053, DEP-046)
+
+  # --- production --------------------------------------------------------------------------------
+  - type: web
+    name: echowell-backend-production
+    runtime: docker
+    repo: https://github.com/EchoWellApp/echowell
+    branch: main
+    autoDeployTrigger: "off" # deployed only by deploy-production.yml (DEP-043, D-99)
+    region: ohio # region of echowell-api (D-156); a region cannot be changed
+    plan: starter
+    numInstances: 1
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec uvicorn backend.main:app --host 0.0.0.0 --port "${PORT:-8000}" --proxy-headers --forwarded-allow-ips="*"'
+    preDeployCommand: alembic upgrade head # DEP-040: migrations never run in the web start command
+    healthCheckPath: /api/v1/health
+    buildFilter:
+      paths: ["backend/**", "analytics/**", "database/**", "alembic.ini"]
+    envVars:
+      - fromGroup: echowell-production-shared
+      - { key: DATABASE_MIGRATION_URL, sync: false } # web service only (SEC-111): Neon direct, migrator
+      - { key: JWT_SECRET, sync: false }
+      - { key: JWT_EXPIRES_MINUTES, value: "60" }
+      - { key: CORS_ORIGINS, value: https://echowell-und.netlify.app }
+      - { key: RATE_LIMIT_LOGIN, value: 5/minute }
+      - { key: RATE_LIMIT_INGEST, value: 600/minute }
+      - { key: DATA_SOURCE_LABEL, value: demo data (synthetic) }
+
+  - type: cron
+    name: echowell-nightly-production
+    runtime: docker
+    repo: https://github.com/EchoWellApp/echowell
+    branch: main
+    autoDeployTrigger: "off" # deployed only by deploy-production.yml
+    region: ohio # region of echowell-api (D-156); a region cannot be changed
+    plan: starter
+    schedule: "0 7,8 * * *" # UTC; the job runs only at facility-local 02:xx (DEP-047)
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: sh -c 'export GIT_SHA="${RENDER_GIT_COMMIT:-unknown}"; exec python -m backend.jobs.nightly_run'
+    buildFilter:
+      paths: ["backend/**", "analytics/**", "database/**", "alembic.ini"]
+    envVars:
+      - fromGroup: echowell-production-shared # nothing else (SEC-111, ENV-053, DEP-046)

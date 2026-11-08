@@ -8,6 +8,7 @@ residents may share a device.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Collection
 from datetime import date
 
 from sqlalchemy import or_, select
@@ -104,6 +105,26 @@ class DeviceRepository:
                 or_(DeviceAssignment.valid_to.is_(None), DeviceAssignment.valid_to >= day),
             )
         ).first()
+
+    def assignments_of_devices(
+        self, device_ids: Collection[uuid.UUID]
+    ) -> list[tuple[uuid.UUID, date, date | None, str]]:
+        """`(device_id, valid_from, valid_to, resident_code)` of every assignment of the devices,
+        in `resident_code` order (one query for `residents_on_device` over a whole batch)."""
+        if not device_ids:
+            return []
+        rows = self.session.execute(
+            select(
+                DeviceAssignment.device_id,
+                DeviceAssignment.valid_from,
+                DeviceAssignment.valid_to,
+                Resident.resident_code,
+            )
+            .join(Resident, DeviceAssignment.resident_id == Resident.id)
+            .where(DeviceAssignment.device_id.in_(sorted(device_ids)))
+            .order_by(Resident.resident_code)
+        ).all()
+        return [(r[0], r[1], r[2], r[3]) for r in rows]
 
     def residents_on_device(self, device_id: uuid.UUID, day: date) -> list[Resident]:
         """Residents assigned to the device on `day`, in `resident_code` order (shared devices)."""

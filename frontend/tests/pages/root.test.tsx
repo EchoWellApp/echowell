@@ -1,8 +1,8 @@
 // req: NFR-142, FE-004, FE-021, FE-033, FE-172 (root layout) and the "/" redirect of TRD 04 §4.2
 import type { ReactElement } from "react";
 
-vi.mock("next/font/google", () => ({
-  Source_Sans_3: () => ({ className: "source-sans", variable: "--font-source-sans-3" }),
+vi.mock("next/font/local", () => ({
+  default: () => ({ className: "source-sans", variable: "--font-source-sans-3" }),
 }));
 
 describe("root layout and home page", () => {

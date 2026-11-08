@@ -1,0 +1,123 @@
+# Staging deploy verification (TRD 16 §4.4, CIC-040..CIC-043; TRD 15 §4.9, DEP-074, DEP-080,
+# DEP-082; TRD 24 D-71, D-99; FEAT-086).
+# Staging itself is deployed by the platform GitHub integrations on every merge to `main`: the
+# Netlify staging site builds `main` and Render `staging` (`echowell-api`, `echowell-nightly-staging`)
+# deploys "After CI checks pass" (CIC-001). This workflow deploys nothing and holds no platform
+# token: it waits until staging serves the pushed commit, re-seeds the staging database when
+# DEP-074 applies, and runs the staging smoke tests. Secrets exist only in the GitHub environment
+# `staging` (deployment branch rule `main`, CIC-043) and are passed via `env:` (CIC-092).
+# Jobs are split so each stays within 20 minutes (CIC-111) while the waits keep their 15 minutes.
+name: Deploy staging
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reseed:
+        description: Re-seed the staging database with seed test_v0_1 --reset (DEP-074)
+        type: boolean
+        default: false
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+permissions:
+  contents: read
+env:
+  PYTHON_VERSION: "3.12"
+jobs:
+  wait-for-staging:
+    # Steps 1-3: backend health `version` = pushed SHA and frontend build meta, polled every 15 s
+    # for up to 15 minutes in one loop (CIC-040, DEP-082; TRD 16 §8 for skipped Netlify builds).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    outputs:
+      reseed: ${{ steps.changes.outputs.reseed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: changes
+        name: Decide whether to re-seed (CIC-041)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RESEED: ${{ inputs.reseed }}
+          BEFORE_SHA: ${{ github.event.before }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          reseed=false
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            [ "$INPUT_RESEED" = "true" ] && reseed=true
+          elif [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            reseed=true  # unknown previous state: re-seed to be safe
+          elif git diff --name-only "$BEFORE_SHA" "$EXPECTED_SHA" -- backend/alembic analytics | grep -q .; then
+            reseed=true
+          fi
+          echo "re-seed staging: $reseed"
+          echo "reseed=$reseed" >> "$GITHUB_OUTPUT"
+      - name: Wait for staging backend and frontend to serve the pushed commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+          STAGING_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+        run: |
+          frontend_sha="$(git log -1 --format=%H "$EXPECTED_SHA" -- frontend netlify.toml)"
+          echo "expected SHA $EXPECTED_SHA; latest frontend/netlify.toml commit ${frontend_sha:-none}"
+          python3 tests/smoke/wait_for_deploy.py --sha "$EXPECTED_SHA" \
+            --api-base-url "$STAGING_API_BASE_URL" \
+            --frontend-url "$STAGING_FRONTEND_URL" --frontend-sha "${frontend_sha:-$EXPECTED_SHA}" \
+            --interval 15 --timeout 900
+
+  reseed-and-smoke:
+    # Steps 4-6 in the GitHub environment `staging` (CIC-043): re-seed when needed (CIC-041,
+    # DEP-074; the only D-71 reset, never production), then the DEP-080 smoke tests (CIC-042).
+    needs: wait-for-staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - name: Re-seed staging (seed test_v0_1 --reset, then the DS-10 loader)
+        if: needs.wait-for-staging.outputs.reseed == 'true'
+        # The complete variable set of an operator command (TRD 21 ENV-053): no JWT_SECRET, no
+        # CORS settings. Both URLs are the migrator role's direct URL (TRD 16 §4.9).
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_MIGRATION_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          APP_ENV: staging
+          PIPELINE_PROFILE: test_v0_1
+          PIPELINE_AS_OF: "2026-10-30T15:00:00-05:00"
+          FACILITY_NAME: Edgewood
+          FACILITY_TZ: America/Chicago
+          LOG_FORMAT: json
+          SEED_ADMIN_PASSWORD: ${{ secrets.STAGING_SEED_ADMIN_PASSWORD }}
+          SEED_CLINICIAN_PASSWORD: ${{ secrets.STAGING_SEED_CLINICIAN_PASSWORD }}
+          SEED_RESEARCHER_PASSWORD: ${{ secrets.STAGING_SEED_RESEARCHER_PASSWORD }}
+          SEED_INGEST_API_KEY: ${{ secrets.STAGING_SEED_INGEST_API_KEY }}
+        run: |
+          python -m backend.cli seed test_v0_1 --reset
+          python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv
+      - name: Staging smoke tests (DEP-080)
+        env:
+          SMOKE_ENV: staging
+          SMOKE_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+          SMOKE_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+          SMOKE_EXPECTED_SHA: ${{ github.sha }}
+          SMOKE_USER_EMAIL: researcher@example.com
+          SMOKE_USER_PASSWORD: ${{ secrets.STAGING_SEED_RESEARCHER_PASSWORD }}
+        run: pytest -p no:randomly tests/smoke -m smoke --junitxml=build/smoke-junit.xml
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-report
+          path: build/smoke-junit.xml
+          retention-days: 30
+          if-no-files-found: ignore

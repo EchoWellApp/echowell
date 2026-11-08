@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import and_, case, func, or_, select, tuple_
 from sqlalchemy.orm import Session
 
 from backend.models import (
@@ -154,45 +154,93 @@ class BaselineProgress:
 
 
 def _session_local_date(session: Session, epoch_id: uuid.UUID, session_id: str) -> date | None:
-    return session.scalar(
-        select(ProcessedSession.local_date).where(
-            ProcessedSession.epoch_id == epoch_id,
-            ProcessedSession.session_id == session_id,
+    return _session_local_dates(session, [(epoch_id, session_id)]).get((epoch_id, session_id))
+
+
+def _session_local_dates(
+    session: Session, pairs: Iterable[tuple[uuid.UUID, str]]
+) -> dict[tuple[uuid.UUID, str], date]:
+    """Local date of each non-duplicate `(epoch_id, session_id)` in one query."""
+    wanted = sorted(set(pairs))
+    if not wanted:
+        return {}
+    found: dict[tuple[uuid.UUID, str], date] = {}
+    for epoch_id, session_id, day in session.execute(
+        select(
+            ProcessedSession.epoch_id, ProcessedSession.session_id, ProcessedSession.local_date
+        ).where(
+            tuple_(ProcessedSession.epoch_id, ProcessedSession.session_id).in_(wanted),
             ProcessedSession.status != SessionStatus.DUPLICATE,
         )
-    )
+    ).all():
+        found.setdefault((epoch_id, session_id), day)
+    return found
 
 
 def baseline_progress(session: Session, epoch: Epoch | None, baseline_n: int) -> BaselineProgress:
     """`min(usable in current epoch, N)` of N, frozen flag and baseline dates (DME-012)."""
     if epoch is None:
         return BaselineProgress(0, baseline_n, False, None, None)
-    usable = session.scalar(
-        select(func.count())
-        .select_from(ProcessedSession)
-        .where(
-            ProcessedSession.epoch_id == epoch.id,
-            ProcessedSession.status == SessionStatus.USABLE,
-            ProcessedSession.late_arrival.is_(False),
+    return baseline_progress_many(session, [epoch], baseline_n)[epoch.id]
+
+
+def baseline_progress_many(
+    session: Session, epochs: Iterable[Epoch], baseline_n: int
+) -> dict[uuid.UUID, BaselineProgress]:
+    """`baseline_progress` of several epochs with a constant number of queries, by epoch id."""
+    ids = sorted({epoch.id for epoch in epochs})
+    if not ids:
+        return {}
+    usable: dict[uuid.UUID | None, int] = dict(
+        session.execute(
+            select(ProcessedSession.epoch_id, func.count())
+            .where(
+                ProcessedSession.epoch_id.in_(ids),
+                ProcessedSession.status == SessionStatus.USABLE,
+                ProcessedSession.late_arrival.is_(False),
+            )
+            .group_by(ProcessedSession.epoch_id)
         )
+        .tuples()
+        .all()
     )
-    rows = session.scalar(
-        select(func.count()).select_from(Baseline).where(Baseline.epoch_id == epoch.id)
+    rows: dict[uuid.UUID, int] = dict(
+        session.execute(
+            select(Baseline.epoch_id, func.count())
+            .where(Baseline.epoch_id.in_(ids))
+            .group_by(Baseline.epoch_id)
+        )
+        .tuples()
+        .all()
     )
-    composite = session.scalars(
-        select(Baseline).where(Baseline.epoch_id == epoch.id, Baseline.feature_key == "composite")
-    ).first()
-    first = frozen_after = None
-    if composite is not None:
-        first = _session_local_date(session, epoch.id, composite.first_session_id)
-        frozen_after = _session_local_date(session, epoch.id, composite.frozen_after_session_id)
-    return BaselineProgress(
-        n=min(int(usable or 0), baseline_n),
-        of=baseline_n,
-        frozen=rows == FROZEN_BASELINE_ROWS,
-        first_session_date=first,
-        frozen_after_date=frozen_after,
+    composites: dict[uuid.UUID, Baseline] = {}
+    for row in session.scalars(
+        select(Baseline).where(Baseline.epoch_id.in_(ids), Baseline.feature_key == "composite")
+    ):
+        composites.setdefault(row.epoch_id, row)
+    dates = _session_local_dates(
+        session,
+        [
+            pair
+            for c in composites.values()
+            for pair in ((c.epoch_id, c.first_session_id), (c.epoch_id, c.frozen_after_session_id))
+        ],
     )
+    out = {}
+    for epoch_id in ids:
+        composite = composites.get(epoch_id)
+        first = frozen_after = None
+        if composite is not None:
+            first = dates.get((epoch_id, composite.first_session_id))
+            frozen_after = dates.get((epoch_id, composite.frozen_after_session_id))
+        out[epoch_id] = BaselineProgress(
+            n=min(int(usable.get(epoch_id) or 0), baseline_n),
+            of=baseline_n,
+            frozen=rows.get(epoch_id, 0) == FROZEN_BASELINE_ROWS,
+            first_session_date=first,
+            frozen_after_date=frozen_after,
+        )
+    return out
 
 
 def watching_since(session: Session, epoch: Epoch | None, baseline_n: int) -> date | None:
@@ -415,36 +463,74 @@ def device_label(
     session: Session, resident: Resident, as_of_date: date, shared_device_min_residents: int
 ) -> DeviceLabel:
     """Current device, "(shared)" and "(was <code>)" facts of a resident (TRD 23 §4.4.1)."""
-    assignments = session.execute(
+    return device_labels(session, [resident], as_of_date, shared_device_min_residents)[resident.id]
+
+
+def device_labels(
+    session: Session,
+    residents: Iterable[Resident],
+    as_of_date: date,
+    shared_device_min_residents: int,
+) -> dict[uuid.UUID, DeviceLabel]:
+    """`device_label` of several residents with two queries, by resident id."""
+    ids = sorted({r.id for r in residents})
+    if not ids:
+        return {}
+    by_resident: dict[uuid.UUID, list[tuple[DeviceAssignment, str]]] = {rid: [] for rid in ids}
+    for assignment, code in session.execute(
         select(DeviceAssignment, Device.device_code)
         .join(Device, Device.id == DeviceAssignment.device_id)
-        .where(DeviceAssignment.resident_id == resident.id)
-        .order_by(DeviceAssignment.valid_from)
-    ).all()
-    current = previous = None
-    for i, (assignment, code) in enumerate(assignments):
-        covers = assignment.valid_from <= as_of_date and (
-            assignment.valid_to is None or assignment.valid_to >= as_of_date
+        .where(DeviceAssignment.resident_id.in_(ids))
+        .order_by(DeviceAssignment.resident_id, DeviceAssignment.valid_from)
+    ).all():
+        by_resident[assignment.resident_id].append((assignment, code))
+    current: dict[uuid.UUID, tuple[DeviceAssignment, str]] = {}
+    previous: dict[uuid.UUID, tuple[DeviceAssignment, str] | None] = {}
+    for rid, assignments in by_resident.items():
+        for i, (assignment, code) in enumerate(assignments):
+            covers = assignment.valid_from <= as_of_date and (
+                assignment.valid_to is None or assignment.valid_to >= as_of_date
+            )
+            if covers:
+                current[rid] = (assignment, code)
+                previous[rid] = assignments[i - 1] if i > 0 else None
+    sharers: dict[uuid.UUID, int] = {}
+    device_ids = sorted({assignment.device_id for assignment, _ in current.values()})
+    if device_ids:
+        sharers = dict(
+            session.execute(
+                select(
+                    DeviceAssignment.device_id,
+                    func.count(func.distinct(DeviceAssignment.resident_id)),
+                )
+                .where(
+                    DeviceAssignment.device_id.in_(device_ids),
+                    DeviceAssignment.valid_from <= as_of_date,
+                    or_(
+                        DeviceAssignment.valid_to.is_(None),
+                        DeviceAssignment.valid_to >= as_of_date,
+                    ),
+                )
+                .group_by(DeviceAssignment.device_id)
+            )
+            .tuples()
+            .all()
         )
-        if covers:
-            current = (assignment, code)
-            previous = assignments[i - 1] if i > 0 else None
-    if current is None:
-        return DeviceLabel(None, False, None)
-    assignment, code = current
-    sharers = session.scalar(
-        select(func.count(func.distinct(DeviceAssignment.resident_id))).where(
-            DeviceAssignment.device_id == assignment.device_id,
-            DeviceAssignment.valid_from <= as_of_date,
-            or_(DeviceAssignment.valid_to.is_(None), DeviceAssignment.valid_to >= as_of_date),
-        )
-    )
-    was = None
-    if previous is not None:
-        prev_assignment, prev_code = previous
-        if prev_assignment.valid_to == assignment.valid_from - timedelta(days=1):
-            was = prev_code
-    return DeviceLabel(code, int(sharers or 0) >= shared_device_min_residents, was)
+    labels = {}
+    for rid in ids:
+        if rid not in current:
+            labels[rid] = DeviceLabel(None, False, None)
+            continue
+        assignment, code = current[rid]
+        was = None
+        before = previous.get(rid)
+        if before is not None:
+            prev_assignment, prev_code = before
+            if prev_assignment.valid_to == assignment.valid_from - timedelta(days=1):
+                was = prev_code
+        shared = int(sharers.get(assignment.device_id) or 0) >= shared_device_min_residents
+        labels[rid] = DeviceLabel(code, shared, was)
+    return labels
 
 
 @dataclass(frozen=True)
@@ -720,10 +806,18 @@ def baseline_periods(session: Session, epoch_ids: Iterable[uuid.UUID]) -> list[B
         .join(Epoch, Epoch.id == Baseline.epoch_id)
         .where(Baseline.epoch_id.in_(list(epoch_ids)), Baseline.feature_key == "composite")
     ).all()
+    dates = _session_local_dates(
+        session,
+        [
+            pair
+            for c, _, _ in rows
+            for pair in ((c.epoch_id, c.first_session_id), (c.epoch_id, c.frozen_after_session_id))
+        ],
+    )
     periods = []
     for composite, code, number in rows:
-        first = _session_local_date(session, composite.epoch_id, composite.first_session_id)
-        last = _session_local_date(session, composite.epoch_id, composite.frozen_after_session_id)
+        first = dates.get((composite.epoch_id, composite.first_session_id))
+        last = dates.get((composite.epoch_id, composite.frozen_after_session_id))
         if first is not None and last is not None:
             periods.append(
                 BaselinePeriodRow(
@@ -799,24 +893,57 @@ def epoch_outcomes(session: Session) -> list[EpochOutcome]:
         .join(Resident, Resident.id == Epoch.resident_id)
         .join(Device, Device.id == Epoch.device_id)
     ).all()
+    epoch_ids = [epoch.id for epoch, *_ in rows]
+    baseline_rows: dict[uuid.UUID, int] = {}
+    frozen_after: dict[uuid.UUID, str] = {}
+    scored: dict[uuid.UUID, int] = {}
+    first_alarm: dict[uuid.UUID, str] = {}
+    if epoch_ids:
+        baseline_rows = dict(
+            session.execute(
+                select(Baseline.epoch_id, func.count(func.distinct(Baseline.feature_key)))
+                .where(Baseline.epoch_id.in_(epoch_ids))
+                .group_by(Baseline.epoch_id)
+            )
+            .tuples()
+            .all()
+        )
+        frozen_after = dict(
+            session.execute(
+                select(Baseline.epoch_id, Baseline.frozen_after_session_id).where(
+                    Baseline.epoch_id.in_(epoch_ids), Baseline.feature_key == "composite"
+                )
+            )
+            .tuples()
+            .all()
+        )
+        scored = dict(
+            session.execute(
+                select(Score.epoch_id, func.count())
+                .where(Score.epoch_id.in_(epoch_ids))
+                .group_by(Score.epoch_id)
+            )
+            .tuples()
+            .all()
+        )
+        first_alarm = dict(
+            session.execute(
+                select(Alert.epoch_id, Alert.session_id)
+                .where(Alert.epoch_id.in_(epoch_ids))
+                .distinct(Alert.epoch_id)
+                .order_by(Alert.epoch_id, Alert.triggered_at)
+            )
+            .tuples()
+            .all()
+        )
     out = []
     for epoch, code, device, n in rows:
-        baselines = feature_baselines(session, epoch)
-        composite = baselines.get("composite")
-        scored = session.scalar(
-            select(func.count()).select_from(Score).where(Score.epoch_id == epoch.id)
-        )
-        first_alarm = session.scalar(
-            select(Alert.session_id)
-            .where(Alert.epoch_id == epoch.id)
-            .order_by(Alert.triggered_at)
-            .limit(1)
-        )
         out.append(
             EpochOutcome(
-                code, epoch.epoch_number, device, int(n), len(baselines) == FROZEN_BASELINE_ROWS,
-                composite.frozen_after_session_id if composite else None, int(scored or 0),
-                first_alarm,
+                code, epoch.epoch_number, device, int(n),
+                baseline_rows.get(epoch.id, 0) == FROZEN_BASELINE_ROWS,
+                frozen_after.get(epoch.id), int(scored.get(epoch.id, 0)),
+                first_alarm.get(epoch.id),
             )
         )  # fmt: skip
     return out

@@ -1,6 +1,6 @@
 # 12 Security and Authentication Spec
 
-Document ID: ECHOWELL-TRD-12 · Version 0.15 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-12 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -194,7 +194,7 @@ Legend: Y = allowed; — = refused (401 for wrong credential type, 403 `FORBIDDE
 | SEC-052 | CI shall run `gitleaks detect` (CLI 8.x) on every pull request and fail on any finding. | Must | T-09 | Test |
 | SEC-053 | GitHub secret scanning with push protection shall be enabled on the repository where the plan allows it. | Should | T-09 | Inspection |
 | SEC-054 | `NEXT_PUBLIC_*` variables shall contain no secrets (they are embedded in the browser bundle). | Must | T-09 | Inspection |
-| SEC-055 | JWT_SECRET shall be generated with `openssl rand -hex 32` (64 hex characters, the generator of TRD 21 §4.2 and §4.6), differ per environment, and be rotated every 180 days and immediately on suspected exposure or departure of a team member with access. | Must | T-03 | Inspection |
+| SEC-055 | JWT_SECRET shall be generated with `openssl rand -base64 48` (64 base64 characters, the generator of TRD 21 §4.2 and §4.6, which always meets the ≥ 16 distinct-character rule; TRD 24 D-161), differ per environment, and be rotated every 180 days and immediately on suspected exposure or departure of a team member with access. | Must | T-03 | Inspection |
 | SEC-056 | Database role passwords of staging, production and AWS shall differ per environment and per role (local/CI placeholders: SEC-050 exception), be at least 32 random characters, and be rotated every 180 days and on team-member departure. | Must | T-09 | Inspection |
 | SEC-057 | Device API keys shall be rotated every 365 days, on device replacement and on suspected exposure (create new key, deploy to device, revoke old key). | Must | T-01 | Inspection |
 | SEC-058 | Each rotation shall be recorded as an audit row (`config.changed` with the secret name, never its value) or, for platform-side secrets, in the operations log in `docs/deployment.md`. | Should | T-07 | Inspection |
@@ -466,3 +466,4 @@ its own. Every action matches `^[a-z_]+(\.[a-z_]+){1,2}$`, which TRD 20 enforces
 | 0.13 | 27 Oct 2026 | Checkpoint 4: `ingest.batch.received` details add `pipeline_run_id`, the link from a batch to its pipeline run for `GET /ingest/batches/{id}` (open question to the reviewer: a nullable `ingest_batches.pipeline_run_id` column instead) | — |
 | 0.14 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, Q-6; TRD 24 D-124, D-127): `ingest.batch.received` keeps `pipeline_run_id` for traceability while `ingest_batches.pipeline_run_id` (TRD 20 §4.13) holds the link the API reads; the SEC-012 bundled list keeps `password1234` as an "EchoWell addition" so the AC-SEC-05 example stays valid | — |
 | 0.15 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.16 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-2; TRD 24 D-161): SEC-055 generator `openssl rand -base64 48` | — |

@@ -84,8 +84,22 @@ def configure(settings: Settings) -> None:
     _current_settings = settings
 
 
+def _has_route_limit(active: Limiter, handler: object) -> bool:
+    """True when the route carries its own `@limiter.limit` / `@limiter.shared_limit` decorator.
+
+    slowapi's `_should_exempt` only looks at static decorator limits; a decorator whose limit is a
+    callable (`login_limit`, `ingest_limit`) is recorded as a dynamic limit, so the middleware would
+    also apply DEFAULT_LIMIT (keyed by client address for API-key callers) on top of the route's own
+    limit and cap one ingest key at 300/minute instead of RATE_LIMIT_INGEST (API-102, SEC-090).
+    """
+    name = f"{getattr(handler, '__module__', '')}.{getattr(handler, '__name__', '')}"
+    return name in active._route_limits or name in active._dynamic_route_limits
+
+
 class RateLimitMiddleware:
     """The default limit for routes without a decorator, as a pure ASGI middleware.
+
+    Routes with their own decorator are left to it: their limit replaces the default (API-102).
 
     slowapi 0.1.9's `SlowAPIASGIMiddleware` re-sends `http.response.start` before every body chunk,
     which breaks streamed responses (the CSV exports); this does the same check with slowapi's own
@@ -103,7 +117,11 @@ class RateLimitMiddleware:
         app = scope["app"]
         active: Limiter = app.state.limiter
         handler = _find_route_handler(app.routes, scope)
-        if not active.enabled or _should_exempt(active, handler):
+        if (
+            not active.enabled
+            or _should_exempt(active, handler)
+            or _has_route_limit(active, handler)
+        ):
             await self.app(scope, receive, send)
             return
         request = Request(scope, receive=receive, send=send)
