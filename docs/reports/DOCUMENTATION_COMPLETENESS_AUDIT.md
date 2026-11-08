@@ -74,6 +74,15 @@ Severities follow `specs/prompts/TRD_Implementation_Audit_Checklist.md` Step 1:
 
 The verdict rule is the same: FAIL with any Critical or Major finding.
 
+### 1.2 Update after this run (checkpoint 9, same commit)
+
+Added by the checkpoint 9 author after this independent run; the findings and verdict above are left as the reviewer wrote them.
+
+- **DCA-01 (Major) is resolved within checkpoint 9.** `docs/reports/traceability_inspections.md` now exists and holds inspection evidence for every untested requirement of TRDs 02, 04, 05 and 07–12 that passed inspection; `python tests/trace_report.py` lists 13 Must requirements, exactly the ones that FAILED inspection (`TRD_Implementation_Audit.md` §3). `TRD_Implementation_Audit.md` §6 links all 247 TRD acceptance criteria defined in §7 sections to a test or a documented inspection (203 PASS, 14 FAIL, 28 pending Block 4, 2 N/A). MVP-01..MVP-15 are audited in `MVP_READINESS_CHECKLIST.md` §M. (The reviewer's 281 counts AC IDs referenced anywhere in the TRDs; 247 are defined in a §7 section.)
+- **DCA-12 is resolved** by the tracking refresh in this checkpoint's PR (roadmap §2.1 and BACKLOG §10).
+- **DCA-02 and DCA-03 stay open:** CI still does not run the trace report, and the script does not expand ID ranges or count AC markers.
+- With DCA-01 resolved, no Major finding remains, so the verdict after this update is **PASS WITH FINDINGS** (0 Critical, 0 Major, 11 Minor open).
+
 ## 2. Coverage tables
 
 ### 2.1 Business requirements → TRDs and features (item 1)

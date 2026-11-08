@@ -120,7 +120,7 @@ Ordered by severity. S2 = a Must fails with no workaround; S3 = a Should fails o
 | GIT-021 | 18 | Should | S4 | Scopes outside the allowed list are in use. | scopes used on main: cp8, security, cli, e2e (git log subjects) |
 | GIT-024 | 18 | Should | S4 | Commit bodies do not consistently reference implemented requirement IDs. | git log 7a607dc..main: 0 'Implements:' lines; 61/106 agent commits cite any requirement/feature ID |
 | GIT-043 | 18 | Should | S4 | Many suppressions name the rule but carry no reason. | e.g. backend/cli.py:485,556; backend/services/validation.py:371; backend/api/openapi.py:328 — rule named but no reason comment |
-| GIT-094 | 18 | Must | S4 | A document still references the removed repository path for SRC-07 (human-authored prompt). | specs/prompts/TRD_Generation_Prompt.md:31 lists 'EchoWell_preprint-113062-submitted.pdf' under specs/business-requirements/ |
+| GIT-094 | 18 | Must | S4 | A document still references the removed repository path for SRC-07 (human-authored prompt). | specs/prompts/TRD_Generation_Prompt.md:31 lists the SRC-07 preprint PDF under specs/business-requirements/ |
 | GIT-095 | 18 | Must | S4 | Allowed by D-168 and TST-070 but GIT-095 not amended; CI does not check 1 MB/location rule. | frontend/app/fonts/SourceSans3-latin-variable.woff2 (binary not .svg/.png/.ico); tests/fixtures/answer_key/*.xlsx outside specs/; ci.yml:34 checks only 10 MB |
 | GIT-097 | 18 | Should | S4 | Doc drift: font committed per D-168; TRD 18 not updated. | frontend/app/fonts/SourceSans3-latin-variable.woff2 committed (c9ea154); TRD 24 D-168 accepts it but TRD 18 GIT-097 unchanged |
 | GIT-111 | 18 | Must | S4 | Platform pin upgrade merged before demo (not a security fix), then reverted; current pins compliant. | PR #21 (python 3.12-slim→3.15-slim) merged 1 Nov, reverted by direct push 019b9e1; backend/Dockerfile:5 now python:3.12-slim |
@@ -2149,7 +2149,7 @@ Evidence: test node IDs (`path::test`), frontend test files with the test title,
 | GIT-091 | Must | PASS |  | tests/unit/test_repository_layout.py::test_tst_007_no_audio_files_tracked |  | test |
 | GIT-092 | Must | PASS |  | database/seeds/test_v0_1, specs/data-samples, tests/fixtures synthetic only; database/seeds/load_evaluation_ground_truth.py:5 |  | inspection |
 | GIT-093 | Must | PASS |  | specs/business-requirements/REFERENCES.md:7 links SRC-07; no preprint/standard committed (git ls-files) |  | inspection |
-| GIT-094 | Must | FAIL | S4 | specs/prompts/TRD_Generation_Prompt.md:31 lists 'EchoWell_preprint-113062-submitted.pdf' under specs/business-requirements/ | A document still references the removed repository path for SRC-07 (human-authored prompt). | inspection |
+| GIT-094 | Must | FAIL | S4 | specs/prompts/TRD_Generation_Prompt.md:31 lists the SRC-07 preprint PDF under specs/business-requirements/ | A document still references the removed repository path for SRC-07 (human-authored prompt). | inspection |
 | GIT-095 | Must | FAIL | S4 | frontend/app/fonts/SourceSans3-latin-variable.woff2 (binary not .svg/.png/.ico); tests/fixtures/answer_key/*.xlsx outside specs/; ci.yml:34 checks only 10 MB | Allowed by D-168 and TST-070 but GIT-095 not amended; CI does not check 1 MB/location rule. | inspection |
 | GIT-096 | Must | PASS |  | .gitattributes has no lfs filters; no LFS pointers in git ls-files |  | inspection |
 | GIT-097 | Should | FAIL | S4 | frontend/app/fonts/SourceSans3-latin-variable.woff2 committed (c9ea154); TRD 24 D-168 accepts it but TRD 18 GIT-097 unchanged | Doc drift: font committed per D-168; TRD 18 not updated. | inspection |
@@ -2418,4 +2418,266 @@ Evidence: test node IDs (`path::test`), frontend test files with the test title,
 | AGT-060 |  | PASS |  | tests/integration/test_schema_behaviour.py:36 app role UPDATE raw_sessions → privilege error |  | inspection |
 | AGT-061 |  | PASS |  | .github/workflows/ci.yml:153-169 openapi-contract job diffs export-openapi output |  | inspection |
 | AGT-062 |  | PASS |  | backend/api/permissions.py:12,14 roles admin/clinician/researcher; scopes ingest:write, pipeline:run |  | inspection |
+
+## 6. Acceptance criteria
+
+Every acceptance criterion defined in a TRD §7 section (247 IDs, AC-*) has a linked test or a documented inspection (FEAT-091-FR-03, TST-013, NFR-111). Linking: a direct `req("AC-…")` / `// req: AC-…` marker; or a test-marked requirement the criterion cites; otherwise inspection by an independent reviewer with the same status rules as §1. MVP-01..MVP-15 are audited in `specs/backlog/MVP_READINESS_CHECKLIST.md` §M.
+
+| Status | Count |
+|---|---|
+| PASS | 203 |
+| FAIL | 14 |
+| PENDING BLOCK 4 | 28 |
+| NOT APPLICABLE | 2 |
+| **Total** | **247** |
+
+| AC | TRD | Status | Severity | Linked test or inspection evidence | Note | Link |
+|---|---|---|---|---|---|---|
+| AC-VIS-01 | 00 | PASS |  | tests/validation/test_harness.py::test_tier_a_matches_the_answer_key; tests/validation/test_harness.py::test_tier_b_matches_the_answer_key; tests/validation/test_r01_clean_control.py..test_r10_gradual_drift.py | All SRC-03 comparisons R01-R10, Tier A and B, test_v0_1 | inspection |
+| AC-VIS-02 | 00 | PASS |  | frontend/tests/e2e/resident-list.spec.ts "E2E-03 heading, filter buttons, legend and status note", "E2E-04 rows in the default order..."; frontend/tests/e2e/helpers.ts:21 | Filters All (10)/Changed (2)/Needs attention (2)/Usual (6) and R09 row text asserted on DS-07 seed | inspection |
+| AC-VIS-03 | 00 | PASS |  | via UX-144, ANL-015 (frontend/components/CheckinLog/CheckinLog.test.tsx ""; frontend/tests/e2e/isolated.spec.ts "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-VIS-04 | 00 | PASS |  | tests/security/test_no_audio.py::test_audio_is_refused_everywhere; tests/contract/test_openapi_contract.py::test_no_audio_or_identity_properties; tests/security/test_static_scans.py::test_no_personal_or_audio_columns; tests/security/test_static_scans.py::test_no_forbidden_dependencies; CI ci.yml repo-hygiene "Forbidden terms" (:37-43) | Old facility name only in specs/ and docs/reports (excluded by CI grep); none in code | inspection |
+| AC-VIS-05 | 00 | FAIL | S4 | script over specs/TRD/01-25 requirement rows: 955 of 1978 active rows carry no BR-xx in any cell (e.g. FE-003, SEC-002, CUS-002); same finding as VIS-014 | Many rows trace to SRC/other req IDs only; doc traceability gap, no behaviour impact | inspection |
+| AC-VIS-06 | 00 | FAIL | S4 | frontend/app/login/page.tsx:29 (DataBar meta=undefined); frontend/lib/wording/common.ts:20; frontend/tests/e2e/resident-list.spec.ts "FE-185 data bar..."; frontend/tests/e2e/admissions.spec.ts "E2E-13 / FE-189..." | No-audio bar on every page and admissions note OK, but /login omits the test_v0_1 "Test data only" prefix required by VIS-020 | inspection |
+| AC-VIS-07 | 00 | PASS |  | grep -rniE "diagnos\|severity\|risk score" frontend/app frontend/components frontend/lib: only "not a diagnosis" (lib/wording/list.ts:64, chart.ts:186); CI ci.yml:41-43 | Inspection. Note CI grep path frontend/lib/wording.ts misses the frontend/lib/wording/ directory | inspection |
+| AC-VIS-08 | 00 | PASS |  | tests/unit/backend/core/test_config.py::test_cfg_06_production_refuses_test_profile; tests/unit/backend/core/test_config.py::test_cfg_06_process_exits_1_with_critical_log |  | inspection |
+| AC-VIS-09 | 00 | PASS |  | git ls-files: no preprint PDF (only EchoWell_PROSPERO.pdf, SRC-08); specs/business-requirements/REFERENCES.md:7 links SRC-07 by URL and DOI | Inspection | inspection |
+| AC-VIS-10 | 00 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_open_alarms_and_leaning_most; ::test_exactly_four_data_alerts; ::test_study_team_analytics; frontend/tests/e2e/review.spec.ts "FE-193 Summary facts..."; study-team.spec.ts "E2E-20 / FE-194..." | R09/R10 Not reviewed + 4 data problems + 281/267 of 300 asserted | inspection |
+| AC-ARC-01 | 01 | PASS |  | tests/unit/backend/test_import_boundary.py | test marker | test |
+| AC-ARC-02 | 01 | PASS |  | tests/integration/test_schema_behaviour.py::test_ac_pgs_01_raw_sessions_update_fails_for_app; ::test_ac_pgs_02_raw_sessions_delete_and_truncate_fail_for_app |  | inspection |
+| AC-ARC-03 | 01 | PASS |  | tests/integration/api/test_sessions.py::test_valid_record_is_stored_and_processed | 201, status_after_processing, one raw row, run trigger ingest status succeeded | inspection |
+| AC-ARC-04 | 01 | PASS |  | tests/integration/test_cli_pipeline.py::test_rebuild_reproduces_identical_derived_tables; tests/validation/test_global_checks.py::test_vc_g12_determinism_and_rebuild; tests/validation/test_harness.py::test_tier_b_matches_the_answer_key |  | inspection |
+| AC-ARC-05 | 01 | PASS |  | tests/integration/pipeline/test_runner_persistence.py::test_reviews_and_snooze_survive_a_rerun; backend/services/pipeline_persistence.py:9; tests/integration/test_schema_behaviour.py::test_reviews_and_notes_are_append_only | Ack survives full run (test); note retention by inspection (full run never deletes staff_notes) | inspection |
+| AC-ARC-06 | 01 | PASS |  | backend/core/db.py:127-146 (sorted advisory locks); tests/integration/db/test_advisory_locks.py::test_lock_xact_many_takes_the_same_keys_as_lock_xact; tests/unit/backend/core/test_db.py::test_lock_residents_sorts_and_deduplicates; tests/integration/pipeline/test_concurrent_ingest.py::test_concurrent_posts_of_one_session_id | Inspection + lock-order tests; no test posts R02 and R03 concurrently (gap noted) | inspection |
+| AC-ARC-07 | 01 | PASS |  | CI ci.yml job docker-build (:230-258); .github/workflows/e2e.yml:52 compose up --wait with backend /api/v1/health healthcheck (docker-compose.yml:44-49, postgres:16-alpine); tests/integration/api/test_health.py::test_tst_054_health_ok_with_database_up | E2E push run on 23e558b green | inspection |
+| AC-ARC-08 | 01 | PASS |  | tests/contract/test_openapi_contract.py::test_no_audio_or_identity_properties |  | inspection |
+| AC-ARC-09 | 01 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ARC-10 | 01 | PASS |  | tests/validation/test_harness.py::test_ground_truth_never_changes_the_outputs; tests/integration/db/test_ground_truth_loader.py::test_refuses_outside_test_v0_1 |  | inspection |
+| AC-ARC-11 | 01 | PASS |  | tests/integration/pipeline/test_runner_persistence.py::test_reviews_and_snooze_survive_a_rerun; backend/services/pipeline_persistence.py:56 (RESIDENT_KINDS excludes review_flagged_data_problem) | Review+snooze by test; flagged data alert untouched by reconcile (inspection) | inspection |
+| AC-FR-01 | 02 | PASS |  | tests/validation/test_global_checks.py::test_vc_g01_status_totals; ::test_vc_g03_status_counts; ::test_vc_g09_day_ledger; tests/integration/api/test_ingest.py::test_src05_upload |  | inspection |
+| AC-FR-02 | 02 | PASS |  | tests/validation/test_global_checks.py::test_vc_g04_resident_outcomes; tests/unit/analytics/test_cusum_engine.py::test_src05_alarms |  | inspection |
+| AC-FR-03 | 02 | PASS |  | tests/validation/test_global_checks.py::test_vc_g05_baselines; ::test_vc_g06_scores |  | inspection |
+| AC-FR-04 | 02 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py | test marker | test |
+| AC-FR-05 | 02 | PASS |  | tests/integration/api/test_sessions.py::test_repeat_session_id_is_a_duplicate; tests/validation/test_r04_duplicate_records.py::test_vc_r04_duplicate_records; tests/validation/test_invariance.py::test_vc_r04_inv_identical_without_the_copies | Repeat POST uses R09 record; R04 results unchanged via VC-R04/-INV | inspection |
+| AC-FR-06 | 02 | PASS |  | tests/integration/api/test_ingest.py::test_record_errors_do_not_fail_the_batch; tests/unit/backend/services/test_validation.py::test_reject_rules; tests/integration/api/test_sessions.py::test_unknown_resident_is_rejected_and_stored | audio_quality_flag "bad" rejected invalid_enum into ingest_rejections (batch); single-POST 422 path tested with another reject | inspection |
+| AC-FR-07 | 02 | PASS |  | frontend/tests/e2e/mutating.spec.ts "(1) E2E-18 save review on R09"; tests/integration/api/test_ui_fixture_ds07.py::test_after_a_review_of_r09; tests/integration/api/test_alerts.py::test_refusals (acknowledge 404, :255) |  | inspection |
+| AC-FR-08 | 02 | PASS |  | tests/security/test_auth_matrix.py::test_every_cell; tests/integration/api/test_role_checks.py::test_every_matrix_cell |  | inspection |
+| AC-FR-09 | 02 | PASS |  | frontend/tests/e2e/resident-chart.spec.ts "E2E-08 R09 from the list through Voice trends, Baseline and Check-in log" (:220-300), "FE-186 ... Check-in log" (R07 oldest log :107) |  | inspection |
+| AC-FR-10 | 02 | PASS |  | frontend/tests/e2e/admissions.spec.ts "E2E-13 / FE-189 experimental note and empty state"; tests/integration/api/test_admissions.py::test_range_not_available |  | inspection |
+| AC-FR-11 | 02 | PASS |  | specs/TRD/02_Functional_Requirements_Specification.md §4.28 (all 202 active FRs present, script) and §4.27/§4.29 (UC coverage by range) | Inspection; FR-226..228, 251..254, 331 covered only via §4.29 range statement | inspection |
+| AC-FR-12 | 02 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py | test marker | test |
+| AC-FR-13 | 02 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py | test marker | test |
+| AC-FR-14 | 02 | PASS |  | tests/integration/api/test_ingest.py::test_legacy_file_is_refused |  | inspection |
+| AC-NFR-01 | 03 | PASS |  | via NFR-001, NFR-003 (tests/performance/test_api_latency.py::test_read_endpoints_p95_on_ds08) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-NFR-02 | 03 | PENDING BLOCK 4 |  | tests/performance/test_pipeline_runtime.py::test_pipeline_on_src05_within_5_s (budget, ci.yml:50); ::test_src05_full_rebuild_within_30_s (e2e.yml performance job :155); tests/validation/test_global_checks.py::test_vc_g12_determinism_and_rebuild | 5 s, 1e-6 match and rebuild identity pass in CI; 30 s rebuild runs only in nightly job, no scheduled run yet | inspection |
+| AC-NFR-03 | 03 | PASS |  | .github/workflows/ci.yml:48-49 (analytics 95, backend 85); frontend/vitest.config.ts:21 (lines 80) via ci.yml frontend test:coverage; CHECKPOINT_8 §5 rows 2,5 | 98 / 96 / 99.4 % | inspection |
+| AC-NFR-04 | 03 | PASS |  | via TST-110 (frontend/tests/e2e/a11y.spec.ts "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-NFR-05 | 03 | PENDING BLOCK 4 |  | tests/smoke/test_tls.py::test_tls_policy_api, ::test_tls_policy_frontend; tests/security/test_transport_and_secrets.py::test_every_database_url_needs_sslmode_require; tests/unit/backend/core/test_config.py::test_staging_requires_sslmode_but_local_does_not | sslmode refusal PASS in tests; TLS scan of staging needs hosted deploy | inspection |
+| AC-NFR-06 | 03 | PENDING BLOCK 4 |  | specs/backlog/DEPLOYMENT_CHECKLIST.md:193 (N.03 RDS KMS, backups), :195 (N.05 Secrets Manager) | AWS checklist part present; provider evidence for interim DB is a Block 4 platform check | inspection |
+| AC-NFR-07 | 03 | PENDING BLOCK 4 |  | render.yaml:67,111 (DATA_SOURCE_LABEL test/synthetic) | Hosted DB rows need staging/production | inspection |
+| AC-NFR-08 | 03 | PASS |  | tests/integration/api/test_auth.py::test_logs_hold_no_password_token_or_email; tests/integration/api/test_sessions.py::test_logs_carry_no_feature_value_or_key; tests/security/test_data_minimisation.py::test_responses_and_logs_hold_study_ids_only; backend/core/logging.py:28 | Note creation not log-captured; note_service logs nothing and redaction covers note/body keys (inspection) | inspection |
+| AC-NFR-09 | 03 | PASS |  | via NFR-131, NFR-132 (tests/unit/analytics/test_morning_offset.py::test_local_time_vectors) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-NFR-10 | 03 | PENDING BLOCK 4 |  | .github/workflows/e2e.yml:29,70 (3 browsers on schedule only); frontend/playwright.config.ts:16-19; frontend/tests/e2e/helpers.ts:22 ("CT" times on UTC runner) | Chromium green on 23e558b; FF/WebKit nightly not yet run; no explicit Europe/London run (UTC runner shows CT) | inspection |
+| AC-NFR-11 | 03 | FAIL | S3 | tests/integration/test_schema_behaviour.py::test_ac_pgs_01_*, ::test_ac_pgs_02_*, ::test_ac_pgs_03_audit_logs_are_append_only_for_app; no NFR-125 invariant check after pipeline runs | Append-only part PASS; NFR-125 per-run invariant checks absent (NFR-125 FAIL S3) | inspection |
+| AC-NFR-12 | 03 | PASS |  | tests/validation/test_harness.py::test_ground_truth_never_changes_the_outputs; tests/contract/test_openapi_contract.py::test_generated_equals_committed; ci.yml openapi-contract job |  | inspection |
+| AC-FE-01 | 04 | PASS |  | .github/workflows/ci.yml frontend job (:180-203, NODE_VERSION 20): npm ci, lint, typecheck, format:check, test:coverage, build | CI green on 23e558b | inspection |
+| AC-FE-02 | 04 | PASS |  | via FE-185 (frontend/tests/e2e/resident-list.spec.ts "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-FE-03 | 04 | PASS |  | frontend/tests/e2e/resident-chart.spec.ts | test marker | test |
+| AC-FE-04 | 04 | PASS |  | frontend/tests/e2e/resident-chart.spec.ts "E2E-11 Needs attention R08"; frontend components read meta.baseline_n (e.g. app/(protected)/residents/[residentCode]/log/page.tsx:71), no hard-coded 16 | Production "of 30" by inspection (N from meta), plus wording tests with N=30 | inspection |
+| AC-FE-05 | 04 | PASS |  | frontend/tests/e2e/auth.spec.ts "FE-188 redirect to /login without a token and back to next after sign-in", "FE-188 an external next value is rejected" |  | inspection |
+| AC-FE-06 | 04 | PASS |  | via FE-051 (frontend/tests/unit/auth.test.ts "auth token store") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-FE-07 | 04 | PENDING BLOCK 4 |  | netlify.toml; tests/unit/test_netlify_config.py::test_header_block_is_byte_identical_to_trd12_excerpt; ::test_connect_src_is_exactly_self_and_the_two_render_origins | Repo headers verified; staging response headers need hosted deploy | inspection |
+| AC-FE-08 | 04 | PASS |  | via FE-190, FE-191 (frontend/tests/e2e/a11y.spec.ts "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-FE-09 | 04 | PASS |  | frontend/tests/e2e/privacy.spec.ts | test marker | test |
+| AC-FE-10 | 04 | PASS |  | via FE-187 (frontend/tests/e2e/mutating.spec.ts ""; frontend/tests/pages/resident-review.test.tsx "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-FE-11 | 04 | PASS |  | frontend/tests/e2e/study-team.spec.ts | test marker | test |
+| AC-API-01 | 05 | PASS |  | tests/integration/api/test_ingest.py::test_src05_upload; tests/performance/test_api_latency.py::test_ingest_src05_accepted_and_processed | 202, 283/0/2, run succeeded (30 s bound in budget test, ci.yml:50) | inspection |
+| AC-API-02 | 05 | PASS |  | via API-073 (tests/integration/api/test_residents.py::test_filters_and_paging) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-API-03 | 05 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_resident_chart_r09; ::test_devices; tests/integration/api/test_residents.py::test_checkin_log; ::test_detail |  | inspection |
+| AC-API-04 | 05 | PASS |  | tests/validation/test_r09_step_change.py::test_vc_r09_step_change (Tier B via /scores, tests/validation/tier_b.py:88); tests/integration/api/test_ui_fixture_ds07.py::test_open_alarms_and_leaning_most |  | inspection |
+| AC-API-05 | 05 | PASS |  | tests/integration/api/test_sessions.py | test marker | test |
+| AC-API-06 | 05 | PASS |  | tests/integration/api/test_sessions.py | test marker | test |
+| AC-API-07 | 05 | PASS |  | tests/integration/api/test_sessions.py | test marker | test |
+| AC-API-08 | 05 | PASS |  | tests/integration/api/conftest.py:144 (check_response hook on every integration response); tests/contract/response_validation.py:118; tests/integration/api/test_http_middleware.py::test_errors_carry_the_request_id_and_problem_shape | 429/500 cases in test_rate_limits / test_unhandled_exception_is_a_generic_500 | inspection |
+| AC-API-09 | 05 | PASS |  | tests/integration/api/test_rate_limits.py | test marker | test |
+| AC-API-10 | 05 | PASS |  | tests/security/test_auth_matrix.py::test_pipeline_run_key_scopes; ::test_every_cell |  | inspection |
+| AC-API-11 | 05 | PASS |  | tests/integration/pipeline/test_nightly_run.py::test_one_run_per_local_night_across_dst; tests/integration/api/test_pipeline.py::test_scheduler_key_runs_nightly_once_per_local_date |  | inspection |
+| AC-API-12 | 05 | PASS |  | tests/integration/api/test_health.py::test_tst_054_health_ok_with_database_up; ::test_tst_054_health_degraded_with_database_down |  | inspection |
+| AC-API-13 | 05 | PASS |  | via API-120, API-124 (tests/performance/test_api_latency.py::test_health_p95) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-API-14 | 05 | PASS |  | via API-133 (tests/integration/api/test_alerts.py::test_data_alert_list) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-API-15 | 05 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_after_a_review_of_r09; tests/integration/api/test_alerts.py::test_reviews; tests/integration/pipeline/test_runner_persistence.py::test_reviews_and_snooze_survive_a_rerun |  | inspection |
+| AC-API-16 | 05 | PASS |  | tests/integration/api/test_scores.py | test marker | test |
+| AC-API-17 | 05 | PASS |  | tests/integration/api/test_ingest.py | test marker | test |
+| AC-API-18 | 05 | PASS |  | tests/integration/api/test_http_middleware.py::test_meta_uses_the_latest_succeeded_run (:217-218); tests/contract/response_validation.py:135-149 |  | inspection |
+| AC-ANL-01 | 07 | PASS |  | tests/validation/test_harness.py | test marker | test |
+| AC-ANL-02 | 07 | PASS |  | tests/unit/analytics/test_pipeline.py | test marker | test |
+| AC-ANL-03 | 07 | PASS |  | tests/unit/analytics/test_pipeline.py | test marker | test |
+| AC-ANL-04 | 07 | PASS |  | CI ci.yml backend-lint "lint-imports"; pyproject.toml:40-43 (forbidden backend, sqlalchemy, psycopg, fastapi, httpx, requests); tests/unit/backend/test_import_boundary.py::test_analytics_imports_are_allowed |  | inspection |
+| AC-ANL-05 | 07 | PASS |  | tests/integration/pipeline/test_runner_persistence.py; tests/unit/analytics/test_pipeline.py | test marker | test |
+| AC-ANL-06 | 07 | FAIL | S3 | searched tests for a 283-single-POST incremental vs batch comparison: none. Partial: tests/validation/test_invariance.py::test_vc_r10_frz_frozen_baseline (R10 one at a time); tests/unit/analytics/test_pipeline.py::test_deterministic_and_order_independent | Incremental-equals-batch on full SRC-05 not tested | inspection |
+| AC-ANL-07 | 07 | PENDING BLOCK 4 |  | tests/performance/test_pipeline_runtime.py::test_pipeline_on_src05_within_5_s (ci.yml:50); ::test_ds08_full_rebuild_within_120_s (e2e.yml performance job) | 5 s passes in CI; DS-08 120 s only in nightly performance job, no scheduled run yet | inspection |
+| AC-ANL-08 | 07 | PASS |  | tests/integration/pipeline/test_runner_persistence.py | test marker | test |
+| AC-ANL-09 | 07 | PASS |  | tests/integration/pipeline/test_runner_persistence.py; tests/integration/test_cli_pipeline.py | test marker | test |
+| AC-ANL-10 | 07 | PASS |  | tests/unit/analytics/test_aggregates.py | test marker | test |
+| AC-ANL-11 | 07 | PASS |  | tests/integration/pipeline/test_runner_persistence.py | test marker | test |
+| AC-ANL-12 | 07 | PASS |  | tests/unit/backend/core/test_config.py::test_cfg_06_production_refuses_test_profile; ::test_tst_038_production_refuses_pipeline_as_of |  | inspection |
+| AC-ANL-13 | 07 | PASS |  | tests/integration/pipeline/test_nightly_run.py | test marker | test |
+| AC-ANL-14 | 07 | PASS |  | tests/integration/test_schema_behaviour.py::test_ac_pgs_14_ground_truth_only_through_readonly; tests/integration/db/test_grants.py::test_app_privileges_are_exactly_section_4_8 |  | inspection |
+| AC-BSC-01 | 08 | PASS |  | tests/unit/analytics/test_robust_stats.py | test marker | test |
+| AC-BSC-02 | 08 | PASS |  | tests/unit/analytics/test_baseline_builder.py | test marker | test |
+| AC-BSC-03 | 08 | PASS |  | tests/unit/analytics/test_composite_score.py | test marker | test |
+| AC-BSC-04 | 08 | PASS |  | tests/unit/analytics/test_speaker_screen.py | test marker | test |
+| AC-BSC-05 | 08 | PASS |  | tests/unit/analytics/test_epoch_detection.py | test marker | test |
+| AC-BSC-06 | 08 | PASS |  | tests/unit/analytics/test_baseline_builder.py; tests/unit/analytics/test_composite_score.py; tests/unit/analytics/test_zscore_calculator.py | test marker | test |
+| AC-BSC-07 | 08 | PASS |  | tests/unit/analytics/test_zscore_calculator.py::test_zero_spread_gives_zero; analytics/pipeline.py:238-241 (one zero_spread warning per epoch and feature) | z=0 tested (pause_fraction); warning by inspection only | inspection |
+| AC-BSC-08 | 08 | PASS |  | tests/integration/pipeline/test_runner_persistence.py::test_late_record_keeps_frozen_baselines; tests/validation/test_invariance.py::test_vc_r10_frz_frozen_baseline; tests/unit/analytics/test_pipeline.py::test_frozen_baselines_win_and_mismatch_warns |  | inspection |
+| AC-CUS-01 | 09 | PASS |  | tests/validation/test_global_checks.py::test_vc_g06_scores |  | inspection |
+| AC-CUS-02 | 09 | PASS |  | tests/unit/analytics/test_cusum_engine.py::test_src05_alarms; tests/validation/test_r09_step_change.py; tests/validation/test_r10_gradual_drift.py |  | inspection |
+| AC-CUS-03 | 09 | PASS |  | tests/validation/test_global_checks.py::test_vc_g10_alerts; tests/unit/analytics/test_alert_generator.py::test_src05_alerts_and_leaning_most |  | inspection |
+| AC-CUS-04 | 09 | PASS |  | tests/unit/analytics/test_cusum_engine.py::test_tally_and_states; ::test_epochs_have_their_own_tally | Equivalent vectors (6.0->5.5 rings; negative resets to 0, state stays on); literal [6,-10,0] case absent | inspection |
+| AC-CUS-05 | 09 | PASS |  | tests/unit/analytics/test_pipeline.py::test_dropping_duplicates_changes_nothing_else; tests/validation/test_invariance.py::test_vc_r04_inv_identical_without_the_copies; tests/validation/test_r02_missing_days.py; test_r03_set_aside_sessions.py; test_r05_possible_other_speaker.py |  | inspection |
+| AC-CUS-06 | 09 | PASS |  | tests/integration/api/test_alerts.py | test marker | test |
+| AC-CUS-07 | 09 | PASS |  | tests/unit/analytics/test_alert_generator.py::test_one_event_per_ringing_epoch_with_closure_facts; tests/unit/analytics/test_cusum_engine.py::test_epochs_have_their_own_tally; backend/services/pipeline_persistence.py:356-357,370-371 | Closure "epoch ended" persisted by inspection; no single integration test of the whole scenario | inspection |
+| AC-CUS-08 | 09 | PASS |  | tests/unit/backend/test_no_outbound_alerts.py | test marker | test |
+| AC-CUS-09 | 09 | PASS |  | tests/unit/analytics/test_data_alerts.py::test_src05_exactly_four_alerts_in_order; tests/unit/analytics/test_alert_generator.py::test_src05_alerts_and_leaning_most; tests/integration/pipeline/test_runner_persistence.py::test_alerts_endpoint_leaning_most |  | inspection |
+| AC-CUS-10 | 09 | PASS |  | tests/integration/api/test_alerts.py | test marker | test |
+| AC-CUS-11 | 09 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_study_team_analytics; tests/unit/backend/test_db_inspection.py::test_ground_truth_is_not_referenced_by_the_pipeline_or_cli; tests/validation/test_answer_key_integrity.py::test_no_production_code_reads_the_answer_key; tests/integration/test_schema_behaviour.py::test_ac_pgs_14_ground_truth_only_through_readonly |  | inspection |
+| AC-ING-01 | 10 | PASS |  | tests/integration/api/test_ingest.py | test marker | test |
+| AC-ING-02 | 10 | PASS |  | tests/validation/test_global_checks.py::test_vc_g01_status_totals; ::test_vc_g09_day_ledger; tests/unit/analytics/test_day_ledger.py::test_src05_ledger |  | inspection |
+| AC-ING-03 | 10 | PASS |  | tests/integration/api/test_ingest.py | test marker | test |
+| AC-ING-04 | 10 | PASS |  | tests/unit/backend/services/test_validation.py | test marker | test |
+| AC-ING-05 | 10 | PASS |  | tests/integration/api/test_sessions.py; tests/unit/backend/services/test_validation.py | test marker | test |
+| AC-ING-06 | 10 | PASS |  | tests/integration/api/test_ingest.py | test marker | test |
+| AC-ING-07 | 10 | PASS |  | tests/integration/test_schema_behaviour.py::test_ac_pgs_01_raw_sessions_update_fails_for_app; ::test_ac_pgs_02_raw_sessions_delete_and_truncate_fail_for_app |  | inspection |
+| AC-ING-08 | 10 | PASS |  | tests/integration/api/test_ingest.py | test marker | test |
+| AC-ING-09 | 10 | PASS |  | tests/integration/pipeline/test_concurrent_ingest.py | test marker | test |
+| AC-ING-10 | 10 | PASS |  | tests/integration/api/test_sessions.py | test marker | test |
+| AC-ING-11 | 10 | PASS |  | tests/integration/api/test_sessions.py | test marker | test |
+| AC-UX-01 | 11 | PASS |  | frontend/tests/e2e/resident-list.spec.ts "FE-185 data bar, nav badge and study-ID link", "E2E-03 ...", "E2E-04 rows in the default order with pills, texts and last check-ins" |  | inspection |
+| AC-UX-02 | 11 | PASS |  | frontend/tests/e2e/resident-list.spec.ts "E2E-05 filter Changed then Needs attention", "E2E-06 Usual filter kept...", "E2E-03/UX-261 ... from the URL" (?show= asserted :84-133) |  | inspection |
+| AC-UX-03 | 11 | PASS |  | frontend/tests/e2e/study-team.spec.ts expectDevices (:20-64, D08 12 days :63); frontend/tests/pages/study.test.tsx:196 |  | inspection |
+| AC-UX-04 | 11 | PASS |  | frontend/tests/pages/resident-trends.test.tsx | test marker | test |
+| AC-UX-05 | 11 | PASS |  | frontend/components/MeasurementCards/MeasurementCards.test.tsx; frontend/tests/pages/resident-trends.test.tsx | test marker | test |
+| AC-UX-06 | 11 | PASS |  | via UX-130, UX-318, UX-123 (frontend/components/StaffNotes/StaffNotes.test.tsx ""; frontend/tests/unit/wording-review.test.ts "review and notes wording") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-UX-07 | 11 | PASS |  | frontend/components/ExperimentalBanner/ExperimentalBanner.test.tsx; frontend/tests/pages/admissions.test.tsx | test marker | test |
+| AC-UX-08 | 11 | PASS |  | grep of frontend/app, components, lib for UX-161 stems, old facility name, "[Facility name]": none except "not a diagnosis"; ci.yml:37-43; tests/unit/backend/core/test_config.py::test_forbidden_facility_name_rejected | Inspection; CI grep covers only diagnoses\|severity | inspection |
+| AC-UX-09 | 11 | PASS |  | via FE-191 (frontend/tests/e2e/responsive.spec.ts "") | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-UX-10 | 11 | PASS |  | frontend/lib/wording/common.ts:20 (no Test data sentence off test_v0_1); N from meta.baseline_n (no hard-coded 16 in frontend source); frontend/tests/unit/wording-chart.test.ts:102 | Inspection plus wording tests | inspection |
+| AC-UX-11 | 11 | PASS |  | frontend/tests/e2e/review.spec.ts "FE-193 review panels of R09 and R10 (TRD 11 §4.17.5)"; frontend/tests/e2e/mutating.spec.ts "(1) E2E-18 save review on R09" (:84-95, pill :31) |  | inspection |
+| AC-UX-12 | 11 | PASS |  | frontend/tests/e2e/study-team.spec.ts "E2E-20 / FE-194 ...", "E2E-21 / FE-194 clinician gets the access-denied state on /study"; frontend/tests/pages/study.test.tsx:265 (production profile) |  | inspection |
+| AC-SEC-01 | 12 | PASS |  | tests/security/test_auth_matrix.py | test marker | test |
+| AC-SEC-02 | 12 | PASS |  | via SEC-042 (tests/integration/test_auth_coverage.py::test_every_route_has_its_auth_dependency; tests/integration/test_auth_coverage.py::test_production_has_no_doc) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-SEC-03 | 12 | PASS |  | via SEC-114 (tests/integration/db/test_roles.py::test_app_login_cannot_become_readonly; tests/integration/test_schema_behaviour.py::test_ac_pgs_14_ground_truth_onl) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-SEC-04 | 12 | PASS |  | tests/security/test_api_keys.py; tests/security/test_tokens.py | test marker | test |
+| AC-SEC-05 | 12 | PASS |  | tests/integration/api/test_users.py | test marker | test |
+| AC-SEC-06 | 12 | PASS |  | tests/integration/test_cli_credentials.py::test_create_api_key_prints_the_key_once_and_stores_its_hash; ::test_revoke_api_key; tests/security/test_api_keys.py::test_revoked_key_is_invalid |  | inspection |
+| AC-SEC-07 | 12 | PENDING BLOCK 4 |  | netlify.toml; tests/unit/test_netlify_config.py::test_permissions_policy_denies_microphone_and_camera_and_hsts_is_set; tests/smoke/test_tls.py::test_tls_policy_api | Repo config verified; staging headers/TLS 1.1 rejection need hosted deploy | inspection |
+| AC-SEC-08 | 12 | PASS |  | tests/unit/backend/core/test_config.py::test_short_jwt_secret_rejected_everywhere; ::test_cfg_06_production_refuses_test_profile; ::test_tst_038_production_refuses_pipeline_as_of; tests/unit/test_env_templates.py::test_ac_env_02_production_url_without_sslmode_refused |  | inspection |
+| AC-SEC-09 | 12 | PASS |  | tests/integration/api/test_ingest.py; tests/integration/api/test_notes.py | test marker | test |
+| AC-SEC-10 | 12 | PASS |  | via SEC-128 (tests/security/test_static_scans.py::test_no_forbidden_dependencies; tests/security/test_static_scans.py::test_the_scan_recognises_forbidden_names) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-SEC-11 | 12 | PENDING BLOCK 4 |  | specs/backlog/DEPLOYMENT_CHECKLIST.md:203 (N.13 signed item); render.yaml:67,111; frontend/lib/wording/common.ts:22 | Checklist item present; interim stack header is a hosted check | inspection |
+| AC-TST-01 | 13 | FAIL | S3 | Table 4.3-A: 50 of 84 case IDs (ROB-01, SCR-01..10, BL-01..07, CUS-01..07, PIP-01..05...) not found by ID in tests/unit or tests/validation | Unit suite passes but Table 4.3-A cases not implemented by ID (TST-020 FAIL S3) | inspection |
+| AC-TST-02 | 13 | PASS |  | via TST-041, TST-050 (tests/integration/db/test_grants.py::test_app_privileges_are_exactly_section_4_8; tests/integration/db/test_grants.py::test_scores_z_and_tally_checks) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TST-03 | 13 | PASS |  | tests/validation (CI ci.yml:45); tests/validation/test_harness.py::test_a_skipped_validation_test_fails_the_session; docs/reports/ALGORITHM_VALIDATION_REPORT.md:6 "Overall: PASS" |  | inspection |
+| AC-TST-04 | 13 | PASS |  | tests/contract/*; tests/contract/test_openapi_contract.py::test_generated_equals_committed; ci.yml openapi-contract job (api-types.ts up to date step) |  | inspection |
+| AC-TST-05 | 13 | PASS |  | tests/security/test_auth_matrix.py | test marker | test |
+| AC-TST-06 | 13 | PASS |  | .github/workflows/ci.yml:48-49; frontend/vitest.config.ts:21; CHECKPOINT_8 §5 rows 2,5 | 98 / 96 / 99.4 % | inspection |
+| AC-TST-07 | 13 | PASS |  | frontend/tests/e2e/*.spec.ts (E2E-01..E2E-21 all present); frontend/tests/e2e/a11y.spec.ts "FE-190 ... no serious or critical violations"; e2e.yml playwright green on 23e558b (Chromium) |  | inspection |
+| AC-TST-08 | 13 | PASS |  | via TST-120, TST-121, TST-124 (tests/performance/test_pipeline_runtime.py::test_pipeline_on_src05_within_5_s; tests/unit/analytics/test_pipeline.py::test_src05_runs_within_five_seco) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TST-09 | 13 | FAIL | S2 | gh api repos/EchoWellApp/echowell/rules/branches/main: required_status_checks [] | Suites run on PRs but none is a required check; a red PR can merge (TST-150, CIC-070) | inspection |
+| AC-TST-10 | 13 | PENDING BLOCK 4 |  |  | MVP-01..15 on the release candidate is a Block 4 release check | inspection |
+| AC-TST-11 | 13 | PENDING BLOCK 4 |  |  | Demo steps 4-5 (TST-180, TST-181) on the demo environment | inspection |
+| AC-TST-12 | 13 | PASS |  | via TST-056, TST-067 (tests/integration/api/test_alerts.py::test_reviews; tests/integration/api/test_ui_fixture_ds07.py::test_after_a_review_of_r09) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TST-13 | 13 | PASS |  | via TST-068 (tests/integration/db/test_ground_truth_loader.py::test_refuses_outside_test_v0_1; tests/unit/backend/test_ground_truth_boundary.py::test_only_the_summ) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TDV-01 | 14 | PASS |  | tests/validation/test_r01_clean_control.py .. test_r10_gradual_drift.py (Tier A and B parametrised) |  | inspection |
+| AC-TDV-02 | 14 | PASS |  | tests/validation/test_global_checks.py | test marker | test |
+| AC-TDV-03 | 14 | PASS |  | tests/validation/test_invariance.py::test_vc_r04_inv_identical_without_the_copies; ::test_vc_r10_frz_frozen_baseline |  | inspection |
+| AC-TDV-04 | 14 | PASS |  | via TDV-013 (tests/validation/test_answer_key_integrity.py::test_golden_files_match_specs_and_checksums) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TDV-05 | 14 | PASS |  | via TDV-010, TDV-011, TDV-012 (tests/validation/test_answer_key_integrity.py::test_pipeline_input_folder_holds_only_ds01) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-TDV-06 | 14 | PASS |  | docs/reports/ALGORITHM_VALIDATION_REPORT.md:6 "Overall: PASS" (regenerated on 23e558b) | Re-run on the Block 4 release candidate still due | inspection |
+| AC-TDV-07 | 14 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_resident_list; ::test_resident_list_sorts |  | inspection |
+| AC-TDV-08 | 14 | PASS |  | tests/integration/api/test_ingest.py::test_legacy_file_is_refused |  | inspection |
+| AC-TDV-09 | 14 | PASS |  | tests/validation/test_robustness_check.py::test_publish_fills_section_7_only; ::test_not_part_of_the_gating_selection; e2e.yml nightly-validation robustness step (informational) |  | inspection |
+| AC-TDV-10 | 14 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_open_alarms_and_leaning_most; ::test_exactly_four_data_alerts; frontend/tests/e2e/review.spec.ts "E2E-17 Study team data problems (researcher)" |  | inspection |
+| AC-TDV-11 | 14 | PASS |  | tests/integration/api/test_ui_fixture_ds07.py::test_study_team_analytics; tests/validation/test_ui_fixture_recompute.py::test_study_team_figures_match_the_answer_key; frontend/tests/e2e/study-team.spec.ts "E2E-20 / FE-194 ..." |  | inspection |
+| AC-TDV-12 | 14 | PASS |  | tests/validation/test_harness.py | test marker | test |
+| AC-DEP-01 | 15 | PASS |  | README.md:13; docs/deployment.md:39; e2e.yml:52-56 (compose up + seed in CI, playwright job 6 min); frontend/tests/e2e/resident-list.spec.ts E2E-03/E2E-04 | Procedure works (CI, CHECKPOINT_8 §5 row 11); 10-min timing on an 8 GB laptop not recorded | inspection |
+| AC-DEP-02 | 15 | PASS |  | tests/integration/test_cli_seed.py::test_production_refuses_seed_and_reset | Exit 2, all tables unchanged (CLI invoked directly, not via compose exec) | inspection |
+| AC-DEP-03 | 15 | PENDING BLOCK 4 |  | .github/workflows/deploy-staging.yml; render.yaml | deploy-staging run on 23e558b failed waiting for staging (not provisioned yet) | inspection |
+| AC-DEP-04 | 15 | PENDING BLOCK 4 |  | .github/workflows/deploy-production.yml | No production release yet | inspection |
+| AC-DEP-05 | 15 | PENDING BLOCK 4 |  |  | Production database check | inspection |
+| AC-DEP-06 | 15 | PENDING BLOCK 4 |  | docs/deployment.md | Staging failure drill | inspection |
+| AC-DEP-07 | 15 | PENDING BLOCK 4 |  | docs/deployment.md:214 | Rollback rehearsal (DEP-085) | inspection |
+| AC-DEP-08 | 15 | PENDING BLOCK 4 |  | docs/deployment.md | Restore drill | inspection |
+| AC-DEP-09 | 15 | PENDING BLOCK 4 |  | docs/deployment.md | Demo fallback rehearsal | inspection |
+| AC-DEP-10 | 15 | PASS |  | tests/unit/test_env_templates.py; tests/unit/test_render_blueprint.py | test marker | test |
+| AC-DEP-11 | 15 | NOT APPLICABLE |  |  | AWS cut-over (DEP-112..117) is post-MVP; Neon content check is AC-TPS-04 (Block 4) | inspection |
+| AC-CIC-01 | 16 | FAIL | S2 | tests/unit/analytics/test_config.py::test_feature_constants (COMPOSITE_SIGNS :32) and validation suite in backend-test (ci.yml:45); rules/branches/main required_status_checks [] | Job would fail, but backend-test is not a required check, so the PR can still be merged | inspection |
+| AC-CIC-02 | 16 | PASS |  | .github/workflows/ci.yml:26-29 repo-hygiene "No audio files"; tests/unit/test_repository_layout.py::test_tst_007_no_audio_files_tracked | Inspection: .wav matches the pattern | inspection |
+| AC-CIC-03 | 16 | PASS |  | .github/workflows/ci.yml openapi-contract job; tests/contract/test_openapi_contract.py::test_generated_equals_committed |  | inspection |
+| AC-CIC-04 | 16 | PASS |  | .github/workflows/ci.yml:58-63 PR-title regex | Regex run locally: "Updated stuff" fails, "feat(api): add device panel endpoint" passes | inspection |
+| AC-CIC-05 | 16 | PASS |  | gh api runs: CI on 23e558b 17:01:18-17:06:41 (5.4 min); ci.yml:132-138 backend-reports with ALGORITHM_VALIDATION_REPORT.md and validation_results.json | Report shows 10/10 residents PASS | inspection |
+| AC-CIC-06 | 16 | PASS |  | grep -r "secrets\." .github/workflows: STAGING_* x5 in deploy-staging.yml only; RENDER_API_KEY, NETLIFY_AUTH_TOKEN in deploy-production.yml only | Inspection matches the list | inspection |
+| AC-CIC-07 | 16 | PENDING BLOCK 4 |  | .github/workflows/deploy-staging.yml; .github/workflows/deploy-production.yml | deploy-staging on 23e558b failed (staging not provisioned); production release is Block 4 | inspection |
+| AC-CIC-08 | 16 | FAIL | S2 | gh api repos/EchoWellApp/echowell/rules/branches/main: required_status_checks [] | Zero required checks instead of the eight of CIC-070 | inspection |
+| AC-CIC-09 | 16 | PENDING BLOCK 4 |  | .github/workflows/e2e.yml schedule | 3 consecutive green nightly runs; none yet | inspection |
+| AC-CIC-10 | 16 | PENDING BLOCK 4 |  | .github/workflows/e2e.yml:112-163 performance job | No scheduled/dispatched e2e.yml run yet; local budget runs in CHECKPOINT_8 §5 rows 3-4 | inspection |
+| AC-LOG-01 | 17 | PASS |  | tests/unit/backend/core/test_logging.py::test_json_lines_have_the_required_keys; backend/core/logging.py:146-162; tests/integration/api/conftest.py:305-310 | Formatter always emits the 7 keys; no suite-wide every-line check | inspection |
+| AC-LOG-02 | 17 | PASS |  | tests/integration/api/test_auth.py | test marker | test |
+| AC-LOG-03 | 17 | PASS |  | tests/integration/api/test_sessions.py::test_logs_carry_no_feature_value_or_key (:333 one ingest_record_rejected) |  | inspection |
+| AC-LOG-04 | 17 | PASS |  | tests/integration/api/test_http_middleware.py::test_request_id_is_echoed_or_generated; ::test_errors_carry_the_request_id_and_problem_shape; tests/unit/backend/core/test_logging.py::test_request_id_acceptance |  | inspection |
+| AC-LOG-05 | 17 | FAIL | S4 | backend/services/pipeline_runner.py:274 (detail "<Type>: msg", no stage), :397 ("persistence:"); tests/integration/pipeline/test_runner_persistence.py::test_a_failing_resident_is_rolled_back_alone; tests/integration/api/test_sessions.py::test_failed_run_answers_pending | Rollback, failed run and 201 hold; exception detail never starts with the stage name "cusum:" (LOG-063) | inspection |
+| AC-LOG-06 | 17 | PASS |  | tests/integration/api/test_pipeline.py | test marker | test |
+| AC-LOG-07 | 17 | PASS |  | tests/integration/pipeline/test_nightly_run.py::test_missed_night_is_reported; frontend/tests/pages/admin.test.tsx:73-89 ("Nightly run missing for Oct 31") |  | inspection |
+| AC-LOG-08 | 17 | PASS |  | tests/integration/api/test_http_middleware.py | test marker | test |
+| AC-LOG-09 | 17 | PASS |  | tests/unit/backend/core/test_monitoring.py::test_empty_dsn_logs_error_and_never_calls_transport; ::test_dsn_is_ignored_outside_staging_and_production | Transport never called with empty DSN (not a network-isolated forced 500) | inspection |
+| AC-LOG-10 | 17 | PASS |  | tests/integration/api/test_health.py::test_tst_054_health_degraded_with_database_down; backend/core/db.py:66,182-186 (5 s connect, 2 s ping) |  | inspection |
+| AC-GIT-01 | 18 | FAIL | S2 | gh api rules/branches/main: dismiss_stale_reviews_on_push=false, require_code_owner_review=false, required_status_checks []; branches: no staging; environments API 403 | Branch protection does not match GIT-010; production reviewer unverifiable | inspection |
+| AC-GIT-02 | 18 | PASS |  | tests/unit/test_repository_layout.py | test marker | test |
+| AC-GIT-03 | 18 | PASS |  | git ls-files specs/business-requirements (flowchart docx, PROSPERO pdf, xlsx, REFERENCES.md); REFERENCES.md:7 SRC-07 URL + DOI | PROSPERO record allowed by TRD 18:431 | inspection |
+| AC-GIT-04 | 18 | PASS |  | git grep the SRC-07 preprint PDF 23e558b -- specs/TRD docs: only the AC-GIT-04 text itself | On HEAD (cp9) docs/reports/TRD_Implementation_Audit.md quotes the filename in a finding | inspection |
+| AC-GIT-05 | 18 | PASS |  | .github/workflows/ci.yml backend-lint (ruff check, ruff format --check, mypy) and frontend (lint, typecheck); CI green on 23e558b; CHECKPOINT_8 §5 row 6 |  | inspection |
+| AC-GIT-06 | 18 | FAIL | S3 | .github/CODEOWNERS, pull_request_template.md, dependabot.yml, ISSUE_TEMPLATE/* exist; gh api labels: GitHub defaults only | Labels of §4.8 (defect, sev:S1..S4, area:*, open-question...) missing (GIT-070) | inspection |
+| AC-GIT-07 | 18 | FAIL | S3 | gh api pulls?state=closed: #3, #18, #20, #22, #28 titles not Conventional; only #4, #17 have "Requirements implemented" | Most merged PRs fail title and template rules (GIT-033) | inspection |
+| AC-GIT-08 | 18 | PENDING BLOCK 4 |  | gh api repo security_and_analysis not readable (null); ci.yml gitleaks step | Platform setting (GIT-081) | inspection |
+| AC-OAS-01 | 19 | PASS |  | tests/contract/test_openapi_contract.py | test marker | test |
+| AC-OAS-02 | 19 | PASS |  | via OAS-005 (tests/contract/test_openapi_contract.py::test_generated_equals_committed) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-OAS-03 | 19 | PASS |  | via OAS-006 (tests/contract/test_response_schemas.py::test_valid_responses_pass; tests/contract/test_response_schemas.py::test_contract_breaks_are_caught) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-OAS-04 | 19 | PASS |  | tests/contract/test_openapi_examples.py | test marker | test |
+| AC-OAS-05 | 19 | PASS |  | via OAS-021 (tests/integration/api/test_ui_fixture_ds07.py::test_resident_list) | linked through the cited tested requirement(s) | test (via cited requirement) |
+| AC-OAS-06 | 19 | PASS |  | tests/integration/db/test_enums.py | test marker | test |
+| AC-OAS-07 | 19 | PASS |  | tests/contract/test_openapi_contract.py | test marker | test |
+| AC-ENV-01 | 21 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ENV-02 | 21 | PASS |  | tests/security/test_transport_and_secrets.py; tests/unit/backend/core/test_config.py; tests/unit/test_env_templates.py | test marker | test |
+| AC-ENV-03 | 21 | PASS |  | tests/security/test_transport_and_secrets.py; tests/unit/backend/core/test_config.py; tests/unit/backend/core/test_env_templates.py | test marker | test |
+| AC-ENV-04 | 21 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ENV-05 | 21 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ENV-06 | 21 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ENV-07 | 21 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-ENV-08 | 21 | PASS |  | frontend/tests/unit/config.test.ts | test marker | test |
+| AC-ENV-09 | 21 | PASS |  | tests/security/test_transport_and_secrets.py; tests/unit/backend/core/test_config.py; tests/unit/test_env_templates.py | test marker | test |
+| AC-TPS-01 | 22 | PENDING BLOCK 4 |  | docs/deployment.md:61-69 | Table exists; owners/MFA/verified limits with dates recorded in Block 4 (TPS-005/006) | inspection |
+| AC-TPS-02 | 22 | PASS |  | frontend/tests/e2e/privacy.spec.ts "FE-192 only the frontend origin and the API origin are contacted; no audio or video" (routes incl. /residents, /residents/R09) |  | inspection |
+| AC-TPS-03 | 22 | PASS |  | tests/security/test_static_scans.py::test_no_forbidden_dependencies (FORBIDDEN_PACKAGES :28-43 LLM, analytics, speech, boto3); ci.yml:45-55 |  | inspection |
+| AC-TPS-04 | 22 | PENDING BLOCK 4 |  |  | Interim Neon project contents | inspection |
+| AC-TPS-05 | 22 | NOT APPLICABLE |  | docs/deployment.md:297; specs/backlog/DEPLOYMENT_CHECKLIST.md N.02 | Precondition for the first real record on AWS (post-MVP cut-over); SENTRY_DSN decision is TPS-061 (Block 4) | inspection |
+| AC-TPS-06 | 22 | PASS |  | docs/api_reference/openapi.json: request bodies only application/json, and /ingest multipart file contentMediaType text/csv; tests/security/test_no_audio.py::test_audio_inside_a_multipart_upload_is_refused |  | inspection |
+| AC-RAQ-01 | 24 | PASS |  | specs/TRD/24_Risk_Assumptions_and_Open_Questions.md:79-112 (script: 32 OQ rows, 8 cells, none empty) |  | inspection |
+| AC-RAQ-02 | 24 | PASS |  | specs/TRD/24_Risk_Assumptions_and_Open_Questions.md:116-126 (script: 8 ASM rows, no empty cell) |  | inspection |
+| AC-RAQ-03 | 24 | PASS |  | specs/TRD/24_Risk_Assumptions_and_Open_Questions.md:131-150 (script: 17 RSK rows, L/I in {L,M,H}, no empty cell) |  | inspection |
+| AC-RAQ-04 | 24 | PASS |  | script over specs/TRD/*.md: every OQ-, ASM-, RSK-, D-nn reference is defined in TRD 24 | D-152 unused gap (harmless, DCA-14) | inspection |
+| AC-RAQ-05 | 24 | PASS |  | docs/reports/TRD_VALIDATION_REPORT.md §4, §6.5; specs/architecture/Deployment_Architecture.md:3 (SRC-01 updated for D-153) | Checked at TRD validation; later decisions not formally re-validated | inspection |
+| AC-RAQ-06 | 24 | PASS |  | tests/validation (pass on 23e558b); tests/validation/test_global_checks.py::test_vc_g08_parameters; docs/reports/ALGORITHM_VALIDATION_REPORT.md:6 |  | inspection |
+| AC-RAQ-07 | 24 | PENDING BLOCK 4 |  | frontend/lib/wording/review.ts:67 (OQ-05 note); frontend/lib/wording/common.ts:6 (OQ-12 marker); frontend/tests/e2e/review.spec.ts:23 | Present in the build; "deployed UI" check is Block 4 | inspection |
+| AC-AGT-01 | 25 | FAIL | S3 | gh api pulls: checkpoints #3,#4,#17,#18,#20,#22,#28,#31 in order, approved; cp4 branch built on feat/cp3 before #17 merged; extra build PRs #5, #29, #30 | A checkpoint started before the previous merged (AGT-030); cp9, Block 4/5 still to come | inspection |
+| AC-AGT-02 | 25 | PASS |  | tests/unit/backend/test_db_inspection.py | test marker | test |
+| AC-AGT-03 | 25 | PASS |  | git grep -niE "openai\|anthropic\|langchain" and -i old facility name 23e558b -- frontend backend analytics: 0 matches |  | inspection |
+| AC-AGT-04 | 25 | PENDING BLOCK 4 |  | tests/validation pass on 23e558b (full run); docs/reports/CHECKPOINT_6_VALIDATION.md:11 | Repo-side passes; run on the Block 4 deployed commit pending | inspection |
+| AC-AGT-05 | 25 | PASS |  | tests/unit/backend/core/test_config.py | test marker | test |
+| AC-AGT-06 | 25 | PASS |  | tests/unit/test_repository_layout.py | test marker | test |
+| AC-AGT-07 | 25 | PENDING BLOCK 4 |  | all TRD 25 §4.6 Phase 2-9 reports exist at 23e558b (docs/reports/*_IMPLEMENTATION_REPORT.md, ALGORITHM_VALIDATION_REPORT.md, ...) | DEPLOYMENT_REPORT.md is Block 4; FINAL_IMPLEMENTATION_AUDIT.md (cp9) not yet on the branch | inspection |
+| AC-AGT-08 | 25 | PASS |  | specs/TRD/24 §4.2, §4.6 (script: D-01..D-170 and OQ-01..32 all cells filled); no undefined OQ/D reference in docs, code, tests |  | inspection |
+| AC-AGT-09 | 25 | FAIL | S4 | specs/prompts/TRD_Generation_Prompt.md:31 lists the SRC-07 preprint PDF | One file still references the removed preprint path (GIT-094) | inspection |
+| AC-AGT-10 | 25 | PENDING BLOCK 4 |  | .github/workflows/deploy-staging.yml:17 (seed test_v0_1); tests/fixtures/seeds/demo_overlay | Repo side uses synthetic data only; DEPLOYMENT_REPORT.md statement is Block 4 | inspection |
+| AC-AGT-11 | 25 | PASS |  | tests/unit/test_repository_layout.py | test marker | test |
 
