@@ -68,14 +68,11 @@ jobs:
         # globalSetup (tests/e2e/global-setup.ts) runs before each invocation: seed test_v0_1 --reset + DS-10
         # loader, docker compose restart backend, one login per role with the masked SEED_* values (D-73, D-74).
         run: |
-          # Every project runs even when an earlier one fails, so a nightly run reports all three engines.
-          # Firefox and WebKit run with one worker: with two parallel Firefox workers beside the Compose stack,
-          # the runner's content processes crashed ("Page crashed") on the chart pages (issue #37).
+          # Every project runs even when an earlier one fails, so a nightly run reports all three engines (issue #37).
           fail=0
           for p in $BROWSERS; do
-            workers=""; if [ "$p" != chromium ]; then workers="--workers=1"; fi
             # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
-            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-readonly" npm run test:e2e:readonly -- --project=$p $workers || fail=1
+            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-readonly" npm run test:e2e:readonly -- --project=$p || fail=1
             # @mutating group, --workers=1: E2E-18; FE-193 snooze step; E2E-09 (FE-187), D-118
             PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-mutating" npm run test:e2e:mutating -- --project=$p || fail=1
           done

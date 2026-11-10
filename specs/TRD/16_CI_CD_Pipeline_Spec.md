@@ -380,8 +380,7 @@ jobs:
         run: |   # globalSetup (frontend/tests/e2e/global-setup.ts) before each invocation: seed test_v0_1 --reset + DS-10 loader, docker compose restart backend, one login per role (D-73, D-74)
           fail=0   # every project runs even if an earlier one fails; the step fails at the end (issue #37)
           for p in ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'chromium firefox webkit' || 'chromium' }}; do
-            workers=""; if [ "$p" != chromium ]; then workers="--workers=1"; fi   # Firefox and WebKit: one worker (issue #37)
-            npm run test:e2e:readonly -- --project=$p $workers || fail=1   # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
+            npm run test:e2e:readonly -- --project=$p || fail=1   # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
             npm run test:e2e:mutating -- --project=$p || fail=1   # D-73/D-118 group, --workers=1: E2E-18; FE-193 snooze step; E2E-09 (FE-187)
           done
           exit $fail
@@ -638,4 +637,4 @@ Trigger: `schedule` `*/30 * * * *`; `workflow_dispatch`. One job: `curl --fail -
 | 0.15 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-148): CIC-030 `@mutating` order as D-118 | — |
 | 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §4.1 decision and diagram, CIC-001/003, `deploy-production.yml` step 3 (Render API deploy of the released commit), CIC-050, §4.9 secrets (`RENDER_API_KEY` replaces `RAILWAY_PRODUCTION_TOKEN`; Render service-ID variables), CIC-090, AC-CIC-06 | — |
 | 0.17 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-7, Q-9; TRD 24 D-165, D-167): CIC-053 verify before approval; CIC-033 includes failed `main` manual dispatch; robustness run as `python -m tests.validation.robustness` | — |
-| 0.18 | 10 Nov 2026 | Nightly cross-browser fix (GitHub issue #37): §4.3 `e2e.yml` runs Firefox and WebKit read-only scenarios with one worker, runs every browser project before failing, and also runs all three engines on manual dispatch (CIC-031, TST-100) | — |
+| 0.18 | 10 Nov 2026 | Nightly cross-browser fix (GitHub issue #37): §4.3 `e2e.yml` runs every browser project before failing and also runs all three engines on manual dispatch (CIC-031, TST-100); `@playwright/test` stays at 1.64.1 because 1.65.0's Firefox crashed ("Page crashed") | — |
