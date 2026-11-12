@@ -28,7 +28,7 @@ Companion reports (same commit):
 | 7 | Frontend connects successfully to backend | **PASS** (local and CI) | `e2e.yml` `playwright` on `23e558b` success: read-only, mutating and isolated suites against the Compose `demo` stack (real backend, real database); axe scan with zero serious/critical violations (TST-110). On the hosted origins: pending Block 4. |
 | 8 | Deployment is operational | **COMPLETE per the algorithm lead (D-180)** | Configuration complete and validated (`CONFIGURATION_VALIDATION_REPORT.md` 96/96 PASS). `deploy-staging.yml` on `23e558b` stopped at "Wait for staging" because the GitHub variables `STAGING_API_BASE_URL` and `STAGING_FRONTEND_URL` are not set yet (DEPLOYMENT_CHECKLIST, Block 4). Review round 1: the interim deployment is complete and functioning (D-180); hosted smoke tests run in Block 5. |
 | 9 | CI/CD pipeline functions | **PASS WITH FINDINGS** | All 7 `ci.yml` jobs and `e2e.yml` `playwright` succeed on `23e558b`; but the `main` ruleset makes none of them a required check (CIC-070, S2), and the scheduled `e2e.yml` jobs (`nightly-validation`, `performance`) have not yet run on GitHub. |
-| 10 | MVP readiness checklist passes | **ACCEPTED (D-171..D-180)** | MVP-01..MVP-15: 11 PASS, 1 FAIL (MVP-02, a missing test), 3 pending Block 4 (MVP-07 HTTPS part, MVP-08 hosting, MVP-15 hosted data). Sections A–L: 94 passed, 11 failed, 30 pending Block 4. Review round 1: MVP-02's test is in GitHub PR #38 (Block 5, D-174); the hosted items are Block 5 validation (D-180). |
+| 10 | MVP readiness checklist passes | **ACCEPTED (D-171..D-180)** | MVP-01..MVP-15: 11 PASS, 1 FAIL (MVP-02, a missing test), 3 pending Block 4 (MVP-07 HTTPS part, MVP-08 hosting, MVP-15 hosted data). Sections A–L: 94 passed, 11 failed, 30 pending Block 4. Review round 1: MVP-02's test merged in GitHub PR #38 (D-174); the hosted items are Block 5 validation (D-180). |
 
 ## 2. Requirements Traceability Matrix
 
@@ -241,18 +241,18 @@ The application is functionally complete for the MVP scope: every feature of che
 **Review round 1 (algorithm lead, 12 Nov 2026, TRD 24 D-171..D-180)** resolved each reason:
 
 1. The S2 findings are accepted as recorded: CIC-070's intent is met by PR review, restricted direct pushes and passing builds before merge (D-171); no team setup is needed for the demo and CODEOWNERS is a follow-up cleanup (D-172); the current protection settings are accepted (D-173). They are no longer blockers.
-2. TST-049 and the other missing tests are added as part of Block 5 (D-174). TST-049 is already written and passing in GitHub PR #38 (all 283 SRC-05 records posted one at a time equal the batch plus a full run, with the trailing duplicate counted at the next run, API-044).
+2. TST-049 and the other missing tests are added as part of Block 5 (D-174). TST-049 is written and was merged to `main` in GitHub PR #38 (12 Nov 2026) (all 283 SRC-05 records posted one at a time equal the batch plus a full run, with the trailing duplicate counted at the next run, API-044).
 3. The interim deployment (Netlify, Render, Neon) is complete and functioning (D-180); the hosted smoke tests, backups and restore drill and demo acceptance are carried out as Block 5 validation activities, and the documentation is updated to match the deployed state.
 
 Known gaps that remain, none blocking the demo:
 
 - The GitHub variables with the hosted URLs (`STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, production equivalents) are not set, so `deploy-staging.yml` stops at "Wait for staging" and `uptime.yml` skips every check. Setting them is a repository setting, not a deployment change; until then the hosted stack is checked by hand. This audit could not reach the hosted origins from its environment (network allow-list), so the deployed state is recorded on the algorithm lead's statement (D-180), supported by the Netlify deploy previews built for GitHub PRs #38 and #39.
 - The informational TST-121 budget (`POST /sessions` p95 ≤ 1 s, 200 requests) is borderline on GitHub runners (1,014–1,070 ms in two of five recent runs).
-- The nightly Firefox run fails until GitHub PR #39 (pin `@playwright/test` 1.64.1) is merged.
+- The nightly Firefox failures are fixed by GitHub PR #39 (pin `@playwright/test` 1.64.1, merged 12 Nov 2026); the next scheduled run confirms it.
 - The S3/S4 findings of §3.2 stay open, with their handling decided in D-174..D-179.
 
 ## 10. Recommendation
 
 READY FOR DEMO
 
-Justification: the build passes every functional, analytic and security test on `23e558b`, and the algorithm lead's review decisions (TRD 24 D-171..D-180) resolve the three reasons of the first verdict: the S2 repository-setting findings are accepted as not blocking (D-171..D-173), the TST-049 test for MVP-02 exists and passes in GitHub PR #38 and is completed with the other missing tests in Block 5 (D-174), and the interim deployment is complete with its hosted checks carried out as Block 5 validation (D-180). No application defect stands in the way; the remaining gaps are listed in §9.
+Justification: the build passes every functional, analytic and security test on `23e558b`, and the algorithm lead's review decisions (TRD 24 D-171..D-180) resolve the three reasons of the first verdict: the S2 repository-setting findings are accepted as not blocking (D-171..D-173), the TST-049 test for MVP-02 is merged (GitHub PR #38) and the other missing tests follow in Block 5 (D-174), and the interim deployment is complete with its hosted checks carried out as Block 5 validation (D-180). No application defect stands in the way; the remaining gaps are listed in §9.

@@ -101,7 +101,7 @@ Review by the algorithm lead on GitHub PR #32, 12 Nov 2026 (changes requested). 
 | Q-1 | CIC-070's intent is met (direct pushes restricted, PR review required, builds must pass); listing the checks is an optional admin cleanup, not a blocker | Final audit §3.1, §9, §10; checklist J.07 and AC-TST-09 accepted | Admin may list the eight checks in ruleset 25310033 | D-171 |
 | Q-2 | No team setup needed; Developer team, admin account and protections are in place | Final audit §3.1 | CODEOWNERS updated to the Developer team or individual users in a cleanup PR | D-172 |
 | Q-3 | Current settings accepted | Recorded | — | D-173 |
-| Q-4 | Missing tests are added in Block 5 as one activity; TST-049 first | Final audit §9; checklist note | TST-049 is already in GitHub PR #38 (passing); fold it into Block 5 or merge as is, at the lead's choice | D-174 |
+| Q-4 | Missing tests are added in Block 5 as one activity; TST-049 first | Final audit §9; checklist note | TST-049 merged in GitHub PR #38 (12 Nov 2026); the rest in Block 5 | D-174 |
 | Q-5 | Security hardening deferred to the December upgrade work | Recorded | December security PR (D-160) | D-175 |
 | Q-6 | 1 px outline on the two faint chart segments | Recorded | Small frontend PR (outline on `--c-aside` and `--c-quar` segments in the daily check-ins chart) | D-176 |
 | Q-7 | TRD pins updated to the working build; PR #27 only if CI stays green | Recorded | Docs-only cleanup PR updates TRD 13/16/25 pins; PR #27 reviewed against CI | D-177 |
@@ -112,7 +112,7 @@ Review by the algorithm lead on GitHub PR #32, 12 Nov 2026 (changes requested). 
 Verdict after this round: **READY FOR DEMO** (`FINAL_IMPLEMENTATION_AUDIT.md` §10), with the remaining gaps listed in its §9:
 - the hosted-URL GitHub variables are not set, so `deploy-staging.yml` and `uptime.yml` cannot check the live sites;
 - the borderline TST-121 budget;
-- the nightly Firefox fix waiting in GitHub PR #39.
+- the nightly Firefox fix, merged in GitHub PR #39 and confirmed by the next scheduled run.
 
 The audit environment could not reach the hosted origins, so the deployed state is recorded on the lead's statement (D-180), supported by the Netlify deploy previews of GitHub PRs #38 and #39.
 
