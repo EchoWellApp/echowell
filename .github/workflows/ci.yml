@@ -233,7 +233,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: backend/Dockerfile
@@ -246,7 +246,7 @@ jobs:
           test "$(docker run --rm --entrypoint id echowell-backend:ci -u)" = "10001"
           if docker run --rm --entrypoint sh echowell-backend:ci -c 'ls -a /app' | grep -E '^(\.env.*|tests|specs|frontend)$'; then
             echo "::error::The backend image contains files excluded by DEP-021"; exit 1; fi
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: frontend
           load: true
