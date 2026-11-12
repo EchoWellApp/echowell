@@ -65,7 +65,7 @@ TRDs read in the roadmap order: 13, 02, all others, 24; then `specs/backlog/`, `
 
 ## 6. New OQ and D IDs
 
-None. Decisions from this review will be recorded in TRD 24 from D-171.
+None in the audit itself. Review round 1 added D-171..D-180 (§9).
 
 ## 7. Notes
 
@@ -89,3 +89,32 @@ None. Decisions from this review will be recorded in TRD 24 from D-171.
 | Q-8 | **Process history (S3/S4).** Checkpoint 4 started before checkpoint 3 merged; most older commits and PR descriptions don't follow the Conventional Commit format or the PR template; project labels and OQ issues don't exist. Record these as accepted history in TRD 24, or set up the labels and OQ issues now? |
 | Q-9 | **Spec drift.** VIS-012 vs UX-164 (where the PI wording marker appears), LOG-081 429/503 strings absent from TRD 04/11, TRD 18 GIT-095/GIT-097 vs the committed font (D-168), DB-031 vs DEP-063 branch naming, TRD 20 §4.6 missing `ingest_batches.pipeline_run_id`, FEAT-068-FR-08 path: correct the TRDs in a docs-only PR, or in the Block 4 PR? |
 | Q-10 | **Verdict and next step.** Do you agree with NOT READY FOR DEMO and the path in `FINAL_IMPLEMENTATION_AUDIT.md` §9? After this PR merges, Block 4 starts (Phase 14B plus the manual Netlify, Render and Neon setup in `DEPLOYMENT_CHECKLIST.md`, which needs your or an admin's platform access). |
+
+## 9. Review round 1 resolutions
+
+Review by the algorithm lead on GitHub PR #32, 12 Nov 2026 (changes requested). Her general rule: avoid changes that would need re-running migrations, re-seeding databases or modifying the working Render, Netlify or Neon deployments; update documentation, TRDs, acceptance criteria and process records to match the deployed system (D-170).
+
+**Migration and re-seed: none needed.** This round changes documentation only: TRD 24, `docs/reports/` and `specs/backlog/`.
+
+| Q | Answer | Change in this PR | Follow-up | D-ID |
+|---|---|---|---|---|
+| Q-1 | CIC-070's intent is met (direct pushes restricted, PR review required, builds must pass); listing the checks is an optional admin cleanup, not a blocker | Final audit §3.1, §9, §10; checklist J.07 and AC-TST-09 accepted | Admin may list the eight checks in ruleset 25310033 | D-171 |
+| Q-2 | No team setup needed; Developer team, admin account and protections are in place | Final audit §3.1 | CODEOWNERS updated to the Developer team or individual users in a cleanup PR | D-172 |
+| Q-3 | Current settings accepted | Recorded | — | D-173 |
+| Q-4 | Missing tests are added in Block 5 as one activity; TST-049 first | Final audit §9; checklist note | TST-049 is already in GitHub PR #38 (passing); fold it into Block 5 or merge as is, at the lead's choice | D-174 |
+| Q-5 | Security hardening deferred to the December upgrade work | Recorded | December security PR (D-160) | D-175 |
+| Q-6 | 1 px outline on the two faint chart segments | Recorded | Small frontend PR (outline on `--c-aside` and `--c-quar` segments in the daily check-ins chart) | D-176 |
+| Q-7 | TRD pins updated to the working build; PR #27 only if CI stays green | Recorded | Docs-only cleanup PR updates TRD 13/16/25 pins; PR #27 reviewed against CI | D-177 |
+| Q-8 | Historical deviations accepted as history | Recorded | — | D-178 |
+| Q-9 | Docs-only cleanup update | Recorded | Docs-only cleanup PR (VIS-012/UX-164, LOG-081, GIT-095/097, DB-031/DEP-063, TRD 20 §4.6, FEAT-068-FR-08) | D-179 |
+| Q-10 | Deployment complete and functioning; move directly to Block 5 after this PR | Verdict READY FOR DEMO; FEAT-088 and FEAT-091 Complete; FEAT-089/FEAT-090 become Block 5 validation; roadmap §2.1 Block 4 and 5 rows | Docs-only cleanup PR updates the deployment documents to the deployed state | D-180 |
+
+Verdict after this round: **READY FOR DEMO** (`FINAL_IMPLEMENTATION_AUDIT.md` §10), with the remaining gaps listed in its §9:
+- the hosted-URL GitHub variables are not set, so `deploy-staging.yml` and `uptime.yml` cannot check the live sites;
+- the borderline TST-121 budget;
+- the nightly Firefox fix waiting in GitHub PR #39.
+
+The audit environment could not reach the hosted origins, so the deployed state is recorded on the lead's statement (D-180), supported by the Netlify deploy previews of GitHub PRs #38 and #39.
+
+Note on FEAT-091-AC-07: besides `docs/reports/` and `specs/backlog/`, this round adds the review decisions to TRD 24, as every checkpoint review round has done.
+

@@ -1,6 +1,6 @@
 # Final Implementation Audit
 
-Document: docs/reports/FINAL_IMPLEMENTATION_AUDIT.md · Date: 8 November 2026 · Audited commit: `23e558b` (`main` after the checkpoint 8 merge, GitHub PR #31) · Block 3 checkpoint 9, `Implement_Feature_Batches.md` Phase 15, TRD 25 Phase 11, FEAT-091 · Location per TRD 25 AGT-032 / TRD 24 D-21
+Document: docs/reports/FINAL_IMPLEMENTATION_AUDIT.md · Date: 8 November 2026 · Audited commit: `23e558b` (`main` after the checkpoint 8 merge, GitHub PR #31) · Block 3 checkpoint 9, `Implement_Feature_Batches.md` Phase 15, TRD 25 Phase 11, FEAT-091 · Updated 12 Nov 2026 with the review round 1 decisions (TRD 24 D-171..D-180) · Location per TRD 25 AGT-032 / TRD 24 D-21
 
 This is the Phase 15 audit of the finished build against `specs/TRD/`, `specs/backlog/`, `docs/design/`, the source code, the test results and the deployment configuration. It records findings only: no code, configuration or TRD was changed (TRD 25 §4.6 Phase 11 Pitfalls). The live deployment (Block 4) has not happened yet, so every deployment-dependent check is recorded as **pending Block 4**, never as a failure (IMPLEMENTATION_ROADMAP §3.3, TRD 24 D-100), and the verdict is provisional on those items.
 
@@ -26,9 +26,9 @@ Companion reports (same commit):
 | 5 | Every analytics module is implemented | **PASS** | TRDs 07–09 and 10: 209 PASS, 0 FAIL, 7 not applicable (calibration and "May" items deferred to OQs). Coverage gate `analytics/` ≥ 95 % met in CI. |
 | 6 | All R01–R10 tests pass | **PASS** | `ALGORITHM_VALIDATION_REPORT.md` regenerated on `23e558b`: "Overall: PASS", Tier A and Tier B, VC-R01..VC-R10, VC-G01..VC-G12; `pytest tests/validation` part of the 757-passed run. |
 | 7 | Frontend connects successfully to backend | **PASS** (local and CI) | `e2e.yml` `playwright` on `23e558b` success: read-only, mutating and isolated suites against the Compose `demo` stack (real backend, real database); axe scan with zero serious/critical violations (TST-110). On the hosted origins: pending Block 4. |
-| 8 | Deployment is operational | **PENDING BLOCK 4** | Configuration complete and validated (`CONFIGURATION_VALIDATION_REPORT.md` 96/96 PASS). `deploy-staging.yml` on `23e558b` stopped at "Wait for staging" because the GitHub variables `STAGING_API_BASE_URL` and `STAGING_FRONTEND_URL` are not set yet (DEPLOYMENT_CHECKLIST, Block 4). |
+| 8 | Deployment is operational | **COMPLETE per the algorithm lead (D-180)** | Configuration complete and validated (`CONFIGURATION_VALIDATION_REPORT.md` 96/96 PASS). `deploy-staging.yml` on `23e558b` stopped at "Wait for staging" because the GitHub variables `STAGING_API_BASE_URL` and `STAGING_FRONTEND_URL` are not set yet (DEPLOYMENT_CHECKLIST, Block 4). Review round 1: the interim deployment is complete and functioning (D-180); hosted smoke tests run in Block 5. |
 | 9 | CI/CD pipeline functions | **PASS WITH FINDINGS** | All 7 `ci.yml` jobs and `e2e.yml` `playwright` succeed on `23e558b`; but the `main` ruleset makes none of them a required check (CIC-070, S2), and the scheduled `e2e.yml` jobs (`nightly-validation`, `performance`) have not yet run on GitHub. |
-| 10 | MVP readiness checklist passes | **NOT YET** | MVP-01..MVP-15: 11 PASS, 1 FAIL (MVP-02, a missing test), 3 pending Block 4 (MVP-07 HTTPS part, MVP-08 hosting, MVP-15 hosted data). Sections A–L: 94 passed, 11 failed, 30 pending Block 4. |
+| 10 | MVP readiness checklist passes | **ACCEPTED (D-171..D-180)** | MVP-01..MVP-15: 11 PASS, 1 FAIL (MVP-02, a missing test), 3 pending Block 4 (MVP-07 HTTPS part, MVP-08 hosting, MVP-15 hosted data). Sections A–L: 94 passed, 11 failed, 30 pending Block 4. Review round 1: MVP-02's test is in GitHub PR #38 (Block 5, D-174); the hosted items are Block 5 validation (D-180). |
 
 ## 2. Requirements Traceability Matrix
 
@@ -138,7 +138,7 @@ All four S2 failures have the same two causes, both GitHub settings that only a 
 | **No required status checks on `main`** | CIC-070, TST-150 (and AC-CIC-01, AC-CIC-08, AC-TST-09, MVP checklist J.07) | The active ruleset "Require Pull Requests" (id 25310033) requires a pull request, one approval and resolved conversations, and blocks force-push and deletion, but its `required_status_checks` list is empty. The eight checks of CIC-070 (`repo-hygiene`, `backend-lint`, `backend-test`, `openapi-contract`, `frontend`, `security-audit`, `docker-build`, `playwright`) therefore do not block a merge. TRD 24 D-162 records branch protection as "already configured"; the live setting does not match it. |
 | **Ruleset and CODEOWNERS weaker than GIT-010/GIT-037** | GIT-010, GIT-037 (and AC-GIT-01) | Stale approvals are not dismissed, code-owner review is not required, and GitHub reports "Unknown owner" for all three teams in `.github/CODEOWNERS` (`team2-maintainers`, `team2-algorithm`, `team2-devops`; 15 errors), so CODEOWNERS has no effect. Seven commits reached `main` by direct push (29 Oct–3 Nov 2026, deployment hotfixes and README), so an admin bypass is in use. In practice the algorithm lead approved every checkpoint PR. |
 
-The algorithm lead decides how to resolve these (questions on the PR). Fixing them changes repository settings (and possibly `.github/CODEOWNERS` in a separate PR), not this audit.
+Review round 1 (12 Nov 2026): the algorithm lead accepted these findings as recorded and not blocking MVP readiness or the demo (TRD 24 D-171, D-172, D-173). Listing the checks in the ruleset and updating CODEOWNERS to the existing Developer team are follow-up cleanups.
 
 ### 3.2 Moderate and minor findings
 
@@ -234,18 +234,25 @@ The 26 OQs with status Open in TRD 24 (FEAT-091-FR-05, FEAT-091-AC-06); the MVP 
 
 ## 9. Overall MVP Readiness Assessment
 
-The application is functionally complete for the MVP scope on the local stack: every feature of checkpoints 1–8 is implemented and merged, the full automated suite passes on the audited commit (757 backend tests, 429 frontend tests, all E2E suites in CI), R01–R10 validation passes in both tiers, the security suite finds no bypass, and the hard rules hold (no LLM, no ML on the alarm path, no audio, synthetic data only, correct facility name). The demo can run today on the local Docker Compose stack, which is the documented fallback (DEP-090).
+The application is functionally complete for the MVP scope: every feature of checkpoints 1–8 is implemented and merged, the full automated suite passes on the audited commit (757 backend tests, 429 frontend tests, all E2E suites in CI), R01–R10 validation passes in both tiers, the security suite finds no bypass, and the hard rules hold (no LLM, no ML on the alarm path, no audio, synthetic data only, correct facility name).
 
-It is not demo-ready by the project's own acceptance rule, for three reasons:
+**First verdict (8 Nov 2026): NOT READY FOR DEMO**, for three reasons: (1) open S2 repository-setting findings (no required status checks on `main`, inert CODEOWNERS); (2) MVP-02 without its test (TST-049); (3) deployment-dependent items pending Block 4.
 
-1. **Open S2 findings (TST-160 blocks release on S1/S2):** no required status checks on `main`, and an inert CODEOWNERS file (§3.1). Both are repository settings an admin can change in minutes.
-2. **MVP-02 fails:** TST-049 (SRC-05 posted one record at a time equals one batch plus a full run) has no test. The behaviour is implemented and partly covered (R10 one-by-one; in-memory order independence); a test closes it.
-3. **Deployment-dependent items are pending Block 4:** MVP-07 (HTTPS part), MVP-08 (hosted staging and production with health 200), MVP-15 (hosted data content), DEP-080/DEP-081 smoke tests and demo acceptance TST-180..TST-184. READY FOR DEMO needs every MVP-01..MVP-15 passing on the release candidate (TST-170, AC-TST-10), which is confirmed at the end of Block 4.
+**Review round 1 (algorithm lead, 12 Nov 2026, TRD 24 D-171..D-180)** resolved each reason:
 
-Path to READY FOR DEMO: (a) the algorithm lead decides the §3.1 settings and an admin applies them; (b) a small test PR adds TST-049 (and, at the lead's discretion, the other missing tests of §3.2); (c) Block 4 deploys staging and production and passes the smoke tests and demo acceptance; then this report and `BACKLOG.md` §10 are updated in the Block 4 PR (D-100, D-101) and FEAT-091 is marked Complete.
+1. The S2 findings are accepted as recorded: CIC-070's intent is met by PR review, restricted direct pushes and passing builds before merge (D-171); no team setup is needed for the demo and CODEOWNERS is a follow-up cleanup (D-172); the current protection settings are accepted (D-173). They are no longer blockers.
+2. TST-049 and the other missing tests are added as part of Block 5 (D-174). TST-049 is already written and passing in GitHub PR #38 (all 283 SRC-05 records posted one at a time equal the batch plus a full run, with the trailing duplicate counted at the next run, API-044).
+3. The interim deployment (Netlify, Render, Neon) is complete and functioning (D-180); the hosted smoke tests, backups and restore drill and demo acceptance are carried out as Block 5 validation activities, and the documentation is updated to match the deployed state.
+
+Known gaps that remain, none blocking the demo:
+
+- The GitHub variables with the hosted URLs (`STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, production equivalents) are not set, so `deploy-staging.yml` stops at "Wait for staging" and `uptime.yml` skips every check. Setting them is a repository setting, not a deployment change; until then the hosted stack is checked by hand. This audit could not reach the hosted origins from its environment (network allow-list), so the deployed state is recorded on the algorithm lead's statement (D-180), supported by the Netlify deploy previews built for GitHub PRs #38 and #39.
+- The informational TST-121 budget (`POST /sessions` p95 ≤ 1 s, 200 requests) is borderline on GitHub runners (1,014–1,070 ms in two of five recent runs).
+- The nightly Firefox run fails until GitHub PR #39 (pin `@playwright/test` 1.64.1) is merged.
+- The S3/S4 findings of §3.2 stay open, with their handling decided in D-174..D-179.
 
 ## 10. Recommendation
 
-NOT READY FOR DEMO
+READY FOR DEMO
 
-Justification: the build passes every functional, analytic and security test on `23e558b`, but two S2 repository-setting findings are open (CIC-070/TST-150, GIT-010/GIT-037), MVP-02 lacks its test, and MVP-07, MVP-08 and MVP-15 cannot pass before Block 4 deploys the hosted stack (TST-170, AC-TST-10). With the settings applied, the TST-049 test added and Block 4's smoke tests and demo acceptance passing, the verdict becomes READY FOR DEMO; no application defect stands in the way.
+Justification: the build passes every functional, analytic and security test on `23e558b`, and the algorithm lead's review decisions (TRD 24 D-171..D-180) resolve the three reasons of the first verdict: the S2 repository-setting findings are accepted as not blocking (D-171..D-173), the TST-049 test for MVP-02 exists and passes in GitHub PR #38 and is completed with the other missing tests in Block 5 (D-174), and the interim deployment is complete with its hosted checks carried out as Block 5 validation (D-180). No application defect stands in the way; the remaining gaps are listed in §9.
