@@ -23,6 +23,8 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: react-dom
         update-types: [version-update:semver-major]
+      - dependency-name: "@playwright/test" # 1.65.x: Firefox "Page crashed" in the nightly run (issue #37)
+        versions: ["1.65.x"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }

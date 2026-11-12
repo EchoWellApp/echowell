@@ -25,8 +25,9 @@ env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
   E2E_BASE_URL: http://localhost:3001
-  # Browser projects: one Playwright invocation per project and group (D-73).
-  BROWSERS: ${{ github.event_name == 'schedule' && 'chromium firefox webkit' || 'chromium' }}
+  # Browser projects: one Playwright invocation per project and group (D-73). The nightly schedule and a
+  # manual dispatch run all three engines (TST-100); pull requests and pushes run Chromium only.
+  BROWSERS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'chromium firefox webkit' || 'chromium' }}
 jobs:
   playwright:
     runs-on: ubuntu-24.04
@@ -67,12 +68,15 @@ jobs:
         # globalSetup (tests/e2e/global-setup.ts) runs before each invocation: seed test_v0_1 --reset + DS-10
         # loader, docker compose restart backend, one login per role with the masked SEED_* values (D-73, D-74).
         run: |
+          # Every project runs even when an earlier one fails, so a nightly run reports all three engines (issue #37).
+          fail=0
           for p in $BROWSERS; do
             # read-only scenarios on the pristine seed (--grep-invert "@isolated|@mutating")
-            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-readonly" npm run test:e2e:readonly -- --project=$p
+            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-readonly" npm run test:e2e:readonly -- --project=$p || fail=1
             # @mutating group, --workers=1: E2E-18; FE-193 snooze step; E2E-09 (FE-187), D-118
-            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-mutating" npm run test:e2e:mutating -- --project=$p
+            PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report/$p-mutating" npm run test:e2e:mutating -- --project=$p || fail=1
           done
+          exit $fail
       - name: Isolated database echowell_demo for E2E-15, E2E-19, TST-187 (CIC-030; the main DB stays the test_v0_1 seed)
         run: |
           docker compose exec -T db psql -U echowell -d echowell -v ON_ERROR_STOP=1 -c "CREATE DATABASE echowell_demo"
