@@ -104,10 +104,10 @@ Review by the algorithm lead on GitHub PR #32, 12 Nov 2026 (changes requested). 
 | Q-4 | Missing tests are added in Block 5 as one activity; TST-049 first | Final audit §9; checklist note | TST-049 merged in GitHub PR #38 (12 Nov 2026); the rest in Block 5 | D-174 |
 | Q-5 | Security hardening deferred to the December upgrade work | Recorded | December security PR (D-160) | D-175 |
 | Q-6 | 1 px outline on the two faint chart segments | Recorded | Small frontend PR (outline on `--c-aside` and `--c-quar` segments in the daily check-ins chart) | D-176 |
-| Q-7 | TRD pins updated to the working build; PR #27 only if CI stays green | Recorded | Docs-only cleanup PR updates TRD 13/16/25 pins; PR #27 reviewed against CI | D-177 |
+| Q-7 | TRD pins updated to the working build; PR #27 only if CI stays green | Recorded | Done in GitHub PR #46 (merged 13 Nov 2026): TRD pins updated; Dependabot python-minor PR reviewed against CI | D-177 |
 | Q-8 | Historical deviations accepted as history | Recorded | — | D-178 |
-| Q-9 | Docs-only cleanup update | Recorded | Docs-only cleanup PR (VIS-012/UX-164, LOG-081, GIT-095/097, DB-031/DEP-063, TRD 20 §4.6, FEAT-068-FR-08) | D-179 |
-| Q-10 | Deployment complete and functioning; move directly to Block 5 after this PR | Verdict READY FOR DEMO; FEAT-088 and FEAT-091 Complete; FEAT-089/FEAT-090 become Block 5 validation; roadmap §2.1 Block 4 and 5 rows | Docs-only cleanup PR updates the deployment documents to the deployed state | D-180 |
+| Q-9 | Docs-only cleanup update | Recorded | Done in GitHub PR #46 (merged 13 Nov 2026) | D-179 |
+| Q-10 | Deployment complete and functioning; move directly to Block 5 after this PR | Verdict READY FOR DEMO; FEAT-088 and FEAT-091 Complete; FEAT-089/FEAT-090 become Block 5 validation; roadmap §2.1 Block 4 and 5 rows | Done in GitHub PR #46 (merged 13 Nov 2026): deployment status note in TRD 15, `docs/deployment.md`, `DEPLOYMENT_CHECKLIST.md` | D-180 |
 
 Verdict after this round: **READY FOR DEMO** (`FINAL_IMPLEMENTATION_AUDIT.md` §10), with the remaining gaps listed in its §9:
 - the hosted-URL GitHub variables are not set, so `deploy-staging.yml` and `uptime.yml` cannot check the live sites;
