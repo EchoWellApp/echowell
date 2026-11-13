@@ -1,6 +1,9 @@
 # 15 Deployment and DevOps Specification
 
-Document ID: ECHOWELL-TRD-15 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-15 · Version 0.18 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
+
+> **Deployment status (12 November 2026, TRD 24 D-180).** The interim deployment on Netlify, Render and Neon has been completed by the team and is functioning, as the algorithm lead recorded in the checkpoint 9 review (GitHub PR #32). There is no separate Block 4 deployment PR. The remaining verification items of `specs/backlog/DEPLOYMENT_CHECKLIST.md` (hosted smoke tests DEP-080/DEP-081, backups and restore drill, rollback rehearsal, demo acceptance, uptime) are carried out as Block 5 validation activities, and their evidence is written into the last column then.
+> The GitHub repository variables with the hosted URLs (`STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL`) are not set yet. Until they are, `deploy-staging.yml` stops at "Wait for staging" and `uptime.yml` skips its checks; setting them changes no deployment.
 
 ## 1. Purpose
 
@@ -630,3 +633,4 @@ Mapping from the current interim stack:
 | 0.15 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153): §2, §4.1 topology, DEP-003/004/009/020/033/035, §4.5 rewritten for Render (web services, cron jobs, environment groups, `render.yaml` Blueprint), DEP-040–046/048, DEP-065, DEP-075, §4.9–4.10, §4.12 rollback, DEP-100/101/110/111/117, AC-DEP-03/10, §8 | — |
 | 0.16 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region `ohio` (US East); Starter tier; confirmed Render rollback and health-check behaviour | — |
 | 0.17 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-7, Q-8; TRD 24 D-165, D-166): §4.10 verifies the commit before approval is asked for; §5 note: resident summary 2 / 2 / 0 / 6 | — |
+| 0.18 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): Deployment status note: interim deployment complete, verification in Block 5; hosted-URL GitHub variables still to be set (TRD 24 D-180) | — |

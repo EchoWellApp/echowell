@@ -1,6 +1,6 @@
 # 13 Testing Strategy and Acceptance Criteria
 
-Document ID: ECHOWELL-TRD-13 · Version 0.18 (draft for review) · Date: 18 October 2026, revised 7 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-13 · Version 0.19 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -55,7 +55,7 @@ Related TRDs: 02 (FR), 03 (NFR), 04 (Frontend), 05 (Backend API), 06 (Database),
 ```mermaid
 flowchart TB
   subgraph Gating on every PR
-    U[Unit tests<br/>pytest 8 / Vitest + RTL] --> I[Integration tests<br/>pytest + Postgres 16 container + httpx TestClient]
+    U[Unit tests<br/>pytest 9 / Vitest + RTL] --> I[Integration tests<br/>pytest + Postgres 16 container + httpx TestClient]
     I --> C[Contract tests<br/>OpenAPI snapshot + response validation]
     I --> V[Algorithm validation R01-R10<br/>tests/validation vs SRC-03]
     C --> E[E2E + accessibility<br/>Playwright + axe on docker-compose stack]
@@ -70,8 +70,8 @@ flowchart TB
 
 | Level | Approx. share of test count | Tool (pinned major) | Runs against |
 |---|---|---|---|
-| Unit (analytics, backend services, schemas, frontend components) | ≥ 70 % | pytest 8.x, pytest-cov 5.x; Vitest 2.x + React Testing Library 16.x + jsdom | In-process, no DB, no network |
-| Integration (DB, API, ingest → pipeline → API) | ≈ 20 % | pytest 8.x, httpx (FastAPI `TestClient`), testcontainers-python 4.x with image `postgres:16` | Real PostgreSQL 16 |
+| Unit (analytics, backend services, schemas, frontend components) | ≥ 70 % | pytest 9.x, pytest-cov 7.x; Vitest 2.x + React Testing Library 16.x + jsdom | In-process, no DB, no network |
+| Integration (DB, API, ingest → pipeline → API) | ≈ 20 % | pytest 9.x, httpx (FastAPI `TestClient`), testcontainers-python 4.x with image `postgres:16` | Real PostgreSQL 16 |
 | Contract | 1 file per router | pytest + `openapi-core` 0.19.x | Generated `/api/v1/openapi.json` |
 | Algorithm validation | 10 cases + global checks | pytest + pandas 2.2.x + openpyxl 3.1.x (tests only) | `analytics` package (Tier A) and full stack (Tier B), TRD 14 |
 | E2E | ≈ 5 % | Playwright 1.4x (Chromium; Firefox and WebKit nightly) | docker-compose stack seeded with DS-01 (TRD 14) |
@@ -81,7 +81,7 @@ flowchart TB
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| TST-001 | Backend and analytics tests shall run with pytest 8.x on Python 3.12, with pytest-cov for coverage and httpx-based FastAPI `TestClient` for API calls. | Must | SRC-01, BR-17 | Inspection |
+| TST-001 | Backend and analytics tests shall run with pytest 9.x on Python 3.12, with pytest-cov for coverage and httpx-based FastAPI `TestClient` for API calls. | Must | SRC-01, BR-17 | Inspection |
 | TST-002 | Integration tests shall run against PostgreSQL 16 started by testcontainers-python (image `postgres:16-alpine`, the image of TRD 15 DEP-010 and TRD 16 CIC-012); when `DATABASE_URL` is set and `APP_ENV=test`, the suite shall use that database instead (CI service container or docker-compose). SQLite shall not be used for any test that exercises SQL. | Must | SRC-01, TRD 06 | Inspection |
 | TST-003 | Frontend unit, component and page tests shall use Vitest with React Testing Library and jsdom: unit tests in `frontend/tests/unit/`, page tests in `frontend/tests/pages/`, and component tests co-located as `frontend/components/<Name>/<Name>.test.tsx` (TRD 04 §4.2, §4.8). | Must | SRC-01, SRC-17 | Inspection |
 | TST-004 | E2E tests shall use Playwright, located under `frontend/tests/e2e/` with `frontend/playwright.config.ts`, and shall run against the docker-compose `demo` profile stack (postgres:16, backend :8000, `frontend-prod` :3001; TRD 16 CIC-030), with `globalSetup` `frontend/tests/e2e/global-setup.ts` (D-73) and `grepInvert: /@isolated/`, and a second config `frontend/playwright.isolated.config.ts` for the `@isolated` run whose `globalSetup` `frontend/tests/e2e/isolated-setup.ts` only logs in once per role (no reset or seed, D-74) and which sets `grep: /@isolated/`, `workers: 1` and `fullyParallel: false` for the single serial file `frontend/tests/e2e/isolated.spec.ts` (E2E-15, TST-187, E2E-19 in this order); E2E runs use only the `frontend/package.json` scripts `test:e2e:readonly`, `test:e2e:mutating` (`--workers=1`) and `test:e2e:isolated` (TRD 24 D-73). | Must | SRC-01, SRC-17 | Inspection |
@@ -543,7 +543,7 @@ Table 4.17-A MVP acceptance criteria.
 
 - TRD 14 for datasets, expected values, comparator and report format.
 - TRD 07/08/09/10 for function signatures under test; TRD 05/19 for endpoints and the OpenAPI document; TRD 04/11 for component names, labels and routes; TRD 12 for roles, tokens and rate limits; TRD 16 for CI job wiring; TRD 15 for environments and rollback.
-- Tools: Python test tools exactly as the `backend/requirements-dev.txt` list of TRD 16 §6 (pytest 8.x, pytest-cov 5.x, pytest-randomly 3.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x, pip-audit 2.x) plus pandas 2.2.x (runtime); Vitest 2.x with @vitest/coverage-v8 2.x, React Testing Library 16.x, MSW 2.x, Playwright 1.4x, @axe-core/playwright 4.x, Lighthouse CI 0.14.x, gitleaks 8.x.
+- Tools: Python test tools exactly as the `backend/requirements-dev.txt` list of TRD 16 §6 (pytest 9.x, pytest-cov 7.x, pytest-randomly 5.x, time-machine 2.x, httpx, testcontainers-python 4.x, openapi-core 0.19.x, Hypothesis 6.x, openpyxl 3.1.x, import-linter 2.x, Bandit 1.7.x, pip-audit 2.x) plus pandas 2.2.x (runtime); Vitest 2.x with @vitest/coverage-v8 2.x, React Testing Library 16.x, MSW 2.x, Playwright 1.4x, @axe-core/playwright 4.x, Lighthouse CI 0.14.x, gitleaks 8.x.
 - Team 1 for one real feature record for the demo (SRC-15 step 3).
 
 ## 7. Acceptance Criteria
@@ -608,3 +608,4 @@ Table 4.17-A MVP acceptance criteria.
 | 0.16 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-148): TST-100 and §8 `@mutating` order E2E-18, FE-193 snooze step, E2E-09 (D-118) | — |
 | 0.17 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
 | 0.18 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31, Q-14; TRD 24 D-169): E2E-15 expects "Check-ins started." as the newest log line and "Check-in missed." for each earlier day since R11's enrolment | — |
+| 0.19 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): Test-tool pins follow the working build: pytest 9.x, pytest-cov 7.x, pytest-randomly 5.x (TRD 24 D-177) | — |

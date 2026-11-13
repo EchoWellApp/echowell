@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -289,9 +289,9 @@ CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owne
 | GIT-092 | Real resident data, study data exports, database dumps and production logs shall never be committed; only synthetic data (SRC-05, SRC-06 and generated test data) is allowed in `specs/data-samples/`, `database/seeds/` and `tests/fixtures/`. | Must | BR-16, D-OWNER-4 | Inspection |
 | GIT-093 | Third-party-licensed documents (journal preprints and articles, standards, vendor manuals, datasets under restrictive licences such as DAIC-WOZ/E-DAIC) shall not be committed; they shall be cited by URL/DOI in `specs/business-requirements/REFERENCES.md`. | Must | D-OWNER-1 | Inspection |
 | GIT-094 | SRC-07 (JMIR preprint 113062) shall be referenced only by its link https://preprints.jmir.org/preprint/113062 (DOI 10.2196/preprints.113062) as listed in `REFERENCES.md`; no TRD or document shall reference a repository path for it. | Must | D-OWNER-1 | Inspection |
-| GIT-095 | Binary specification files authored by the team (`.xlsx`, `.pdf`, `.docx`) are allowed only under `specs/` and shall be at most 10 MB each; elsewhere binaries are limited to frontend static assets (`.svg`, `.png`, `.ico`) of at most 1 MB each. | Must | TRD 16 CIC-021 | Test |
+| GIT-095 | Binary specification files authored by the team (`.xlsx`, `.pdf`, `.docx`) are allowed only under `specs/` and shall be at most 10 MB each; elsewhere binaries are limited to frontend static assets (`.svg`, `.png`, `.ico`) of at most 1 MB each, the self-hosted Source Sans 3 font file `frontend/app/fonts/SourceSans3-latin-variable.woff2` (TRD 24 D-168) and the test fixtures under `tests/fixtures/` (the answer-key workbook copy, TRD 13 TST-070) (TRD 24 D-179). | Must | TRD 16 CIC-021 | Test |
 | GIT-096 | Git LFS shall not be used. | Must | — | Inspection |
-| GIT-097 | Fonts shall not be committed; "Source Sans 3" is self-hosted through `next/font` at build time (TRD 22; TRD 24 D-112). | Should | TRD 22 | Inspection |
+| GIT-097 | "Source Sans 3" is self-hosted from the committed variable font `frontend/app/fonts/SourceSans3-latin-variable.woff2` through `next/font/local` (SIL OFL 1.1, licence in `frontend/app/fonts/OFL.txt`); no other font file is committed (TRD 22; TRD 24 D-112, D-168, D-179). | Should | TRD 22 | Inspection |
 
 ### 4.11 `.gitignore`
 
@@ -455,3 +455,4 @@ updates:
 | 0.14 | 26 Oct 2026 | Checkpoint 2 review Q-3: §4.4 CODEOWNERS block lists `/netlify.toml` and `/railway.toml` on separate lines (one pattern per line, as GitHub parses CODEOWNERS); ownership unchanged | — |
 | 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): GIT-097 names the v0.2 font Source Sans 3 (D-112) | — |
 | 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.17 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): GIT-095 and GIT-097 allow the committed Source Sans 3 font (D-168) and the test fixtures (TST-070) (TRD 24 D-179) | — |

@@ -11,7 +11,7 @@ This document lays out the test levels, directories, fixtures, validation tiers,
 ```mermaid
 flowchart TB
   subgraph PR["Gating on every pull request to main"]
-    U["Unit (≥ 70 %)<br/>pytest 8 on analytics/ and backend/<br/>Vitest + React Testing Library on frontend/"]
+    U["Unit (≥ 70 %)<br/>pytest 9 on analytics/ and backend/<br/>Vitest + React Testing Library on frontend/"]
     I["Integration (≈ 20 %)<br/>pytest + postgres:16-alpine + httpx TestClient"]
     C["Contract<br/>OpenAPI snapshot, response validation"]
     S["Security<br/>auth matrix, tokens, rate limits, grants, no-audio"]
@@ -31,7 +31,7 @@ flowchart TB
 
 | Level | Tooling (pinned majors) | Runs against | Source |
 |---|---|---|---|
-| Unit | pytest 8.x, pytest-cov 5.x, Hypothesis 6.x; Vitest 2.x, RTL 16.x, jsdom 25.x, MSW 2.x | in-process, no DB, no network, frozen clock | TST-001, TST-003, TST-005, TST-022 |
+| Unit | pytest 9.x, pytest-cov 7.x, Hypothesis 6.x; Vitest 2.x, RTL 16.x, jsdom 25.x, MSW 2.x | in-process, no DB, no network, frozen clock | TST-001, TST-003, TST-005, TST-022 |
 | Integration | pytest, httpx `TestClient`, testcontainers-python 4.x (`postgres:16-alpine`) or the CI service container; never SQLite | real PostgreSQL 16 provisioned by `database/roles/provision_login_roles.sql` | TST-002, CIC-012, CIC-015 |
 | Contract | pytest + `openapi-core` 0.19.x | generated `/api/v1/openapi.json`, committed `docs/api_reference/openapi.json`, TRD 19 skeleton | TST-060..TST-064, OAS-005, OAS-006 |
 | Validation | pytest + pandas 2.2.x + openpyxl 3.1.x (tests only) | `analytics` package (Tier A), full stack (Tier B) | TST-080, TST-081, TDV-030, TDV-031 |

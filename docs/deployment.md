@@ -4,6 +4,8 @@ Operational guide (TRD 18 GIT-054) for the three environments `local`, `staging`
 
 Written in Block 3 checkpoint 8 (Phase 14A, FEAT-084..FEAT-087). **No deployment was performed in that checkpoint**; the values marked "recorded in Phase 10" are filled in by the Block 4 deployment PR (FEAT-088) and never contain credentials.
 
+**Deployment status (12 November 2026, TRD 24 D-180).** The interim deployment on Netlify, Render and Neon has been completed by the team and is functioning, as the algorithm lead recorded in the checkpoint 9 review (GitHub PR #32). There is no separate Block 4 deployment PR. The remaining verification items of `specs/backlog/DEPLOYMENT_CHECKLIST.md` (hosted smoke tests DEP-080/DEP-081, backups and restore drill, rollback rehearsal, demo acceptance, uptime) are carried out as Block 5 validation activities, and their evidence is written into the last column then. The GitHub repository variables with the hosted URLs (`STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL`) are not set yet. Until they are, `deploy-staging.yml` stops at "Wait for staging" and `uptime.yml` skips its checks; setting them changes no deployment.
+
 ## Hard rules
 
 | Rule | Source |
