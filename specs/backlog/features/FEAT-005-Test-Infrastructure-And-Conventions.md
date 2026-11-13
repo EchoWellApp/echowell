@@ -52,7 +52,7 @@ Provide the Python test foundation that every later feature uses to prove its re
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-005-FR-01 | Backend and analytics tests shall run with pytest 8.x on Python 3.12 with pytest-cov and the httpx-based FastAPI `TestClient`. | TST-001 |
+| FEAT-005-FR-01 | Backend and analytics tests shall run with pytest 9.x on Python 3.12 with pytest-cov and the httpx-based FastAPI `TestClient`. | TST-001 |
 | FEAT-005-FR-02 | A session-scoped fixture shall start PostgreSQL 16 with testcontainers (image `postgres:16-alpine`) unless `DATABASE_URL` is set and `APP_ENV=test`, in which case that database is used; no SQL-exercising test uses SQLite. | TST-002 |
 | FEAT-005-FR-03 | A frozen-clock fixture based on `time-machine` shall be available; no test depends on wall-clock time, network outside the test stack or execution order (compatible with `pytest -p randomly`). | TST-005 |
 | FEAT-005-FR-04 | `pyproject.toml` `[tool.pytest.ini_options]` shall register exactly the markers `unit`, `integration`, `contract`, `validation`, `security`, `performance`, `smoke`, `slow`, `authenticated`, `budget`, `req` with `--strict-markers`; a conftest hook shall fail collection of a test module that does not carry exactly one level marker. | TST-006 |
