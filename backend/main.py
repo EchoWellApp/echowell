@@ -38,6 +38,7 @@ from backend.core.config import DEPLOYED_ENVS, Settings, ensure_valid, load_sett
 from backend.core.error_handlers import install_handlers, problem_response
 from backend.core.logging import REQUEST_ID_HEADER, configure_logging
 from backend.core.middleware import BodyLimitMiddleware, RequestContextMiddleware
+from backend.core.monitoring import init_sentry
 from backend.core.security import normalise_email
 from backend.models import ActorType
 from backend.services import audit_service, ingestion
@@ -52,6 +53,7 @@ logger = logging.getLogger("backend.main")
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup check of `feature_name_map`: an invalid map stops the application (ING-017)."""
     settings: Settings = app.state.settings
+    init_sentry(settings)
     engine = db.create_engine_for(settings.database_url, app_env=settings.app_env)
     try:
         await run_in_threadpool(

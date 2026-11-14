@@ -1,10 +1,10 @@
 # 01 System Architecture TRD
 
-Document ID: ECHOWELL-TRD-01 · Version 0.9 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-01 · Version 0.11 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
-This document specifies the EchoWell system architecture: system context and the Team 1 boundary, deployable containers, the monorepo module decomposition, the flow of one check-in through the system, the storage and processing flows of SRC-02, pipeline triggering, rebuild and reproducibility rules, environments, and the **current (interim) versus target (AWS)** architecture. Per owner decision D-OWNER-3 (18 Oct 2026), AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) is the target production platform; Netlify + Railway + Neon is the current, interim hosting used until the AWS budget is approved. Live feature data is treated as potentially PHI-derived. It is the architectural reference that TRDs 04–23 refine. It does not invent alternatives to SRC-01.
+This document specifies the EchoWell system architecture: system context and the Team 1 boundary, deployable containers, the monorepo module decomposition, the flow of one check-in through the system, the storage and processing flows of SRC-02, pipeline triggering, rebuild and reproducibility rules, environments, and the **current (interim) versus target (AWS)** architecture. Per owner decision D-OWNER-3 (18 Oct 2026), AWS (Amplify, App Runner, RDS PostgreSQL + KMS, Secrets Manager, CloudWatch) is the target production platform; Netlify + Render + Neon is the current, interim hosting used until the AWS budget is approved. Live feature data is treated as potentially PHI-derived. It is the architectural reference that TRDs 04–23 refine. It does not invent alternatives to SRC-01.
 
 ## 2. Scope
 
@@ -43,8 +43,8 @@ flowchart LR
 
     subgraph CLOUD["EchoWell cloud (Team 2)"]
         FE["Frontend<br/>Next.js on Netlify"]
-        BE["Backend<br/>FastAPI on Railway<br/>+ analytics package"]
-        DB[("PostgreSQL 16<br/>Neon (or Railway PostgreSQL)")]
+        BE["Backend<br/>FastAPI on Render<br/>+ analytics package"]
+        DB[("PostgreSQL 16<br/>Neon (or Render Postgres)")]
         FE -- "HTTPS JSON /api/v1<br/>Bearer JWT" --> BE
         BE -- "SQL over TLS" --> DB
     end
@@ -65,7 +65,7 @@ flowchart LR
 | ARC-004 | Devices shall authenticate to the ingest API with an `X-API-Key` header holding a key with scope `ingest:write`; scheduled callers may trigger pipeline runs with a key of scope `pipeline:run`; dashboard users shall authenticate with a JWT bearer token. | Must | BR-16, TRD 12, R18 | Test |
 | ARC-005 | All external traffic (device → backend, browser → frontend, frontend → backend) shall use HTTPS with TLS 1.2 or higher, terminated by the hosting platform. | Must | BR-16, SRC-01, D-OWNER-3 | Inspection, Test |
 | ARC-006 | The backend-to-database connection shall use TLS 1.2 or higher with `sslmode=require` (or stricter) in `DATABASE_URL` in staging and production. | Must | BR-16, D-OWNER-3 | Test (startup check), Inspection |
-| ARC-007 | All persistent stores holding feature data (database storage, backups, snapshots) shall be encrypted at rest: provider-managed encryption on Neon/Railway (current); RDS storage encryption with an AWS KMS key and encrypted backups/S3 on AWS (target). | Must | BR-16, D-OWNER-3 | Inspection (provider configuration evidence, TRD 22) |
+| ARC-007 | All persistent stores holding feature data (database storage, backups, snapshots) shall be encrypted at rest: provider-managed encryption on Neon/Render (current); RDS storage encryption with an AWS KMS key and encrypted backups/S3 on AWS (target). | Must | BR-16, D-OWNER-3 | Inspection (provider configuration evidence, TRD 22) |
 | ARC-008 | The current (interim) stack shall hold only synthetic and test data; real resident data shall be ingested only on the approved target AWS platform (go-live on AWS only). | Must | BR-16, RSK-14, D-OWNER-3, D-OWNER-4 | Inspection (ingest batch sources, DATA_SOURCE_LABEL) |
 
 ### 4.2 Containers
@@ -75,14 +75,14 @@ flowchart TB
     subgraph Netlify
         NX["Next.js 14.2 App Router (TypeScript, React 18.3)<br/>routes: /login, /residents, /residents/[residentCode] (+ /review, /trends,<br/>/baseline, /log, /device), /admissions, /study, /admin<br/>services/api.ts = only HTTP client"]
     end
-    subgraph Railway
+    subgraph Render
         API["FastAPI 0.115 (Python 3.12)<br/>backend/api routers -> services -> repositories -> models"]
         ANA["analytics/ (pure Python package)<br/>pipeline.py + stage modules<br/>numpy 2.x (pandas in tests only)"]
-        SCH["Railway Cron Job service (separate)<br/>python -m backend.jobs.nightly_run<br/>cron 0 7,8 * * * UTC, runs only in hour NIGHTLY_RUN_HOUR_LOCAL (02:xx) FACILITY_TZ"]
+        SCH["Render cron job (separate)<br/>python -m backend.jobs.nightly_run<br/>cron 0 7,8 * * * UTC, runs only in hour NIGHTLY_RUN_HOUR_LOCAL (02:xx) FACILITY_TZ"]
         API -- "import, in-process call" --> ANA
         SCH -- "same image; calls PipelineService" --> PG
     end
-    subgraph Neon["Neon (preferred) or Railway PostgreSQL"]
+    subgraph Neon["Neon (preferred) or Render Postgres"]
         PG[("PostgreSQL 16<br/>raw_sessions (immutable)<br/>derived tables<br/>users, audit_logs, config")]
     end
     NX -- "HTTPS /api/v1 (CORS allow-list)" --> API
@@ -92,22 +92,22 @@ flowchart TB
 | Container | Technology (pinned per contract) | Responsibility | Hosting (current interim → target AWS) |
 |---|---|---|---|
 | Frontend | Next.js 14.2.x App Router, React 18.3.x, TypeScript 5.x, Recharts 2.x, Node.js 20 LTS | Dashboard pages, login, admin UI; calls backend REST API only | Netlify (staging site auto-deploys `main`; production site published only by the manual release workflow, D-99) → AWS Amplify |
-| Backend API | Python 3.12, FastAPI 0.115.x, Pydantic 2.x, SQLAlchemy 2.0.x, Alembic 1.13.x, psycopg 3.x | Auth, ingest, validation, persistence, pipeline orchestration, read APIs, audit | Railway (staging environment auto-deploys `main`; production environment deployed only by the release workflow) → AWS App Runner |
+| Backend API | Python 3.12, FastAPI 0.115.x, Pydantic 2.x, SQLAlchemy 2.0.x, Alembic 1.13.x, psycopg 3.x | Auth, ingest, validation, persistence, pipeline orchestration, read APIs, audit | Render (staging environment auto-deploys `main`; production environment deployed only by the release workflow) → AWS App Runner |
 | Analytics engine | Python package `analytics/` (numpy 2.x only at runtime; pandas and openpyxl in tests only, TRD 07 ANL-005) | Pure deterministic pipeline functions (stages 1–12 of TRD 07 ANL-006) | Imported by the backend; runs in the backend process |
-| Database | PostgreSQL 16 | System of record: raw store, derived tables, users, config, audit | Neon (preferred) or Railway PostgreSQL → AWS RDS PostgreSQL (KMS-encrypted) |
+| Database | PostgreSQL 16 | System of record: raw store, derived tables, users, config, audit | Neon (preferred) or Render Postgres → AWS RDS PostgreSQL (KMS-encrypted) |
 | CI/CD | GitHub Actions | Lint, type-check, tests, validation suite, build, deploy | GitHub |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ARC-010 | The frontend shall be a Next.js App Router application written in TypeScript and deployed to Netlify. | Must | BR-17, SRC-01 | Inspection |
-| ARC-011 | The backend shall be a FastAPI application written in Python 3.12 and deployed to Railway. | Must | BR-17, SRC-01 | Inspection |
-| ARC-012 | The database shall be PostgreSQL 16, hosted on Neon (preferred) or Railway PostgreSQL in the current (interim) stack and on AWS RDS PostgreSQL in the target stack. | Must | BR-17, SRC-01, D-OWNER-3 | Inspection |
+| ARC-011 | The backend shall be a FastAPI application written in Python 3.12 and deployed to Render. | Must | BR-17, SRC-01 | Inspection |
+| ARC-012 | The database shall be PostgreSQL 16, hosted on Neon (preferred) or Render Postgres in the current (interim) stack and on AWS RDS PostgreSQL in the target stack. | Must | BR-17, SRC-01, D-OWNER-3 | Inspection |
 | ARC-013 | The analytics engine shall be the Python package `analytics/` in the monorepo, imported by the backend and executed in the backend process. | Must | BR-17, SRC-01 ("contained within the backend codebase as a dedicated analytics module") | Inspection |
 | ARC-014 | The frontend shall access data only through the backend REST API at `NEXT_PUBLIC_API_BASE_URL`; it shall hold no database credentials. | Must | BR-16, BR-17 | Inspection |
-| ARC-015 | Only backend processes (API service, nightly job, CLI) shall hold database connection strings: `DATABASE_URL` for the `echowell_app` role; `DATABASE_READONLY_URL` for the `echowell_readonly` role, opened only by `backend/services/analytics_summary.py` in the `test_v0_1` profile (contract R27); and, for migrations and the operator CLI only, `DATABASE_MIGRATION_URL` for the `echowell_migrator` role, read only by the Railway pre-deploy step and the CLI, never by request or pipeline code (TRD 15 DEP-040). | Must | BR-16, R20 | Inspection |
+| ARC-015 | Only backend processes (API service, nightly job, CLI) shall hold database connection strings: `DATABASE_URL` for the `echowell_app` role; `DATABASE_READONLY_URL` for the `echowell_readonly` role, opened only by `backend/services/analytics_summary.py` in the `test_v0_1` profile (contract R27); and, for migrations and the operator CLI only, `DATABASE_MIGRATION_URL` for the `echowell_migrator` role, read only by the Render pre-deploy step and the CLI, never by request or pipeline code (TRD 15 DEP-040). | Must | BR-16, R20 | Inspection |
 | ARC-016 | All components shall live in the single GitHub monorepo `EchoWellApp/echowell` with the layout in section 4.6. | Must | BR-17, SRC-01 | Inspection |
 | ARC-017 | The backend shall serve its OpenAPI document at `/api/v1/openapi.json`, and the committed contract file `docs/api_reference/openapi.json` produced by `python -m backend.cli export-openapi` shall equal the generated schema (CI fails on difference); frontend types shall be generated from it to `frontend/lib/api-types.ts`. | Must | BR-17, TRD 19, R22 | Test (CI diff) |
-| ARC-018 | In the current stack the system shall not depend on any service other than Netlify, Railway, Neon/Railway PostgreSQL and GitHub (optional Sentry via `SENTRY_DSN`) to serve a request; in the target stack the equivalents are the AWS services of section 4.10. | Must | BR-17, SRC-01, D-OWNER-3, TRD 22 | Inspection |
+| ARC-018 | In the current stack the system shall not depend on any service other than Netlify, Render, Neon/Render Postgres and GitHub (optional Sentry via `SENTRY_DSN`) to serve a request; in the target stack the equivalents are the AWS services of section 4.10. | Must | BR-17, SRC-01, D-OWNER-3, TRD 22 | Inspection |
 | ARC-019 | The database shall have three roles: `echowell_migrator` (owns the schema; its credential is used only by the closed list of TRD 20 §4.3: Alembic and the listed operator commands), `echowell_app` (DML; no UPDATE/DELETE on `raw_sessions`, `audit_logs`, `alert_reviews`, `staff_notes`; no SELECT on `evaluation_ground_truth`) and `echowell_readonly` (SELECT for researcher read-outs and exports, including `evaluation_ground_truth` in the test profile). | Must | BR-02, BR-16, R20 | Test (privilege tests in CI) |
 
 ### 4.3 Data flow of one check-in
@@ -309,7 +309,7 @@ echowell/
 |---|---|---|---|---|
 | Single record ingest | `ingest` | the record's resident (and co-residents of a shared device for the day ledger) | synchronous within request | `POST /api/v1/sessions` |
 | Batch / CSV ingest | `ingest` | all residents in the batch (plus device co-residents) | background task after 202 | `POST /api/v1/ingest` |
-| Nightly | `nightly` | all active residents | separate Railway Cron Job service at `0 7,8 * * *` UTC; proceeds only when facility-local time is 02:xx (`NIGHTLY_RUN_HOUR_LOCAL`) and that local night has not yet run | `python -m backend.jobs.nightly_run` (TRD 15) |
+| Nightly | `nightly` | all active residents | separate Render cron job at `0 7,8 * * *` UTC; proceeds only when facility-local time is 02:xx (`NIGHTLY_RUN_HOUR_LOCAL`) and that local night has not yet run | `python -m backend.jobs.nightly_run` (TRD 15) |
 | Nightly (AWS target scheduler) | `nightly` | all | background task; once per facility-local night (API-061 dedupe) | `POST /api/v1/pipeline/run` with API key scope `pipeline:run` (D-70) |
 | Manual | `manual` | `{scope, profile, as_of?}` from request | background task | `POST /api/v1/pipeline/run` (admin JWT); operator CLI `run-pipeline`, `rebuild` and `seed test_v0_1` |
 | Test | `test` | all | synchronous in test harness | pytest validation suite |
@@ -317,7 +317,7 @@ echowell/
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ARC-060 | Every pipeline execution shall create one `pipeline_runs` row recording trigger, scope, config profile, config snapshot, code version (`GIT_SHA`), start and finish times, status, counts and warnings. | Must | BR-15, BR-16, TRD 17 | Test |
-| ARC-061 | The nightly run shall be executed by a separate Railway Cron Job service running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when the facility-local hour is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047), so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
+| ARC-061 | The nightly run shall be executed by a separate Render cron job running `python -m backend.jobs.nightly_run` at `0 7,8 * * *` UTC; the job shall proceed only when the facility-local hour is `NIGHTLY_RUN_HOUR_LOCAL` (default 2, i.e. 02:xx) and no `pipeline_runs` row with trigger `nightly` and status `running` or `succeeded` has `started_at` on that facility-local date (the single dedupe condition of TRD 05 API-061 / TRD 15 DEP-047), so it runs exactly once per local day including daylight-saving transition days; no in-process scheduler (e.g. APScheduler) shall exist. | Must | BR-06, ASM-01, R18 | Test (job unit test with DST dates 2026-11-01 and 2027-03-14) |
 | ARC-062 | The nightly run shall recompute the day ledger up to the new as-of date so that a resident with no record on the previous local day receives a missing-day entry even when no record arrived. | Must | BR-06, SRC-03 | Test |
 | ARC-063 | Pipeline executions that touch the same resident shall be serialized using a transaction-scoped PostgreSQL advisory lock keyed on the resident, taken by every run including full-scope runs (keys and helper in TRD 06 DB-021); there is no global run lock, because session-level advisory locks do not work over the Neon pooled endpoint. | Must | BR-02, BR-15 | Test (concurrent ingest) |
 | ARC-064 | The derived-table writes of one pipeline execution shall commit in a single database transaction per resident, so that readers never observe a partially processed resident. | Must | BR-12, BR-13 | Test |
@@ -344,10 +344,10 @@ flowchart LR
         LF["frontend :3000"] --> LB["backend :8000"] --> LP[("postgres:16")]
     end
     subgraph Staging
-        SF["Netlify site 'echowell-und-staging'"] --> SB["Railway staging service<br/>+ nightly Cron Job (US East)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
+        SF["Netlify site 'echowell-und-staging'"] --> SB["Render staging web service<br/>+ nightly cron job (ohio, US East)"] --> SP[("Neon database branch 'staging'<br/>aws-us-east-1")]
     end
     subgraph Production
-        PF["Netlify site 'echowell-und'"] --> PB["Railway production service"] --> PP[("Neon database branch 'main'")]
+        PF["Netlify site 'echowell-und'"] --> PB["Render production web service<br/>+ nightly cron job"] --> PP[("Neon database branch 'main'")]
     end
     GH["GitHub main branch"] -->|every merge, GitHub integrations| SF & SB
     REL["deploy-production.yml<br/>manual, approved release"] -->|chosen main commit| PF & PB
@@ -359,16 +359,16 @@ flowchart LR
 | ARC-081 | The local environment shall run the same backend, analytics and frontend code as the cloud environments and shall be usable as the demo fallback. | Must | BR-17, RSK-12, SRC-15 item 8 | Demo |
 | ARC-082 | Database schema changes shall be applied only through Alembic migrations using `DATABASE_MIGRATION_URL` (`echowell_migrator` role), run as a deploy step before the new backend version serves traffic. | Must | BR-17, TRD 15, R20 | Inspection |
 | ARC-083 | The backend shall expose `GET /api/v1/health` returning `{status, database, version, time}` for platform health checks, with HTTP 503 and status "degraded" when the database check fails. | Must | BR-17, TRD 05, R19 | Test |
-| ARC-084 | Hosting regions shall be Neon `aws-us-east-1` and Railway US East for the current stack and AWS `us-east-1` for the target stack. | Must | BR-17, R25 | Inspection |
+| ARC-084 | Hosting regions shall be Neon `aws-us-east-1` and Render `ohio` (US East; D-156) for the current stack and AWS `us-east-1` for the target stack. | Must | BR-17, R25 | Inspection |
 
 ### 4.10 Current (interim) versus target (AWS) architecture
 
-AWS is the **target** production platform; Netlify + Railway + Neon is the **current** interim hosting until the AWS budget is approved (D-OWNER-3, OQ-07). The interim stack holds synthetic and test data only; EchoWell goes live with real resident data only on AWS once approved (D-OWNER-4; OQ-23 closed).
+AWS is the **target** production platform; Netlify + Render + Neon is the **current** interim hosting until the AWS budget is approved (D-OWNER-3, OQ-07). The interim stack holds synthetic and test data only; EchoWell goes live with real resident data only on AWS once approved (D-OWNER-4; OQ-23 closed).
 
 ```mermaid
 flowchart LR
     subgraph Current["Current (interim): synthetic and test data only"]
-        C1["Netlify<br/>Next.js"] -->|HTTPS TLS 1.2+| C2["Railway<br/>FastAPI + analytics"] -->|"TLS, sslmode=require"| C3[("Neon / Railway PostgreSQL 16<br/>provider-managed encryption at rest")]
+        C1["Netlify<br/>Next.js"] -->|HTTPS TLS 1.2+| C2["Render<br/>FastAPI + analytics"] -->|"TLS, sslmode=require"| C3[("Neon / Render Postgres 16<br/>provider-managed encryption at rest")]
     end
     subgraph Target["Target (AWS): go-live, real PHI-derived feature data"]
         T1["AWS Amplify<br/>Next.js"] -->|HTTPS TLS 1.2+| T2["AWS App Runner<br/>same backend container"] -->|"TLS, sslmode=require"| T3[("RDS PostgreSQL 16<br/>KMS-encrypted storage + backups")]
@@ -381,22 +381,22 @@ flowchart LR
 | Concern | Current (interim; SRC-01) | Target AWS (SRC-01, D-OWNER-3) | Portability rule |
 |---|---|---|---|
 | Frontend hosting | Netlify | AWS Amplify Hosting | Standard Next.js build; no Netlify-specific runtime APIs (Netlify Functions, Edge Functions, Netlify Identity) |
-| Backend hosting | Railway | AWS App Runner | Containerized via `backend/Dockerfile`; listens on `$PORT`; stateless |
-| Database | Neon / Railway PostgreSQL 16 | AWS RDS PostgreSQL 16 | Standard PostgreSQL only; no Neon-specific SQL; connection via `DATABASE_URL` |
-| Scheduler | Separate Railway Cron Job service running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, recorded as `trigger = nightly` (D-47, D-70) | Trigger calls the same `pipeline_runner` entry |
-| Region | Neon `aws-us-east-1`, Railway US East | AWS `us-east-1` | Region set only in hosting configuration (R25) |
-| Secrets | Netlify/Railway env vars, GitHub secrets | AWS Secrets Manager injected as App Runner environment variables | Read only from environment variables |
-| Encryption at rest | Provider-managed storage encryption (Neon/Railway) | RDS storage encryption with AWS KMS key; encrypted automated backups and snapshots; any S3 objects encrypted (SSE-KMS) | No application-level dependency on the mechanism |
+| Backend hosting | Render | AWS App Runner | Containerized via `backend/Dockerfile`; listens on `$PORT`; stateless |
+| Database | Neon / Render Postgres 16 | AWS RDS PostgreSQL 16 | Standard PostgreSQL only; no Neon-specific SQL; connection via `DATABASE_URL` |
+| Scheduler | Separate Render cron job running `python -m backend.jobs.nightly_run` (R18) | Amazon EventBridge Scheduler at 02:00 America/Chicago calling `POST /api/v1/pipeline/run` with an API key of scope `pipeline:run`, recorded as `trigger = nightly` (D-47, D-70) | Trigger calls the same `pipeline_runner` entry |
+| Region | Neon `aws-us-east-1`, Render `ohio` (US East; D-156) | AWS `us-east-1` | Region set only in hosting configuration (R25) |
+| Secrets | Netlify/Render env vars, GitHub secrets | AWS Secrets Manager injected as App Runner environment variables | Read only from environment variables |
+| Encryption at rest | Provider-managed storage encryption (Neon/Render) | RDS storage encryption with AWS KMS key; encrypted automated backups and snapshots; any S3 objects encrypted (SSE-KMS) | No application-level dependency on the mechanism |
 | Encryption in transit | Platform TLS; `sslmode=require` to PostgreSQL | ACM TLS; `sslmode=require` (RDS CA) to PostgreSQL | TLS settings via configuration only |
 | Data permitted | Synthetic and test data only (permanent rule, D-OWNER-4) | Real PHI-derived feature data after AWS approval and account setup (OQ-07) | Same schema and code |
-| Logs | Railway logs (JSON stdout) | CloudWatch Logs | JSON to stdout, no file logging, no PII or feature payloads in logs |
+| Logs | Render logs (JSON stdout) | CloudWatch Logs | JSON to stdout, no file logging, no PII or feature payloads in logs |
 | TLS | Platform-managed | Platform-managed (ACM) | No TLS in application code |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | ARC-090 | The backend shall be packaged as an OCI container image built from `backend/Dockerfile` that reads all configuration from environment variables and listens on the port given by `PORT` (default 8000). | Must | BR-17, SRC-01, D-OWNER-3 (target AWS) | Test (container build in CI) |
 | ARC-091 | The backend shall keep no state on local disk between requests; background tasks shall be re-creatable from database state. | Must | BR-17, SRC-01 | Inspection |
-| ARC-092 | SQL and migrations shall use only features available in standard PostgreSQL 16 (including `gen_random_uuid()` and advisory locks) and shall not depend on Neon- or Railway-specific extensions. | Must | BR-17, SRC-01 | Test (CI against `postgres:16`) |
+| ARC-092 | SQL and migrations shall use only features available in standard PostgreSQL 16 (including `gen_random_uuid()` and advisory locks) and shall not depend on Neon- or Render-specific extensions. | Must | BR-17, SRC-01 | Test (CI against `postgres:16`) |
 | ARC-093 | The frontend shall not use hosting-vendor-specific runtime features; it shall build with `next build` and run on any Next.js-compatible host. | Must | BR-17, SRC-01 | Inspection |
 | ARC-094 | A migration to the target AWS platform shall require changes only to deployment configuration (environment variables, workflow files, infrastructure settings) and no change to application source in `frontend/`, `backend/` or `analytics/`. | Must | BR-17, SRC-01 ("no significant application code changes"), D-OWNER-3 | Analysis, Demo (container run against `postgres:16` with `sslmode=require`) |
 | ARC-095 | Application logs shall not contain resident feature values, raw request bodies of ingest calls, passwords, tokens or API keys; they may contain study IDs, session IDs and request IDs. | Must | BR-16, D-OWNER-3, TRD 17 | Test (log capture), Inspection |
@@ -420,9 +420,9 @@ flowchart LR
 ## 6. Dependencies
 
 - Team 1 transport to the cloud endpoint and device API key provisioning (ASM-05).
-- Hosting accounts: Netlify, Railway, Neon (TRD 22) for the current stack; AWS account and budget for the target stack (OQ-07); GitHub organisation `EchoWellApp`.
+- Hosting accounts: Netlify, Render, Neon (TRD 22) for the current stack; AWS account and budget for the target stack (OQ-07); GitHub organisation `EchoWellApp`.
 - AWS approval before any real resident data is loaded (D-OWNER-4, OQ-07, RSK-14).
-- Railway Cron Job service for the nightly run (R18, TRD 15).
+- Render cron job for the nightly run (R18, TRD 15).
 - TRD 07 stage contracts and TRD 06/20 table definitions.
 
 ## 7. Acceptance Criteria
@@ -446,7 +446,7 @@ flowchart LR
 - Missing analytics files to create next to the existing skeletons: `analytics/data_alerts.py`, `analytics/aggregates.py`, `analytics/speaker_screen.py`, `analytics/day_ledger.py`, `analytics/robust_stats.py`, `analytics/pipeline.py`, `analytics/config.py`, `analytics/__init__.py`.
 - `run_pipeline` signature (binding, TRD 07 §4.5): `run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines=None) -> PipelineResult` (types as defined in TRD 07 §4.3–§4.4). All inputs are plain dataclasses; the backend repository layer converts ORM rows to them.
 - Use `SRC-04` as the executable reference when in doubt; its output must equal SRC-03.
-- Railway and Neon free tiers may sleep or auto-suspend (RSK-07); the first request after idle can be slow. Do not add keep-alive pingers without TRD 15 approval.
+- Neon Free compute auto-suspends (RSK-07), so the first query after idle can be slow; the Render Free instance type, which spins down after 15 minutes idle, is not used (TRD 15 DEP-042). Do not add keep-alive pingers without TRD 15 approval.
 - Database driver is psycopg 3 (`psycopg[binary]`); replace `psycopg2-binary` in `backend/requirements.txt` (R24). SQLAlchemy URLs use the `postgresql+psycopg://` scheme.
 - The existing `docker-compose.yml` (`version: "3"`) and CI stub are replaced in the deployment-config phase (R26).
 - FastAPI `BackgroundTasks` is acceptable for batch processing at ASM-08 scale; do not introduce Celery, Redis or a message queue (not in SRC-01).
@@ -477,3 +477,5 @@ flowchart LR
 | 0.7 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.8 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-3, Q-4, Q-5, Q-7): §4.6 router list aligned with TRD 05 §4.1 (data alerts in `alarms`, notes in `residents`, facility reference ranges in `admissions`; `config` added); service names `health_service`, `config_service`, `auth_service`, `audit_service`; repository module names from docs/design/Database_ERD.md §5; root `scripts/` added | — |
 | 0.9 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): frontend routes in §4.2 (Resident chart sections, `/study`; `/alerts` and `/analytics` pages retired); SRC-21 replaces SRC-09/10/11/18/19 in references and traces (ARC-032, ARC-035, ARC-040, §4.5) | — |
+| 0.10 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.11 | 5 Nov 2026 | PR #30 review (TRD 24 D-154..D-158): existing `echowell-api` is the staging web service; production created later in the same region; region `ohio` (US East); Starter tier; confirmed Render rollback and health-check behaviour | — |

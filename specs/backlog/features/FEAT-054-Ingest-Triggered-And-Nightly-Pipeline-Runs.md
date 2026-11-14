@@ -19,7 +19,7 @@ Connect the automatic triggers to the pipeline runner (FEAT-053) so that results
 - BR-01, BR-13 and demo step 5 (SRC-15): a newly ingested usable record shows on the dashboard right after the ingest response (FR-184, D-67).
 - BR-06 (missed check-ins are visible): the nightly run records missing days even without new records (FR-125).
 - BR-02 (raw data is never lost): a failed synchronous run keeps the record stored and returns `pending` (D-52, R23).
-- RSK-07 / D-47: nightly scheduling without an in-process scheduler on the interim Railway stack.
+- RSK-07 / D-47: nightly scheduling without an in-process scheduler on the interim Render stack.
 - FRs covered (BACKLOG.md): FR-125, FR-184.
 
 ## Referenced TRDs
@@ -45,7 +45,7 @@ Connect the automatic triggers to the pipeline runner (FEAT-053) so that results
 - The ingest validation, duplicate handling and storage of the endpoints (FEAT-025, FEAT-026).
 - `POST /api/v1/pipeline/run`, including the scheduler API-key path with `trigger = nightly` and its dedupe (FEAT-024; API-065, D-70).
 - The `nightly_run_missing` check, `run_abandoned` handling and retry limits (FEAT-056).
-- The Railway Cron Job service definition and AWS EventBridge setup (FEAT-081 and later DevOps features).
+- The Render cron job definition and AWS EventBridge setup (FEAT-081 and later DevOps features).
 
 ## Functional Requirements
 
@@ -82,7 +82,7 @@ Connect the automatic triggers to the pipeline runner (FEAT-053) so that results
 
 - Single record: device → `POST /sessions` → validate + commit raw row (FEAT-025) → `pipeline_runner.run(scope, "ingest", profile, as_of)` → response 201 (usable/set_aside/quarantined or pending).
 - Batch: `POST /ingest` → commit batch (FEAT-026) → create run row → `BackgroundTasks` → `pipeline_runner.run(...)` → poll via `GET /ingest/batches/{id}` / `GET /pipeline/runs/{id}`.
-- Nightly: Railway cron 07:00 and 08:00 UTC → `nightly_run` → local-hour check → advisory lock + dedupe check + run row → `pipeline_runner.run("all", "nightly", ...)` → exit code.
+- Nightly: Render cron job 07:00 and 08:00 UTC → `nightly_run` → local-hour check → advisory lock + dedupe check + run row → `pipeline_runner.run("all", "nightly", ...)` → exit code.
 
 ## Dependencies
 

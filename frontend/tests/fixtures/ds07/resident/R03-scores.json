@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 6,
+  "limit": 50,
+  "offset": 0,
+  "cusum_k": 0.5,
+  "baseline_periods": [
+    {
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "first_local_date": "2026-10-01",
+      "frozen_after_local_date": "2026-10-23",
+      "frozen_after_session_id": "R03-20261023-01",
+      "n_sessions": 16
+    }
+  ],
+  "items": [
+    {
+      "session_id": "R03-20261024-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-24",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.863621614329832,
+        "z_total_phrase_duration_s": 1.5264790872365008,
+        "z_speech_rate_syl_per_s": -0.11241512657943503,
+        "z_articulation_rate_syl_per_s": -1.2023530929800013,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.5246039240373519,
+        "z_voiced_fraction": -1.723698607551296
+      },
+      "composite_raw": 0.7005662292342446,
+      "composite_z": 1.2666568530859053,
+      "cusum_tally": 0.7666568530859053,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R03-20261025-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-25",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.6722120744783647,
+        "z_total_phrase_duration_s": 0.17749756828331353,
+        "z_speech_rate_syl_per_s": -0.6744907594765952,
+        "z_articulation_rate_syl_per_s": 0.6158393890873227,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 2.660491329046568,
+        "z_voiced_fraction": -3.4224160758627207
+      },
+      "composite_raw": 0.9987526311514628,
+      "composite_z": 1.936286678787391,
+      "cusum_tally": 2.202943531873296,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R03-20261027-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-27",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.7588021044111699,
+        "z_total_phrase_duration_s": -1.881474223803131,
+        "z_speech_rate_syl_per_s": 0.7869058860560252,
+        "z_articulation_rate_syl_per_s": -0.3812339075302429,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 0.5620756328971617,
+        "z_voiced_fraction": 1.8735854429905394
+      },
+      "composite_raw": -0.6224940166904945,
+      "composite_z": -1.7045068088878765,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R03-20261028-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-28",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.5719499345561669,
+        "z_total_phrase_duration_s": -1.1004849233565497,
+        "z_speech_rate_syl_per_s": -0.3934529430280151,
+        "z_articulation_rate_syl_per_s": -2.492683241543909,
+        "z_number_of_pauses": 2,
+        "z_pause_fraction": -1.1241512657943253,
+        "z_voiced_fraction": -1.4239249366728093
+      },
+      "composite_raw": 0.5019249996482416,
+      "composite_z": 0.8205731581569471,
+      "cusum_tally": 0.3205731581569471,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R03-20261029-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-29",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 2.627323802961199,
+        "z_total_phrase_duration_s": -0.8164888141032467,
+        "z_speech_rate_syl_per_s": 0.8431134493457403,
+        "z_articulation_rate_syl_per_s": 0.498536648308788,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -2.4731327847475137,
+        "z_voiced_fraction": -0.22483025315886226
+      },
+      "composite_raw": -1.004823606615375,
+      "composite_z": -2.5630949102091227,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R03-20261030-01",
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "local_date": "2026-10-30",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 2.0576525534032633,
+        "z_total_phrase_duration_s": 0.035499513656662075,
+        "z_speech_rate_syl_per_s": 0.8431134493457403,
+        "z_articulation_rate_syl_per_s": -0.7917935002551195,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 1.2365663923737558,
+        "z_voiced_fraction": 1.5738117721120526
+      },
+      "composite_raw": -0.34438833836793126,
+      "composite_z": -1.0799717673690092,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    }
+  ]
+}

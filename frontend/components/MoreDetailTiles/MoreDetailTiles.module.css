@@ -1,0 +1,40 @@
+/* "More detail" tiles: one row of four ≥ 1024px, one column below 640px (UX-078, UX-240, UX-242). */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: var(--touch-min);
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.tile:hover {
+  border-color: var(--link);
+}
+.k {
+  font-size: 13px;
+  color: var(--muted);
+}
+.v {
+  font-size: 18px;
+  font-weight: 700;
+}
+.go {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--link);
+}
+@media (max-width: 639px) {
+  .tiles {
+    grid-template-columns: 1fr;
+  }
+}

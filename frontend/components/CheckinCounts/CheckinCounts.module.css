@@ -1,0 +1,24 @@
+/* Count tiles: min width 150px, one column below 640px (UX-140, UX-242). */
+.counts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.counts li {
+  border: 1px solid var(--rule);
+  border-radius: var(--panel-radius);
+  padding: 10px 12px;
+}
+.counts b {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+}
+@media (max-width: 639px) {
+  .counts {
+    grid-template-columns: 1fr;
+  }
+}

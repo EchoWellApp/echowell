@@ -1,0 +1,74 @@
+.appbar {
+  background: var(--chrome);
+  color: var(--chrome-ink);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 10px 20px;
+}
+.brand {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+.facility {
+  color: var(--chrome-muted);
+  font-size: 14px;
+}
+.nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--chrome-ink);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.link:hover {
+  background: var(--nav-hover);
+}
+.link[aria-current="page"] {
+  background: var(--nav-active);
+}
+.link:focus-visible,
+.signOut:focus-visible {
+  outline-color: var(--chrome-ink);
+}
+.user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.name {
+  color: var(--chrome-muted);
+  font-size: 14px;
+}
+.signOut {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0 14px;
+  background: transparent;
+  color: var(--chrome-ink);
+  border: 1px solid var(--chrome-muted);
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 639px) {
+  .appbar {
+    padding: 10px 12px;
+  }
+  .nav {
+    margin-left: 0;
+    width: 100%;
+  }
+}

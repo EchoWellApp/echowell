@@ -1,0 +1,25 @@
+.head {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.h1 {
+  font-size: 22px;
+}
+.cols2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--gap);
+  align-items: start;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 639px) {
+  .cols2 {
+    grid-template-columns: 1fr;
+  }
+}

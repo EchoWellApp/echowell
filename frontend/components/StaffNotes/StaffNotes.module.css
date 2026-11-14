@@ -1,0 +1,53 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.label {
+  font-weight: 600;
+}
+.select {
+  min-height: var(--touch-min);
+  max-width: 260px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+.counter {
+  font-size: 13px;
+  color: var(--muted);
+}
+.counterOver {
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 700;
+}
+.error {
+  font-size: 14px;
+  color: var(--red);
+  font-weight: 600;
+}
+.form button[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

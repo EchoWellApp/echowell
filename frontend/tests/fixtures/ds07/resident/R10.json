@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "resident_code": "R10",
+  "cohort": "longitudinal",
+  "resident_status": "active",
+  "sex": "M",
+  "enrolled_on": "2026-10-01",
+  "admitted_on": null,
+  "withdrawn_on": null,
+  "status": "alarm_on",
+  "needs_attention": false,
+  "attention_reasons": [],
+  "alarm_reviewed": false,
+  "restart_cause": null,
+  "device": {
+    "device_code": "D10",
+    "shared": false,
+    "shared_with": [],
+    "previous_device_code": null
+  },
+  "current_epoch": {
+    "epoch_number": 1,
+    "device_code": "D10",
+    "device_firmware_version": "fw-1.0.0",
+    "extraction_software_version": "openSMILE 3.0.2",
+    "started_at": "2026-10-01T19:30:41Z",
+    "started_on": "2026-10-01",
+    "from_value": null,
+    "to_value": null
+  },
+  "epoch_count": 1,
+  "baseline": {
+    "state": "frozen",
+    "n_usable": 16,
+    "n_required": 16,
+    "first_session_id": "R10-20261001-01",
+    "frozen_after_session_id": "R10-20261016-01",
+    "first_local_date": "2026-10-01",
+    "frozen_after_local_date": "2026-10-16"
+  },
+  "watching_since": "2026-10-17",
+  "alarm_since": "2026-10-24",
+  "open_alert_id": "a153a486-6e5a-4b0b-a71b-08d73e9f89b2",
+  "current_tally": 13.41818329889228,
+  "last_checkin_at": "2026-10-30T19:39:05Z",
+  "last_checkin_local": "2026-10-30T14:39:05-05:00",
+  "window": {
+    "from": "2026-10-01",
+    "to": "2026-10-30",
+    "days": 30
+  },
+  "last_30_days": {
+    "used": 30,
+    "set_aside": 0,
+    "quarantined": 0,
+    "missed": 0
+  },
+  "explanation": {
+    "compared_with": "own_baseline",
+    "alarm_crossed_on": "2026-10-24",
+    "still_above_line": true,
+    "baseline_restarted_on": null,
+    "baseline_n_usable": 16,
+    "baseline_n_required": 16
+  }
+}

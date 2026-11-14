@@ -47,7 +47,7 @@ Establish the database foundation every table feature relies on: the provisionin
 - Every table, its columns, constraints, indexes, triggers and grants (FEAT-009, FEAT-010, FEAT-011, FEAT-012, FEAT-013).
 - Migration `0002_seed_config_parameters` (FEAT-009).
 - Runtime engine, pool and advisory-lock helper for the app (FEAT-013).
-- Provisioning on Neon, Railway PostgreSQL or AWS RDS (performed through the provider console by the DevOps owner; documented by FEAT-081 and FEAT-092); the script here is never run there.
+- Provisioning on Neon, Render Postgres or AWS RDS (performed through the provider console by the DevOps owner; documented by FEAT-081 and FEAT-092); the script here is never run there.
 - The `reset-test-db` and `purge-resident` commands that use the purge escape hatch (FEAT-017).
 
 ## Functional Requirements

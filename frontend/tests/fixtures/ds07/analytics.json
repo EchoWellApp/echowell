@@ -1,0 +1,728 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "period": {
+    "from": "2026-10-01",
+    "to": "2026-10-30",
+    "days": 30
+  },
+  "kpis": {
+    "checkins_received": {
+      "count": 281,
+      "expected": 300,
+      "percent": 94
+    },
+    "used_for_scoring": {
+      "count": 267,
+      "expected": 300,
+      "percent": 89
+    },
+    "baselines_formed": {
+      "formed": 9,
+      "residents": 10,
+      "forming_resident_codes": ["R08"],
+      "restarts": [
+        {
+          "resident_code": "R07",
+          "restart_count": 1
+        }
+      ]
+    },
+    "alarms_raised": {
+      "count": 2,
+      "resident_codes": ["R09", "R10"],
+      "not_reviewed_count": 2
+    }
+  },
+  "daily_series": [
+    {
+      "local_date": "2026-10-01",
+      "used": 10,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-02",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-03",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-04",
+      "used": 8,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 2,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-05",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-06",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-07",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-08",
+      "used": 8,
+      "set_aside": 0,
+      "quarantined": 1,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-09",
+      "used": 8,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-10",
+      "used": 8,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-11",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-12",
+      "used": 8,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 2,
+      "silent_device_codes": ["D02"]
+    },
+    {
+      "local_date": "2026-10-13",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-14",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-15",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-16",
+      "used": 10,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-17",
+      "used": 8,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 2,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-18",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-19",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-20",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-21",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-22",
+      "used": 8,
+      "set_aside": 1,
+      "quarantined": 1,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-23",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-24",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-25",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-26",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-27",
+      "used": 9,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 1,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-28",
+      "used": 10,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-29",
+      "used": 9,
+      "set_aside": 1,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    },
+    {
+      "local_date": "2026-10-30",
+      "used": 10,
+      "set_aside": 0,
+      "quarantined": 0,
+      "missed": 0,
+      "silent_device_codes": []
+    }
+  ],
+  "funnel": {
+    "expected": 300,
+    "residents": 10,
+    "days": 30,
+    "received": 281,
+    "missed": 19,
+    "duplicates_removed": 2,
+    "passed_quality": 269,
+    "set_aside": 12,
+    "set_aside_reasons": {
+      "quality_flag_poor": 5,
+      "noise_above_limit": 5,
+      "speech_too_short": 3
+    },
+    "set_aside_multi_reason": 1,
+    "quarantined": 2,
+    "used": 267
+  },
+  "by_resident": [
+    {
+      "resident_code": "R08",
+      "days": 30,
+      "used_days": 13,
+      "set_aside_days": 5,
+      "quarantined_days": 0,
+      "missed_days": 12,
+      "used_percent": 43
+    },
+    {
+      "resident_code": "R03",
+      "days": 30,
+      "used_days": 22,
+      "set_aside_days": 7,
+      "quarantined_days": 0,
+      "missed_days": 1,
+      "used_percent": 73
+    },
+    {
+      "resident_code": "R02",
+      "days": 30,
+      "used_days": 24,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 6,
+      "used_percent": 80
+    },
+    {
+      "resident_code": "R05",
+      "days": 30,
+      "used_days": 28,
+      "set_aside_days": 0,
+      "quarantined_days": 2,
+      "missed_days": 0,
+      "used_percent": 93
+    },
+    {
+      "resident_code": "R01",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    },
+    {
+      "resident_code": "R04",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    },
+    {
+      "resident_code": "R06",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    },
+    {
+      "resident_code": "R07",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    },
+    {
+      "resident_code": "R09",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    },
+    {
+      "resident_code": "R10",
+      "days": 30,
+      "used_days": 30,
+      "set_aside_days": 0,
+      "quarantined_days": 0,
+      "missed_days": 0,
+      "used_percent": 100
+    }
+  ],
+  "alarm_timing": [
+    {
+      "resident_code": "R01",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R02",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R03",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R04",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R05",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R06",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R07",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R08",
+      "planted_change": "None",
+      "change_began": null,
+      "alarm_rang": null,
+      "delay_days": null,
+      "result": "correct_no_alarm"
+    },
+    {
+      "resident_code": "R09",
+      "planted_change": "Sudden step",
+      "change_began": "2026-10-21",
+      "alarm_rang": "2026-10-21",
+      "delay_days": 0,
+      "result": "detected"
+    },
+    {
+      "resident_code": "R10",
+      "planted_change": "Slow drift",
+      "change_began": "2026-10-17",
+      "alarm_rang": "2026-10-24",
+      "delay_days": 7,
+      "result": "detected"
+    }
+  ],
+  "review_outcomes": null,
+  "status_totals": {
+    "usable": 267,
+    "set_aside": 12,
+    "quarantined": 2,
+    "duplicate": 2,
+    "missing_resident": 17,
+    "missing_device_gap": 2
+  },
+  "status_counts": [
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R01"
+    },
+    {
+      "usable": 24,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 5,
+      "missing_device_gap": 1,
+      "resident_code": "R02"
+    },
+    {
+      "usable": 22,
+      "set_aside": 7,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 1,
+      "resident_code": "R03"
+    },
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 2,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R04"
+    },
+    {
+      "usable": 28,
+      "set_aside": 0,
+      "quarantined": 2,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R05"
+    },
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R06"
+    },
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R07"
+    },
+    {
+      "usable": 13,
+      "set_aside": 5,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 12,
+      "missing_device_gap": 0,
+      "resident_code": "R08"
+    },
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R09"
+    },
+    {
+      "usable": 30,
+      "set_aside": 0,
+      "quarantined": 0,
+      "duplicate": 0,
+      "missing_resident": 0,
+      "missing_device_gap": 0,
+      "resident_code": "R10"
+    }
+  ],
+  "resident_outcomes": [
+    {
+      "resident_code": "R01",
+      "epoch_number": 1,
+      "device_code": "D01",
+      "usable_in_epoch": 30,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R01-20261016-01",
+      "scored_sessions": 14,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "device_code": "D02",
+      "usable_in_epoch": 24,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R02-20261021-01",
+      "scored_sessions": 8,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R03",
+      "epoch_number": 1,
+      "device_code": "D02",
+      "usable_in_epoch": 22,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R03-20261023-01",
+      "scored_sessions": 6,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R04",
+      "epoch_number": 1,
+      "device_code": "D04",
+      "usable_in_epoch": 30,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R04-20261016-01",
+      "scored_sessions": 14,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R05",
+      "epoch_number": 1,
+      "device_code": "D05",
+      "usable_in_epoch": 28,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R05-20261017-01",
+      "scored_sessions": 12,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R06",
+      "epoch_number": 1,
+      "device_code": "D06",
+      "usable_in_epoch": 30,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R06-20261016-01",
+      "scored_sessions": 14,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R07",
+      "epoch_number": 1,
+      "device_code": "D07",
+      "usable_in_epoch": 12,
+      "baseline_formed": false,
+      "baseline_frozen_after": null,
+      "scored_sessions": null,
+      "first_alarm_session": null,
+      "note": "Too few usable sessions: baseline pending, nothing scored"
+    },
+    {
+      "resident_code": "R07",
+      "epoch_number": 2,
+      "device_code": "D07B",
+      "usable_in_epoch": 18,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R07-20261028-01",
+      "scored_sessions": 2,
+      "first_alarm_session": null,
+      "note": null
+    },
+    {
+      "resident_code": "R08",
+      "epoch_number": 1,
+      "device_code": "D08",
+      "usable_in_epoch": 13,
+      "baseline_formed": false,
+      "baseline_frozen_after": null,
+      "scored_sessions": null,
+      "first_alarm_session": null,
+      "note": "Too few usable sessions: baseline pending, nothing scored"
+    },
+    {
+      "resident_code": "R09",
+      "epoch_number": 1,
+      "device_code": "D09",
+      "usable_in_epoch": 30,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R09-20261016-01",
+      "scored_sessions": 14,
+      "first_alarm_session": "R09-20261021-01",
+      "note": null
+    },
+    {
+      "resident_code": "R10",
+      "epoch_number": 1,
+      "device_code": "D10",
+      "usable_in_epoch": 30,
+      "baseline_formed": true,
+      "baseline_frozen_after": "R10-20261016-01",
+      "scored_sessions": 14,
+      "first_alarm_session": "R10-20261024-01",
+      "note": null
+    }
+  ],
+  "pipeline_run": {
+    "id": "c14afe64-e6f1-4738-a7c8-d2ff71396346",
+    "trigger": "manual",
+    "scope": "all",
+    "config_profile": "test_v0_1",
+    "code_version": "unknown",
+    "as_of": "2026-10-30T20:00:00Z",
+    "started_at": "2026-11-02T22:40:04.231161Z",
+    "finished_at": "2026-11-02T22:40:05.140028Z",
+    "status": "succeeded",
+    "counts": {
+      "scored": 98,
+      "usable": 267,
+      "arrivals": 283,
+      "duplicate": 2,
+      "residents": 10,
+      "set_aside": 12,
+      "quarantined": 2,
+      "late_arrival": 0,
+      "alerts_opened": 2,
+      "missing_resident": 17,
+      "missing_device_gap": 2,
+      "excluded_after_as_of": 0
+    },
+    "warnings": []
+  }
+}

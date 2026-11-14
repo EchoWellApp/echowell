@@ -1,0 +1,34 @@
+.tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.tile {
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.value {
+  font-size: 18px;
+  font-weight: 700;
+}
+.note {
+  font-size: 14px;
+  color: var(--muted);
+}
+@media (max-width: 639px) {
+  .tiles {
+    grid-template-columns: 1fr;
+  }
+}

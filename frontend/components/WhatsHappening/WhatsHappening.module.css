@@ -1,0 +1,4 @@
+/* Plain sentence inside the host cell (table cell or chart Summary). */
+.text {
+  display: inline;
+}

@@ -1,6 +1,9 @@
-# Local development stack (TRD 15 §4.2, DEP-010..DEP-018, DEP-119; replaces the legacy stub, D-55).
-# Only local-dev-only-* placeholder passwords appear here (DEP-018, ENV-041). Copy
-# .env.development.example to .env first. The demo profile service frontend-prod is added by FEAT-077.
+# Local development stack and demo/E2E profile (TRD 15 §4.2, DEP-010..DEP-018, DEP-119; replaces the
+# legacy stub, D-55; FEAT-006, FEAT-077). Only local-dev-only-* placeholder passwords appear here
+# (DEP-018, ENV-041); staging and production secrets are never referenced.
+#   cp .env.development.example .env && docker compose up --build -d          # db, backend :8000, frontend :3000
+#   docker compose --profile demo up -d --build --wait db backend frontend-prod  # production build on :3001 (DEP-017)
+#   docker compose down -v                                                     # reset: deletes pgdata
 name: echowell
 services:
   db:
@@ -15,7 +18,7 @@ services:
     ports: ["127.0.0.1:5432:5432"]
     volumes:
       - "pgdata:/var/lib/postgresql/data"
-      # runs once, as superuser, on an empty volume (D-72, D-90)
+      # runs once, as superuser, on an empty volume: extensions, timezone UTC, roles (D-72, D-90)
       - "./database/roles/provision_login_roles.sql:/docker-entrypoint-initdb.d/10_provision_login_roles.sql:ro"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U echowell -d echowell"]
@@ -29,7 +32,8 @@ services:
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:local-dev-only-migrator@db:5432/echowell
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:local-dev-only-readonly@db:5432/echowell
       PORT: "8000"
-    # Local command: no --proxy-headers, the client IP is the socket peer (TRD 05 API-103).
+    # Local command: migrate, then uvicorn with --reload; no --proxy-headers, the client IP is the socket
+    # peer (TRD 05 API-103). A failing migration stops the && chain and the container exits non-zero.
     command: sh -c "alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     ports: ["127.0.0.1:8000:8000"]
     volumes:
@@ -37,6 +41,16 @@ services:
       - "./analytics:/app/analytics"
       - "./database:/app/database:ro" # DEP-119: seed and fixture files
       - "./tests/fixtures:/app/tests/fixtures:ro"
+    healthcheck: # needed by `docker compose up --wait` (TRD 16 §8)
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=4)"
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
     depends_on: { db: { condition: service_healthy } }
   frontend:
     image: node:20-alpine
@@ -47,6 +61,20 @@ services:
     command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3000"
     ports: ["127.0.0.1:3000:3000"]
     volumes: ["./frontend:/app", "frontend_node_modules:/app/node_modules"]
+    depends_on: [backend]
+  frontend-prod: # demo fallback (DEP-090) and E2E target (TRD 16 CIC-030); next build + next start
+    profiles: ["demo"]
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args: { NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000", NEXT_PUBLIC_APP_ENV: local }
+    ports: ["127.0.0.1:3001:3000"]
+    healthcheck: # TRD 16 §8: frontend-prod is healthy when /login renders
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on: [backend]
 volumes:
   pgdata: {}

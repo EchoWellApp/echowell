@@ -1,0 +1,8 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-decoration: none;
+}

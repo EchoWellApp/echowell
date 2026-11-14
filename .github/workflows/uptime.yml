@@ -1,0 +1,88 @@
+# Uptime check (TRD 16 §4.6, CIC-060, CIC-061, CIC-024, CIC-025, CIC-090; TRD 17 LOG-103, LOG-114,
+# §4.9; TRD 15 DEP-102; FEAT-085).
+# Every 30 minutes (never more often: Neon compute, CIC-061, DEP-102) and on manual dispatch:
+# `curl --fail --max-time 30` on production and staging `/api/v1/health` and the production
+# frontend `/login`. A failing check is retried once after 60 s; a second failure opens, or
+# comments on, the issue "Uptime check failing" labelled `incident`, whose watchers (DevOps owner
+# and algorithm lead, docs/deployment.md) are notified by GitHub. No secret is used; the issue
+# holds URLs, status codes and timestamps only (TPS-041). A URL variable that is not set yet (the
+# production services are created later, TRD 24 D-154) is reported as not configured, not failed.
+name: Uptime
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  uptime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # only for the incident issue step (FEAT-085-FR-05)
+    steps:
+      - id: checks
+        name: Check health and login pages (one retry after 60 s)
+        env:
+          PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
+          STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+          PRODUCTION_FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+        run: |
+          check() {  # prints "<http status> <seconds>"; non-zero exit on failure
+            curl --fail --silent --show-error --max-time 30 --output /dev/null \
+              --write-out '%{http_code} %{time_total}s' "$1"
+          }
+          targets=(
+            "production API|${PRODUCTION_API_BASE_URL:+$PRODUCTION_API_BASE_URL/health}"
+            "staging API|${STAGING_API_BASE_URL:+$STAGING_API_BASE_URL/health}"
+            "production frontend|${PRODUCTION_FRONTEND_URL:+$PRODUCTION_FRONTEND_URL/login}"
+          )
+          failures=""
+          for target in "${targets[@]}"; do
+            label="${target%%|*}"; url="${target#*|}"
+            if [ -z "$url" ]; then
+              echo "::notice::$label: URL variable not configured, skipped"
+              continue
+            fi
+            if result="$(check "$url" 2>&1)"; then
+              echo "$(date -u +%FT%TZ) OK   $url $result"
+              continue
+            fi
+            echo "$(date -u +%FT%TZ) FAIL $url $result; retrying in 60 s"
+            sleep 60
+            if result="$(check "$url" 2>&1)"; then
+              echo "$(date -u +%FT%TZ) OK   $url $result (after retry)"
+            else
+              echo "::error::$(date -u +%FT%TZ) $url failed twice: $result"
+              failures+="- $(date -u +%FT%TZ) \`$url\`: ${result//$'\n'/ }"$'\n'
+            fi
+          done
+          {
+            echo "failures<<EOF_FAILURES"
+            printf '%s' "$failures"
+            echo "EOF_FAILURES"
+          } >> "$GITHUB_OUTPUT"
+          [ -z "$failures" ]
+      - name: Open or update the incident issue
+        if: failure() && steps.checks.outputs.failures != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILURES: ${{ steps.checks.outputs.failures }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Uptime check failing"
+          body="$(printf 'Checks failed twice in a row (uptime.yml, one retry after 60 s):\n\n%s\nRun: %s\n' "$FAILURES" "$RUN_URL")"
+          gh label create incident --repo "$GITHUB_REPOSITORY" --color B60205 \
+            --description "Operational incident (TRD 17 LOG-114)" 2>/dev/null || true
+          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --label incident --state open \
+            --search "\"$title\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // empty")"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label incident --body "$body"
+          fi

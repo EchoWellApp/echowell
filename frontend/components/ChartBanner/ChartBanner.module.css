@@ -1,0 +1,38 @@
+/* Banner (TRD 11 §4.5 intro, UX-061..UX-063, UX-241, UX-245). */
+.banner {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--panel-radius);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+  padding: 14px 18px;
+}
+.who {
+  font-size: 26px;
+  font-weight: 700;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin: 0;
+}
+.facts dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+.facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.pill {
+  margin-left: auto;
+}
+@media (max-width: 759px) {
+  .pill {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}

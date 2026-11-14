@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from analytics.aggregates import build_analytics_summary
+from analytics.data_alerts import window
 from backend.core import db
 from backend.core.config import Settings
 from backend.models import EvaluationGroundTruth
@@ -86,8 +87,11 @@ def _timing(onset: date | None, rang: date | None) -> dict[str, Any]:
 def aggregate_blocks(session: Session, ctx: ReadContext, start: date, end: date) -> dict[str, Any]:
     """`kpis`, `daily_series`, `funnel`, `by_resident` from `build_analytics_summary` on the
     stored rows (FEAT-051, D-79), mapped to the TRD 19 E-18 names (FEAT-051-FR-12)."""
-    stored = engine_read.stored_result(session, (start, end))
     as_of = ctx.meta.as_of or datetime.combine(end, time(12), tzinfo=ctx.tz)
+    # the engine's own period: it reads no session or ledger day outside it
+    stored = engine_read.stored_result(
+        session, (start, end), window=window(as_of, ctx.pipeline_config)
+    )
     summary = build_analytics_summary(stored.sessions, stored.ledger, stored.epochs, stored.alerts,
                                       stored.data_alerts, stored.residents, ctx.pipeline_config,
                                       as_of)  # fmt: skip

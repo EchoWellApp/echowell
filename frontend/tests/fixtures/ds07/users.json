@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 3,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "id": "b862cbae-2a25-4874-8c1e-eddb803c4458",
+      "email": "admin@example.com",
+      "display_name": "Admin",
+      "role": "admin",
+      "active": true,
+      "last_login_at": "2026-11-02T22:40:27.985230Z",
+      "created_at": "2026-11-02T22:40:02.475595Z"
+    },
+    {
+      "id": "9cdbb2dc-0b12-4f24-a38c-818e4017f29f",
+      "email": "clinician@example.com",
+      "display_name": "Clinician",
+      "role": "clinician",
+      "active": true,
+      "last_login_at": null,
+      "created_at": "2026-11-02T22:40:02.475595Z"
+    },
+    {
+      "id": "612ad881-25e9-4d0d-95ea-305d60147443",
+      "email": "researcher@example.com",
+      "display_name": "Researcher",
+      "role": "researcher",
+      "active": true,
+      "last_login_at": "2026-11-02T22:40:28.066899Z",
+      "created_at": "2026-11-02T22:40:02.475595Z"
+    }
+  ]
+}

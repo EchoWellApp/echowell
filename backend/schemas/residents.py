@@ -193,7 +193,10 @@ class CheckinEvent(ResponseModel):
     previous_device_code: str | None
     from_value: str | None
     to_value: str | None
-    device_code: str | None
+    device_code: str | None = Field(
+        description="checkins_started: device of the resident's first non-duplicate record "
+        "(TRD 24 D-114); device_silent: the silent device (D-145); null on other events"
+    )
 
 
 class CheckinEventList(PageMeta):

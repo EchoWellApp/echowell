@@ -1,0 +1,22 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.button {
+  font: inherit;
+  font-size: 15px;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.button[aria-pressed="true"] {
+  background: var(--chrome);
+  color: var(--chrome-ink);
+  border-color: var(--chrome);
+}

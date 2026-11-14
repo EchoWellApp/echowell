@@ -18,7 +18,7 @@ import uuid
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -214,69 +214,98 @@ class IngestService:
             raw_body=raw, errors=_errors_json(errors), ingest_batch_id=batch_id,
             api_key_id=caller.api_key_id, row_number=row_number,
         )  # fmt: skip
-        logger.warning(
-            "ingest_record_rejected",
-            extra={
-                "event": "ingest_record_rejected", "session_id": _code(raw, "session_id"),
-                "resident_code": _code(raw, "resident_id"), "row_number": row_number,
-                "fields": sorted({e.field for e in errors}),
-                "codes": sorted({e.code for e in errors}),
-            },
-        )  # fmt: skip
+        _log_rejection(raw, errors, row_number)
 
     def _store(
         self,
-        raw: Any,
-        result: validation.ValidationResult,
+        accepted: Sequence[tuple[Any, validation.ValidationResult]],
         roster: Roster,
         caller: Caller,
-        received_at: datetime,
         batch_id: uuid.UUID | None = None,
-    ) -> Arrival:
-        """Insert one accepted arrival under the session lock (ING-029, ING-037, ING-038)."""
-        values = result.values
-        session_id = values["session_id"]
-        resident = roster.residents[values["resident_id"]]
-        device = roster.devices[values["device_id"]]
-        db.lock_xact(self.session, "session", session_id)
+    ) -> list[Arrival]:
+        """Insert accepted arrivals, in order, under their session locks (ING-029, ING-037,
+        ING-038).
+
+        The lookups are made once for all the records (session locks, first payloads, the devices'
+        newest timestamps and assignments) and the arrivals go in with multi-row INSERTs, so a
+        batch costs a constant number of statements; each record sees the arrivals stored before
+        it, exactly as if they had been stored one by one.
+        """
+        if not accepted:
+            return []
         raw_sessions = RawSessionRepository(self.session)
-        first_payload = raw_sessions.first_payload(session_id)
-        duplicate = first_payload is not None
-        warnings = list(result.warnings)
-        if duplicate and first_payload != raw:
-            warnings.append(
-                FieldError(
-                    "session_id", "duplicate_payload_differs",
-                    "An earlier arrival of this session_id has different values.",
-                )
-            )  # fmt: skip
-        latest = raw_sessions.latest_timestamp_for_device(device.id)
-        typed = {k: v for k, v in values.items() if k not in ("resident_id", "device_id")}
-        raw_id, arrival_seq = raw_sessions.insert(
-            {
-                **typed,
-                "payload": raw,
-                "ingest_warnings": _errors_json(warnings),
-                "ingest_batch_id": batch_id,
-                "api_key_id": caller.api_key_id,
-                "resident_id": resident.id,
-                "device_id": device.id,
-                "resident_code": resident.resident_code,
-                "device_code": device.device_code,
-            }
-        )
-        if latest is None or values["timestamp_utc"] >= latest:
-            DeviceRepository(self.session).set_firmware(device, values["device_firmware_version"])
-        scope: frozenset[str] = frozenset()
-        if duplicate:
-            logger.info(
-                "ingest_duplicate", extra={"event": "ingest_duplicate", "session_id": session_id}
+        devices = DeviceRepository(self.session)
+        all_values = [result.values for _, result in accepted]
+        db.lock_xact_many(self.session, "session", (v["session_id"] for v in all_values))
+        first_payloads = raw_sessions.first_payloads({v["session_id"] for v in all_values})
+        device_ids = {roster.devices[v["device_id"]].id for v in all_values}
+        latest = raw_sessions.latest_timestamps_for_devices(device_ids)
+        assignments: dict[uuid.UUID, list[tuple[date, date | None, str]]] = {}
+        for device_id, valid_from, valid_to, code in devices.assignments_of_devices(device_ids):
+            assignments.setdefault(device_id, []).append((valid_from, valid_to, code))
+        firmware: dict[uuid.UUID, tuple[Device, str]] = {}
+        rows: list[dict[str, Any]] = []
+        pending: list[tuple[str, bool, frozenset[str], int]] = []
+        for raw, result in accepted:
+            values = result.values
+            session_id = values["session_id"]
+            resident = roster.residents[values["resident_id"]]
+            device = roster.devices[values["device_id"]]
+            duplicate = session_id in first_payloads
+            warnings = list(result.warnings)
+            if duplicate and first_payloads[session_id] != raw:
+                warnings.append(
+                    FieldError(
+                        "session_id", "duplicate_payload_differs",
+                        "An earlier arrival of this session_id has different values.",
+                    )
+                )  # fmt: skip
+            if not duplicate:
+                first_payloads[session_id] = raw
+            newest = latest.get(device.id)
+            if newest is None or values["timestamp_utc"] >= newest:
+                firmware[device.id] = (device, values["device_firmware_version"])
+                latest[device.id] = values["timestamp_utc"]
+            typed = {k: v for k, v in values.items() if k not in ("resident_id", "device_id")}
+            rows.append(
+                {
+                    **typed,
+                    "payload": raw,
+                    "ingest_warnings": _errors_json(warnings),
+                    "ingest_batch_id": batch_id,
+                    "api_key_id": caller.api_key_id,
+                    "resident_id": resident.id,
+                    "device_id": device.id,
+                    "resident_code": resident.resident_code,
+                    "device_code": device.device_code,
+                }
             )
-        else:
-            local_date = values["timestamp_utc"].astimezone(roster.context.facility_tz).date()
-            sharing = DeviceRepository(self.session).residents_on_device(device.id, local_date)
-            scope = frozenset({resident.resident_code, *(r.resident_code for r in sharing)})
-        return Arrival(raw_id, arrival_seq, session_id, duplicate, scope, len(warnings))
+            scope: frozenset[str] = frozenset()
+            if not duplicate:
+                local_date = values["timestamp_utc"].astimezone(roster.context.facility_tz).date()
+                sharing = (
+                    code
+                    for valid_from, valid_to, code in assignments.get(device.id, [])
+                    if valid_from <= local_date and (valid_to is None or valid_to >= local_date)
+                )
+                scope = frozenset({resident.resident_code, *sharing})
+            pending.append((session_id, duplicate, scope, len(warnings)))
+        inserted = raw_sessions.insert_many(rows)
+        for device, version in firmware.values():
+            devices.set_firmware(device, version)
+        arrivals = []
+        for (raw_id, arrival_seq), (session_id, duplicate, scope, warning_count) in zip(
+            inserted, pending, strict=True
+        ):
+            if duplicate:
+                logger.info(
+                    "ingest_duplicate",
+                    extra={"event": "ingest_duplicate", "session_id": session_id},
+                )
+            arrivals.append(
+                Arrival(raw_id, arrival_seq, session_id, duplicate, scope, warning_count)
+            )
+        return arrivals
 
     # --- POST /sessions ---------------------------------------------------------------------
 
@@ -305,7 +334,7 @@ class IngestService:
                 self.session.commit()
                 code = result.request_code
                 raise _REQUEST_ERRORS[code](_REQUEST_DETAILS[code], errors=result.errors)
-            arrival = self._store(raw, result, roster, caller, received_at)
+            (arrival,) = self._store([(raw, result)], roster, caller)
             self.session.commit()  # stored before any processing (DB-022)
             tally.accepted, tally.warnings = 1, arrival.warning_count
             body_out = {
@@ -356,16 +385,27 @@ class IngestService:
                 source=source, record_count=len(records), filename=filename,
                 uploaded_by=caller.user_id, api_key_id=caller.api_key_id,
             )  # fmt: skip
+            rejections: list[dict[str, Any]] = []
+            accepted: list[tuple[Any, validation.ValidationResult]] = []
             for row_number, raw in enumerate(records, start=1):
                 result, mismatch = self._check(
                     raw, "csv" if _is_csv(source) else "json", roster, caller
                 )
                 if not result.accepted or mismatch:
                     errors = [_mismatch_error()] if mismatch else result.errors
-                    self._reject(raw, errors, caller, batch.id, row_number)
+                    rejections.append(
+                        {
+                            "raw_body": raw, "errors": _errors_json(errors),
+                            "ingest_batch_id": batch.id, "api_key_id": caller.api_key_id,
+                            "row_number": row_number,
+                        }
+                    )  # fmt: skip
+                    _log_rejection(raw, errors, row_number)
                     tally.rejected += 1
                     continue
-                arrival = self._store(raw, result, roster, caller, received_at, batch.id)
+                accepted.append((raw, result))
+            ingest.insert_rejections(rejections)
+            for arrival in self._store(accepted, roster, caller, batch.id):
                 tally.accepted += 1
                 tally.warnings += arrival.warning_count
                 if arrival.duplicate:
@@ -400,6 +440,18 @@ class IngestService:
                 "duplicates": tally.duplicates,
                 "pipeline_run_id": str(handle.id) if handle else None,
             }, handle  # fmt: skip
+
+
+def _log_rejection(raw: Any, errors: Sequence[FieldError], row_number: int | None) -> None:
+    logger.warning(
+        "ingest_record_rejected",
+        extra={
+            "event": "ingest_record_rejected", "session_id": _code(raw, "session_id"),
+            "resident_code": _code(raw, "resident_id"), "row_number": row_number,
+            "fields": sorted({e.field for e in errors}),
+            "codes": sorted({e.code for e in errors}),
+        },
+    )  # fmt: skip
 
 
 def _is_csv(source: IngestSource) -> bool:

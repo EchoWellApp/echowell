@@ -1,6 +1,6 @@
 # 02 Functional Requirements Specification
 
-Document ID: ECHOWELL-TRD-02 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-02 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -433,7 +433,7 @@ Note: `GET /api/v1/scores` is authorised for any user (contract §10) because th
 
 | Field | Content |
 |---|---|
-| Actor | Nightly job (separate Railway Cron Job service running `python -m backend.jobs.nightly_run`, proceeding only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL`, default 02:xx, R18); Admin or API key `pipeline:run` (manual) |
+| Actor | Nightly job (separate Render cron job running `python -m backend.jobs.nightly_run`, proceeding only in the facility-local hour `NIGHTLY_RUN_HOUR_LOCAL`, default 02:xx, R18); Admin or API key `pipeline:run` (manual) |
 | Inputs | Scope (`all` or resident codes), profile, as-of time |
 | Processing | Create `pipeline_runs` row → load raw records, frozen baselines, config snapshot → `analytics.pipeline.run_pipeline` → upsert derived rows per resident in one transaction → record counts, warnings (`late_arrival`) → status `succeeded` |
 | Outputs | Updated derived tables; day ledger extended to as-of date; run record |
@@ -668,3 +668,4 @@ Every FR in sections 4.2–4.25 is exercised by at least one use case: ingestion
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (FR-134, FR-150, FR-168, FR-169, FR-192, FR-240, FR-244, FR-260, FR-266, FR-280, FR-294, FR-310, UC-13, UC-14 aligned with TRD 11/19/23; FR-172 traces OQ-28; nightly actor hour) | — |
 | 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/11/18/19 superseded; §4.12–§4.17 and §4.22–§4.25 follow the Resident list, Resident chart, Study team and app bar of TRD 11 v0.13 (four display statuses, D-109 order, filter counts, `checkins_started`, v0.2 data-alert details, change-score and held-back wording); retired FR-136, FR-139, FR-195, FR-207, FR-260, FR-261, FR-265, FR-278, FR-321 (D-110); new FR-302 (attention flag, OQ-31); role matrix, UC-04, UC-05, UC-06, UC-09, UC-10, UC-13 to UC-15, AC-FR-04, -07, -09, -10, -12, -13 updated | — |
 | 0.6 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 and OQ-32 answered (D-115, D-116): FR-152 and the OQ table; date-time examples with "CT" (D-119) | — |
+| 0.7 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 31 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -17,7 +17,7 @@ contain secrets, personal data or audio.
 - Backend structured JSON logging (format, fields, levels, redaction, request ID propagation).
 - Error taxonomy and handling per layer: ingest, pipeline stages, API (RFC 7807), frontend error boundaries.
 - `pipeline_runs` records as the operational record of analytics runs; distinction between audit logs and app logs.
-- Monitoring on the current interim stack (Railway metrics/logs, Netlify deploy logs, optional Sentry, uptime check)
+- Monitoring on the current interim stack (Render metrics/logs, Netlify deploy logs, optional Sentry, uptime check)
   and on the AWS target (CloudWatch).
 - Operational alerts: pipeline failure, nightly run missing, uptime failure; device silence shown in the dashboard.
 - Log retention on free tiers.
@@ -32,7 +32,7 @@ contain secrets, personal data or audio.
 
 | ID | Reference |
 |---|---|
-| SRC-01 | Deployment Architecture (Railway, Netlify, future AWS "monitoring and observability") |
+| SRC-01 | Deployment Architecture (Render, Netlify, future AWS "monitoring and observability") |
 | SRC-02 | Flowcharts: raw store kept as received; derived tables rebuildable; flags "for clinician review" |
 | SRC-03 / SRC-04 | Reason strings and status semantics (set aside, quarantined, duplicate, missing) |
 | D-OWNER-3 | Live feature data treated as potentially PHI-derived; no PII in logs; AWS target with CloudWatch |
@@ -232,7 +232,7 @@ stateDiagram-v2
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-080 | The frontend shall define `app/(protected)/error.tsx` (route-segment error boundary at the path of TRD 04 §4.2 and FE-145) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
-| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
+| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 on the login form to "Too many sign-in attempts. Wait one minute and try again." (`frontend/lib/wording/common.ts`), and other errors (429 and 503 outside the login form included) to the affected section's error state, or to the error boundary when the whole page fails (as built; TRD 24 D-179). | Must | TRD 04, TRD 12 | Test |
 | LOG-082 | The frontend shall not send telemetry, logs or errors to any third-party service; browser console logging in production builds shall be limited to `console.error` for caught errors without response bodies. | Must | BR-16, TRD 22 | Inspection |
 | LOG-083 | Data panels (residents table, Resident chart panels such as Summary, change score chart, check-in log, Device section, review panel and staff notes, Study team KPI tiles, data problems, charts and Devices section on `/study`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
 
@@ -241,7 +241,7 @@ stateDiagram-v2
 | Aspect | `audit_logs` table | Application logs |
 |---|---|---|
 | Purpose | Accountability: who did what to research data/config | Operations and debugging |
-| Storage | PostgreSQL, append-only (no UPDATE/DELETE grant) | stdout → Railway logs (interim) / CloudWatch (AWS) |
+| Storage | PostgreSQL, append-only (no UPDATE/DELETE grant) | stdout → Render logs (interim) / CloudWatch (AWS) |
 | Content | actor_type, actor_id, action, entity_type, entity_id, details (IDs, no secrets), ip, request_id | events of §4.1 |
 | Retention | Until OQ-01 is resolved, never deleted | Platform retention (§4.10) |
 | Read by | Admin/researcher via DB queries; investigations | DevOps owner |
@@ -259,8 +259,8 @@ Current interim stack:
 
 | Signal | Source | Who looks | Frequency |
 |---|---|---|---|
-| Service CPU/memory/restarts, deploy status | Railway service metrics and deployments view | DevOps owner | daily during build block, weekly after |
-| Application logs | Railway log explorer (filter `@level:ERROR`, `@event:pipeline_run_failed`) | DevOps owner | daily |
+| Service CPU/memory/restarts, deploy status | Render dashboard: Metrics tab (CPU, memory, instance restarts) and Events tab (deploys, rollbacks, failures) of each web service and cron job | DevOps owner | daily during build block, weekly after |
+| Application logs | Render dashboard Logs tab of the web service and of each cron run (text search for `"level": "ERROR"`, `pipeline_run_failed`, `nightly_run_missing`) | DevOps owner | daily |
 | Frontend build/deploy | Netlify deploys view + GitHub commit status | PR author | per deploy |
 | Uptime | `uptime.yml` every 30 min (TRD 16 CIC-060) | issue watchers | continuous |
 | Exceptions (optional) | Sentry project `echowell-backend` when SENTRY_DSN set | DevOps owner | e-mail per new issue |
@@ -283,13 +283,13 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | Uptime failure | `uptime.yml` two consecutive failures | GitHub issue `incident` (notifies watchers by e-mail) | high |
 | Pipeline run failed | `pipeline_runs.status = failed` | ERROR log + Sentry (if enabled) + red banner on `/admin` | high |
 | Nightly run missing | nightly job's non-running firing, and `/admin` read-time check: no `pipeline_runs` row with trigger `nightly`, status `succeeded`, `started_at` within the last 26 h | ERROR log `nightly_run_missing` + Sentry + `/admin` banner | high |
-| Deployment failed | Railway/Netlify deploy failure, `deploy-*.yml` failure | GitHub commit status, workflow failure e-mail | medium |
+| Deployment failed | Render deploy failure (build, pre-deploy or health check), Netlify deploy failure, `deploy-*.yml` failure | Render notification e-mail (workspace notification settings, TRD 15 §4.5 step 7), GitHub commit status, workflow failure e-mail | medium |
 | CI failure on main | `ci.yml` / `e2e.yml` failure on `main` | `ci-failure` issue (TRD 16 CIC-033) | medium |
 | Data alerts (baseline_stalled, possible_other_speaker, high_set_aside, device_silent, review_flagged_data_problem) | rule-based, recomputed each pipeline run into `data_alerts` (contract §19) | **Dashboard only**: Study team "Data problems to follow up" and Devices section, the Resident chart's Check-in log and Device section, and the "Needs attention" status for `baseline_stalled` and `high_set_aside` (TRD 24 D-109, OQ-31) — not pushed (OQ-06, OQ-24) | informational (data quality, not health) |
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| LOG-110 | The nightly pipeline run shall be executed by the Railway Cron Job service `nightly` (`python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding the transaction-scoped nightly advisory lock of TRD 06 DB-021 (d); the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-046, TRD 21 | Test |
+| LOG-110 | The nightly pipeline run shall be executed by the Render cron job of the environment (`echowell-nightly-staging`, `echowell-nightly-production`; `python -m backend.jobs.nightly_run`, schedule `0 7,8 * * *` UTC), which runs only at facility-local hour NIGHTLY_RUN_HOUR_LOCAL (default 2) and only once per local date, holding the transaction-scoped nightly advisory lock of TRD 06 DB-021 (d); the backend web process shall contain no scheduler. | Must | contract §7 trigger, TRD 15 DEP-046, TRD 21 | Test |
 | LOG-111 | Each firing of `backend.jobs.nightly_run` that does not start a run shall check the most recent facility-local date whose 02:00 hour has passed and log ERROR `nightly_run_missing` (and report to Sentry when enabled) if no succeeded nightly run exists for it; independently, `/admin` shall show the banner "Nightly run missing for <date>" whenever no succeeded nightly run started within the previous 26 hours (computed at read time). | Must | RSK-05 | Test |
 | LOG-112 | The `/admin` page shall show the latest 50 `pipeline_runs` (TRD 02 FR-225) (trigger, status, started/finished local time, counts, warning count) and a banner while the most recent run of any trigger is `failed`. | Must | TRD 04 | Test |
 | LOG-113 | Device silence and the other data alerts shall be shown only in the dashboard (Study team "Data problems to follow up" and Devices section, Resident chart Check-in log and Device section); the system shall not send e-mail, SMS or push notifications for data alerts or for clinical alarms in the MVP. | Must | BR-12, OQ-06, OQ-24, RSK-05 | Inspection |
@@ -300,7 +300,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 
 | Platform | Retention (indicative, confirm per plan at account setup, TRD 22) | Action |
 |---|---|---|
-| Railway Hobby | about 7 days of logs | Sufficient for interim stack (synthetic data only) |
+| Render (Hobby workspace) | short dashboard log retention (verify the value at account setup and record it in `docs/deployment.md`); no log stream configured | Sufficient for interim stack (synthetic data only) |
 | Netlify Free | build logs per deploy; function logs short-lived | Frontend is static/SSR without app logs of value |
 | GitHub Actions | 30 days for artifacts (as configured), 90 days for run logs (default) | — |
 | Sentry Developer (free) | 30 days of events | Optional |
@@ -320,7 +320,7 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 
 ## 6. Dependencies
 
-- `backend/core/logging.py`, `backend/core/errors.py`, `backend/core/middleware.py` (request ID), `backend/services/pipeline_runner.py` (run lifecycle), nightly job `backend/jobs/nightly_run.py` run by the Railway Cron Job service (TRD 15 DEP-046).
+- `backend/core/logging.py`, `backend/core/errors.py`, `backend/core/middleware.py` (request ID), `backend/services/pipeline_runner.py` (run lifecycle), nightly job `backend/jobs/nightly_run.py` run by the Render cron job (TRD 15 DEP-046).
 - `sentry-sdk[fastapi]` 2.x as an optional runtime dependency (imported only when SENTRY_DSN is set).
 - `pipeline_runs`, `audit_logs`, `ingest_rejections` tables (TRD 06/20).
 - `uptime.yml` and `ci-failure` issue automation (TRD 16).
@@ -368,3 +368,5 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.10 | 20 Oct 2026 | PR #2 backlog consistency fixes (LOG-080 error boundary path; LOG-063 stage names and AC-LOG-05 (D-80)) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §2 note, LOG-083, §4.9 data-alert row and LOG-113 name the v0.2 places (Resident chart, Study team `/study`; Alert review page retired) | — |
 | 0.12 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-5, TRD 24 D-132): LOG-067 describes the implemented behaviour (no in-place retry; the next trigger starts a new run; every failure stays visible) | — |
+| 0.13 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.14 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): LOG-081 matches the built error handling: login 429 text, other errors to the section error state or error boundary (TRD 24 D-179) | — |

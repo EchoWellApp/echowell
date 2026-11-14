@@ -1,0 +1,13 @@
+.bar {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border-bottom: 1px solid var(--yellow-edge);
+  padding: 6px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+@media (max-width: 639px) {
+  .bar {
+    padding: 6px 12px;
+  }
+}

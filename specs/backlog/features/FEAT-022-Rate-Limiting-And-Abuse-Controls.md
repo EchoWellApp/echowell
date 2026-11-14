@@ -32,7 +32,7 @@ Bound the request rate of every authenticated caller so that password guessing, 
 ## Scope
 
 - `backend/core/rate_limit.py`: one slowapi `Limiter` with in-memory storage, created in `create_app()`.
-- Key functions: client IP = left-most `X-Forwarded-For` address set by the Railway edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040), socket peer locally (the Compose command omits the flags); API key identity = SHA-256 of `X-API-Key`; user identity = user id from the authenticated principal.
+- Key functions: client IP = left-most `X-Forwarded-For` address set by the Render edge (uvicorn `--proxy-headers --forwarded-allow-ips="*"` in the deployed start commands, TRD 15 DEP-022 and DEP-040), socket peer locally (the Compose command omits the flags); API key identity = SHA-256 of `X-API-Key`; user identity = user id from the authenticated principal.
 - Limits: `POST /api/v1/auth/login` = `RATE_LIMIT_LOGIN` per client IP (default `5/minute`); `POST /api/v1/sessions` and `POST /api/v1/ingest` = `RATE_LIMIT_INGEST` (default `600/minute`) per API key hash or per admin user id; all other authenticated endpoints = `300/minute` per user id; `GET /api/v1/health` exempt.
 - 429 handler producing Problem `RATE_LIMITED` with `Retry-After` (seconds) through the FEAT-019 error model.
 - On a login request rejected by the limiter, an `auth.login.failed` audit row with `reason = rate_limited`; no audit row for other 429s.
@@ -55,7 +55,7 @@ Bound the request rate of every authenticated caller so that password guessing, 
 | FEAT-022-FR-04 | All other authenticated endpoints shall be limited to 300/minute per user id. | SEC-092, API-102 |
 | FEAT-022-FR-05 | Exceeding a limit shall return 429 `RATE_LIMITED` with a `Retry-After` header in seconds. | SEC-093, API-098, ING-011 |
 | FEAT-022-FR-06 | A rate-limited login shall write `auth.login.failed` with reason `rate_limited`; other 429s write no audit row. | SEC-093 |
-| FEAT-022-FR-07 | The client IP for rate limiting shall be the left-most `X-Forwarded-For` address set by the Railway edge; locally it is the socket peer. | API-103 |
+| FEAT-022-FR-07 | The client IP for rate limiting shall be the left-most `X-Forwarded-For` address set by the Render edge; locally it is the socket peer. | API-103 |
 | FEAT-022-FR-08 | `GET /api/v1/health` shall be exempt from rate limiting. | API-112 |
 | FEAT-022-FR-09 | The limiter storage shall be resettable by the test suite before every test so limits never leak between tests. | TST-131, D-74 |
 
@@ -137,7 +137,7 @@ None.
 
 ## Implementation Notes
 
-- Set uvicorn `--proxy-headers --forwarded-allow-ips="*"` only in the deployed start commands (DEP-022 image default, DEP-040 Railway start command), never in the local Compose command; locally the socket peer is the key (API-103).
+- Set uvicorn `--proxy-headers --forwarded-allow-ips="*"` only in the deployed start commands (DEP-022 image default, DEP-040 Render start command), never in the local Compose command; locally the socket peer is the key (API-103).
 - slowapi decorators need the `Request` parameter on handlers; keep handlers `def` (API-007).
 - Use the SHA-256 of the key (not the plaintext) as the limit key so no plaintext key is held in limiter memory beyond the request.
 - Because `get_db()` rolls back on exceptions, write the `rate_limited` audit row in its own committed transaction (same pattern as FEAT-020's failed-login row).

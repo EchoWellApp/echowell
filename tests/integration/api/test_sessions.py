@@ -337,9 +337,13 @@ def test_logs_carry_no_feature_value_or_key(
     assert rejected["session_id"] == "R09-20261021-01"
     dumped = json.dumps(lines)
     assert "31.4159" not in dumped
-    assert "1.5" not in json.dumps(
-        [line for line in lines if line.get("event") != "request_completed"]
-    )
+    # Timestamps and timings are left out: "…:11.500Z" would otherwise match "1.5".
+    untimed = [
+        {k: v for k, v in line.items() if k not in ("ts", "duration_ms")}
+        for line in lines
+        if line.get("event") != "request_completed"
+    ]
+    assert "1.5" not in json.dumps(untimed)
     assert principals.raw_keys["ingest"] not in dumped
 
 

@@ -1,0 +1,238 @@
+# Manual production release (TRD 16 §4.5, CIC-050..CIC-053, CIC-024, CIC-090, CIC-092; TRD 15
+# §4.10, DEP-002, DEP-003, DEP-062, DEP-081; TRD 24 D-99, D-153..D-158; FEAT-086).
+# Runs only on manual dispatch for a chosen `main` commit. The deploy job uses the GitHub
+# environment `production` (deployment branch rule `main`; required reviewer from `team2-devops`
+# or the algorithm lead, self-review prevented), which releases the only two deploy secrets,
+# RENDER_API_KEY and NETLIFY_AUTH_TOKEN, after approval. No production database URL, JWT secret or
+# application credential is used; migrations run only as the Render pre-deploy command (CIC-003)
+# and production is verified only through its public HTTPS endpoints (CIC-050).
+# Before dispatching: choose a commit whose checks and staging run succeeded; if it contains a
+# migration, create the Neon restore branch `pre-<short-sha>` and take the DEP-096 dump (TRD 15
+# §4.10 step 2); avoid 08:00-20:00 facility-local time while OQ-15 is open.
+# Jobs are split so each stays within 20 minutes (CIC-111); a failure stops before the tag, and a
+# failed smoke run triggers the rollback decision of TRD 15 §4.12 (CIC-051).
+name: Deploy production
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character SHA of a commit on main to release
+        required: true
+        type: string
+      version:
+        description: Release version vX.Y.Z (required unless smoke_only)
+        required: false
+        type: string
+      smoke_only:
+        description: Only re-run the production smoke tests for the deployed sha (no deploy, no tag)
+        type: boolean
+        default: false
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+permissions:
+  contents: read
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+jobs:
+  verify:
+    # Steps 1-2: the SHA is on main, the version is new, every CIC-070 check succeeded on it and
+    # its deploy-staging.yml run succeeded ("Wait for CI", CIC-053, DEP-062). Nothing is deployed
+    # unless this job succeeds.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Commit is on main and version is new
+        env:
+          SHA: ${{ inputs.sha }}
+          VERSION: ${{ inputs.version }}
+          SMOKE_ONLY: ${{ inputs.smoke_only }}
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+          if [ "$SMOKE_ONLY" != "true" ]; then
+            [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version must match vX.Y.Z"; exit 1; }
+            if [ -n "$(git ls-remote --tags origin "refs/tags/$VERSION")" ]; then
+              echo "::error::tag $VERSION already exists"; exit 1
+            fi
+          fi
+          echo "release $SHA ${VERSION:-(smoke only)}"
+      - name: Required checks and staging run succeeded (CIC-053)
+        if: ${{ !inputs.smoke_only }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ inputs.sha }}
+          # The required status checks of CIC-070 (branch protection on main).
+          REQUIRED_CHECKS: >-
+            repo-hygiene backend-lint backend-test openapi-contract frontend security-audit
+            docker-build playwright
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?per_page=100" \
+            --jq '.check_runs[]' | jq -s '.' > "$RUNNER_TEMP/check-runs.json"
+          failed=0
+          for name in $REQUIRED_CHECKS; do
+            conclusion="$(jq -r --arg n "$name" \
+              '[.[] | select(.name == $n)] | sort_by(.started_at) | last | .conclusion // "missing"' \
+              "$RUNNER_TEMP/check-runs.json")"
+            echo "$name: $conclusion"
+            [ "$conclusion" = "success" ] || failed=1
+          done
+          staging="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-staging.yml \
+            --commit "$SHA" --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')"
+          echo "successful deploy-staging.yml runs for $SHA: $staging"
+          [ "${staging:-0}" -ge 1 ] || failed=1
+          [ "$failed" -eq 0 ] || { echo "::error::$SHA has not passed every required check and its staging run"; exit 1; }
+
+  deploy:
+    # Steps 3-4 after reviewer approval: Render API deploy of the released commit for the
+    # production web service and cron job, then the Netlify CLI production publish.
+    needs: verify
+    if: ${{ !inputs.smoke_only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Render deploys of the released commit (echowell-backend-production, echowell-nightly-production)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SHA: ${{ inputs.sha }}
+          BACKEND_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_BACKEND_SERVICE_ID }}
+          NIGHTLY_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_NIGHTLY_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          api=https://api.render.com/v1
+          header="$RUNNER_TEMP/render-auth"  # the key goes through a file, never argv (CIC-092)
+          (umask 077; printf 'Authorization: Bearer %s\n' "$RENDER_API_KEY" > "$header")
+          trap 'rm -f "$header"' EXIT
+          declare -A deploy
+          for service in "$BACKEND_SERVICE_ID" "$NIGHTLY_SERVICE_ID"; do
+            [ -n "$service" ] || { echo "::error::Render production service id variable is empty"; exit 1; }
+            deploy[$service]="$(curl -fsS -X POST "$api/services/$service/deploys" -H @"$header" \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' \
+              --data "{\"commitId\": \"$SHA\"}" | jq -r '.id')"
+            echo "$service: deploy ${deploy[$service]} of $SHA triggered"
+          done
+          deadline=$(( $(date +%s) + 20 * 60 ))
+          while :; do
+            pending=0
+            for service in "${!deploy[@]}"; do
+              status="$(curl -fsS "$api/services/$service/deploys/${deploy[$service]}" -H @"$header" \
+                -H 'Accept: application/json' | jq -r '.status')"
+              echo "$(date -u +%H:%M:%S) $service ${deploy[$service]}: $status"
+              case "$status" in
+                live) ;;
+                build_failed|pre_deploy_failed|update_failed|canceled|deactivated)
+                  echo "::error::$service deploy ended $status"; exit 1 ;;
+                *) pending=1 ;;
+              esac
+            done
+            [ "$pending" -eq 0 ] && break
+            [ "$(date +%s)" -lt "$deadline" ] || { echo "::error::Render deploys not live within 20 minutes"; exit 1; }
+            sleep 15
+          done
+      - run: npm ci
+        working-directory: frontend
+      - name: Netlify production publish (netlify deploy --build --prod)
+        working-directory: frontend
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_PRODUCTION_SITE_ID }}
+          GIT_SHA: ${{ inputs.sha }} # NEXT_PUBLIC_GIT_SHA for the echowell-build meta (ENV-033)
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npx --yes netlify-cli@17 deploy --build --prod --site "$NETLIFY_SITE_ID"
+
+  wait-for-production:
+    # Step 5: backend health `version` and frontend build meta equal the released SHA (15 min).
+    needs: [verify, deploy]
+    if: >-
+      ${{ !cancelled() && needs.verify.result == 'success' &&
+      (needs.deploy.result == 'success' || (inputs.smoke_only && needs.deploy.result == 'skipped')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - env:
+          SHA: ${{ inputs.sha }}
+          PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
+          PRODUCTION_FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+        run: |
+          python3 tests/smoke/wait_for_deploy.py --sha "$SHA" \
+            --api-base-url "$PRODUCTION_API_BASE_URL" --frontend-url "$PRODUCTION_FRONTEND_URL" \
+            --interval 15 --timeout 900
+
+  smoke:
+    # Step 6: unauthenticated, read-only production smoke tests (DEP-081, CIC-051).
+    needs: wait-for-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - name: Production smoke tests (DEP-081)
+        env:
+          SMOKE_ENV: production
+          SMOKE_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
+          SMOKE_FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+          SMOKE_EXPECTED_SHA: ${{ inputs.sha }}
+        run: >
+          pytest -p no:randomly tests/smoke -m "smoke and not authenticated"
+          --junitxml=build/smoke-junit.xml
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-report
+          path: build/smoke-junit.xml
+          retention-days: 30
+          if-no-files-found: ignore
+      - if: failure()
+        run: >
+          echo "::error::Production smoke tests failed: take the rollback decision of TRD 15 §4.12
+          within 30 minutes; no tag is created."
+
+  release:
+    # Step 7: tag vX.Y.Z on the released SHA and a GitHub Release, only after green smoke tests
+    # (CIC-052). The only job of any workflow with `contents: write` (CIC-024).
+    needs: smoke
+    if: ${{ !inputs.smoke_only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ inputs.sha }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$SHA" \
+            --title "$VERSION" --generate-notes \
+            --notes "Released commit $SHA by deploy-production.yml; production smoke tests (DEP-081) passed.
+
+          Manual authenticated check (TRD 15 DEP-083): pending. After the release a team member logs in, opens Residents, opens one resident, signs out, and records the result and date here."

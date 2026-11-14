@@ -1,0 +1,28 @@
+.listhead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.h1 {
+  font-size: 22px;
+}
+.truncated {
+  padding: 12px 18px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.note {
+  font-size: 14px;
+  color: var(--muted);
+}
+.stale {
+  padding: 10px 14px;
+  border: 1px solid var(--yellow-edge);
+  background: var(--yellow-bg);
+  color: var(--ink);
+  border-radius: var(--panel-radius);
+}

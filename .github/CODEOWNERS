@@ -10,5 +10,5 @@
 /specs/TRD/14_*                @EchoWellApp/team2-algorithm
 /.github/                      @EchoWellApp/team2-devops
 /netlify.toml                  @EchoWellApp/team2-devops
-/railway.toml                  @EchoWellApp/team2-devops
+/render.yaml                   @EchoWellApp/team2-devops
 /docker-compose.yml            @EchoWellApp/team2-devops

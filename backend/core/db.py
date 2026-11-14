@@ -124,6 +124,23 @@ def lock_xact(session: Session, namespace: str, value: str) -> None:
     session.execute(text(f"SELECT pg_advisory_xact_lock({key.text})"), key.compile().params)
 
 
+def lock_xact_many(session: Session, namespace: str, values: Iterable[str]) -> None:
+    """`lock_xact` for several values in one statement, taken in ascending value order."""
+    ordered = sorted(set(values))
+    if not ordered:
+        return
+    if namespace not in ADVISORY_NAMESPACES:
+        raise ValueError(f"unknown advisory-lock namespace: {namespace}")
+    session.execute(
+        text(
+            "SELECT pg_advisory_xact_lock("
+            "hashtextextended('echowell:' || :namespace || ':' || v, 0))"
+            " FROM unnest(CAST(:values AS text[])) WITH ORDINALITY AS t(v, n) ORDER BY n"
+        ),
+        {"namespace": namespace, "values": ordered},
+    )
+
+
 def lock_residents(session: Session, resident_codes: Iterable[str]) -> None:
     """Lock several residents in ascending `resident_code` order, so callers cannot deadlock."""
     for code in sorted(set(resident_codes)):

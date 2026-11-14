@@ -79,16 +79,25 @@ class StoredResult:
     residents: list[ResidentInfo]
 
 
-def stored_result(session: Session, period: tuple[date, date]) -> StoredResult:
+def stored_result(
+    session: Session, period: tuple[date, date], window: tuple[date, date] | None = None
+) -> StoredResult:
+    """The stored rows as engine contracts. With `window`, only the processed sessions and ledger
+    days whose local date lies in it are loaded (`build_analytics_summary` reads no other days);
+    epochs, alerts and residents are always complete."""
     devices = {d.id: d.device_code for d in session.scalars(select(Device))}
     residents = session.scalars(select(Resident)).all()
     codes = {r.id: r.resident_code for r in residents}
     epochs = {e.id: e for e in session.scalars(select(Epoch))}
     sessions = []
-    for processed, raw in session.execute(
-        select(ProcessedSession, RawSession).join(RawSession,
-                                                  RawSession.id == ProcessedSession.raw_session_id)
-    ):  # fmt: skip
+    joined = select(ProcessedSession, RawSession).join(
+        RawSession, RawSession.id == ProcessedSession.raw_session_id
+    )
+    ledger_rows = select(DayLedgerEntry)
+    if window is not None:
+        joined = joined.where(ProcessedSession.local_date.between(*window))
+        ledger_rows = ledger_rows.where(DayLedgerEntry.local_date.between(*window))
+    for processed, raw in session.execute(joined):
         epoch = epochs.get(processed.epoch_id) if processed.epoch_id else None
         record = _record(raw)
         adjusted = processed.adjusted_features or dict(record.features)
@@ -105,7 +114,7 @@ def stored_result(session: Session, period: tuple[date, date]) -> StoredResult:
     ledger = [
         LedgerDay(codes[d.resident_id], d.local_date, d.status.value,
                   devices.get(d.device_id) if d.device_id else None, d.reason)
-        for d in session.scalars(select(DayLedgerEntry))
+        for d in session.scalars(ledger_rows)
     ]  # fmt: skip
     formed = {b.epoch_id: b for b in session.scalars(
         select(Baseline).where(Baseline.feature_key == COMPOSITE))}  # fmt: skip

@@ -96,3 +96,29 @@ def test_ingest_limit_is_per_api_key(
         api.post("/api/v1/sessions", json=record, headers={"X-API-Key": other}).status_code == 422
     )
     assert audit_rows == []
+
+
+@pytest.mark.req("SEC-090", "API-102", "TST-190", "NFR-151", "FEAT-022-FR-03")
+def test_ingest_routes_are_not_also_capped_by_the_default_limit(
+    api: TestClient, roster: Session, principals: Principals
+) -> None:
+    """The route's own RATE_LIMIT_INGEST replaces the 300/minute default (it is not added to it)."""
+    record = {**src05_record("R09-20261021-01"), "schema_version": "9.9"}  # rejected: no pipeline
+    ingest = principals.api_key("ingest")
+    statuses = [
+        api.post("/api/v1/sessions", json=record, headers=ingest).status_code for _ in range(301)
+    ]
+    assert set(statuses) == {422}
+    batch = api.post("/api/v1/ingest", json={"records": [record]}, headers=ingest)
+    assert batch.status_code != 429, batch.text
+
+
+@pytest.mark.req("SEC-091", "API-102")
+def test_login_is_not_also_capped_by_the_default_limit(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        rate_limit, "_current_settings", make_settings(rate_limit_login="400/minute")
+    )
+    statuses = {api.post(LOGIN, json=WRONG).status_code for _ in range(301)}
+    assert statuses == {401}

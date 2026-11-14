@@ -225,7 +225,7 @@ def test_checkin_log(api: TestClient, scene: World, principals: Principals) -> N
         "local_date": "2026-10-14", "event_type": "device_silent", "epoch_number": None,
         "session_id": None, "detail": "all residents on shared device D02 have no record",
         "cusum_tally": None, "restart_cause": None, "previous_device_code": None,
-        "from_value": None, "to_value": None, "device_code": None,
+        "from_value": None, "to_value": None, "device_code": "D02",
     }  # fmt: skip
 
 

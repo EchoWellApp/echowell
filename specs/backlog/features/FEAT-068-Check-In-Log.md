@@ -8,7 +8,7 @@
 | Complexity | Medium |
 | MVP status | Required |
 | Dependencies | FEAT-066 |
-| Status | Not Started |
+| Status | Complete |
 
 ## Purpose
 
@@ -53,7 +53,7 @@ Implement two sections of the resident chart as wireframe v0.2 draws them (SRC-2
 | FEAT-068-FR-05 | Set-aside reasons shall be the pipeline reason text verbatim in the fixed order quality flag, noise, speech duration joined by "; " (e.g. "quality flag poor; noise above limit"). | UX-142, BR-04 |
 | FEAT-068-FR-06 | The held-back line shall show only "possible other voice", never the screen statistics. | UX-145 |
 | FEAT-068-FR-07 | The log shall include alarms, set-asides, hold-backs, missed days (resident and device-gap), baseline restarts, baseline complete, comparing started and check-ins started; ordinary usable check-ins and duplicates shall never appear. | UX-143, UX-144, FR-181, FR-182, D-67 |
-| FEAT-068-FR-08 | The log shall first show events of the 30 days ending on the as-of date and offer "Show earlier entries", which loads the previous 30 days through `GET /checkins?from=&to=` when earlier events exist. | UX-146, FR-183 |
+| FEAT-068-FR-08 | The log shall first show events of the 30 days ending on the as-of date and offer "Show earlier entries", which loads the previous 30 days through `GET /residents/{resident_code}/checkins?from=&to=` (TRD 19 E-10) when earlier events exist. | UX-146, FR-183 |
 | FEAT-068-FR-09 | No line shall rely on colour; each line's text names its type. | UX-147, UX-004 |
 | FEAT-068-FR-10 | Below the events the caption (14px, `--muted`) "Duplicate records are removed quietly and not shown." shall appear; with no events the Events panel reads "Nothing to report yet." followed by the caption. | UX-148, UX-149, UX-204 |
 | FEAT-068-FR-11 | Missed days shall be exactly the ledger's missed days, never filled with a value, a previous check-in or an estimate. | UX-150, UX-047 |
@@ -132,7 +132,7 @@ None in the frontend.
 | FEAT-068-AC-04 | `/residents/R03/log` contains "Oct 18 Check-in set aside: quality flag poor; noise above limit." and "Oct 12 Shared device D02 silent all day. Check-in missed."; `/residents/R05/log` contains "Oct 22 Check-in held back: possible other voice." | E2E-12; UX-145 |
 | FEAT-068-AC-05 | No log line exists for a usable check-in or a duplicate (R04 shows no entry for its duplicate arrivals), and the caption "Duplicate records are removed quietly and not shown." is shown under the events. Verified by: Component (`CheckinLog.test.tsx`). | UX-144; UX-148; FR-182 |
 | FEAT-068-AC-06 | `/residents/R09/baseline` shows "Baseline: R09’s usual", "First 16 usable check-ins, Oct 1–16, then frozen. Compared with it since Oct 17.", a meter 16 of 16 with the caption "16 of 16 usable check-ins" and the explanation of UX-423. | E2E-08; UX-420..UX-423 |
-| FEAT-068-AC-07 | `/residents/R08/baseline` shows "Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins have slowed it down." and a `<progress>` 13/16 named "13 of 16 usable check-ins"; `/residents/R07/baseline` shows "Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29." | E2E-10; E2E-11; AC-UX-05 |
+| FEAT-068-AC-07 | `/residents/R08/baseline` shows "Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down." (TRD 11 §4.5.7.1; TRD 24 D-149) and a `<progress>` 13/16 named "13 of 16 usable check-ins"; `/residents/R07/baseline` shows "Restarted Oct 13 when the device was replaced (D07 to D07B), so readings from the old device are not mixed in. First 16 usable check-ins, Oct 13–28, then frozen. Compared with it since Oct 29." | E2E-10; E2E-11; AC-UX-05 |
 | FEAT-068-AC-08 | A resident fixture with no events shows "Nothing to report yet." followed by the caption. Verified by: Component (`CheckinLog.test.tsx`). | UX-149 |
 
 ## Definition of Done

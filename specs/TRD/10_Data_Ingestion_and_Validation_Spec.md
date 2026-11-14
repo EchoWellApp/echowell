@@ -1,6 +1,6 @@
 # 10 Data Ingestion and Validation Spec
 
-Document ID: ECHOWELL-TRD-10 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 29 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-10 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -262,7 +262,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 - ASM-03 Single facility (Edgewood); resident and device codes are unique facility-wide.
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's.
 - ASM-08 Volumes below 100 residents and 1 session per resident per day.
-- D-OWNER-4: the interim Netlify/Railway/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.
+- D-OWNER-4: the interim Netlify/Render/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.
 - Note for lead (TRD-local definitions): config keys `supported_schema_versions` and `feature_name_map` (now `config_parameters` keys, lead decision 18 Oct 2026); column
   `raw_sessions.ingest_warnings` (jsonb); `status_after_processing = "pending"` (now contract §21 R23); size limits (64 KB single per TRD 05 API-104, 5 MB / 5,000
   records batch); rejection and warning code lists (ING-023); `row_number` inside `ingest_rejections.errors`.
@@ -320,3 +320,4 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 | 0.4 | 20 Oct 2026 | PR #2 backlog consistency fixes (ING-032 row_number for JSON batches (D-84); ING-037 ingest warning, not RunWarning) | — |
 | 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): ING-036 traces to SRC-21 (the duplicate caption is now in the Resident chart's Check-in log) | — |
 | 0.6 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-2, Q-3; TRD 24 D-125): `device_assignment_mismatch` moved from the ingest warnings to the pipeline run warnings, matching TRD 05 API-055 and FEAT-026-FR-16; ING-023 adds the field code `device_key_mismatch` | — |
+| 0.7 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

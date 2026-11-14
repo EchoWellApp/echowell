@@ -1,0 +1,317 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 10,
+  "limit": 500,
+  "offset": 0,
+  "window": {
+    "from": "2026-10-01",
+    "to": "2026-10-30",
+    "days": 30
+  },
+  "summary": {
+    "changed": 2,
+    "needs_attention": 2,
+    "learning": 0,
+    "usual": 6
+  },
+  "items": [
+    {
+      "resident_code": "R09",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D09",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "alarm_on",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": "2026-10-21",
+      "open_alert_id": "ed802b5a-5504-484f-8574-d728af268d75",
+      "alarm_reviewed": false,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:28:04Z",
+      "last_checkin_local": "2026-10-30T14:28:04-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R10",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D10",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "alarm_on",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": "2026-10-24",
+      "open_alert_id": "a153a486-6e5a-4b0b-a71b-08d73e9f89b2",
+      "alarm_reviewed": false,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:39:05Z",
+      "last_checkin_local": "2026-10-30T14:39:05-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R03",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D02",
+      "device_shared": true,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": true,
+      "attention_reasons": ["high_set_aside"],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:19:17Z",
+      "last_checkin_local": "2026-10-30T14:19:17-05:00",
+      "last_30_days": {
+        "used": 22,
+        "set_aside": 7,
+        "quarantined": 0,
+        "missed": 1
+      }
+    },
+    {
+      "resident_code": "R08",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D08",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "baseline_forming",
+      "needs_attention": true,
+      "attention_reasons": ["baseline_stalled"],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 13,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:28:26Z",
+      "last_checkin_local": "2026-10-30T14:28:26-05:00",
+      "last_30_days": {
+        "used": 13,
+        "set_aside": 5,
+        "quarantined": 0,
+        "missed": 12
+      }
+    },
+    {
+      "resident_code": "R01",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D01",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:07:36Z",
+      "last_checkin_local": "2026-10-30T14:07:36-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R02",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D02",
+      "device_shared": true,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:55:23Z",
+      "last_checkin_local": "2026-10-30T14:55:23-05:00",
+      "last_30_days": {
+        "used": 24,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 6
+      }
+    },
+    {
+      "resident_code": "R04",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D04",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:17:03Z",
+      "last_checkin_local": "2026-10-30T14:17:03-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R05",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D05",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:40:45Z",
+      "last_checkin_local": "2026-10-30T14:40:45-05:00",
+      "last_30_days": {
+        "used": 28,
+        "set_aside": 0,
+        "quarantined": 2,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R06",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D06",
+      "device_shared": false,
+      "previous_device_code": null,
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 1,
+      "baseline_restarted_on": null,
+      "restart_cause": null,
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:38:09Z",
+      "last_checkin_local": "2026-10-30T14:38:09-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    },
+    {
+      "resident_code": "R07",
+      "cohort": "longitudinal",
+      "resident_status": "active",
+      "device_code": "D07B",
+      "device_shared": false,
+      "previous_device_code": "D07",
+      "status": "no_alarm",
+      "needs_attention": false,
+      "attention_reasons": [],
+      "alarm_since": null,
+      "open_alert_id": null,
+      "alarm_reviewed": null,
+      "current_epoch": 2,
+      "baseline_restarted_on": "2026-10-13",
+      "restart_cause": "device",
+      "baseline_progress": {
+        "n_usable": 16,
+        "n_required": 16
+      },
+      "last_checkin_at": "2026-10-30T19:52:57Z",
+      "last_checkin_local": "2026-10-30T14:52:57-05:00",
+      "last_30_days": {
+        "used": 30,
+        "set_aside": 0,
+        "quarantined": 0,
+        "missed": 0
+      }
+    }
+  ]
+}

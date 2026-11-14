@@ -1,0 +1,23 @@
+/* Events list: 80px date column, text column; no colour carries meaning (UX-140, UX-147). */
+.events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.events li {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.events li:last-child {
+  border-bottom: 0;
+}
+.date {
+  color: var(--muted);
+}
+.caption {
+  font-size: 14px;
+  color: var(--muted);
+}

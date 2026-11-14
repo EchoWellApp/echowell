@@ -1,0 +1,16 @@
+# gitleaks 8.x configuration (TRD 16 CIC-115, TRD 12 SEC-052, TRD 13 TST-136; FEAT-078).
+# The default rule set applies in full. The only allow-list entries are the CI-only and local-dev-only
+# placeholder values (TRD 06 DB-057, TRD 21 ENV-041) used in .env.development.example, docker-compose.yml
+# and .github/workflows/ci.yml. Never widen this file to a path or a whole directory: a real finding is
+# fixed by removing the value and rotating the secret (TRD 15 §4.13).
+title = "EchoWell gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "ci-only-* and local-dev-only-* placeholder values (CIC-115)"
+regexes = [
+  '''^ci-only-[A-Za-z0-9_-]+$''',
+  '''^local-dev-only-[A-Za-z0-9_-]+$''',
+]

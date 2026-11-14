@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 5,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "local_date": "2026-10-22",
+      "event_type": "quarantined",
+      "epoch_number": 1,
+      "session_id": "R05-20261022-01",
+      "detail": "possible other speaker (F0 z=-7.34; composite features with |z|>=3: 3)",
+      "cusum_tally": null,
+      "restart_cause": null,
+      "previous_device_code": null,
+      "from_value": null,
+      "to_value": null,
+      "device_code": null
+    },
+    {
+      "local_date": "2026-10-18",
+      "event_type": "watching_started",
+      "epoch_number": 1,
+      "session_id": "R05-20261018-01",
+      "detail": null,
+      "cusum_tally": null,
+      "restart_cause": null,
+      "previous_device_code": null,
+      "from_value": null,
+      "to_value": null,
+      "device_code": null
+    },
+    {
+      "local_date": "2026-10-17",
+      "event_type": "baseline_complete",
+      "epoch_number": 1,
+      "session_id": "R05-20261017-01",
+      "detail": "16 of 16",
+      "cusum_tally": null,
+      "restart_cause": null,
+      "previous_device_code": null,
+      "from_value": null,
+      "to_value": null,
+      "device_code": null
+    },
+    {
+      "local_date": "2026-10-08",
+      "event_type": "quarantined",
+      "epoch_number": 1,
+      "session_id": "R05-20261008-01",
+      "detail": "possible other speaker (F0 z=-8.61; composite features with |z|>=3: 4)",
+      "cusum_tally": null,
+      "restart_cause": null,
+      "previous_device_code": null,
+      "from_value": null,
+      "to_value": null,
+      "device_code": null
+    },
+    {
+      "local_date": "2026-10-01",
+      "event_type": "checkins_started",
+      "epoch_number": 1,
+      "session_id": "R05-20261001-01",
+      "detail": null,
+      "cusum_tally": null,
+      "restart_cause": null,
+      "previous_device_code": null,
+      "from_value": null,
+      "to_value": null,
+      "device_code": "D05"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 1,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "id": "ed802b5a-5504-484f-8574-d728af268d75",
+      "resident_code": "R09",
+      "device_code": "D09",
+      "epoch_number": 1,
+      "session_id": "R09-20261021-01",
+      "triggered_at": "2026-10-21T19:07:50Z",
+      "local_date": "2026-10-21",
+      "cusum_value": 5.431964961894293,
+      "current_tally": 26.830255852459448,
+      "open_days": 9,
+      "status": "open",
+      "reviewed": false,
+      "review_count": 0,
+      "last_reviewed_at": null,
+      "snoozed_until": null,
+      "snoozed_by": null,
+      "leaning_most": ["number_of_pauses", "loudness_dbfs", "voiced_fraction"],
+      "closed_reason": null
+    }
+  ]
+}

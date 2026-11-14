@@ -15,7 +15,7 @@ import sys
 from datetime import datetime
 from functools import lru_cache
 from typing import Literal, NoReturn
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, ValidationError, field_validator
@@ -32,6 +32,7 @@ KNOWN_ECHOWELL_VARS = frozenset(
 # JWT_SECRET value of the committed .env.development.example (ENV-013).
 TEMPLATE_JWT_SECRETS = frozenset({"local-dev-only-0123456789abcdef0123456789abcdef"})
 PLACEHOLDER_MARKERS = ("local-dev-only", "ci-only")
+JWT_REFUSED = "template, placeholder or low-entropy value refused"
 _RATE_RE = re.compile(r"^\d+/(second|minute|hour|day)$")
 _SHA_RE = re.compile(r"^(unknown|[0-9a-f]{7,40})$")
 _DB_SCHEMES = ("postgres://", "postgresql://", "postgresql+psycopg://")
@@ -187,6 +188,13 @@ def _url_password(url: SecretStr | None) -> str:
     return urlsplit(_secret(url)).password or ""
 
 
+def _requires_tls(url: SecretStr) -> bool:
+    """True when the last `sslmode` query parameter is `require` or `verify-full` (SEC-061);
+    libpq uses the last occurrence, so `sslmode=disable&sslmode=require` counts as require."""
+    modes = parse_qs(urlsplit(_secret(url)).query).get("sslmode", [])
+    return bool(modes) and modes[-1] in ("require", "verify-full")
+
+
 def startup_violations(settings: Settings, *, operator: bool = False) -> list[tuple[str, str]]:
     """Cross-variable guards (ENV-010..ENV-013, ENV-041, ENV-053, ENV-054) as (name, rule) pairs."""
     env, problems = settings.app_env, []
@@ -205,8 +213,7 @@ def startup_violations(settings: Settings, *, operator: bool = False) -> list[tu
         "DATABASE_READONLY_URL": settings.database_readonly_url,
     }
     for name, url in urls.items():
-        query = urlsplit(_secret(url)).query
-        if deployed and url is not None and not re.search(r"sslmode=(require|verify-full)", query):
+        if deployed and url is not None and not _requires_tls(url):
             problems.append((name, "must specify sslmode=require or verify-full"))
         if deployed and any(m in _url_password(url) for m in PLACEHOLDER_MARKERS):
             problems.append((name, "placeholder password refused in staging and production"))
@@ -216,6 +223,9 @@ def startup_violations(settings: Settings, *, operator: bool = False) -> list[tu
         "SEED_RESEARCHER_PASSWORD": settings.seed_researcher_password,
         "SEED_INGEST_API_KEY": settings.seed_ingest_api_key,
     }
+    # ENV-041 applies to every process, including operator commands that do not need JWT_SECRET.
+    if deployed and any(m in _secret(settings.jwt_secret) for m in PLACEHOLDER_MARKERS):
+        problems.append(("JWT_SECRET", JWT_REFUSED))
     for name, value in seeds.items():
         if prod and _secret(value):
             problems.append((name, "must not be set when APP_ENV=production"))
@@ -233,12 +243,12 @@ def _web_violations(settings: Settings) -> list[tuple[str, str]]:
     jwt = _secret(settings.jwt_secret)
     if not jwt:
         problems.append(("JWT_SECRET", "is required"))
-    elif deployed and (
-        jwt in TEMPLATE_JWT_SECRETS
-        or len(set(jwt)) < 16
-        or any(m in jwt for m in PLACEHOLDER_MARKERS)
+    elif (
+        deployed
+        and not any(m in jwt for m in PLACEHOLDER_MARKERS)  # already refused for every process
+        and (jwt in TEMPLATE_JWT_SECRETS or len(set(jwt)) < 16)
     ):
-        problems.append(("JWT_SECRET", "template, placeholder or low-entropy value refused"))
+        problems.append(("JWT_SECRET", JWT_REFUSED))
     if deployed and "cors_origins" not in settings.model_fields_set:
         problems.append(("CORS_ORIGINS", "is required in staging and production"))
     if deployed and "facility_name" not in settings.model_fields_set:
@@ -293,7 +303,8 @@ def ensure_valid(settings: Settings, *, operator: bool = False) -> None:
 
 
 def load_settings_or_exit(*, operator: bool = False) -> Settings:
-    """Load and validate settings for the web app, the nightly job (operator=False) or the CLI."""
+    """Load and validate settings for the web app (operator=False), or the nightly job and the CLI
+    (operator=True: no JWT, CORS or read-only URL; DEP-046, SEC-111)."""
     try:
         settings = get_settings()
     except ValidationError as exc:

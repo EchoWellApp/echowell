@@ -1,6 +1,6 @@
 # 11 User Interface and UX Specification
 
-Document ID: ECHOWELL-TRD-11 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 26 October 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-11 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -218,7 +218,7 @@ Silent text: none → nothing; 1–3 days → " Silent all day <Mon D>[, <Mon D>
 | UX-053 | A replacement device row shall show the replacement date and the previous device (e.g. "D07B (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT."); the retired device shall not get its own row. | Must | SRC-21, BR-08 | T |
 | UX-054 | Remaining devices shall be grouped in one row per firmware version whose device list is in natural order, joining runs of 3 or more consecutive numbers with " to " (e.g. "D01, D04 to D06, D08 to D10"). | Must | SRC-21 | T |
 | UX-055 | Below the rows, a disclosure (`<details>`) "Show all devices (<count>)" shall reveal a table with columns "Device", "Residents", "In use", "Last upload", "Firmware", "Days with no device activity (last 30 days)" (from `silent_days_last_30`), "Silent days (shared device)" (from `device_gap_days_last_30`), one row per device including inactive ones (kept from v0.1, TRD 24 D-111). | Must | SRC-12, BR-12, D-111 | T |
-| UX-056 | "Days with no device activity (last 30 days)" shall show the number of local days in the window on which the device was assigned to at least one resident and received no non-duplicate record, followed by up to 3 dates (e.g. "1 (Oct 12)") or "0". | Must | SRC-12, RSK-05 | T |
+| UX-056 | "Days with no device activity (last 30 days)" shall show the number of local days in the window on which the device was assigned to at least one resident and received no non-duplicate record, followed by up to 3 dates, the most recent ones when there are more (e.g. "1 (Oct 12)", "12 (latest Oct 21, Oct 24, Oct 27)"; TRD 24 D-147), or "0". | Must | SRC-12, RSK-05 | T |
 | UX-057 | The "In use" cell shall read "Since <Mon D>" for active devices and "<Mon D>–<Mon D> · replaced by <D>" for retired devices (e.g. "Oct 1–12 · replaced by D07B"), from `in_use_since`, `in_use_until` and `replaced_by_device_code` (TRD 19 `Device`). | Must | SRC-12, BR-08 | T |
 | UX-058 | The Devices section content shall be verifiable against the pipeline test data (SRC-05): for the as-of date 2026-10-30 it shall render exactly the rows and table of section 4.13.4. | Must | SRC-12, BR-15 | T |
 
@@ -238,7 +238,7 @@ Layout (SRC-21): back link → banner (panel) → two-column grid (200px section
 | UX-065 | When the current epoch number is greater than 1, the Summary lead text (section 4.5.2.1), the Baseline section (UX-421) and the Voice trends chart (UX-092) shall state the restart, so that the resident is visibly compared only with the new epoch's baseline. | Must | BR-08, SRC-12 | T |
 | UX-066 | Baseline dates and the frozen state shall not change after freeze across reloads and later check-ins of the same epoch (the UI renders `first_session_date` and `frozen_after_date` from the API and no other source). | Must | BR-09, SRC-12 | T |
 | UX-410 | A section navigation (`<nav aria-label="Resident chart">`, in a panel) shall list the links "Summary" (`/residents/<R>`), "Review and notes" (`/review`), "Voice trends" (`/trends`), "Baseline" (`/baseline`), "Check-in log" (`/log`), "Device" (`/device`) in that order (weight 600, padding 10px 12px, min-height 44px); the current section's link shall have `aria-current="page"`, `--chrome` background and `--chrome-ink` text. Each section has its own URL so it can be bookmarked and the browser back button works. | Must | SRC-21 | T |
-| UX-411 | When the resident has a change alarm that is not reviewed (alert status `open`), the "Review and notes" link shall end with a red count badge "1" and its accessible name shall be "Review and notes, alarm not reviewed". | Must | SRC-21 | T |
+| UX-411 | When `ResidentDetail.alarm_reviewed` is `false` (an open change alarm not yet reviewed; the single source of truth, TRD 04 FE-210, TRD 24 D-144), the "Review and notes" link shall end with a red count badge "1" and its accessible name shall be "Review and notes, alarm not reviewed". | Must | SRC-21 | T |
 | UX-412 | An unknown resident code shall show "Resident <code> was not found." with the back link, and no banner or sections (see also UX-205). | Must | BR-13 | T |
 
 #### 4.5.2 Summary section ("Right now" and "More detail")
@@ -480,7 +480,7 @@ Not drawn in SRC-21; kept from v0.12 in the v0.2 style (TRD 24 D-111).
 | UX-217 | When an upload is rejected as a whole (for example the legacy SRC-06 file, 422 schema mismatch, contract §20 R12), the Upload tab shall show "The file was not accepted: <detail>. Nothing was stored." and list `errors[]` messages. | Must | contract §20 R12, §21 R19 | T |
 | UX-219 | When no pipeline run with trigger `nightly` and status `succeeded` started within the previous 26 hours (read at page load from GET /pipeline/runs with `trigger=nightly`, `status=succeeded`, `limit=1`), the Admin page shall show above the tabs the banner "Nightly run missing for <Mon D>", where the date is the most recent facility-local date (`meta.facility_tz`) whose 02:00 has passed (TRD 17 LOG-111; TRD 24 D-96). | Must | TRD 17 LOG-111, RSK-05 | T |
 | UX-218 | The Admin page shall not offer creation or editing of residents, devices, device assignments or API keys (managed by CLI and seed files in the MVP, contract §20 R4). | Must | contract §20 R4 | I |
-| UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Railway/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
+| UX-214 | The Upload tab shall state "Only synthetic or test data may be uploaded to this environment." in every environment of the interim Netlify/Render/Neon stack (local, staging and interim production); removing the line requires a reviewed code change made only after the AWS hosting is approved for live data. | Must | D-OWNER-3, D-OWNER-4 | T |
 | UX-215 | Users without the admin role shall see "You do not have access to this page." and the link "← Resident list". | Must | BR-16 | T |
 | UX-216 | The Admin page shall show at its end "API status: ok · version <version>" when GET /health returns 200, "API status: degraded (database unavailable) · version <version>" when it returns 503 with status "degraded", and "API status: unavailable" when unreachable (14px, `--muted`). | Should | TRD 17, contract §21 R19 | T |
 
@@ -570,7 +570,7 @@ Device section R03: "Device D02"; "● Online"; "Oct 30, 2:55 PM CT" (the device
 | ● Online | **D02** (shared by R02 and R03): last upload Oct 30, 2:55 PM CT. Silent all day Oct 12. |
 | ● Online | **D07B** (R07): in use since Oct 13, replacing D07. Last upload Oct 30, 2:52 PM CT. |
 
-"Show all devices (10)" table: D01 R01 · D02 R02, R03 (no activity 1 (Oct 12), silent 1 (Oct 12)) · D04 R04 · D05 R05 · D06 R06 · D07 R07 "Oct 1–12 · replaced by D07B", last upload Oct 12, 2:14 PM CT · D07B R07 "Since Oct 13" · D08 R08 (no activity 12) · D09 R09 · D10 R10; all firmware fw-1.0.0; all other activity and silent counts 0.
+"Show all devices (10)" table: D01 R01 · D02 R02, R03 (no activity 1 (Oct 12), silent 1 (Oct 12)) · D04 R04 · D05 R05 · D06 R06 · D07 R07 (a retired device with no current resident shows the residents of its replacement, TRD 24 D-146) "Oct 1–12 · replaced by D07B", last upload Oct 12, 2:14 PM CT · D07B R07 "Since Oct 13" · D08 R08 (no activity 12) · D09 R09 · D10 R10; all firmware fw-1.0.0; all other activity and silent counts 0.
 
 #### 4.13.5 New admissions
 
@@ -624,6 +624,8 @@ Fixed by SRC-21 (TRD 24 D-112) and implemented in TRD 04 section 4.12 as CSS cus
 | `--c-used` | #1D5F99 | #5CA3E0 | "Used" segments and meters |
 | `--c-aside` | #9FB0BF | #5E7080 | "Set aside" segments; change-score bars before the alarm |
 | `--c-quar` | #C98A1A | #E0A740 | "Held back" segments |
+| `--badge-ink` | #FFFFFF | #1A0A08 | Digit on the red count badge (white fails contrast on the dark-scheme `--red`; TRD 24 D-142) |
+| `--nav-active` / `--nav-hover` | white at 16% / 10% opacity | same | Current and hovered app-bar link on `--chrome` (UX-013; TRD 24 D-142) |
 | missed | transparent with 1px dashed `--muted` | same | "Missed" segments and legend swatch |
 | Sizes | h1 22px (list, admissions, Study team) / 26px (chart code); h2 20px; h3 16px; body 16px; labels 14–15px; captions 12–13px; fact values 18px; count values 24px | | |
 | Spacing | max width 1240px; page padding 20px; panel padding 16px 18px; panel radius 6px; gap 16px; touch min 44px | | |
@@ -919,3 +921,5 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 | 0.12 | 23 Oct 2026 | PR #3 review (checkpoint 1 Q-6): UX-127 latest-review line withdrawn from Resident detail, which follows the SRC-10 wireframe (D-102); §9 OQ-05 note | — |
 | 0.13 | 26 Oct 2026 | Wireframe v0.2 (SRC-21) replaces SRC-09/10/11/18/19 (TRD 24 D-108 to D-114): Resident list with four display statuses and filters; Resident chart with Summary, Review and notes, Voice trends, Baseline, Check-in log and Device sections; Alert review page retired (review form, reminder and previous reviews moved to the chart, data alerts to Study team); Analytics renamed Study team, with Devices and data problems; v0.2 tokens (Source Sans 3, light and dark); UI wording changes; retired IDs kept as "Retired"; new UX-400–UX-433; OQ-31, OQ-32 | — |
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): PR #5 review: UX-001 and OQ-32 answered (no room numbers, D-116); UX-433 and OQ-31 answered (silent device never changes the status, D-115); UX-185 neutral "Out of range" / "In range" pills (D-117); UX-003 and every date-time example with "CT" (D-119) | — |
+| 0.15 | 4 Nov 2026 | Checkpoint 7 review (GitHub PR #28; TRD 24 D-142, D-144, D-146, D-147): §4.15 tokens `--badge-ink`, `--nav-active`, `--nav-hover`; UX-411 follows `alarm_reviewed`; §4.13.4 retired-device residents; UX-056 latest three dates | — |
+| 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |

@@ -1,0 +1,41 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.glyph {
+  font-size: 12px;
+}
+.changed {
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red);
+}
+.needs_attention {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border-color: var(--yellow-edge);
+}
+.needs_attention .glyph {
+  font-weight: 800;
+}
+.learning {
+  background: var(--grey-bg);
+  color: var(--grey);
+  border-color: var(--grey);
+}
+.usual {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: var(--green);
+}
+.lg {
+  font-size: 18px;
+  padding: 6px 16px;
+}

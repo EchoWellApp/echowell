@@ -7,6 +7,7 @@ import time
 
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
@@ -73,5 +74,22 @@ def test_lock_is_released_at_commit(pg_urls: PgUrls, migrated: RoundTrip) -> Non
                 )
             ).scalar_one()
             assert held == 0
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.req("DB-021", "ING-038")
+def test_lock_xact_many_takes_the_same_keys_as_lock_xact(
+    pg_urls: PgUrls, migrated: RoundTrip
+) -> None:
+    engine = create_engine(pg_urls.app, poolclass=NullPool)
+    try:
+        with Session(engine) as first, first.begin():
+            db.lock_xact_many(first, "session", ["R02-20261001-01", "R01-20261001-01"])
+            with Session(engine) as second, second.begin():
+                second.execute(text("SET LOCAL lock_timeout = '200ms'"))
+                db.lock_xact(second, "session", "R03-20261001-01")  # not held: no wait
+                with pytest.raises(OperationalError, match="lock timeout"):
+                    db.lock_xact(second, "session", "R01-20261001-01")
     finally:
         engine.dispose()

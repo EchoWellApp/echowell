@@ -31,7 +31,7 @@ This document describes the Next.js dashboard that the Phase 3 scaffold (FEAT-00
 | @playwright/test, @axe-core/playwright | 1.48+ / 4.x (dev) | E2E and accessibility | TRD 04 §4.1 |
 | eslint (+ next, typescript-eslint, jsx-a11y), prettier | 8.x, 3.x (dev) | lint and format | FE-200, FE-201 |
 
-No UI component library or icon set (CSS Modules and custom properties only; glyphs "▲", "!", "●", "○", "←" as text), font "Source Sans 3" 400/600/700 self-hosted through `next/font/google` with light and dark tokens of TRD 11 §4.15 (TRD 24 D-112), no audio component, no LLM feature (FE-003, FE-004, FE-007, FE-008, FE-211, AGT-004). The checkpoint 2 skeleton still loads IBM Plex in `frontend/app/layout.tsx`; it is switched to Source Sans 3 and the v0.2 tokens in checkpoint 7 (FEAT-062).
+No UI component library or icon set (CSS Modules and custom properties only; glyphs "▲", "!", "●", "○", "←" as text), font "Source Sans 3" 400/600/700 self-hosted through `next/font/local` (committed woff2, TRD 24 D-168) with light and dark tokens of TRD 11 §4.15 (TRD 24 D-112), no audio component, no LLM feature (FE-003, FE-004, FE-007, FE-008, FE-211, AGT-004). The checkpoint 2 skeleton still loads IBM Plex in `frontend/app/layout.tsx`; it is switched to Source Sans 3 and the v0.2 tokens in checkpoint 7 (FEAT-062).
 
 ## 3. Source layout
 
@@ -271,7 +271,7 @@ Test levels and the E2E scenario list are in docs/design/Testing_Architecture.md
 - Residents are study IDs only; no names, photos or rooms (no room numbers, D-116) (UX-001, FE-068, AGT-017).
 - No audio player, waveform or audio link on any page; the data bar on every page states "No audio is stored or played anywhere in EchoWell." (UX-400, UX-006, FE-007, FE-208).
 - Wording says "Changed from their usual" and "a prompt to check in, not a diagnosis"; forbidden stems of UX-161 never appear (AGT-018, UX-160..UX-167).
-- Facility named only from `meta.facility_name`; "Edge4Care" never appears (UX-012, AGT-019).
+- Facility named only from `meta.facility_name`; the old facility name of AGT-019 never appears (UX-012).
 - No EWMA chart (OQ-18); no control to edit, reset or delete baselines, scores, change scores, alarms or records (UX-009).
 - No request to any host other than the frontend origin and the API origin (FE-192).
 

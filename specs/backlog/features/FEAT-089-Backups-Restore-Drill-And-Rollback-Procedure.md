@@ -34,8 +34,8 @@ Protect the interim production database and make every deploy reversible: establ
 
 - Backup procedure in `docs/deployment.md`: weekly (Mondays) and pre-migration-release `pg_dump --format=custom --no-owner` of production by the data steward from a UND-managed workstation, encrypted at rest, stored only on storage approved for the study's research data; never committed or uploaded as an Actions artifact; the Neon plan restore window in force recorded.
 - Pre-release restore point: Neon branch `pre-<short-sha>` from `main` before merging a release with a migration; deleted after 7 days if unused.
-- Restore drill (once before 15 Nov 2026; the single definition of DEP-097, D-77): restore the latest dump into a new Neon branch `restore-drill`, run the schema diff test (PGS-016) against it, point a temporary backend at it (or use `railway run` with the branch URLs), `GET /api/v1/health`, `run-pipeline --scope all`, compare row counts of `raw_sessions`, `alerts` and `audit_logs` with the source, run `pytest tests/validation -q` on the deployed SHA, record the result in `docs/deployment.md`, delete the branch within 7 days.
-- Rollback rehearsal (once before 15 Nov 2026): Netlify "Publish deploy" of the previous deploy and Railway "Redeploy" of the previous deployment, timed (≤ 10 minutes), plus the failing-healthcheck check on staging (AC-DEP-06).
+- Restore drill (once before 15 Nov 2026; the single definition of DEP-097, D-77): restore the latest dump into a new Neon branch `restore-drill`, run the schema diff test (PGS-016) against it, point a temporary backend at it (or run the commands from the Render Shell of the staging web service with the branch URLs exported for that session), `GET /api/v1/health`, `run-pipeline --scope all`, compare row counts of `raw_sessions`, `alerts` and `audit_logs` with the source, run `pytest tests/validation -q` on the deployed SHA, record the result in `docs/deployment.md`, delete the branch within 7 days.
+- Rollback rehearsal (once before 15 Nov 2026): Netlify "Publish deploy" of the previous deploy and Render "Rollback" (Events tab) of the previous deploy of the web service and the cron job, timed (≤ 10 minutes), noting that Render turns auto-deploy off on a rolled-back service and whether the rollback's pre-deploy command passes, plus the failing-healthcheck check on staging (AC-DEP-06).
 - Rollback table and PITR procedure reproduced in `docs/deployment.md` (TRD 15 §4.12, §4.13), including "never `alembic downgrade` in production" and the post-restore full pipeline run.
 
 ## Out of Scope
@@ -72,7 +72,7 @@ Protect the interim production database and make every deploy reversible: establ
 
 ## Data Flow
 
-Production (Neon `main`) → `pg_dump` over TLS → encrypted file on approved storage → `pg_restore --no-owner` as `echowell_migrator` into Neon branch `restore-drill` → backend pointed at it → health → full pipeline → row-count comparison → record → branch deleted. Rollback: Netlify deploy list → publish previous; Railway deployments → redeploy previous; `version` in health confirms.
+Production (Neon `main`) → `pg_dump` over TLS → encrypted file on approved storage → `pg_restore --no-owner` as `echowell_migrator` into Neon branch `restore-drill` → backend pointed at it → health → full pipeline → row-count comparison → record → branch deleted. Rollback: Netlify deploy list → publish previous; Render Events → previous deploy → Rollback (re-enable auto-deploy afterwards in staging); `version` in health confirms.
 
 ## Dependencies
 

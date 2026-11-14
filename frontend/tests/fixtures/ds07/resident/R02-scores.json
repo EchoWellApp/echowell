@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "facility_name": "Edgewood",
+    "facility_tz": "America/Chicago",
+    "data_source_label": "pipeline test data v0.1",
+    "as_of": "2026-10-30T20:00:00Z",
+    "baseline_n": 16,
+    "cusum_h": 5,
+    "pipeline_profile": "test_v0_1"
+  },
+  "total": 8,
+  "limit": 50,
+  "offset": 0,
+  "cusum_k": 0.5,
+  "baseline_periods": [
+    {
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "first_local_date": "2026-10-01",
+      "frozen_after_local_date": "2026-10-21",
+      "frozen_after_session_id": "R02-20261021-01",
+      "n_sessions": 16
+    }
+  ],
+  "items": [
+    {
+      "session_id": "R02-20261022-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-22",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.5781349366942244,
+        "z_total_phrase_duration_s": 0.1297097614378064,
+        "z_speech_rate_syl_per_s": 0.6070416835289343,
+        "z_articulation_rate_syl_per_s": 0.718006292346052,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.27773148919624424,
+        "z_voiced_fraction": 1.3128480854097948
+      },
+      "composite_raw": -0.31539755033557065,
+      "composite_z": -0.3710007425597118,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261024-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-24",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.391263037964778,
+        "z_total_phrase_duration_s": -1.3749234712407536,
+        "z_speech_rate_syl_per_s": 3.035208417644677,
+        "z_articulation_rate_syl_per_s": 0.6744907594765913,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.5157870513644545,
+        "z_voiced_fraction": 1.385114952496573
+      },
+      "composite_raw": -1.3395410985982612,
+      "composite_z": -1.7951457782679168,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261025-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-25",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.9460389873178211,
+        "z_total_phrase_duration_s": -0.025941952287560823,
+        "z_speech_rate_syl_per_s": -0.47214353163361217,
+        "z_articulation_rate_syl_per_s": 0.6744907594765913,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.35708334325231433,
+        "z_voiced_fraction": 0.8069800158023495
+      },
+      "composite_raw": -0.6197702180718607,
+      "composite_z": -0.7942527607921366,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261026-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-26",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": -0.697849746817776,
+        "z_total_phrase_duration_s": 0.9079683300646473,
+        "z_speech_rate_syl_per_s": 2.832861189801697,
+        "z_articulation_rate_syl_per_s": -1.2401926867795445,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.5157870513644545,
+        "z_voiced_fraction": -0.0361334335433903
+      },
+      "composite_raw": -0.0666434348515419,
+      "composite_z": -0.025090309125337718,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261027-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-27",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.700769620235423,
+        "z_total_phrase_duration_s": 0.9598522346397712,
+        "z_speech_rate_syl_per_s": -1.0791852151625525,
+        "z_articulation_rate_syl_per_s": -0.9355839566933435,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": 0.6744907594765958,
+        "z_voiced_fraction": -1.457381819583356
+      },
+      "composite_raw": 0.6293891950457423,
+      "composite_z": 0.9427929688005511,
+      "cusum_tally": 0.4427929688005511,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261028-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-28",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.3737437974588928,
+        "z_total_phrase_duration_s": 0.5966649026139105,
+        "z_speech_rate_syl_per_s": 0.6070416835289343,
+        "z_articulation_rate_syl_per_s": 0.8050373580849655,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.35708334325231433,
+        "z_voiced_fraction": 1.168314351236239
+      },
+      "composite_raw": -0.6735079472782051,
+      "composite_z": -0.868978926288438,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261029-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-29",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.39418291138242606,
+        "z_total_phrase_duration_s": -1.1155039483651383,
+        "z_speech_rate_syl_per_s": -0.7419398354242502,
+        "z_articulation_rate_syl_per_s": -1.1096460881711743,
+        "z_number_of_pauses": 0,
+        "z_pause_fraction": -0.27773148919624424,
+        "z_voiced_fraction": 0.9756027056714979
+      },
+      "composite_raw": -0.130205018717126,
+      "composite_z": -0.1134772489029478,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    },
+    {
+      "session_id": "R02-20261030-01",
+      "resident_code": "R02",
+      "epoch_number": 1,
+      "local_date": "2026-10-30",
+      "is_morning": false,
+      "z": {
+        "z_loudness_dbfs": 0.8204844303589746,
+        "z_total_phrase_duration_s": -0.9079683300646473,
+        "z_speech_rate_syl_per_s": 1.2815324430055324,
+        "z_articulation_rate_syl_per_s": -0.19581989791255927,
+        "z_number_of_pauses": -2,
+        "z_pause_fraction": -0.11902778108410514,
+        "z_voiced_fraction": 0.8069800158023495
+      },
+      "composite_raw": -0.8200247289147212,
+      "composite_z": -1.0727210165154872,
+      "cusum_tally": 0,
+      "alarm_state": "off"
+    }
+  ]
+}

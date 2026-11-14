@@ -8,7 +8,7 @@
 | Complexity | Medium |
 | MVP status | Required |
 | Dependencies | FEAT-064, FEAT-036 |
-| Status | Not Started |
+| Status | Complete |
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Implement `/admissions`, the experimental page for the new-admission study arm, 
 
 - BR-14 (new residents are compared with the facility's usual range until their own baseline forms, then move to the resident list) with VIS-009 (always labelled experimental) and D-06 (no alerts, isolated from the longitudinal pipeline).
 - OQ-08 (facility norm method undefined in the MVP): the page renders whatever ranges the API returns and states that the arm is not in pipeline test v0.1.
-- D-109 and question 4 of the v0.2 review: the comparison status uses the v0.2 pills (outside range "Changed", within range "Usual", otherwise "Learning") until the algorithm lead decides otherwise.
+- TRD 24 D-117 (answering question 4 of the v0.2 review) and D-149: the comparison status uses neutral `RangePill`s ("Out of range" / "In range", no glyph or status colour), and the `StatusPill` "○ Learning" otherwise.
 - FRs covered (BACKLOG.md): FR-200, FR-201, FR-202, FR-203, FR-205.
 
 ## Referenced TRDs
@@ -139,5 +139,5 @@ None in the frontend.
 
 - Decide the test-data empty text by `meta.pipeline_profile` from the API, never by a hard-coded environment check (FE-077).
 - The note's second and third sentences stay until OQ-08 closes; keep them in `lib/wording.ts`.
-- The pill mapping (outside range "Changed", within range "Usual") is question 4 of the v0.2 review for the algorithm lead; keep the mapping in one function so a switch to neutral pills is a one-line change.
+- The pill mapping (neutral "Out of range" / "In range", TRD 24 D-117) is kept in one function (`AdmissionPill`).
 - The chart band uses `--grey-bg` (D-44, D-112); never use red for the band.

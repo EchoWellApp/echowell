@@ -1,0 +1,77 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.fieldset {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+.choice input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: none;
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.noteLabel {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+}
+.counter {
+  font-size: 13px;
+  color: var(--muted);
+}
+.error {
+  font-size: 14px;
+  color: var(--red);
+  font-weight: 600;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.buttons button[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.reminder {
+  font-size: 14px;
+  font-weight: 600;
+}
