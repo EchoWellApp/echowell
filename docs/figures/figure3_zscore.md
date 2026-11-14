@@ -4,11 +4,19 @@
 
 ```mermaid
 flowchart TB
-    RAW[Raw Voice Feature (x)] --> MEAN[Baseline Mean (μ)]
-    MEAN --> STD[Baseline Standard Deviation (σ)]
-    STD --> EQUATION[Standardize: z = (x - μ) / σ]
-    EQUATION --> RESULT[Standardized Feature (z)]
+
+    RAW["Raw Voice Feature (x)"]
+    MEAN["Baseline Mean (μ)"]
+    STD["Baseline Standard Deviation (σ)"]
+    EQUATION["z = (x - μ) / σ"]
+    RESULT["Standardized Feature (z)"]
+
+    RAW --> MEAN
+    MEAN --> STD
+    STD --> EQUATION
+    EQUATION --> RESULT
 
     classDef process fill:#f4f6f8,stroke:#526273,color:#17212b
+
     class RAW,MEAN,STD,EQUATION,RESULT process
 ```
