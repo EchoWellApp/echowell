@@ -107,9 +107,9 @@ Empty roster database (`seed test_v0_1 --master-only`), API with `LOG_FORMAT=jso
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | Admin login, `POST /api/v1/ingest` with the SRC-05 CSV; poll the run to `succeeded` | 202, then `succeeded` |
-| 2 | `grep -E -- "-28\.29|178\.8|4\.93|26\.8|0\.517" /tmp/api.log` (feature values of SRC-05 row R09-20261021-01) | No output |
+| 2 | `grep -F -e "-28.29" -e "178.8" -e "4.93" -e "26.8" -e "0.517" /tmp/api.log` (feature values of SRC-05 row R09-20261021-01) | No output |
 | 3 | `grep -E "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}" /tmp/api.log` | No output (login e-mails redacted) |
-| 4 | `grep -i -E "password|X-API-Key|postgresql://" /tmp/api.log` | No secret value or connection string |
+| 4 | `grep -i -e password -e x-api-key -e postgresql:// /tmp/api.log` | No secret value or connection string |
 
 ### TC-056-07 Warnings are stored as `{code, resident_code, session_id, detail}` and logged as `pipeline_warning`
 
@@ -126,7 +126,7 @@ Empty roster database (`seed test_v0_1 --master-only`), API with `LOG_FORMAT=jso
 |---|---|---|
 | 1 | After step 1 of TC-056-07, run `python -m backend.cli run-pipeline --scope all` twice | Each prints `Pipeline run <uuid> failed.` with a different uuid |
 | 2 | `SELECT id, status FROM pipeline_runs WHERE status='failed' ORDER BY started_at;` | One row per failed invocation (each failure keeps its own row; no automatic re-run row in between) |
-| 3 | `grep -rn "retry\|while True" backend/services/pipeline_runner.py` | No in-process retry loop |
+| 3 | `grep -n -e retry -e "while True" backend/services/pipeline_runner.py` | No in-process retry loop |
 | 4 | Admin `GET /api/v1/pipeline/runs?status=failed` | All failed rows listed, newest first |
 
 ### TC-056-09 `data_alerts_updated` logged once per run with counts per kind

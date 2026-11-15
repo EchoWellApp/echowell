@@ -136,7 +136,7 @@ A = R(records())
 |---|---|---|
 | 1 | `lint-imports` | Contract "analytics is pure: no backend, database, HTTP, environment or randomness" KEPT |
 | 2 | Temporarily add `import sqlalchemy` at the top of `analytics/pipeline.py`, run `lint-imports`, then revert the line | Contract BROKEN, non-zero exit; after revert KEPT again |
-| 3 | `grep -n "datetime.now\|os.environ\|random\|evaluation_ground_truth\|true_onset\|planted_change" analytics/pipeline.py` | No match (no clock, environment, randomness or ground truth) |
+| 3 | `grep -n -e datetime.now -e os.environ -e random -e evaluation_ground_truth -e true_onset -e planted_change analytics/pipeline.py` | No match (no clock, environment, randomness or ground truth) |
 
 ### TC-052-13 Engine on SRC-05 completes in ≤ 5 s
 

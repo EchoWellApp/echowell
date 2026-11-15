@@ -100,7 +100,7 @@ Note: on timeout the code raises `run <id> still running after 60.0 s` without t
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `pytest tests/validation/test_harness.py -q -k ground_truth_never_changes` | Passes: after loading DS-10 (`SELECT count(*) FROM evaluation_ground_truth` = 10) and a second full run, all compared values, alerts and data alerts equal the run without it |
-| 2 | `grep -rn -E "evaluation_ground_truth\|true_onset\|planted_change" analytics backend/services/pipeline_runner.py backend/services/pipeline_persistence.py backend/services/ingestion.py backend/repositories` | No output (TDV-101; `analytics_summary.py` and `database/seeds/` are outside the scan) |
+| 2 | `grep -rn -e evaluation_ground_truth -e true_onset -e planted_change analytics backend/services/pipeline_runner.py backend/services/pipeline_persistence.py backend/services/ingestion.py backend/repositories` | No output (TDV-101; `analytics_summary.py` and `database/seeds/` are outside the scan) |
 
 ### TC-058-10 A skipped validation test makes `pytest tests/validation -q` exit non-zero
 
@@ -117,7 +117,7 @@ Note: on timeout the code raises `run <id> still running after 60.0 s` without t
 |---|---|---|
 | 1 | Open `tests/validation/comparator.py` | Mapping tables per sheet (Tables 4.5-A..4.5-F) list column, comparison kind (`float`, `exact`, `none_null`, `yesno`, `alarm`) and stage; `TOLERANCE = 1e-6`; `ALARMS` maps off / "RINGS (first crossing)" / on to off / rings / on |
 | 2 | Open `tests/validation/conftest.py` | Tier A fixture passes only DS-01 records, the registry and `TEST_V0_1` to `run_pipeline`; the workbook is read only by the comparator |
-| 3 | `grep -n "to_excel\|ExcelWriter" tests/validation/*.py` | No write to the golden workbook |
+| 3 | `grep -n -e to_excel -e ExcelWriter tests/validation/*.py` | No write to the golden workbook |
 
 ## API Validation
 

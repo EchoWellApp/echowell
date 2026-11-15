@@ -113,7 +113,7 @@ Note: FEAT-055-FR-02 lists `profile` and `key` inside `details`; the code record
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `grep -rn "evaluation_ground_truth\|load_evaluation_ground_truth" backend/cli.py` | No output |
+| 1 | `grep -rn -e evaluation_ground_truth -e load_evaluation_ground_truth backend/cli.py` | No output |
 
 ### TC-055-11 `run-pipeline --scope all` records a `manual` run and prints run id and status only
 

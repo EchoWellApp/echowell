@@ -133,7 +133,7 @@ Empty roster database (`seed test_v0_1 --master-only`), API with `PIPELINE_AS_OF
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `grep -rn "apscheduler\|NIGHTLY_SCHEDULER_ENABLED" backend` | No output |
+| 1 | `grep -rn -e apscheduler -e NIGHTLY_SCHEDULER_ENABLED backend` | No output |
 | 2 | `grep -n "schedule:" render.yaml` | Nightly cron entries `"0 7,8 * * *"` with `python -m backend.jobs.nightly_run` |
 
 ### TC-054-13 283 single POSTs equal one batch ingest plus a full run

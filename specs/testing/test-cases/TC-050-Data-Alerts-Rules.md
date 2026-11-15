@@ -132,7 +132,7 @@ def alerts(**kw):
 | 1 | `cfg=replace(TEST_V0_1, operational=replace(TEST_V0_1.operational, data_alert_set_aside_fraction=0.25))` | New config object |
 | 2 | `[a[0] for a in alerts(cfg=cfg)]` | `['baseline_stalled', 'possible_other_speaker', 'device_silent']` (R03 0.241 < 0.25, no high_set_aside) |
 | 3 | `cfg.config_hash() == TEST_V0_1.config_hash()` | `True` (operational keys are not hashed, D-56) |
-| 4 | `grep -n "0.20\|0.2\b" analytics/data_alerts.py` | No match: the fraction is read from `config.operational`; only `MIN_RECEIVED = 10` is a module constant |
+| 4 | `grep -n -e "0\.20" -e "0\.2\b" analytics/data_alerts.py` | No match: the fraction is read from `config.operational`; only `MIN_RECEIVED = 10` is a module constant |
 
 ### TC-050-12 Data alerts never touch alarms, tallies or alarm counts
 
@@ -140,7 +140,7 @@ def alerts(**kw):
 |---|---|---|
 | 1 | `r=run(); [(a.resident_code, a.session_id) for a in r.alerts]` | Only R09 `R09-20261021-01` and R10 `R10-20261024-01`; no alert for R08, R05, R03 or D02 |
 | 2 | `r2=run(cfg=replace(TEST_V0_1, operational=replace(TEST_V0_1.operational, data_alert_set_aside_fraction=0.99))); r2.scores == r.scores and r2.alerts == r.alerts and r2.epochs == r.epochs` | `True` (changing data-alert thresholds changes no score, tally, alarm state or alert) |
-| 3 | `grep -n "alert_reviews\|acknowledged\|snooze" analytics/data_alerts.py` | No match (the stage has no access to alerts' human state) |
+| 3 | `grep -n -e alert_reviews -e acknowledged -e snooze analytics/data_alerts.py` | No match (the stage has no access to alerts' human state) |
 | 4 | API: `GET /api/v1/analytics` as researcher | `kpis.alarms_raised.count` 2 with `resident_codes` ["R09", "R10"]; the 4 data alerts are not counted |
 
 ### TC-050-13 Persisted `data_alerts` and `GET /api/v1/data-alerts` show the four rows after the seed

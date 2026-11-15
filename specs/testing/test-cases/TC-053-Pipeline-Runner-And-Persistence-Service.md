@@ -103,7 +103,7 @@ Note: FEAT-056-FR-03 names the stage in `detail` ("<stage name>: …"); the code
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `psql "$DATABASE_URL" -c "SELECT * FROM evaluation_ground_truth"` | `ERROR: permission denied for table evaluation_ground_truth` |
-| 2 | `grep -n "evaluation_ground_truth\|true_onset\|planted_change" backend/services/pipeline_runner.py backend/services/pipeline_persistence.py` | No output |
+| 2 | `grep -n -e evaluation_ground_truth -e true_onset -e planted_change backend/services/pipeline_runner.py backend/services/pipeline_persistence.py` | No output |
 | 3 | `pytest tests/integration/pipeline/test_runner_persistence.py -q -k answer_key` | `test_runner_never_reads_the_answer_key` passes |
 
 ### TC-053-09 Data-alert reconciliation: one open row, `last_detected_at` moves, resolved when the rule stops

@@ -50,7 +50,7 @@ FEAT-057 puts the answer key and the pipeline test input under test control and 
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` | No output |
-| 2 | `grep -rn --include=*.py --include=*.ts --include=*.tsx -E "answer_key\|Exp_\|EchoWell_pipeline_test_v0_1.xlsx\|openpyxl" analytics backend frontend/app frontend/components frontend/lib frontend/services database \| grep -v "backend/services/analytics_summary.py" \| grep -v "database/seeds/"` | No output |
+| 2 | `grep -rn --include=*.py --include=*.ts --include=*.tsx --exclude=analytics_summary.py --exclude-dir=seeds -e answer_key -e Exp_ -e EchoWell_pipeline_test_v0_1.xlsx -e openpyxl analytics backend frontend/app frontend/components frontend/lib frontend/services database` | No output |
 | 3 | `pytest tests/validation/test_answer_key_integrity.py -q -k no_production_code` | `test_no_production_code_reads_the_answer_key` passes |
 
 ### TC-057-04 `tests/fixtures/pipeline_input/` holds only DS-01
@@ -115,7 +115,7 @@ FEAT-057 puts the answer key and the pipeline test input under test control and 
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `grep -rn "to_excel\|\.save(\|ExcelWriter" tests/validation` | No write to `tests/fixtures/answer_key/` (only the temporary copy in the diff test may be written) |
+| 1 | `grep -rn -e to_excel -e ".save(" -e ExcelWriter tests/validation` | No write to `tests/fixtures/answer_key/` (only the temporary copy in the diff test may be written) |
 | 2 | `sha256sum tests/fixtures/answer_key/EchoWell_pipeline_test_v0_1.xlsx` after `pytest tests/validation -q` | Unchanged `ddbc03ea…482257` |
 
 ### TC-057-12 Golden files change only through the `answer-key-change` procedure
