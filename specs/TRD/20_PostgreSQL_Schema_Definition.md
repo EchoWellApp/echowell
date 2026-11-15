@@ -1,6 +1,6 @@
 # 20 PostgreSQL Schema Definition
 
-Document ID: ECHOWELL-TRD-20 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-20 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -375,6 +375,7 @@ CREATE TABLE ingest_batches (
   duplicate_count integer       NOT NULL DEFAULT 0,
   uploaded_by     uuid          NULL REFERENCES users (id) ON DELETE RESTRICT,
   api_key_id      uuid          NULL REFERENCES api_keys (id) ON DELETE RESTRICT,
+  pipeline_run_id uuid          NULL REFERENCES pipeline_runs (id) ON DELETE RESTRICT,  -- added by migration 0003 (§4.13, D-124); index ingest_batches_pipeline_run_idx
   received_at     timestamptz   NOT NULL DEFAULT now(),
   created_at      timestamptz   NOT NULL DEFAULT now(),
   updated_at      timestamptz   NOT NULL DEFAULT now(),
@@ -1277,3 +1278,4 @@ Executed by `tests/integration/test_schema_behaviour.py` against a database migr
 | 0.10 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-1, TRD 24 D-124): §4.13 migration 0003 adds `ingest_batches.pipeline_run_id` (nullable FK to `pipeline_runs`, index `ingest_batches_pipeline_run_idx`); §4.10 row updated | — |
 | 0.11 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-1, Q-3; TRD 24 D-129, D-130): §4.14 migration 0004 grants `echowell_app` SELECT on `alembic_version` and adds `data_alerts.days`; §4.6.19 and §4.8 updated | — |
 | 0.12 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.13 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): §4.6.7 `ingest_batches` shows `pipeline_run_id` added by migration 0003 (TRD 24 D-179) | — |

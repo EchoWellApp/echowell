@@ -22,6 +22,8 @@ pytestmark = pytest.mark.integration
 SCHEMA = ROOT / "database" / "schema.sql"
 DROPPED = re.compile(
     r"^(SET |SELECT pg_catalog\.set_config|\\restrict |\\unrestrict |-- Dumped (from|by) )"
+    # newer pg_dump clients print a per-column attribute-version option; it is not schema
+    r"|^ALTER TABLE ONLY \S+ ALTER COLUMN \S+ SET \(pg_attver=\d+\);$"
 )
 
 

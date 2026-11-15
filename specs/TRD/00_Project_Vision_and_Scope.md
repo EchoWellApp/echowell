@@ -1,6 +1,6 @@
 # 00 Project Vision and Scope
 
-Document ID: ECHOWELL-TRD-00 · Version 0.6 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-00 · Version 0.7 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -258,7 +258,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | VIS-009 | The New admissions page and API shall be labelled "Future / experimental" in every place they are shown (page note: TRD 11 UX-181). | Must | BR-14, SRC-21, SRC-12 | Inspection, Test (E2E) |
 | VIS-010 | The pipeline, run with profile `test_v0_1` on SRC-05, shall reproduce every expected result in SRC-03 within absolute tolerance 1e-6 for numeric values and exactly for statuses, reasons and alarm states. | Must | BR-15, SRC-03 | Test (TRD 13/14 validation suite) |
 | VIS-011 | The `production` profile shall use baseline_n = 30 and the `test_v0_1` profile baseline_n = 16, both selectable through PIPELINE_PROFILE without code change. | Must | BR-09, ASM-04, SRC-02, SRC-03, D-OWNER-2 | Test, Inspection |
-| VIS-012 | Clinical explanation text (the Resident chart's "Right now" summary, the "What's happening" texts and the status legend) shall come from a configuration string that is reviewed by the PI, and shall carry the marker "[Final clinical wording: confirm with PI]" until OQ-12 is closed. | Must | BR-13, BR-18, OQ-12, SRC-21 | Inspection |
+| VIS-012 | Clinical explanation text (the Resident chart's "Right now" summary, the "What's happening" texts and the status legend) shall come from configuration strings that are reviewed by the PI; until OQ-12 is closed, every Summary note and the resident-list note shall carry the marker "[Final clinical wording: confirm with PI]" (TRD 11 UX-164, as built; TRD 24 D-179). | Must | BR-13, BR-18, OQ-12, SRC-21 | Inspection |
 | VIS-013 | Alerts shall be presented as flags "for clinician review" in the dashboard only; no outbound notification channel shall exist in the MVP. | Must | BR-11, SRC-02, OQ-06 | Inspection, Test |
 | VIS-014 | Every TRD requirement shall carry a trace to at least one BR-xx and at least one SRC-xx or another TRD requirement ID. | Must | All BRs, C-11 | Inspection (TRD 13 traceability check) |
 | VIS-015 | Each component boundary with Team 1 shall be specified as an interface (record schema, transport endpoint, authentication) and shall not specify Team 1 internals. | Must | BR-01, C-08, SRC-14 B.3 | Inspection |
@@ -440,3 +440,4 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | 0.4 | 19 Oct 2026 | Phase 1 round-3 fixes (R3-06) | — |
 | 0.5 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): S-04..S-06, S-13 pages (Resident list, Resident chart, Study team; Alert review page retired); SRC-21 added and SRC-09/10/11/18/19 marked superseded; display-status wording; UN, BR-12..BR-14 and VIS traces to SRC-21; VIS-009, VIS-012, VIS-020 (data bar), VIS-028; SC-02, SC-03, AC-VIS-02, AC-VIS-03, AC-VIS-06, AC-VIS-10 | — |
 | 0.6 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.7 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): VIS-012 marker placement matches TRD 11 UX-164 as built (TRD 24 D-179) | — |
