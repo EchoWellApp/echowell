@@ -153,7 +153,7 @@ The single review model of the Resident chart's "Review and notes" section: a cl
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `pytest tests/integration/api/test_alerts.py::test_snooze -q` | Passes: with the clock frozen at T, no body gives `snoozed_until` = T + 24 h exactly and `{"hours": 4}` gives T + 4 h; after advancing the clock 24 h + 1 s, `snoozed_until` < now; status unchanged |
+| 1 | `pytest tests/integration/api/test_alerts.py::test_snooze -q` | Passes: with the application clock frozen at T = 2026-10-30T21:00:00Z, no body gives `snoozed_until` "2026-10-31T21:00:00Z" (T + 24 h exactly) and `snoozed_by` = the clinician; `{"hours": 4}` gives T + 4 h; `status` stays "open"; `scores` / `cusum_state` snapshot unchanged; `hours` 0 and 169 give 422; audit `alert.snoozed` rows have `hours` 24 then 4 |
 | 2 | `pytest tests/integration/api/test_alerts.py -q` | All tests pass |
 
 ## API Validation

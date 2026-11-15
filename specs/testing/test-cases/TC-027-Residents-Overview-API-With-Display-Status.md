@@ -120,11 +120,11 @@
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `pytest tests/integration/api/test_residents.py::test_overview -q` | Passes: fixture covers an `alarm_on` resident (non-closed alert in the current epoch), a forming resident, a frozen resident in epoch 2 with `restart_cause` "device" and `baseline_restarted_on`, and a `no_alarm` resident with `needs_attention` true and `attention_reasons` ["high_set_aside"]; default order alarm → attention → forming → usual |
-| 2 | `pytest tests/integration/api/test_residents.py::test_other_sort_orders -q` | Passes: `sort=resident_id` puts R2 before R10 (natural order) and `sort=last_checkin` puts residents without a check-in last |
+| 1 | `pytest tests/integration/api/test_residents.py::test_overview -q` | Passes. The fixture holds the four AC-02 situations among 9 residents: R01 `alarm_on` (non-closed alert in the current epoch, `alarm_reviewed` false); R03 `no_alarm` with `needs_attention` true and `attention_reasons` ["high_set_aside"]; R02 `baseline_forming` with 13 of 16 usable sessions; R07 `no_alarm` in epoch 2 with `restart_cause` "device", `baseline_restarted_on` "2026-10-13", D07B replacing D07. Default order R01, R03, R02, R04, R05, R06, R08, R09, R07 (alarm → attention → forming → usual); `summary` 1 / 1 / 6 / 1 |
+| 2 | `pytest tests/integration/api/test_residents.py::test_other_sort_orders -q` | Passes: `sort=resident_id` and `sort=last_checkin` orders of the fixture; the natural sort key orders R1, R2, R10 (R2 before R10) and D07, D07B, D08 |
 | 3 | `pytest tests/integration/api/test_residents.py -q -m integration` | All tests pass; none skipped |
 
-Note: FEAT-027 names unit tests in `tests/unit/backend/services/test_resident_service.py`; that file does not exist. The criteria are asserted by the integration tests above (`tests/integration/api/test_residents.py:38-101`).
+Note: FEAT-027-AC-02 describes a four-resident fixture with `summary` 1/1/1/1; the delivered fixture has 9 residents with the same four situations, so its `summary` is 1/1/6/1 (`tests/integration/api/test_residents.py:46-50`). FEAT-027-AC-03 is checked on the natural sort key function, not through an API call with codes R2 and R10 (`test_residents.py:96`). FEAT-027 also names unit tests in `tests/unit/backend/services/test_resident_service.py`; that file does not exist.
 
 ### TC-027-11 After a saved review, R09 stays `alarm_on` with `alarm_reviewed` true
 

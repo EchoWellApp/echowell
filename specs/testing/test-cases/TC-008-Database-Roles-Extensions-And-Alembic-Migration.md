@@ -42,7 +42,7 @@ FEAT-008 lays the database foundation: the provisioning script `database/roles/p
 | 1 | Create and provision throwaway database `echowell_qa` (helper in Preconditions). | `createdb` returns silently; the provisioning script ends without error and prints no password. |
 | 2 | Run `alembic upgrade head` against `echowell_qa`; `echo "exit=$?"`. | Log lines `Running upgrade  -> 0001`, `0001 -> 0002`, `0002 -> 0003`, `0003 -> 0004`; `exit=0`. |
 | 3 | Run `alembic downgrade base`; `echo "exit=$?"`. | Log lines downgrading `0004 -> 0003` … `0001 -> `; `exit=0`. |
-| 4 | `SU` on `echowell_qa`: `SELECT count(*) FROM pg_tables WHERE schemaname='public';` and `SELECT extname FROM pg_extension ORDER BY 1;` | Tables: `1` (only `alembic_version`) or `0`; extensions still `btree_gist`, `pgcrypto`, `plpgsql` (downgrade never drops them). |
+| 4 | `SU` on `echowell_qa`: `SELECT count(*) FROM pg_tables WHERE schemaname='public';` and `SELECT extname FROM pg_extension ORDER BY 1;` | Tables: `1` (only `alembic_version`, now empty); extensions still `btree_gist`, `pgcrypto`, `plpgsql` (downgrade never drops them). |
 | 5 | Run `alembic upgrade head` again; `echo "exit=$?"`. | `exit=0`; `SELECT version_num FROM alembic_version;` returns `0004`. |
 | 6 | Run `pytest -q tests/integration/db/test_migrations.py`. | All tests pass (TST-040). |
 | 7 | Drop the throwaway database: `docker compose exec db dropdb -U echowell echowell_qa`. | Dropped. |

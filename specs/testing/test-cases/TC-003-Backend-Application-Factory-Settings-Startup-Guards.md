@@ -157,7 +157,7 @@ FEAT-003 builds the single FastAPI application `backend.main:create_app()` with 
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `curl -s -i http://localhost:8000/health`. | `404`; `content-type: application/problem+json`; `type` = `urn:echowell:error:NOT_FOUND`. |
-| 2 | `curl -s http://localhost:8000/api/v1/openapi.json \| python -c "import json,sys; print(all(p.startswith('/api/v1/') for p in json.load(sys.stdin)['paths']))"`. | Prints `True` (every path starts with `/api/v1/`). |
+| 2 | `curl -s http://localhost:8000/api/v1/openapi.json \| python -c "import json,sys; d=json.load(sys.stdin); print(d['servers'][0]['url'], len(d['paths']))"`. | Prints `/api/v1 29`: the single server base is `/api/v1` and every documented path (TRD 19 convention: relative to that server) lives under it. |
 | 3 | Run `pytest -q tests/integration/api/test_health.py::test_routes_only_under_api_v1`. | `1 passed`. |
 
 ### TC-003-15 `get_db` commit/rollback/close and settings unit suite pass
