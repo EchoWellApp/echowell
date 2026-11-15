@@ -121,7 +121,9 @@ Note: `docs/deployment.md` lists the secret stores (lines 16, 100, 121–127) an
 | 1 | `grep -n "rotated" backend/services/audit_service.py` | `config.changed` details allow the key `rotated`. |
 | 2 | Local: after a recorded rotation (or `set-config` change), `SELECT action, details FROM audit_logs WHERE action = 'config.changed' ORDER BY occurred_at DESC LIMIT 5;` | Rows `config.changed`; a secret rotation row has `details` with the secret name and `"rotated": true` and never the value. |
 | 3 | Read "Incident containment" in `docs/deployment.md`. | Steps "Rotate JWT_SECRET" (`openssl rand -base64 48`, every token invalid, users sign in again) and "Rotate database role passwords" (all three roles, update Render variables and `STAGING_DATABASE_URL`, redeploy). |
-| 4 | Find the device API key rotation (create new, deploy, revoke old) and the 180/365-day intervals. | Documented with `python -m backend.cli create-api-key` and `revoke-api-key --name N`. |
+| 4 | Find the device API key rotation (create new, deploy, revoke old) and the rotation intervals (JWT_SECRET and role passwords 180 days, device API keys 365 days). | Documented with `python -m backend.cli create-api-key` and `revoke-api-key --name N` and the intervals. |
+
+Note: `docs/deployment.md` documents the rotation steps (lines 214, 279–280) but states no 180-day or 365-day interval (SEC-055..SEC-057); step 4 is expected to fail on the intervals until they are added.
 
 ### TC-083-12 Hosted: HTTPS only, HTTP redirected, HSTS on both origins
 
@@ -130,7 +132,7 @@ Note: `docs/deployment.md` lists the secret stores (lines 16, 100, 121–127) an
 | 1 | `curl -sI <API_BASE_URL>/health` (staging, production). | `strict-transport-security: max-age=31536000; includeSubDomains`. |
 | 2 | `curl -sI <FRONTEND_URL>/login` (staging, production). | Same HSTS header. |
 | 3 | `curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' http://<frontend host>/login` and the same for the backend host. | Redirect to `https://` (301/308); no 200 over HTTP. |
-| 4 | `SMOKE_ENV=staging SMOKE_API_BASE_URL=<API_BASE_URL> SMOKE_FRONTEND_URL=<FRONTEND_URL> pytest -q tests/smoke -k "hsts or https"` | HSTS / HTTPS smoke checks pass. |
+| 4 | `SMOKE_ENV=staging SMOKE_API_BASE_URL=<API_BASE_URL> SMOKE_FRONTEND_URL=<FRONTEND_URL> pytest -q tests/smoke -k hsts_and_https_redirect` | HSTS / HTTPS smoke checks pass. |
 
 ### TC-083-13 Encryption at rest and US East regions recorded per provider
 
@@ -148,7 +150,7 @@ Note: no per-provider encryption-at-rest statement (SEC-063, DB-052) was found i
 |---|---|---|
 | 1 | `grep -n "DATA_SOURCE_LABEL" render.yaml .env.production.example` | Staging `pipeline test data v0.1`; production `demo data (synthetic)`. |
 | 2 | Open staging `<FRONTEND_URL>`, sign in with the staging researcher account held by the team. | Data bar "Test data only (pipeline test data v0.1, Oct 1–30, 2026). No real residents. No audio is stored or played anywhere in EchoWell."; residents are R01–R10 only. |
-| 3 | Read "Hard rules" in `docs/deployment.md`. | Interim API keys bound to test devices or harnesses only; no device at Edgewood is given an interim key. |
+| 3 | Read "Hard rules" in `docs/deployment.md`. | First row: the interim Netlify / Render / Neon stack, including `production`, holds synthetic and team-test data only; no real resident data is ever loaded, ingested or connected; go-live only on AWS. Interim API keys are issued only to test devices or harnesses (SEC-004). |
 
 ### TC-083-15 GitHub secret scanning with push protection; fork PRs get no secrets
 

@@ -43,7 +43,7 @@ FEAT-045 builds each resident's personal baseline per epoch (`analytics/baseline
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `a = run_pipeline(series(16), R, A, C, ASOF); b = run_pipeline(series(20), R, A, C, ASOF); print([(x.feature_key, x.median, x.mad, x.robust_spread) for x in a.baselines] == [(x.feature_key, x.median, x.mad, x.robust_spread) for x in b.baselines])` | `True` (sessions 17–20 change no statistic) |
-| 2 | `SELECT b.n_sessions, b.first_session_id, b.frozen_after_session_id FROM baselines b JOIN residents r ON r.id = b.resident_id WHERE r.resident_code = 'R03' AND b.feature_key = 'composite';` | 16, R03-20261001-01, R03-20261023-01 (7 set-aside days and the missing day 12 skipped) |
+| 2 | `SELECT b.n_sessions, b.first_session_id, b.frozen_after_session_id FROM baselines b JOIN residents r ON r.id = b.resident_id WHERE r.resident_code = 'R03' AND b.feature_key = 'composite';` | 16, R03-20261001-01, R03-20261023-01 (the 6 set-aside days 3, 7, 10, 14, 18, 22 and the missing day 12 are skipped) |
 | 3 | `SELECT session_id, status, baseline_ordinal, in_baseline FROM processed_sessions WHERE session_id IN ('R05-20261007-01','R05-20261008-01','R05-20261009-01');` | (R05-20261007-01, usable, 7, true), (R05-20261008-01, quarantined, NULL, false), (R05-20261009-01, usable, 8, true) |
 | 4 | `SELECT count(*) FROM processed_sessions WHERE in_baseline AND status <> 'usable';` | 0 |
 
@@ -99,7 +99,7 @@ Note: the `zero_spread` warning is emitted by the orchestrator (`analytics/pipel
 |---|---|---|
 | 1 | `SELECT count(*) FROM baselines;` | 180 (9 formed epochs × 20) |
 | 2 | `SELECT r.resident_code, e.epoch_number, count(*) FROM baselines b JOIN residents r ON r.id = b.resident_id JOIN epochs e ON e.id = b.epoch_id GROUP BY 1, 2 ORDER BY 1, 2;` | R01 1, R02 1, R03 1, R04 1, R05 1, R06 1, R07 2, R09 1, R10 1 — 20 rows each; no row for R08 or R07 epoch 1 |
-| 3 | `pytest -m validation tests/validation/test_global_checks.py -v` | All PASSED (VC-G05: every value equals `Exp_baselines` within 1e-6; `floor_applied`, `n_sessions`, first and frozen-after session ids exact) |
+| 3 | `pytest -m validation tests/validation/test_global_checks.py -k vc_g05 -v` | `test_vc_g05_baselines` PASSED (VC-G05: every value equals `Exp_baselines` within 1e-6; `floor_applied`, `n_sessions`, first and frozen-after session ids exact) |
 | 4 | `GET /api/v1/analytics/baselines` as researcher | `total` = 180 |
 
 ### TC-045-09 Forming progress for R08
