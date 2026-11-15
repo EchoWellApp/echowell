@@ -1,6 +1,6 @@
 # 06 Database Design TRD
 
-Document ID: ECHOWELL-TRD-06 · Version 0.12 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-06 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -474,7 +474,7 @@ sequenceDiagram
 | DB-028 | Migrations shall run as `echowell_migrator`, connecting through `DATABASE_MIGRATION_URL` (Alembic `env.py` shall use `DATABASE_MIGRATION_URL`, which TRD 21 sets in every environment; locally and in CI it is `echowell_migrator_login` created by `database/roles/provision_login_roles.sql`), before the new backend version receives traffic (Render pre-deploy command `alembic upgrade head`, never the web start command; TRD 15 DEP-040), with `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` issued in `env.py`. | Must | TRD 15 | Inspection; Test (env.py unit test) |
 | DB-029 | Staging and production migrations shall be forward-only; `downgrade()` shall be implemented for every revision but executed only in local and test environments, with one exception: on staging the D-71 `reset-test-db` (`alembic downgrade base` then `alembic upgrade head`) may run, only from the re-seed step of the `deploy-staging.yml` GitHub Actions workflow that runs after merges to `main` (TRD 16 §4.4), only against the staging database and only with PIPELINE_PROFILE=`test_v0_1`; it is never executed in production (TRD 24 D-71). No downgrade drops the extensions (TRD 24 D-72). Destructive changes (drop or rename of a column or table) shall follow expand → migrate data → contract across at least two releases. | Must | BR-02 | Inspection (PR checklist) |
 | DB-030 | No migration shall UPDATE or DELETE rows of `raw_sessions` or `audit_logs`; a schema change to `raw_sessions` shall be additive (new nullable column or new CHECK validated `NOT VALID` then `VALIDATE`). | Must | BR-02, SRC-02 | Inspection; Test (migration test greps for UPDATE/DELETE on those tables) |
-| DB-031 | Before every production migration the deploy job shall create a Neon branch named `pre-migration-<git sha>` (on AWS RDS: a manual snapshot with the same name). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
+| DB-031 | Before a production release that contains a migration, the DevOps owner shall create a Neon branch named `pre-<short-sha>` from `main` as a restore point (a manual runbook step, TRD 15 DEP-063; on AWS RDS: a manual snapshot with the same name) (as built; TRD 24 D-179). | Must | BR-16, D-OWNER-3 | Inspection (deploy log) |
 
 ### 4.6 Constraints, enumerations and naming
 
@@ -698,3 +698,4 @@ Total ≈ 1.2 GB after 5 years at the upper bound; the 30-day test set is < 2 MB
 | 0.10 | 21 Oct 2026 | PR #2 review: branching (D-99) and PR structure (D-100) | — |
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): SRC-09/10/18/19 superseded; §4.7 query patterns renamed for the Resident list, Resident chart and Study team and extended with the attention-flag, `checkins_started` and `uploaded_on_as_of_date` reads (existing indexes; no table, enum or index change); DB-040 (attention flag), DB-041, DB-044, DB-045, DB-065, DB-066 traces and AC-DB-05 updated | — |
 | 0.12 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.13 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): DB-031 matches TRD 15 DEP-063: manual `pre-<short-sha>` Neon branch before a release with a migration (TRD 24 D-179) | — |

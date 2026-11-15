@@ -1,6 +1,6 @@
 # 17 Logging, Monitoring and Error Handling
 
-Document ID: ECHOWELL-TRD-17 · Version 0.13 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-17 · Version 0.14 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -232,7 +232,7 @@ stateDiagram-v2
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | LOG-080 | The frontend shall define `app/(protected)/error.tsx` (route-segment error boundary at the path of TRD 04 §4.2 and FE-145) and `app/global-error.tsx`; each shall show the copy of TRD 04 FE-145 ("Something went wrong on this page." with a "Reload" button) and the request reference when available (FE-067), without technical details. | Must | TRD 04, TRD 11 | Test |
-| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 to "Too many attempts. Wait a minute and try again.", 503 to "The service is temporarily unavailable. Try again in a minute." and other errors to the error boundary. | Must | TRD 04, TRD 12 | Test |
+| LOG-081 | The API client shall map 401 to a redirect to `/login?next=<path>`, 403 to the inline message of TRD 04 FE-035 ("You do not have access to this information."), 404 to the route's not-found page, 429 on the login form to "Too many sign-in attempts. Wait one minute and try again." (`frontend/lib/wording/common.ts`), and other errors (429 and 503 outside the login form included) to the affected section's error state, or to the error boundary when the whole page fails (as built; TRD 24 D-179). | Must | TRD 04, TRD 12 | Test |
 | LOG-082 | The frontend shall not send telemetry, logs or errors to any third-party service; browser console logging in production builds shall be limited to `console.error` for caught errors without response bodies. | Must | BR-16, TRD 22 | Inspection |
 | LOG-083 | Data panels (residents table, Resident chart panels such as Summary, change score chart, check-in log, Device section, review panel and staff notes, Study team KPI tiles, data problems, charts and Devices section on `/study`) shall each render their own loading, empty and error state so one failing request does not blank the whole page. | Must | SRC-17 Phase 13, TRD 11 | Test |
 
@@ -369,3 +369,4 @@ AWS target: CloudWatch Logs + CloudWatch alarms (TRD 15 DEP-115); Sentry remains
 | 0.11 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §2 note, LOG-083, §4.9 data-alert row and LOG-113 name the v0.2 places (Resident chart, Study team `/study`; Alert review page retired) | — |
 | 0.12 | 31 Oct 2026 | Checkpoint 5 review (GitHub PR #20 Q-5, TRD 24 D-132): LOG-067 describes the implemented behaviour (no in-place retry; the next trigger starts a new run; every failure stays visible) | — |
 | 0.13 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.14 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): LOG-081 matches the built error handling: login 429 text, other errors to the section error state or error boundary (TRD 24 D-179) | — |

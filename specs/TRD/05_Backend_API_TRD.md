@@ -1,6 +1,6 @@
 # 05 Backend API TRD
 
-Document ID: ECHOWELL-TRD-05 · Version 0.16 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-05 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -475,7 +475,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 
 - Python 3.12, FastAPI 0.115.x, Pydantic 2.x, pydantic-settings 2.x, SQLAlchemy 2.0.x, psycopg 3.x,
   Alembic 1.13.x, uvicorn, slowapi 0.1.9, PyJWT 2.x, argon2-cffi 23.x, python-multipart (CSV upload),
-  tzdata/zoneinfo; pytest 8.x and httpx for tests.
+  tzdata/zoneinfo; pytest 9.x and httpx for tests.
 - `analytics/` package (TRD 07) exposing the binding signature `analytics.pipeline.run_pipeline(records, residents, assignments, config, as_of, *, frozen_baselines=None) -> PipelineResult` (TRD 07 §4.5).
 - PostgreSQL 16 schema from TRD 06/20, including the `raw_sessions` and `audit_logs` immutability triggers.
 - Render web service and Render cron job (TRD 15, TRD 22); environment variables from TRD 21.
@@ -571,3 +571,4 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 | 0.14 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): OQ-31 answered (D-115) | — |
 | 0.15 | 29 Oct 2026 | Checkpoint 4 review (GitHub PR #18 Q-11, TRD 24 D-126): API-139 global `audio/*` content-type rule (415 on any method) | — |
 | 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.17 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): Test-tool pins follow the working build: pytest 9.x (TRD 24 D-177) | — |

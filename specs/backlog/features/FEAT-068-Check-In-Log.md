@@ -53,7 +53,7 @@ Implement two sections of the resident chart as wireframe v0.2 draws them (SRC-2
 | FEAT-068-FR-05 | Set-aside reasons shall be the pipeline reason text verbatim in the fixed order quality flag, noise, speech duration joined by "; " (e.g. "quality flag poor; noise above limit"). | UX-142, BR-04 |
 | FEAT-068-FR-06 | The held-back line shall show only "possible other voice", never the screen statistics. | UX-145 |
 | FEAT-068-FR-07 | The log shall include alarms, set-asides, hold-backs, missed days (resident and device-gap), baseline restarts, baseline complete, comparing started and check-ins started; ordinary usable check-ins and duplicates shall never appear. | UX-143, UX-144, FR-181, FR-182, D-67 |
-| FEAT-068-FR-08 | The log shall first show events of the 30 days ending on the as-of date and offer "Show earlier entries", which loads the previous 30 days through `GET /checkins?from=&to=` when earlier events exist. | UX-146, FR-183 |
+| FEAT-068-FR-08 | The log shall first show events of the 30 days ending on the as-of date and offer "Show earlier entries", which loads the previous 30 days through `GET /residents/{resident_code}/checkins?from=&to=` (TRD 19 E-10) when earlier events exist. | UX-146, FR-183 |
 | FEAT-068-FR-09 | No line shall rely on colour; each line's text names its type. | UX-147, UX-004 |
 | FEAT-068-FR-10 | Below the events the caption (14px, `--muted`) "Duplicate records are removed quietly and not shown." shall appear; with no events the Events panel reads "Nothing to report yet." followed by the caption. | UX-148, UX-149, UX-204 |
 | FEAT-068-FR-11 | Missed days shall be exactly the ledger's missed days, never filled with a value, a previous check-in or an estimate. | UX-150, UX-047 |

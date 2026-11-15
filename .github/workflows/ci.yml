@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - uses: actions/cache@v4 # Next.js build cache (CIC-083)
+      - uses: actions/cache@v6 # Next.js build cache (CIC-083)
         with:
           path: frontend/.next/cache
           key: nextjs-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/**/*.ts', 'frontend/**/*.tsx', 'frontend/**/*.js', 'frontend/**/*.css', '!frontend/node_modules/**', '!frontend/.next/**') }}

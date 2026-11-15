@@ -1,6 +1,6 @@
 # 25 AI Agent Build Instructions
 
-Document ID: ECHOWELL-TRD-25 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 4 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-25 · Version 0.18 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -307,7 +307,7 @@ The phases follow the team plan (SRC-20, TRD 24 D-100 as amended by D-101). Noth
 
 ### 4.7 Version pins
 
-Python 3.12, FastAPI 0.115.x, SQLAlchemy 2.0.x, Alembic 1.13.x, Pydantic 2.x, psycopg 3.x installed as `psycopg[binary]` (never `psycopg2-binary`, D-53), numpy 2.x, pandas 2.2.x, openpyxl 3.1.x (tests only), pytest 8.x, httpx (tests); Node.js 20 LTS, Next.js 14.2.x, React 18.3.x, TypeScript 5.x, Recharts 2.x, openapi-typescript (generates `frontend/lib/api-types.ts`, D-51); PostgreSQL 16.
+Python 3.12, FastAPI 0.115.x, SQLAlchemy 2.0.x, Alembic 1.13.x, Pydantic 2.x, psycopg 3.x installed as `psycopg[binary]` (never `psycopg2-binary`, D-53), numpy 2.x, pandas 2.2.x, openpyxl 3.1.x (tests only), pytest 9.x, httpx (tests); Node.js 20 LTS, Next.js 14.2.x, React 18.3.x, TypeScript 5.x, Recharts 2.x, openapi-typescript (generates `frontend/lib/api-types.ts`, D-51); PostgreSQL 16.
 
 ### 4.8 Pitfalls that break the answer key
 
@@ -398,3 +398,4 @@ OQ-05, OQ-07, OQ-08, OQ-12, OQ-13, OQ-18 and OQ-22 directly affect build phases;
 | 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): §3 SRC-21 added and SRC-09/10/11/18/19 marked superseded; AGT-002; §4.4 reading order; Phase 2 pitfalls (pages per D-110); Phase 6 inputs; Phase 8 frontend inputs, outputs, definition of done, required tests and pitfalls; AGT-053, AGT-057, AGT-062 | — |
 | 0.16 | 26 Oct 2026 | PR #5 review round 1 (TRD 24 D-115 to D-119): Phase 13 required tests: `@mutating` order follows D-118 | — |
 | 0.17 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
+| 0.18 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): §4.7 test-tool pins follow the working build: pytest 9.x (TRD 24 D-177) | — |
