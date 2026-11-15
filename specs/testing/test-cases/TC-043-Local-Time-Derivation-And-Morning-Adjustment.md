@@ -124,7 +124,7 @@ FEAT-043 implements `analytics/morning_offset.py::adjust(rows, config)` and the 
 | Step | API Action | Expected Result |
 |---|---|---|
 | 1 | `GET /api/v1/scores?resident_code=R06` (admin, DS-07) | 14 items; `is_morning` true exactly for R06-20261019-01, R06-20261022-01, R06-20261025-01, R06-20261028-01 |
-| 2 | `GET /api/v1/residents/R06/features` | Values per day returned for the 7 scored measurements; no morning flag computed from UTC |
+| 2 | `GET /api/v1/scores?resident_code=R06&from=2026-10-19&to=2026-10-19` | 1 item, `session_id` R06-20261019-01, `local_date` "2026-10-19", `is_morning` true, `composite_z` 0.5888702704528331 (±1e-6, Exp_scores) |
 
 ## Database Validation
 
