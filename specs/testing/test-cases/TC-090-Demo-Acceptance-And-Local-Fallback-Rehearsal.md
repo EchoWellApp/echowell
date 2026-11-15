@@ -29,7 +29,7 @@ Status: Not Started in BACKLOG.md §10. Per TRD 24 D-180 the demo acceptance is 
 | TC-090-08 | Local fallback rehearsal: `curl` POST to the laptop appears on the dashboard | High | Positive |
 | TC-090-09 | Fallback steps and rehearsal record are written in `docs/deployment.md` | High | Documentation |
 | TC-090-10 | MVP readiness checklist shows status and evidence for MVP-01..MVP-15 | High | Documentation |
-| TC-090-11 | Rejected demo record (422) is diagnosed and reposted with a new session ID | Medium | Negative |
+| TC-090-11 | Rejected demo record (422) is investigated and reposted with a new session ID | Medium | Negative |
 | TC-090-12 | Reposting the same session ID is stored as a duplicate and not shown | Medium | Negative |
 | TC-090-13 | Demo data is test data only; no real resident data on the interim stack | High | Security |
 
@@ -136,7 +136,7 @@ Note: `docs/deployment.md` "Demo fallback" step 1 copies `.env.development.examp
 | 3 | Read sections D and E | Rows D.01..D.07 and E.01..E.08 carry the evidence produced by TC-090-01..TC-090-09 and the FEAT-088/FEAT-089 runbooks |
 | 4 | Check the GitHub Release of the release candidate commit | Release notes link the same evidence (TST-170, AC-TST-10) |
 
-### TC-090-11 Rejected demo record (422) is diagnosed and reposted with a new session ID
+### TC-090-11 Rejected demo record (422) is investigated and reposted with a new session ID
 
 | Step | Action | Expected Result |
 |---|---|---|

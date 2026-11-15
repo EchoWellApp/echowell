@@ -40,7 +40,7 @@ TC-097-01, TC-097-02, TC-097-06, TC-097-07 and TC-097-10 can already be run toda
 | 2 | `curl -sS -i -X POST http://localhost:8000/api/v1/sessions -H "X-API-Key: $SEED_INGEST_API_KEY" -H 'Content-Type: application/json' -d @record.json` | `422`; `application/problem+json`; field error for `speaker_verification` with code `extra_forbidden` and message "This field is not part of schema v0.1." |
 | 3 | `SELECT count(*) FROM raw_sessions WHERE session_id = 'R01-20261029-09';` | `0` |
 | 4 | `SELECT errors FROM ingest_rejections ORDER BY received_at DESC LIMIT 1;` | Names `speaker_verification` / `extra_forbidden` |
-| 5 | `pytest tests/integration/api/test_sessions.py -q -k tst_045` (TST-045) | Pass |
+| 5 | `pytest tests/integration/api/test_sessions.py -q -k extra_field_and_audio_are_refused` | Pass (an extra field in a v0.1 record is refused with `extra_forbidden`) |
 
 ### TC-097-02 Unregistered `schema_version` is rejected with `unsupported_schema_version`
 
@@ -73,7 +73,7 @@ TC-097-01, TC-097-02, TC-097-06, TC-097-07 and TC-097-10 can already be run toda
 |---|---|---|
 | 1 | `grep -n "^VALIDATORS" -A3 backend/services/validation.py` | `{"0.1": validate_v0_1, "<new version>": <new validator>}` |
 | 2 | Run the registry dispatch unit test (`pytest tests/unit -q -k "registry or validators"`) | Pass: v0.1 → `validate_v0_1`, new version → new validator |
-| 3 | `pytest tests/integration/api/test_ingest.py -q -k "tst_030 or tst_031"` and the TST-030 test | Pass unchanged |
+| 3 | `pytest tests/unit/backend/services/test_validation.py -q` (TST-030 schema cases) and `pytest tests/integration/api/test_ingest.py -q -k mapped_header_is_accepted` (TST-031) | Pass unchanged |
 
 ### TC-097-06 The feature diff leaves `validate_v0_1` and the v0.1 mapping entries unchanged
 

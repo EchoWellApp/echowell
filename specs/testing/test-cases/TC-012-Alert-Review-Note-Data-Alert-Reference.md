@@ -162,8 +162,8 @@ FEAT-012 creates the tables that carry alarm events and the human response to th
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `APP`: `BEGIN; INSERT INTO facility_reference_ranges (facility_id, feature_key, sex, low, high, method, n_residents, computed_at, pipeline_run_id) SELECT id, 'mean_f0_hz', 'F', 150, 250, 'p10-p90 of longitudinal residents', 5, now(), :'run' FROM facilities;` | `INSERT 0 1`. |
-| 2 | Repeat step 1 unchanged. | `23505` on `facility_reference_ranges_uq`. |
+| 1 | `APP`: `BEGIN; DELETE FROM facility_reference_ranges WHERE pipeline_run_id = :'run'; INSERT INTO facility_reference_ranges (facility_id, feature_key, sex, low, high, method, n_residents, computed_at, pipeline_run_id) SELECT id, 'mean_f0_hz', 'F', 150, 250, 'p10-p90 of longitudinal residents', 5, now(), :'run' FROM facilities;` (the DELETE clears any range the run stored; it is rolled back at the end) | `INSERT 0 1`. |
+| 2 | Repeat the INSERT of step 1 unchanged. | `23505` on `facility_reference_ranges_uq`. |
 | 3 | Repeat with `sex = NULL` twice. | First `INSERT 0 1`; second `23505` (`NULLS NOT DISTINCT`). |
 | 4 | Repeat with `feature_key = 'composite'`; then `low = 300, high = 250`; then `sex = 'X'`; then `n_residents = 0`; then `method = ''`. | `23514` on `facility_reference_ranges_feature_ck`, `_bounds_ck`, `_sex_ck`, `_n_ck`, `_method_ck` respectively. `ROLLBACK;` |
 | 5 | `OWNER`: `BEGIN; INSERT INTO evaluation_ground_truth (resident_code, planted_change, true_onset_date, source_file) VALUES ('R11', 'None', DATE '2026-10-15', 'qa.csv');` | `23514` on `evaluation_ground_truth_onset_ck` (`None` ⇔ NULL onset). |
@@ -175,7 +175,7 @@ FEAT-012 creates the tables that carry alarm events and the human response to th
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | Run `pytest -q tests/integration/db/test_audit_writer.py`. | Passes, including the forced-rollback case: neither the change nor its audit row remains (DB-011). |
-| 2 | `APP`: `BEGIN; UPDATE alerts SET snoozed_until = now() + interval '24 hours', snoozed_by = :'clin' WHERE id = '<A>'; INSERT INTO audit_logs (actor_type, actor_id, action, entity_type, entity_id) VALUES ('user', :'clin', 'alert.snooze', 'alert', '<A>'); ROLLBACK;` then `SELECT snoozed_until IS NULL FROM alerts WHERE id = '<A>'; SELECT count(*) FROM audit_logs WHERE entity_id = '<A>' AND action = 'alert.snooze';` | `t` (if A was not snoozed before) and `0`: change and audit row rolled back together. |
+| 2 | `APP`: `BEGIN; UPDATE alerts SET snoozed_until = now() + interval '24 hours', snoozed_by = :'clin' WHERE id = '<A>'; INSERT INTO audit_logs (actor_type, actor_id, action, entity_type, entity_id) VALUES ('user', :'clin', 'alert.snoozed', 'alert', '<A>'); ROLLBACK;` then `SELECT snoozed_until IS NULL FROM alerts WHERE id = '<A>'; SELECT count(*) FROM audit_logs WHERE entity_id = '<A>' AND action = 'alert.snoozed';` | `t` (if A was not snoozed before) and `0`: change and audit row rolled back together. |
 
 ### TC-012-14 Grant matrix, triggers and the absence of review columns on `scores` / `cusum_state`
 

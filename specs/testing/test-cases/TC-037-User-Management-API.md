@@ -188,7 +188,7 @@ FEAT-037 lets an admin list dashboard accounts, create an account (e-mail, displ
 | 1 | `SELECT email FROM users WHERE email <> lower(email);` | 0 rows |
 | 2 | `SELECT count(*) FROM users WHERE password_hash NOT LIKE '$argon2id$%';` | 0 |
 | 3 | `SELECT details FROM audit_logs WHERE action IN ('user.created','user.updated') ORDER BY id;` | `user.created` rows carry only `{"role": ...}`; `user.updated` rows carry only `{"changed": [...]}` with names from `display_name`, `role`, `active`, `password` |
-| 4 | `SELECT count(*) FROM audit_logs WHERE details::text ~* 'argon2|password_hash';` | 0 |
+| 4 | `SELECT count(*) FROM audit_logs WHERE details::text ~* 'argon2\|password_hash';` | 0 |
 | 5 | Row count of `users` after every refused request (403, 404, 409, 422) | Unchanged; no user is ever deleted |
 
 ## Negative Test Cases

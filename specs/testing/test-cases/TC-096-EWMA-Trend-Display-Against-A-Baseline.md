@@ -68,7 +68,7 @@ Note: on 15 Nov 2026 the command prints `backend/core/common_passwords.txt:1489:
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `pytest tests/unit/analytics -q -k "tst_022 or ewma"` | All pass, including the property test extending TST-022 |
+| 1 | `pytest tests/unit/analytics -q -k "deterministic_and_order_independent or ewma"` | All pass, including the property test extending TST-022 |
 | 2 | Read the property test | Generates random composite z sequences, compares `cusum_tally` and `alarm_state` with the EWMA field present and absent |
 
 ### TC-096-06 R01–R10 validation passes unchanged
