@@ -51,7 +51,7 @@ FEAT-048 implements `analytics/alert_generator.py::generate_alerts(scores, epoch
 | 1 | REPL: `for a in result().alerts: print(a.resident_code, a.epoch_number, a.session_id, a.triggered_at, a.local_date, a.cusum_value, a.epoch_ended, a.epoch_ended_at)` | `R09 1 R09-20261021-01 2026-10-21 19:07:50+00:00 2026-10-21 5.431964961894293 False None` and `R10 1 R10-20261024-01 2026-10-24 19:25:37+00:00 2026-10-24 5.972049558349562 False None` |
 | 2 | `SELECT r.resident_code, a.session_id, a.triggered_at, a.local_date, a.cusum_value, a.status, a.closed_reason FROM alerts a JOIN residents r ON r.id = a.resident_id ORDER BY 1;` | 2 rows: R09, R09-20261021-01, 2026-10-21 19:07:50+00, 2026-10-21, 5.431965 (±1e-6), `open`, NULL; R10, R10-20261024-01, 2026-10-24 19:25:37+00, 2026-10-24, 5.972050 (±1e-6), `open`, NULL |
 | 3 | `SELECT counts->>'alerts_opened' FROM pipeline_runs WHERE status = 'succeeded' ORDER BY started_at DESC LIMIT 1;` | `2` |
-| 4 | `pytest -m validation tests/validation/test_global_checks.py -v` | All PASSED, including the VC-G10 check of the two open alerts |
+| 4 | `pytest -m validation tests/validation/test_global_checks.py -k vc_g10 -v` | `test_vc_g10_alerts` PASSED (exactly the two open alerts with these sessions, times and cusum values) |
 
 ### TC-048-04 Leaning most for R09 and R10
 
@@ -109,7 +109,7 @@ FEAT-048 implements `analytics/alert_generator.py::generate_alerts(scores, epoch
 | 2 | Wait until no run is `running` (`GET /api/v1/pipeline/runs?status=running` → `total` 0); then admin `POST /api/v1/pipeline/run` body `{"scope": ["R09"], "profile": "test_v0_1", "as_of": "2026-10-31T16:00:00-05:00"}` and poll `GET /api/v1/pipeline/runs/{id}` | 202, then `succeeded` |
 | 3 | `SELECT e.epoch_number, e.started_at, e.ended_at FROM epochs e JOIN residents r ON r.id = e.resident_id WHERE r.resident_code = 'R09' ORDER BY 1;` | Epoch 1 `ended_at` 2026-10-31 19:00:00+00; epoch 2 `started_at` 2026-10-31 19:00:00+00, `ended_at` NULL |
 | 4 | `SELECT status, closed_reason, closed_at FROM alerts WHERE session_id = 'R09-20261021-01';` | `closed`, `epoch ended`, 2026-10-31 21:00:00+00 (the run's as-of) |
-| 5 | `SELECT action, details FROM audit_logs WHERE action = 'alert.closed' ORDER BY id DESC LIMIT 1;` | One `alert.closed` row for the R09 alert |
+| 5 | `SELECT action, details FROM audit_logs WHERE action = 'alert.closed' ORDER BY id DESC LIMIT 1;` | One row: `action` `alert.closed`, `details` = `{"resident_code": "R09", "closed_reason": "epoch ended"}` |
 | 6 | `GET /api/v1/residents/R09` as admin | `status` = "baseline_forming"; `epoch_count` = 2; `current_epoch.epoch_number` = 2; `restart_cause` = "firmware" |
 | 7 | `GET /api/v1/alerts?status=open` | `total` = 1 (R10 only) |
 | 8 | `pytest -m integration tests/integration/pipeline/test_runner_persistence.py -v` | All PASSED |
