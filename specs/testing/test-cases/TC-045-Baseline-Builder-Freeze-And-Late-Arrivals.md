@@ -117,7 +117,7 @@ Note: the `zero_spread` warning is emitted by the orchestrator (`analytics/pipel
 |---|---|---|
 | 1 | `SELECT DISTINCT b.n_sessions, b.first_session_id, b.frozen_after_session_id, b.frozen_at, d.device_code FROM baselines b JOIN residents r ON r.id = b.resident_id JOIN epochs e ON e.id = b.epoch_id JOIN devices d ON d.id = e.device_id WHERE r.resident_code = 'R09';` | One row: 16, R09-20261001-01, R09-20261016-01, 2026-10-16 19:36:57+00 (timestamp of R09-20261016-01), D09 |
 | 2 | `SELECT DISTINCT frozen_after_session_id FROM baselines b JOIN residents r ON r.id = b.resident_id ORDER BY 1;` | R01-20261016-01, R02-20261021-01, R03-20261023-01, R04-20261016-01, R05-20261017-01, R06-20261016-01, R07-20261028-01, R09-20261016-01, R10-20261016-01 |
-| 3 | `SELECT count(*) FROM processed_sessions WHERE in_baseline;` | 144 (9 × 16) |
+| 3 | `SELECT count(*) FROM processed_sessions WHERE in_baseline;` | 169 (9 formed epochs × 16 = 144, plus the 12 R07 epoch-1 and 13 R08 sessions whose ordinal ≤ 16 in still-forming epochs; equals the 169 "yes" rows of SRC-03 `Annotated_sessions` `in_baseline`) |
 
 ### TC-045-11 Persisted baselines win; mismatch warns
 
@@ -164,7 +164,7 @@ Note: the `zero_spread` warning is emitted by the orchestrator (`analytics/pipel
 | Step | Database Check | Expected Result |
 |---|---|---|
 | 1 | `baselines` row count and per-epoch grouping | 180; 20 per formed epoch (TC-045-08) |
-| 2 | `processed_sessions.baseline_ordinal` / `in_baseline` | 144 rows `in_baseline`; ordinals 1..N per epoch; NULL for non-usable rows |
+| 2 | `processed_sessions.baseline_ordinal` / `in_baseline` | 169 rows `in_baseline` (TC-045-10); ordinals 1, 2, … per epoch; NULL for non-usable rows |
 | 3 | `pipeline_runs.warnings` of the seed run | No `late_arrival`, `zero_spread` or `baseline_mismatch` (SRC-05 has none) |
 | 4 | Re-run of the pipeline | Baseline rows unchanged (insert-only; TC-045-12) |
 

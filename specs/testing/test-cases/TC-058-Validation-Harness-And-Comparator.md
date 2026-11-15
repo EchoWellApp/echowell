@@ -40,7 +40,9 @@ FEAT-058 builds the infrastructure under `tests/validation/` that runs the pipel
 |---|---|---|
 | 1 | `pytest tests/validation/test_harness.py -q -k tier_b_matches` | `test_tier_b_matches_the_answer_key` passes |
 | 2 | Review its assertions | Explicit-as-of run `status` "succeeded", `as_of` "2026-10-30T20:00:00Z"; mismatches `[]` for the same five sheets |
-| 3 | Check the wait logic in `tests/support/system.py` (used by the Tier B fixture) | Polls `GET /api/v1/pipeline/runs/{id}` (no fixed sleep) with a 60 s timeout; on timeout the failure message carries the run's `error_message` and warnings |
+| 3 | Check the wait logic in `tests/support/system.py` (used by the Tier B fixture) | Polls `GET /api/v1/pipeline/runs/{id}` (no fixed sleep) with a 60 s timeout; a run not `succeeded` within 60 s fails the test with the run's `error_message` and warnings |
+
+Note: on timeout the code raises `run <id> still running after 60.0 s` without the run's `error_message` or warnings (`tests/support/system.py:131-132`).
 
 ### TC-058-03 Manual replay of the Tier B API path gives the reference values
 
