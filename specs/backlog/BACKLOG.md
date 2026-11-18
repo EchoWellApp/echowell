@@ -1544,7 +1544,7 @@ The frontend features follow wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114) and 
 | Feature Name | Full CI quality, security and hygiene gates (ci.yml) and branch protection |
 | Epic | DevOps & Deployment |
 | Build phase | Phase 9 Deployment configuration |
-| Description | Complete `ci.yml` with all required checks: repo hygiene (audio files, `.env` files, forbidden terms including "Edge4Care" and LLM packages, Conventional Commit titles), backend lint with import-linter, backend tests with validation suite and coverage gates (analytics ≥ 95 %, backend ≥ 85 %, frontend ≥ 80 %), OpenAPI drift, security audit (pip-audit, npm audit, Bandit, gitleaks), docker build, caching and timeouts; configure branch protection and Dependabot. |
+| Description | Complete `ci.yml` with all required checks: repo hygiene (audio files, `.env` files, forbidden terms including the old facility name of AGT-019 and LLM packages, Conventional Commit titles), backend lint with import-linter, backend tests with validation suite and coverage gates (analytics ≥ 95 %, backend ≥ 85 %, frontend ≥ 80 %), OpenAPI drift, security audit (pip-audit, npm audit, Bandit, gitleaks), docker build, caching and timeouts; configure branch protection and Dependabot. |
 | Priority | P0 |
 | Complexity | High |
 | MVP Status | Required |
