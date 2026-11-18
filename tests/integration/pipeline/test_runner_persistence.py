@@ -1,5 +1,6 @@
 """Pipeline runner and persistence on PostgreSQL (TRD 07 §4.8 ANL-033..ANL-041, ANL-060; TRD 06
-DB-013..DB-019, DB-036; FEAT-053).
+DB-013..DB-019, DB-036; FEAT-053; the alert closure paths of TRD 02 FR-110 and FR-296,
+TRD 24 D-174).
 
 SRC-05 is uploaded through `POST /api/v1/ingest` (its own background run is replaced by a failing
 interim run), then the analytics executor runs with the test as-of. All writes stay in the test's
@@ -283,3 +284,89 @@ def test_alerts_endpoint_leaning_most(
     }
     tallies = {a["resident_code"]: round(a["current_tally"], 1) for a in items}
     assert tallies == {"R09": 26.8, "R10": 13.4}
+
+
+def _late(source: str, session_id: str, timestamp_utc: str) -> dict[str, Any]:
+    """An out-of-order record: the features of SRC-05 `source` under a new ID and timestamp."""
+    return {**src05_record(source), "session_id": session_id, "timestamp_utc": timestamp_utc}
+
+
+@pytest.mark.req("FR-110", "CUS-015", "ANL-027", "ANL-039")
+def test_rebuild_without_the_first_crossing_supersedes_the_alert(
+    api: TestClient, uploaded: Session, runner: PipelineRunner, principals: Principals
+) -> None:
+    """TRD 02 FR-110, TRD 09 CUS-015: when a rebuild no longer produces an open alert's first
+    crossing (here after an out-of-order post-freeze record, TRD 07 ANL-027), the alert is closed
+    by the pipeline with `closed_reason = 'superseded by rebuild'`, never deleted or rewritten, a
+    new alert is inserted for the new first crossing and the run records
+    `alert_first_crossing_changed`."""
+    _run(runner)
+    query = text("SELECT id, session_id, triggered_at, local_date, cusum_value, status, "
+                 "closed_reason, closed_at FROM alerts WHERE resident_id = (SELECT id FROM "
+                 "residents WHERE resident_code = 'R09') ORDER BY triggered_at")  # fmt: skip
+    (old,) = uploaded.execute(query).all()
+    assert (old.session_id, old.status) == ("R09-20261021-01", "open")
+    late = _late("R09-20261021-01", "R09-20261020-02", "2026-10-20 19:50:00")
+    response = api.post("/api/v1/sessions", json=late, headers=principals.api_key("ingest"))
+    assert response.status_code == 201, response.text
+    run_id, status = _run(runner)
+    assert status == PipelineRunStatus.SUCCEEDED
+    rows = uploaded.execute(query).all()
+    closed = next(r for r in rows if r.id == old.id)
+    assert (closed.status, closed.closed_reason, closed.closed_at) == (
+        "closed", "superseded by rebuild", AS_OF
+    )  # fmt: skip
+    # the alert's own facts are never rewritten (CUS-015)
+    assert (closed.session_id, closed.triggered_at, closed.local_date, closed.cusum_value) == (
+        old.session_id, old.triggered_at, old.local_date, old.cusum_value
+    )  # fmt: skip
+    new = [r for r in rows if r.id != old.id]
+    assert [(r.session_id, r.status) for r in new] == [("R09-20261020-02", "open")]
+    warnings = uploaded.execute(text("SELECT warnings FROM pipeline_runs WHERE id = :i"),
+                                {"i": run_id}).scalar_one()  # fmt: skip
+    changed = [w for w in warnings if w["code"] == "alert_first_crossing_changed"]
+    assert [(w["resident_code"], w["session_id"]) for w in changed] == [("R09", "R09-20261021-01")]
+    audit = uploaded.execute(text("SELECT details FROM audit_logs WHERE action = 'alert.closed' "
+                                  "AND entity_id = :i"),
+                             {"i": str(old.id)}).scalars().all()  # fmt: skip
+    assert audit == [{"resident_code": "R09", "closed_reason": "superseded by rebuild"}]
+
+
+@pytest.mark.req("FR-296", "ANL-060", "DB-036")
+def test_data_alert_history_and_resolution(
+    api: TestClient, uploaded: Session, runner: PipelineRunner, principals: Principals
+) -> None:
+    """TRD 02 FR-296: a pipeline-generated data alert keeps `first_detected_at` across runs,
+    moves `last_detected_at` while its rule holds and becomes `resolved` on the first run in which
+    the rule no longer holds. R08's `baseline_stalled` ("baseline stuck at 13 of 16") stops
+    holding once three late usable check-ins on its missed days complete the baseline."""
+    query = text("SELECT id, status, first_detected_at, last_detected_at, resolved_at "
+                 "FROM data_alerts WHERE kind = 'baseline_stalled'")  # fmt: skip
+    _run(runner)
+    (first,) = uploaded.execute(query).all()
+    assert (first.status, first.first_detected_at, first.last_detected_at) == ("open", AS_OF, AS_OF)
+    later = AS_OF + timedelta(hours=1)  # same local day: the rule still holds
+    assert runner.run("all", PipelineTrigger.TEST, as_of=later)[1] == PipelineRunStatus.SUCCEEDED
+    (held,) = uploaded.execute(query).all()
+    assert (held.id, held.status, held.first_detected_at, held.last_detected_at) == (
+        first.id, "open", AS_OF, later
+    )  # fmt: skip
+    for source, day in (("R08-20261001-01", 2), ("R08-20261003-01", 4), ("R08-20261007-01", 6)):
+        record = _late(source, f"R08-202610{day:02d}-01", f"2026-10-{day:02d} 19:30:00")
+        response = api.post("/api/v1/sessions", json=record, headers=principals.api_key("ingest"))
+        assert response.status_code == 201, response.text
+    resolved_at = AS_OF + timedelta(hours=2)
+    status = runner.run("all", PipelineTrigger.TEST, as_of=resolved_at)[1]
+    assert status == PipelineRunStatus.SUCCEEDED
+    formed = uploaded.execute(text(
+        "SELECT count(*) FROM processed_sessions p JOIN residents r ON r.id = p.resident_id "
+        "WHERE r.resident_code = 'R08' AND p.in_baseline")).scalar_one()  # fmt: skip
+    assert formed == 16
+    (gone,) = uploaded.execute(query).all()
+    assert (gone.id, gone.status, gone.first_detected_at, gone.last_detected_at,
+            gone.resolved_at) == (first.id, "resolved", AS_OF, later, resolved_at)  # fmt: skip
+    # a resolved row is never reopened and the rule raises no new row while it does not hold
+    assert runner.run("all", PipelineTrigger.TEST, as_of=resolved_at)[1] == (
+        PipelineRunStatus.SUCCEEDED
+    )
+    assert [tuple(r) for r in uploaded.execute(query)] == [tuple(gone)]

@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.30 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.31 (draft for review) · Date: 18 October 2026, revised 17 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -350,6 +350,12 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-178 | Historical process deviations found by the checkpoint 9 audit (checkpoint 4 started before checkpoint 3 merged, seven direct pushes to `main`, commit and PR-description format, missing project labels and OQ issues) are accepted as history; effort goes to current and future process compliance. | Algorithm lead, 12 Nov 2026 (checkpoint 9 review, GitHub PR #32, Q-8) | 18, 25, 24 |
 | D-179 | The specification drift found by the checkpoint 9 audit (VIS-012 vs UX-164, LOG-081 strings, TRD 18 GIT-095/GIT-097 vs the committed font, DB-031 vs DEP-063 branch naming, TRD 20 §4.6 `ingest_batches.pipeline_run_id`, FEAT-068-FR-08 path) is resolved by a docs-only cleanup update that makes the documents match the deployed system. | Algorithm lead, 12 Nov 2026 (checkpoint 9 review, GitHub PR #32, Q-9) | 00, 06, 11, 17, 18, 20, 24 |
 | D-180 | The interim deployment is complete and functioning (Netlify, Render, Neon), so the manual platform setup is not remaining work. The documentation is updated to reflect the deployed state instead of planning a separate Block 4 deployment PR. After the checkpoint 9 PR merges, the project moves directly to Block 5 (Test Case prompts and validation activities); the remaining Block 4 verification items (smoke tests on the hosted origins, backups and restore drill, demo acceptance) are carried out as Block 5 validation activities. No migration or re-seed is introduced for documentation alignment. | Algorithm lead, 12 Nov 2026 (checkpoint 9 review, GitHub PR #32, Q-10 and general note) | 15, 16, 22, 24, 25 |
+| D-181 | The code-vs-TRD differences and documentation gaps found while writing the Block 5 test cases (`docs/reports/BLOCK_5_TEST_CASES.md` §5) are recorded as findings for a follow-up documentation/fix backlog, not fixed in Block 5. Block 5 executes and documents test results and does not modify application code; confirmed discrepancies are prioritised afterwards. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, Q-1) | 13, 24 |
+| D-182 | The team keeps one deployed prototype (no separate staging and production in practice). The rollback rehearsal TC-089-06 may run only if it can be executed safely and fully reversed without risk to the deployed environment; otherwise it is recorded as not executed and deferred. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, Q-2) | 15, 22 |
+| D-183 | No temporary configuration change may be made to the deployed environment during Block 5 testing. A test case that needs a deployment setting change (e.g. TC-089-07, FEAT-089-AC-01) is recorded as not executed with the reason. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, Q-3) | 15, 22 |
+| D-184 | Feature files that are older than the TRDs are aligned to the TRDs in a separate documentation-only cleanup PR; the TRDs remain the source of truth and outdated feature files are updated rather than kept as conflicting history. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, Q-4) | 25; backlog |
+| D-185 | The team members performing Block 5 testing execute the Hosted test cases. All deployment and environment variables are configured in Netlify, Render and Neon and the deployment is operational; no further deployment-variable work is part of Block 5. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, Q-5) | 15, 16 |
+| D-186 | Block 5 execution focuses on demo-relevant, clinician-facing workflows, not full coverage: `specs/testing/test-cases/TEST_EXECUTION_PRIORITY.md` sorts the test cases into Priority 1 (clinician UI happy paths), 2 (secondary screens) and 3 (negative, API, database, pipeline, deployment, security), executed in that order by the five testers. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, additional direction) | 13 |
 
 ## 5. Assumptions
 
@@ -420,3 +426,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-32). OQ-21 and OQ-23 (
 | 0.28 | 5 Nov 2026 | D-159 (security-audit exceptions until 20 Dec 2026) | — |
 | 0.29 | 7 Nov 2026 | Checkpoint 8 review (GitHub PR #31): D-160..D-170 | — |
 | 0.30 | 12 Nov 2026 | Checkpoint 9 review (GitHub PR #32): D-171..D-180 | — |
+| 0.31 | 17 Nov 2026 | Block 5 review (GitHub PR #50): D-181..D-186 | — |

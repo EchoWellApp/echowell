@@ -1,11 +1,21 @@
 """Pipeline operator commands and the full test_v0_1 seed (TRD 15 §4.8; TRD 07 ANL-031, ANL-032;
-TRD 06 DB-058; FEAT-055). Runs `backend.cli.main` in-process against a throwaway database."""
+TRD 06 DB-058; FEAT-055; TRD 13 TST-194). Runs `backend.cli.main` in-process against a throwaway
+database (TST-194 runs `python -m backend.cli` as a subprocess)."""
 
 from __future__ import annotations
 
-import pytest
+import subprocess
+import sys
+import time
 
+import pytest
+from fastapi.testclient import TestClient
+
+from backend.core.config import get_settings
+from backend.main import create_app
+from tests.conftest import make_settings
 from tests.integration.conftest import SEED_SECRETS, Cli
+from tests.integration.db_support import ROOT, cli_environment
 
 pytestmark = pytest.mark.integration
 
@@ -118,3 +128,59 @@ def test_set_config_then_rebuild(cli: Cli) -> None:
     assert operational.code == 0
     assert "Algorithm key changed" not in operational.err
     assert cli("run-pipeline", "--as-of", "2026-10-30T15:00:00-05:00").code == 0
+
+
+AS_OF = "2026-10-30T15:00:00-05:00"
+
+
+def _api_full_run(cli: Cli) -> dict[str, object]:
+    """A full run started by `POST /api/v1/pipeline/run` as the seeded admin, polled until it
+    leaves `running`."""
+    settings = make_settings(database_url=cli.urls.app, database_readonly_url=cli.urls.readonly,
+                             facility_name="Edgewood")  # fmt: skip
+    app = create_app(settings)
+    app.dependency_overrides[get_settings] = lambda: settings
+    with TestClient(app, raise_server_exceptions=False) as client:
+        credentials = {"email": "admin@example.com",
+                       "password": SEED_SECRETS["SEED_ADMIN_PASSWORD"]}  # fmt: skip
+        login = client.post("/api/v1/auth/login", json=credentials)
+        assert login.status_code == 200, login.text
+        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        body = {"scope": "all", "profile": "test_v0_1", "as_of": AS_OF}
+        started = client.post("/api/v1/pipeline/run", headers=headers, json=body)
+        assert started.status_code == 202, started.text
+        run_id = started.json()["pipeline_run_id"]
+        deadline = time.monotonic() + 60
+        while True:
+            run: dict[str, object] = client.get(f"/api/v1/pipeline/runs/{run_id}",
+                                                headers=headers).json()  # fmt: skip
+            if run["status"] != "running" or time.monotonic() > deadline:
+                return run
+            time.sleep(0.2)
+
+
+@pytest.mark.req("TST-194", "BR-15", "TST-050", "FEAT-055-FR-01")
+def test_run_pipeline_scope_all_matches_an_api_full_run(cli: Cli) -> None:
+    """TRD 13 TST-194: `python -m backend.cli run-pipeline --scope all` on the seeded test data
+    creates one `pipeline_runs` row (trigger `manual`, scope `all`, status `succeeded`) and leaves
+    the derived tables identical to those of a full run started by `POST /api/v1/pipeline/run`,
+    compared as in TST-050 (all columns except surrogate ids, run ids and run timestamps)."""
+    _seed(cli)
+    before = {r.id for r in cli.rows("SELECT id FROM pipeline_runs")}
+    done = subprocess.run(  # noqa: S603 - fixed interpreter and arguments
+        [sys.executable, "-m", "backend.cli", "run-pipeline", "--scope", "all", "--as-of", AS_OF],
+        env=cli_environment(cli.urls, JWT_SECRET="ci-only-" + "x" * 40), cwd=ROOT,
+        capture_output=True, text=True, timeout=300, check=False,
+    )  # fmt: skip
+    assert done.returncode == 0, done.stderr
+    new = [r for r in cli.rows("SELECT id, trigger, scope, status, as_of FROM pipeline_runs")
+           if r.id not in before]  # fmt: skip
+    assert len(new) == 1
+    assert (new[0].trigger, new[0].scope, new[0].status) == ("manual", {"type": "all"},
+                                                             "succeeded")  # fmt: skip
+    assert new[0].as_of.isoformat() == "2026-10-30T20:00:00+00:00"
+    from_cli = _derived(cli)
+    assert all(from_cli[t] for t in DERIVED)  # the comparison covers real rows
+    run = _api_full_run(cli)
+    assert run["status"] == "succeeded", run
+    assert _derived(cli) == from_cli
