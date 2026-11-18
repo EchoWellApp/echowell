@@ -69,7 +69,7 @@ Configure the Next.js frontend for Netlify as code: `netlify.toml` with base `fr
 ## Outputs
 
 - `/netlify.toml`, `frontend/scripts/check-csp.mjs`, `docs/deployment.md` section "Netlify frontend".
-- A unit test `frontend/tests/unit/check-csp.test.ts` (or a Node test) for the CSP check.
+- A test for the CSP check (`tests/unit/test_netlify_config.py`).
 
 ## Data Flow
 

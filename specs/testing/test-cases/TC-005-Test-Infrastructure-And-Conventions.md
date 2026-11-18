@@ -73,7 +73,7 @@ FEAT-005 provides the Python test foundation of TRD 13: the §4.2 test directory
 | 3 | Re-run the test of step 1. | `1 failed`; the assertion lists `tests/fixtures/sample.wav`. |
 | 4 | Run `git rm --cached -q tests/fixtures/sample.wav && rm tests/fixtures/sample.wav` and re-run. | `1 passed`. |
 
-Note: FEAT-005 names the test `tests/unit/test_no_audio_files.py`; the implementation is `tests/unit/test_repository_layout.py::test_tst_007_no_audio_files_tracked` (tests/unit/test_repository_layout.py:57).
+Note: FEAT-005 is aligned to the TRD (TRD 24 D-184) and names the implemented test `tests/unit/test_repository_layout.py::test_tst_007_no_audio_files_tracked` (tests/unit/test_repository_layout.py:57).
 
 ### TC-005-06 Health smoke test and startup-guard test pass
 

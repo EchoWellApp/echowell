@@ -139,9 +139,9 @@ None computed here. The config snapshot handed to the executor is the input of `
 
 ## Testing Requirements
 
-- Integration (`tests/integration/api/test_pipeline.py`): TST-038 (explicit `as_of` wins over `PIPELINE_AS_OF`, which wins over current time; `meta.as_of` equals the latest succeeded run's `as_of`); TST-069 (`GET /pipeline/runs` newest first); E-20 202 for admin and `pipeline:run` key, 403 for clinician/researcher, 401 for `ingest:write` key; 409 when a full-scope run is `running`; 422 `PROFILE_NOT_ALLOWED` with `APP_ENV=production` and `profile=test_v0_1`; 404 for unknown resident in scope and unknown run id; scheduler dedupe returns the existing nightly run id.
+- Integration (`tests/integration/api/test_pipeline.py`): TST-038 (explicit `as_of` wins over `PIPELINE_AS_OF`, which wins over current time; `meta.as_of` equals the latest succeeded run's `as_of`); TST-069 (`GET /pipeline/runs` newest first); E-20 202 for admin and `pipeline:run` key, 403 for clinician/researcher, 403 `FORBIDDEN` for an `ingest:write` key (valid key without the scope; API-014, TRD 12 §4.6); 409 when a full-scope run is `running`; 422 `PROFILE_NOT_ALLOWED` with `APP_ENV=production` and `profile=test_v0_1`; 404 for unknown resident in scope and unknown run id; scheduler dedupe returns the existing nightly run id.
 - Integration: AC-LOG-06 (a run left `running` 31 minutes ago is marked `failed` with `run_abandoned` on the next run).
-- Unit (`tests/unit/backend/services/test_pipeline_runner.py`): run-row lifecycle with a stub executor (success and failure), audit actions written, `config_snapshot` contains 23 keys plus `as_of`.
+- Run-row lifecycle (success and failure), audit actions written, `config_snapshot` contains the 23 `config_parameters` keys plus `config_hash` and `as_of` (DB-020): covered by the integration tests `tests/integration/pipeline/test_runner_persistence.py` and `tests/integration/api/test_sessions.py::test_failed_run_answers_pending`; there is no separate unit test file.
 
 ## Acceptance Criteria
 

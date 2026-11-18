@@ -108,7 +108,7 @@ None in production code; runs `analytics.pipeline.run_pipeline` 100 times with u
 
 ## Testing Requirements
 
-- Unit test of the aggregation (`tests/unit/validation/test_robustness_aggregate.py` or within `tests/validation/` under a non-gating marker): given synthetic per-seed alarm flags, count and rate over R01–R06 = count / 600 and R07/R08 excluded from the rate.
+- Test of the aggregation within `tests/validation/` under a non-gating marker (the robustness script tests are in `tests/validation/test_robustness_check.py`): given synthetic per-seed alarm flags, count and rate over R01–R06 = count / 600 and R07/R08 excluded from the rate.
 - Smoke run on 2 seeds in a non-gating job to prove the loop and the report section render.
 - The PR selection of `pytest tests/validation` must not collect the 100-seed run (TST-084).
 

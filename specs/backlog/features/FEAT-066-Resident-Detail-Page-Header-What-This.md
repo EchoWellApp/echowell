@@ -123,7 +123,7 @@ None in the frontend.
 ## Testing Requirements
 
 - Component (TST-090): `ChartBanner` (device texts "D07B (replaced D07)", "D02 (shared with R02)", "D09"; "30 of 30", "13 of 30"; "Complete" / "13 of 16"; large pill), `ChartSectionNav` (order, `aria-current`, badge "1" and accessible name only for an open alarm), `SummaryPanel` (every §4.5.2.1 template incl. below-line and restart sentences, facts "9 days" / "1 day" / "opened today", Leaning most incl. the empty text, buttons per status; marker "[Final clinical wording: confirm with PI]" present while unapproved — TST-096; "It is a prompt to check in, not a diagnosis." present — TST-097), `MoreDetailTiles` (four values per status).
-- Page test (`frontend/tests/pages/resident-chart.test.tsx`): loading, populated (R09 fixture), 404 not-found, panel error isolation, back link keeps `?show=`, 401 → login (TST-094).
+- Page tests (`frontend/tests/pages/resident-layout.test.tsx` and `frontend/tests/pages/resident-summary.test.tsx`): loading, populated (R09 fixture), 404 not-found, panel error isolation, back link keeps `?show=`, 401 → login (TST-094).
 - E2E (`resident-chart.spec.ts`, FE-186; `review.spec.ts` Summary part, FE-193): E2E-08 (R09 banner and Summary), E2E-10 (R07 banner and restart sentence), E2E-11 (R08 Needs attention), E2E-17 (alarm entry points: R09 and R10 facts and tiles) of TRD 13 Table 4.10-A.
 
 ## Acceptance Criteria

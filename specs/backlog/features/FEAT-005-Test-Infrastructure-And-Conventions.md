@@ -128,7 +128,7 @@ None at runtime. Pytest output and coverage reports are the artefacts; no audit 
 
 - Unit: `tests/unit/backend/core/test_config.py::test_cfg_06_production_refuses_test_profile` (CFG-06).
 - Integration: `tests/integration/api/test_health.py` (TST-054).
-- Meta: `tests/unit/test_markers.py` (one level marker per module, TST-006), `tests/unit/test_no_audio_files.py` (TST-007), `tests/unit/analytics/test_module_tests_exist.py` (TST-011).
+- Meta: `tests/unit/test_markers.py` (one level marker per module, TST-006), `tests/unit/test_repository_layout.py::test_tst_007_no_audio_files_tracked` (TST-007), `tests/unit/analytics/test_module_tests_exist.py` (TST-011).
 - Command: `pytest -q` (TRD 25 §4.6 Phase 3 Commands); `pytest -p randomly -q` passes twice in a row with different seeds (TST-005).
 
 ## Acceptance Criteria

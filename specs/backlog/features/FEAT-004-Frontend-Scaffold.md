@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Create the `frontend/` application shell that every dashboard feature builds on: a Next.js 14.2 App Router TypeScript project with pinned packages, strict compiler settings, ESLint, Prettier, Vitest with v8 coverage, Playwright configuration, safe `next.config.js` defaults, the build-time configuration check for `NEXT_PUBLIC_API_BASE_URL`, self-hosted IBM Plex fonts and a minimal `/login` route so the Phase 3 smoke test renders. No feature pages are built here.
+Create the `frontend/` application shell that every dashboard feature builds on: a Next.js 14.2 App Router TypeScript project with pinned packages, strict compiler settings, ESLint, Prettier, Vitest with v8 coverage, Playwright configuration, safe `next.config.js` defaults, the build-time configuration check for `NEXT_PUBLIC_API_BASE_URL`, the self-hosted "Source Sans 3" font and a minimal `/login` route so the Phase 3 smoke test renders. No feature pages are built here.
 
 ## Business Context
 
@@ -38,7 +38,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 - `.eslintrc.json` per FE-200, `.prettierrc` per FE-201, `tsconfig.json`, `vitest.config.ts` per FE-180, `vitest.setup.ts`, `playwright.config.ts` and `playwright.isolated.config.ts` skeletons per TST-004.
 - `next.config.js` with `reactStrictMode: true`, `poweredByHeader: false`, no `images.remotePatterns`, and `env.NEXT_PUBLIC_GIT_SHA` from `COMMIT_REF`, else `GIT_SHA`, else `unknown`.
 - `frontend/lib/config.ts` as the only reader of `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV`, throwing at build time on missing/invalid values; `frontend/.env.example` with local values.
-- `app/layout.tsx` (`<html lang="en">`, IBM Plex Sans 400/600 and IBM Plex Mono 400 via `next/font/google`; wireframe v0.2 replaces them with "Source Sans 3" 400/600/700 in checkpoint 7, FEAT-062, TRD 24 D-112), `app/page.tsx` redirecting `/` to `/residents`, and a minimal `app/login/page.tsx` that renders a heading.
+- `app/layout.tsx` (`<html lang="en">`, "Source Sans 3" 400/600/700 via `next/font/local` from the committed `app/fonts/SourceSans3-latin-variable.woff2`, FE-004, TRD 24 D-112, D-168), `app/page.tsx` redirecting `/` to `/residents`, and a minimal `app/login/page.tsx` that renders a heading.
 - Environment ribbon of FE-172 in the root layout for `local` and `staging`.
 - One smoke test (`frontend/tests/pages/login.test.tsx`) that renders `/login`.
 
@@ -57,7 +57,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 | FEAT-004-FR-01 | `frontend/` shall be a Next.js 14.2.x App Router application in TypeScript 5.x with `strict: true`. | FE-001, ARC-010 |
 | FEAT-004-FR-02 | `frontend/package.json` shall pin the packages of TRD 04 §4.1 and `frontend/package-lock.json` shall be committed. | FE-002, AGT-024 |
 | FEAT-004-FR-03 | No UI component library, no charting library other than Recharts 2.x, TanStack Query 5.x for server state; React 18.3.x. | FE-003, FE-005, FE-006 |
-| FEAT-004-FR-04 | IBM Plex Sans 400/600 and IBM Plex Mono 400 shall be loaded via `next/font/google` (self-hosted at build time) with no runtime request to `fonts.googleapis.com` or `fonts.gstatic.com`, and no font file committed (checkpoint 2 scaffold; FEAT-062 switches to "Source Sans 3" per the current FE-004, TRD 24 D-112). | FE-004, TPS-050, GIT-097 |
+| FEAT-004-FR-04 | "Source Sans 3" (weights 400, 600 and 700, subset `latin`, `display: "swap"`, CSS variable `--font-source-sans-3`) shall be loaded through `next/font/local` from the committed file `frontend/app/fonts/SourceSans3-latin-variable.woff2` (SIL OFL 1.1, licence in `frontend/app/fonts/OFL.txt`); no other web font shall be loaded, no other font file committed, and no runtime request made to `fonts.googleapis.com` or `fonts.gstatic.com` (TRD 24 D-112, D-168, D-179). | FE-004, TPS-050, GIT-097 |
 | FEAT-004-FR-05 | No dependency, component or route shall handle audio or provide an LLM feature. | FE-007, FE-008, AGT-004 |
 | FEAT-004-FR-06 | The source tree shall follow TRD 04 §4.2; existing `package.json`, `next.config.js` and `services/api.ts` are filled in place. | FE-010 |
 | FEAT-004-FR-07 | The `gen:api` script shall be `openapi-typescript ../docs/api_reference/openapi.json -o lib/api-types.ts`. | FE-012 |
@@ -65,7 +65,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 | FEAT-004-FR-09 | Only standard Next.js 14 features shall be used; no Netlify-specific API. | FE-044 |
 | FEAT-004-FR-10 | `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV` shall be read only in `frontend/lib/config.ts`; the build shall fail with a clear message when the URL is missing, not an absolute `http(s)` URL, contains a path (origin only), or is `http://` while the app env is `staging` or `production`. | ENV-030, FE-170, FE-171, D-65 |
 | FEAT-004-FR-11 | No secret and no database URL shall be referenced from frontend code or any `NEXT_PUBLIC_*` variable. | FE-173, ENV-031 |
-| FEAT-004-FR-12 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the root layout shall render a non-dismissable ribbon "STAGING – synthetic data" (staging) or "LOCAL" (local) in IBM Plex Mono 12px at the top of `<body>` (from checkpoint 7 the system monospace stack, TRD 24 D-112). | FE-172, ENV-032 |
+| FEAT-004-FR-12 | When `NEXT_PUBLIC_APP_ENV` is not `production`, the root layout shall render a non-dismissable ribbon "STAGING – synthetic data" (staging) or "LOCAL" (local) in `--font-mono` 12px at the top of `<body>`. | FE-172, ENV-032 |
 | FEAT-004-FR-13 | ESLint shall extend `next/core-web-vitals`, `plugin:@typescript-eslint/recommended`, `plugin:jsx-a11y/strict` and `prettier`, with `react/no-danger: error`, `no-console` allowing only warn/error, `@typescript-eslint/no-explicit-any: error`; `npm run lint` uses `--max-warnings=0`. | FE-200, GIT-042 |
 | FEAT-004-FR-14 | Prettier shall use `printWidth: 100`, `singleQuote: false`, `trailingComma: "all"`, `semi: true`. | FE-201 |
 | FEAT-004-FR-15 | `vitest.config.ts` shall configure v8 coverage exactly as FE-180 with `thresholds.lines: 80`. | FE-180, TST-142 |
@@ -85,7 +85,7 @@ Create the `frontend/` application shell that every dashboard feature builds on:
 
 ## Data Flow
 
-At build: `next.config.js` resolves `NEXT_PUBLIC_GIT_SHA` → `lib/config.ts` validates the public variables and throws on invalid values → Next.js compiles routes, downloads and self-hosts fonts. At runtime: browser requests `/` → redirect to `/residents` (later protected by FEAT-063) → `/login` renders the root layout with fonts and the environment ribbon. No API call is made by this feature.
+At build: `next.config.js` resolves `NEXT_PUBLIC_GIT_SHA` → `lib/config.ts` validates the public variables and throws on invalid values → Next.js compiles routes and self-hosts the committed font file (no font download, D-168). At runtime: browser requests `/` → redirect to `/residents` (later protected by FEAT-063) → `/login` renders the root layout with fonts and the environment ribbon. No API call is made by this feature.
 
 ## Dependencies
 
@@ -142,7 +142,7 @@ None. `no-console` forbids `console.log` (FE-200). No audit records.
 | FEAT-004-AC-01 | In `frontend/` on Node 20, `npm ci && npm run lint && npm run typecheck && npm run format:check && npm run test && npm run build` exits 0. | AC-FE-01, FE-203 |
 | FEAT-004-AC-02 | The Vitest smoke test renders `/login` and passes. Verified by: Test (`frontend/tests/pages/login.test.tsx`; TST-003). | TRD 25 §4.6 Phase 3 Required tests |
 | FEAT-004-AC-03 | `npm run build` with `NEXT_PUBLIC_API_BASE_URL` unset fails, and with `NEXT_PUBLIC_API_BASE_URL=http://api.example.org` and `NEXT_PUBLIC_APP_ENV=staging` fails. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | AC-ENV-08, FE-171 |
-| FEAT-004-AC-04 | `grep -rn "fonts.googleapis.com\|fonts.gstatic.com" frontend/.next/server frontend/.next/static` after build returns no `<link>` or CSS URL to those hosts, and no font file is tracked by git. Verified by: Inspection (run the command in the criterion and check its output). | FE-004, TPS-050, GIT-097 |
+| FEAT-004-AC-04 | `grep -rn "fonts.googleapis.com\|fonts.gstatic.com" frontend/.next/server frontend/.next/static` after build returns no `<link>` or CSS URL to those hosts, and the only font file tracked by git is `frontend/app/fonts/SourceSans3-latin-variable.woff2`, loaded with `next/font/local` in `frontend/app/layout.tsx`. Verified by: Inspection (run the command in the criterion and check its output). | FE-004, TPS-050, GIT-097 |
 | FEAT-004-AC-05 | `package.json` contains the scripts listed in Scope, does not contain a script named exactly `test:e2e`, and pins `next` 14.2.x, `react` 18.3.x, `@tanstack/react-query` 5.x, `recharts` 2.x. Verified by: Test (`frontend/tests/pages/login.test.tsx`; TST-003). | FE-002, D-73, TRD 16 §6 |
 | FEAT-004-AC-06 | `next.config.js` sets `reactStrictMode: true` and `poweredByHeader: false` and has no `images.remotePatterns`; the built app's responses carry no `X-Powered-By` header. Verified by: Inspection (the inspection method of FE-043, applied to the condition stated in the criterion). | FE-043 |
 | FEAT-004-AC-07 | `grep -rniE "openai\|anthropic\|langchain\|audio" frontend --include=*.ts --include=*.tsx --include=package.json` (excluding `node_modules`) returns no dependency or component. Verified by: Inspection (run the command in the criterion and check its output). | FE-007, FE-008, AC-AGT-03 |

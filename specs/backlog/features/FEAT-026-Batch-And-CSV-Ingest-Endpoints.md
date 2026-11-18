@@ -178,7 +178,7 @@ Recovery: the caller may re-send the whole file; re-sent records become duplicat
   - Audit row `ingest.batch.received` with counts and `request_id` (TST-053); `api_keys.last_used_at` updated.
   - Background task scheduled once with `trigger = ingest` and the API-053 scope (the runner is replaced with a recording double through `app.dependency_overrides` or a service seam, API-017).
   - `GET /ingest/batches/{id}`: admin and researcher 200 with rejections and no `raw_body`; clinician 403; unknown id 404 `BATCH_NOT_FOUND`.
-- Unit (`tests/unit/backend/services/test_ingestion.py`, marker `unit`): CSV header comparison with BOM, CRLF, reordered columns, missing and extra columns.
+- CSV header comparison with BOM, CRLF, reordered columns, missing and extra columns: covered by the integration tests in `tests/integration/api/test_ingest.py`; there is no separate unit test file.
 - Contract: responses validated against the OpenAPI document (TST-061); role cells checked by TST-130 (FEAT-039).
 - Performance: TST-124 (202 within 2 s for SRC-05; background run ≤ 30 s) runs in FEAT-079.
 - Algorithm validation: Tier B (TDV-031, VC-G11) uses this endpoint (FEAT-058, FEAT-059).

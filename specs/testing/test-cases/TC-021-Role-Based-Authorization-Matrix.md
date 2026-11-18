@@ -72,7 +72,7 @@ Note: TRD 12 §4.12 specifies `entity_type` `route` and `entity_id` = route temp
 | 2 | Compare cells for `POST /ingest`, `POST /pipeline/run`, `GET /ingest/batches/{id}`, `GET /analytics/baselines`, `PATCH /users/{id}` | `POST /ingest`: admin + `ingest:write`; `POST /pipeline/run`: admin + `pipeline:run`; batches: admin, researcher; baselines: admin, researcher; users: admin only |
 | 3 | Run `pytest -m integration tests/integration/api/test_role_checks.py -q -k permissions_equal_the_trd_matrix` | Passes |
 
-Note: FEAT-021-AC-04 says "33 endpoint rows"; the TRD 12 §4.6 table lists 34 rows (including `GET /health` and `GET /openapi.json`) and `PERMISSIONS` has 34 keys. Judge against the TRD table.
+Note: FEAT-021-AC-04 is aligned to the TRD (TRD 24 D-184): it names the 34 rows of the TRD 12 §4.6 table (including `GET /health` and `GET /openapi.json`); `PERMISSIONS` has 34 keys.
 
 ### TC-021-05 Analytics: researcher and admin allowed, clinician 403
 

@@ -33,7 +33,7 @@ Produce the deployable artefacts every later deployment feature builds on: the f
 
 ## Scope
 
-- `backend/Dockerfile`: build context = repository root, `FROM python:3.12-slim`, `WORKDIR /app`, copy `backend/` to `/app/backend`, `analytics/` to `/app/analytics` and `alembic.ini`, `ENV PYTHONPATH=/app`, install only `backend/requirements.txt` (with `psycopg[binary]` 3.x, D-53), create and switch to a user with UID 10001, default command `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"`.
+- `backend/Dockerfile`: build context = repository root, `FROM python:3.12-slim`, `WORKDIR /app`, copy `backend/` to `/app/backend`, `analytics/` to `/app/analytics`, `database/` (seed files and role scripts) to `/app/database` and `alembic.ini`, `ENV PYTHONPATH=/app`, install only `backend/requirements.txt` (with `psycopg[binary]` 3.x, D-53), create and switch to a user with UID 10001, default command `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"`.
 - Root `.dockerignore` excluding `.env`, `.env.*` (except none needed), `tests/`, `specs/`, `frontend/`, `docs/`, `.git`.
 - `frontend/Dockerfile`: multi-stage `node:20-alpine` (`npm ci`, `npm run build`, `next start -p 3000`) with build arguments `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_APP_ENV`; used for local demo and E2E only, never for Netlify.
 - `docker-compose.yml` replacing the legacy stub (no top-level `version` key): services `db` (`postgres:16-alpine`, volume `pgdata`, `127.0.0.1:5432`, healthcheck `pg_isready -U echowell -d echowell` every 5 s, 10 retries, provisioning script mounted into `/docker-entrypoint-initdb.d`), `backend` (built from `backend/Dockerfile`, `alembic upgrade head` then uvicorn `--reload`, read-only mounts of `database/` and `tests/fixtures/`, healthcheck on `/api/v1/health`), `frontend` (`node:20-alpine`, `next dev` :3000), `frontend-prod` (profile `demo`, built from `frontend/Dockerfile`, `127.0.0.1:3001:3000`, healthcheck on `/login`), volumes `pgdata` and `frontend_node_modules`.
@@ -51,7 +51,7 @@ Produce the deployable artefacts every later deployment feature builds on: the f
 
 | ID | Requirement | Trace |
 |---|---|---|
-| FEAT-077-FR-01 | `backend/Dockerfile` shall build from `python:3.12-slim` with the repository root as context, copy `backend/`, `analytics/` and `alembic.ini`, and install only `backend/requirements.txt`. | DEP-020, AGT-024 |
+| FEAT-077-FR-01 | `backend/Dockerfile` shall build from `python:3.12-slim` with the repository root as context, copy `backend/`, `analytics/`, `database/` (seed files and role scripts) and `alembic.ini`, and install only `backend/requirements.txt`. | DEP-020, AGT-024 |
 | FEAT-077-FR-02 | The backend image shall run as UID 10001 and shall not contain `.env` files, `tests/`, `specs/` or `frontend/` (root `.dockerignore`). | DEP-021, CIC-023 |
 | FEAT-077-FR-03 | The backend image default command shall be `sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"` with no migration step. | DEP-022, ARC-090 |
 | FEAT-077-FR-04 | The backend shall read its port only from `PORT` (default 8000) and its databases only from `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `DATABASE_READONLY_URL`, and keep no state on local disk between requests. | DEP-111, ARC-091, NFR-090 |
@@ -77,7 +77,7 @@ Produce the deployable artefacts every later deployment feature builds on: the f
 
 - `backend/Dockerfile`, `frontend/Dockerfile`, `.dockerignore`, `docker-compose.yml`.
 - `.env.example`, `.env.development.example`, `.env.production.example`.
-- `tests/unit/backend/core/test_env_example.py` (Settings fields present in `.env.example`).
+- `tests/unit/backend/core/test_env_templates.py` (Settings fields present in `.env.example`) and `tests/unit/test_env_templates.py` (templates, Compose file and backend Dockerfile).
 
 ## Data Flow
 
@@ -129,7 +129,7 @@ None. `analytics/` is copied into the backend image unchanged (D-61).
 
 ## Testing Requirements
 
-- Unit: `test_env_example.py` (ENV-040).
+- Unit: `tests/unit/backend/core/test_env_templates.py` and `tests/unit/test_env_templates.py` (ENV-040).
 - Integration/CI: `docker build -f backend/Dockerfile .`; `test "$(docker run --rm --entrypoint id echowell-backend:ci -u)" = "10001"`; no `.env`, `tests`, `specs`, `frontend` under `/app` (CIC-023; job wired by FEAT-078).
 - Smoke: `docker compose config` and `docker compose up -d && pytest -q` (TRD 25 §4.6 Phase 9 Commands); `docker compose --profile demo up -d --wait db backend frontend-prod` followed by `curl -fsS http://localhost:3001/login`.
 - Regression: startup-guard test (AGT-015, CFG-06) still passes with the image.
@@ -143,7 +143,7 @@ None. `analytics/` is copied into the backend image unchanged (D-61).
 | FEAT-077-AC-03 | From a clean clone, `cp .env.development.example .env && docker compose up --build -d` makes `curl -s http://localhost:8000/api/v1/health` return 200 with `"database":"ok"` within 180 s. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-014 |
 | FEAT-077-AC-04 | `docker compose --profile demo up -d --wait db backend frontend-prod` succeeds and `curl -fsS http://localhost:3001/login` returns 200. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | DEP-017 |
 | FEAT-077-AC-05 | `grep -n '^version' docker-compose.yml` returns nothing and `docker compose config` exits 0. Verified by: Inspection (run the command in the criterion and check its output). | D-55 |
-| FEAT-077-AC-06 | `tests/unit/backend/core/test_env_example.py` passes. | ENV-040, AC-ENV-08 |
+| FEAT-077-AC-06 | `tests/unit/backend/core/test_env_templates.py` passes. | ENV-040, AC-ENV-08 |
 | FEAT-077-AC-07 | `.env.production.example` contains `PIPELINE_PROFILE=production`, an empty `PIPELINE_AS_OF=` and no non-empty secret value; `grep -r` over `docker-compose.yml` and both Dockerfiles finds no hostname containing `neon.tech` and no production secret. Verified by: Inspection (run the command in the criterion and check its output). | AC-DEP-10, ENV-050 |
 | FEAT-077-AC-08 | Running the backend image with `APP_ENV=production` and `PIPELINE_PROFILE=test_v0_1` exits non-zero with a logged error. Verified by: Test (CFG-06). | AGT-015, AC-AGT-05 |
 

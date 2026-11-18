@@ -124,7 +124,7 @@
 | 2 | `pytest tests/integration/api/test_residents.py::test_other_sort_orders -q` | Passes: `sort=resident_id` and `sort=last_checkin` orders of the fixture; the natural sort key orders R1, R2, R10 (R2 before R10) and D07, D07B, D08 |
 | 3 | `pytest tests/integration/api/test_residents.py -q -m integration` | All tests pass; none skipped |
 
-Note: FEAT-027-AC-02 describes a four-resident fixture with `summary` 1/1/1/1; the delivered fixture has 9 residents with the same four situations, so its `summary` is 1/1/6/1 (`tests/integration/api/test_residents.py:46-50`). FEAT-027-AC-03 is checked on the natural sort key function, not through an API call with codes R2 and R10 (`test_residents.py:96`). FEAT-027 also names unit tests in `tests/unit/backend/services/test_resident_service.py`; that file does not exist.
+Note: FEAT-027-AC-02 describes a four-resident fixture with `summary` 1/1/1/1; the delivered fixture has 9 residents with the same four situations, so its `summary` is 1/1/6/1 (`tests/integration/api/test_residents.py:46-50`). FEAT-027 is otherwise aligned to the TRD (TRD 24 D-184) and names the existing tests: AC-03 is checked on the natural sort key function (`test_residents.py:96`), and there is no separate `test_resident_service.py` unit file.
 
 ### TC-027-11 After a saved review, R09 stays `alarm_on` with `alarm_reviewed` true
 

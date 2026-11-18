@@ -142,7 +142,7 @@ FEAT-024 fixes the single door for every pipeline execution, `backend/services/p
 | 2 | Run `pytest -m integration tests/integration/pipeline/test_runner_persistence.py -q` | All pass (failure path writes `finished_at` and `pipeline.run.finished` with `details.status` `failed`) |
 | 3 | On the local database, `SELECT count(*) FROM pipeline_runs WHERE status = 'failed' AND (finished_at IS NULL OR coalesce(error_message, '') = '');` | 0 |
 
-Note: FEAT-024 names a unit file `tests/unit/backend/services/test_pipeline_runner.py`; it does not exist (only `test_audit.py`, `test_user_service.py`, `test_validation.py` are in that folder). The lifecycle is covered by the integration test above.
+Note: FEAT-024 is aligned to the TRD (TRD 24 D-184): the run-row lifecycle is covered by the integration tests above (`tests/integration/pipeline/test_runner_persistence.py`, `tests/integration/api/test_sessions.py`); there is no separate unit file.
 
 ### TC-024-12 `meta.as_of` follows the latest succeeded run
 
@@ -171,7 +171,7 @@ Note: FEAT-024 names a unit file `tests/unit/backend/services/test_pipeline_runn
 | 2 | Same with `X-API-Key: <qa-ingest-only key>` | 403 `FORBIDDEN` (scope `pipeline:run` missing) |
 | 3 | Same without credentials | 401 `NOT_AUTHENTICATED` |
 
-Note: FEAT-024 Testing Requirements expect 401 for an `ingest:write` key on E-20; TRD 05 API-014 and TRD 12 §4.6 give 403 `FORBIDDEN` for a valid key without the scope, and `backend/api/deps.py:239` returns 403. This case follows the TRD.
+Note: FEAT-024 Testing Requirements are aligned to the TRD (TRD 24 D-184): an `ingest:write` key on E-20 gets 403 `FORBIDDEN` (TRD 05 API-014, TRD 12 §4.6; `backend/api/deps.py:239`).
 
 ### TC-024-15 Inspection: only the runner creates `pipeline_runs` rows; no global or session-level lock
 

@@ -109,7 +109,7 @@ None in this feature; `LeaningMost` renders the keys (FEAT-069).
 ## Error Handling
 
 - Epochs without scores or crossings yield no events (no error).
-- `leaning_most` with no qualifying feature returns an empty list (CUS-041), rendered by the UI as "No single measurement stands out".
+- `leaning_most` with no qualifying feature returns an empty list (CUS-041), rendered by the UI as "Leaning most: no single measurement stands out." (TRD 11 UX-312).
 
 ## Logging Requirements
 
