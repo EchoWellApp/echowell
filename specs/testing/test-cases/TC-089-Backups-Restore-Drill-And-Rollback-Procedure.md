@@ -26,7 +26,7 @@ Note: FEAT-089 does not say on which environment the rollback is rehearsed. To l
 | TC-089-04 | Pre-release restore branch `pre-<short-sha>` is created before a migration release and deleted after 7 days | Medium | Hosted |
 | TC-089-05 | Restore drill into Neon branch `restore-drill` with matching counts and healthy backend | High | Hosted |
 | TC-089-06 | Rollback rehearsal restores the previous frontend and backend within 10 minutes | High | Hosted |
-| TC-089-07 | A failing-healthcheck deploy on staging leaves the previous deploy serving | High | Hosted |
+| TC-089-07 | A failing-healthcheck deploy on staging leaves the previous deploy serving (**Not executed in Block 5**, D-183) | High | Hosted |
 | TC-089-08 | Full pipeline re-run after restore reproduces frozen baselines | High | Hosted |
 | TC-089-09 | `alembic downgrade` is never available against production | High | Negative |
 | TC-089-10 | Temporary Neon branches are deleted within 7 days | Medium | Hosted |
@@ -92,6 +92,8 @@ Run only when a release containing a migration is planned (no migration is creat
 
 ### TC-089-06 Rollback rehearsal restores the previous frontend and backend within 10 minutes
 
+**Block 5 condition (D-182):** the team keeps one deployed prototype and does not want this test to modify it. Run this case only if it can be executed safely and fully reversed without risk to the deployed environment; otherwise record it as **Not executed** (reason: "would modify the deployed prototype") and defer it.
+
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | Record the starting state: staging health `version` A, `echowell-build` meta of `<STAGING_FRONTEND_URL>/login` B; identify in Render → `echowell-api` → Events the previous successful deploy with SHA A′ and confirm `git diff --name-only A′ A -- backend/alembic/versions` is empty | A, B, A′ recorded; no migration between A′ and A |
@@ -105,7 +107,7 @@ Run only when a release containing a migration is planned (no migration is creat
 
 ### TC-089-07 A failing-healthcheck deploy on staging leaves the previous deploy serving
 
-If the algorithm lead decides that no staging setting may be changed even temporarily (D-170), record FEAT-089-AC-01 as not executed with that reason instead of running this case.
+**Not executed in Block 5 (D-183).** The algorithm lead does not allow temporary configuration changes to the deployed environment during Block 5 testing, and step 2 changes the Health Check Path. Record FEAT-089-AC-01 as Not executed with the reason "requires a temporary deployment setting change (D-183)". The steps below stay for a later environment where such a change is allowed.
 
 | Step | Action | Expected Result |
 |---|---|---|

@@ -2,6 +2,8 @@
 
 One file per feature file in `specs/backlog/features/` (FEAT-001..FEAT-097), written by `specs/prompts/Test_Case_Generation_Prompt.md` (TRD 24 D-106; `IMPLEMENTATION_ROADMAP.md` §7). The test cases restate the TRDs and the feature acceptance criteria; they add no requirement. Where a test case and a TRD disagree, the TRD wins.
 
+**Execution order:** see `TEST_EXECUTION_PRIORITY.md` (Priority 1 clinician-facing workflows first; TRD 24 D-186).
+
 ## File names and IDs
 
 - File: `TC-NNN-<Feature-Name>.md`, where `NNN` is the feature number and `<Feature-Name>` is the feature file's name after `FEAT-NNN-` (for example `TC-065-Residents-Overview-Page-With-Devices-Panel.md` for `FEAT-065-Residents-Overview-Page-With-Devices-Panel.md`).

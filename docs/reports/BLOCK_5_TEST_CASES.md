@@ -57,7 +57,7 @@ Limit: TST-188 checks the e-mail format with the OpenAPI schema and jsonschema's
 FEAT-089 (backups, restore drill, rollback) and FEAT-090 (demo acceptance, local fallback rehearsal) and the hosted checks of FEAT-081..FEAT-088 are written as test cases marked **Hosted**. They need the deployed URLs and platform access, which are held by the team and are not in the repository; they were not run from this branch. Their results are recorded when the team runs them. Two of them touch a deployment setting and need the algorithm lead's approval first (section 6, Q-2, Q-3).
 
 Hosted cases that will fail until the team acts (state on 15 November 2026):
-- the four repository variables `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` are not set (TC-088-03; `uptime.yml` skips its checks and `deploy-staging.yml` stops at "Wait for staging" until then);
+- the four GitHub repository variables `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` are not set (TC-088-03). Per D-185 no further deployment-variable work is part of Block 5 (the platform variables are configured in Netlify, Render and Neon), so TC-088-03 is recorded as not executed or failed with that reason;
 - `docs/reports/DEPLOYMENT_REPORT.md` does not exist (TC-088-07);
 - `docs/deployment.md` still reads "recorded in Phase 10" for the "Verified on" dates, the Neon restore window and the drill and rehearsal records (TC-085-08, TC-089-01).
 
@@ -95,3 +95,14 @@ Each finding is a one-line "Note:" under its test case; the test case follows th
 | Q-3 | TC-089-07 (FEAT-089-AC-01, a deploy with a failing health check) temporarily changes the staging health-check path. If no temporary setting change is allowed (D-170), it is recorded as not executed. Allowed or not? |
 | Q-4 | Should the out-of-date feature files (section 5) be aligned with the TRD in a docs PR, or left as history (the TRD is the source of truth)? |
 | Q-5 | Who on the team runs the Hosted cases and records the results, and should the four hosted-URL repository variables be set now (setting them changes no deployment)? |
+
+## 7. Review round 1 resolutions (17 November 2026, TRD 24 D-181..D-186)
+
+| # | Algorithm lead's answer | Change in this PR |
+|---|---|---|
+| Q-1 | Record the findings for a follow-up documentation/fix backlog; Block 5 does not modify application code (D-181) | Section 5 is that findings list; no code changed |
+| Q-2 | One deployed prototype; TC-089-06 only if safe and fully reversible, otherwise not executed and deferred (D-182) | Condition added at the top of TC-089-06 |
+| Q-3 | No temporary configuration changes to the deployed environment (D-183) | TC-089-07 marked Not executed in Block 5, with the reason |
+| Q-4 | Align the outdated feature files to the TRDs in a separate documentation-only cleanup PR (D-184) | Not in this PR; follows as its own PR |
+| Q-5 | Block 5 testers run the Hosted cases; no deployment-variable work needed (D-185) | Section 4 updated (TC-088-03) |
+| Additional direction | Focus execution on demo-relevant, clinician-facing workflows (D-186) | New `specs/testing/test-cases/TEST_EXECUTION_PRIORITY.md`: Priority 1 = 80 cases (clinician UI happy paths), Priority 2 = 58 (secondary screens), Priority 3 = 1,194 (everything else), with a suggested split across five testers |
