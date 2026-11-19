@@ -71,7 +71,7 @@ Trigger for starting: OQ-08 answered in TRD 24 by Shaba Rahavi and the PI (stati
 | FEAT-095-FR-06 | Facility F0 ranges shall be computed only per known sex and exclude residents with null sex. | OQ-20 (interim decision) |
 | FEAT-095-FR-07 | `GET /api/v1/admissions` shall return `comparison_status` `outside_range` when at least one feature median is outside its range and `within_range` otherwise once ranges exist, `not_enough_checkins` below the OQ-08 threshold, and `range_not_available` when no range row exists. | FR-202, E-22, TST-186 |
 | FEAT-095-FR-08 | `GET /api/v1/admissions/{resident_code}/comparison` shall return per-feature `low`, `high`, `resident_value` and `outside_range`; `GET /api/v1/facility/reference-ranges` shall list method, N and computation time. | FR-203, FR-204, E-23, E-24 |
-| FEAT-095-FR-09 | The `/admissions` page shall show the band (`--color-range-band`) and dot per feature with the caption "grey band = usual range across current residents" and the text-table alternative. | FR-203, UX-189, UX-190, UX-193 |
+| FEAT-095-FR-09 | The `/admissions` page shall show the band (`--grey-bg`) and dot per feature with the caption "Grey band = usual range across current residents" (12px, `--muted`) and the text-table alternative. | FR-203, UX-189, UX-190, UX-193 |
 | FEAT-095-FR-10 | A new admission shall move to the Resident list once its own baseline has formed and be compared only with its own baseline from then on. | FR-205, TST-185 |
 | FEAT-095-FR-11 | The note "Future / experimental. Not in pipeline test v0.1: …" shall stay; its second and third sentences shall be removed only when OQ-08 is closed. | FR-200, UX-181, D-06 |
 

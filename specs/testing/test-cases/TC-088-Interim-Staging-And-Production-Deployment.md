@@ -6,7 +6,7 @@ FEAT-088 (Complete, BACKLOG.md §10) is the Phase 10 deployment of EchoWell on t
 
 These test cases are the verification runbook for the deployed state. They read and check; they do not redeploy, migrate, re-seed or change any Render, Netlify or Neon setting (TRD 24 D-170). Hosted URLs are written as placeholders: `<STAGING_API_BASE_URL>` and `<PRODUCTION_API_BASE_URL>` (each including `/api/v1`, so `<…_API_BASE_URL>/health` equals `$BACKEND_URL/api/v1/health` of the acceptance criteria), `<STAGING_FRONTEND_URL>`, `<PRODUCTION_FRONTEND_URL>`.
 
-Note: FEAT-088 scope names the staging web service `echowell-backend-staging`; TRD 15 and `docs/deployment.md` use `echowell-api` after TRD 24 D-154. These cases follow the TRD.
+Note: FEAT-088 is aligned to the TRD (TRD 24 D-184): the staging web service is `echowell-api` (TRD 15, `docs/deployment.md`, TRD 24 D-154). These cases follow the TRD.
 
 ## Preconditions
 

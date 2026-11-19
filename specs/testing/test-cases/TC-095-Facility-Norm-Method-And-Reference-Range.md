@@ -8,7 +8,7 @@ FEAT-095 gives the experimental new-admission arm a facility norm. A separate pu
 
 Cases run on the local Compose stack with synthetic data (`test_v0_1` plus the fixture new-admission resident N01 of TST-185 and fixture residents with known sex).
 
-Note: FEAT-095-FR-09 quotes the caption as "grey band = usual range across current residents" and the token `--color-range-band`; TRD 11 UX-189/UX-190 specify "Grey band = usual range across current residents" and `--grey-bg` (as rendered by `frontend/lib/wording/admin.ts:50`). These cases follow the TRD.
+Note: FEAT-095-FR-09 is aligned to the TRD (TRD 24 D-184): caption "Grey band = usual range across current residents" and token `--grey-bg` per TRD 11 UX-189/UX-190 (as rendered by `frontend/lib/wording/admin.ts:50`). These cases follow the TRD.
 
 ## Preconditions
 

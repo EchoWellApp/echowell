@@ -136,7 +136,7 @@ None; `analytics/` stays free of logging handlers (LOG-006).
 ## Testing Requirements
 
 - Unit (`tests/unit/backend/core/test_logging.py`): JSON formatter fields (LOG-001), UTC timestamps (LOG-005), context injection (LOG-004), key redaction for each pattern word (LOG-023), URL and bearer substring redaction (LOG-024), console format (LOG-002).
-- Integration (`tests/integration/api/test_request_id.py`): AC-LOG-04 (valid ID echoed; `bad id!` replaced by a UUID); header present on 404 and error responses (LOG-031); one `request_completed` per request with correct levels for 200, 401, 404, 422 and 500 (LOG-010); health 200 logged at DEBUG (LOG-011).
+- Integration (`tests/integration/api/test_http_middleware.py`): AC-LOG-04 (valid ID echoed; `bad id!` replaced by a UUID); header present on 404 and error responses (LOG-031); one `request_completed` per request with correct levels for 200, 401, 404, 422 and 500 (LOG-010); health 200 logged at DEBUG (LOG-011).
 - Integration: AC-LOG-01 (every captured line in the integration suite parses as JSON with the required keys) — enforced by a session-scoped `caplog`/stdout capture fixture.
 - Integration: AC-LOG-02 once FEAT-020 exists (login with password `Secret-123!` and an authorised request: logs contain neither the password, the JWT nor the e-mail).
 - Static check: `grep -rn "import logging" analytics` returns no handler configuration (LOG-006).
@@ -146,12 +146,12 @@ None; `analytics/` stays free of logging handlers (LOG-006).
 | ID | Criterion | Realises |
 |---|---|---|
 | FEAT-018-AC-01 | With `LOG_FORMAT=json`, every line emitted during the integration test suite parses as JSON and contains `ts`, `level`, `logger`, `msg`, `event`, `env`, `version`. Verified by: Integration (AC-LOG-01 (every captured line in the integration suite parses as JSON with the required keys) — enforced by a session-scoped `caplog`/stdout capture fixture). | AC-LOG-01, LOG-001 |
-| FEAT-018-AC-02 | A request with `X-Request-ID: abcd1234-test` returns that header value; a request with `X-Request-ID: bad id!` returns a generated UUID4. Verified by: Integration (`tests/integration/api/test_request_id.py`). | AC-LOG-04, LOG-030 |
-| FEAT-018-AC-03 | Responses with status 200, 401, 404, 422, 429 and 500 all carry `X-Request-ID`. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-031, FR-254, API-105 |
-| FEAT-018-AC-04 | Each request in a test produces exactly one `request_completed` record; a 404 is INFO, a 422 is WARNING, a 500 is ERROR; `GET /api/v1/health` with 200 is DEBUG. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-010, LOG-011 |
+| FEAT-018-AC-02 | A request with `X-Request-ID: abcd1234-test` returns that header value; a request with `X-Request-ID: bad id!` returns a generated UUID4. Verified by: Integration (`tests/integration/api/test_http_middleware.py`). | AC-LOG-04, LOG-030 |
+| FEAT-018-AC-03 | Responses with status 200, 401, 404, 422, 429 and 500 all carry `X-Request-ID`. Verified by: Integration (`tests/integration/api/test_http_middleware.py`). | LOG-031, FR-254, API-105 |
+| FEAT-018-AC-04 | Each request in a test produces exactly one `request_completed` record; a 404 is INFO, a 422 is WARNING, a 500 is ERROR; `GET /api/v1/health` with 200 is DEBUG. Verified by: Integration (`tests/integration/api/test_http_middleware.py`). | LOG-010, LOG-011 |
 | FEAT-018-AC-05 | Logging `{"password": "x", "Authorization": "Bearer abc", "note": "text"}` yields `[REDACTED]` for all three values, and a message containing `postgresql://u:secretpw@h/db` is logged without `secretpw`. Verified by: Unit (`tests/unit/backend/core/test_logging.py`). | LOG-023, LOG-024, SEC-107 |
 | FEAT-018-AC-06 | After FEAT-020 lands, a login with password `Secret-123!` followed by an authorised request produces logs with zero matches for `Secret-123!`, the JWT and the e-mail address. Verified by: Integration (AC-LOG-02 once FEAT-020 exists (login with password `Secret-123!` and an authorised request: logs contain neither the password, the JWT nor the e-mail)). | AC-LOG-02, LOG-020, LOG-022 |
-| FEAT-018-AC-07 | A forced exception produces exactly one ERROR `unhandled_exception` record with `exc_type`, `stack` and the request's `request_id`. Verified by: Integration (`tests/integration/api/test_request_id.py`). | LOG-070 |
+| FEAT-018-AC-07 | A forced exception produces exactly one ERROR `unhandled_exception` record with `exc_type`, `stack` and the request's `request_id`. Verified by: Integration (`tests/integration/api/test_http_middleware.py`). | LOG-070 |
 
 ## Definition of Done
 

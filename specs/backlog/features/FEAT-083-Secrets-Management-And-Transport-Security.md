@@ -73,7 +73,7 @@ Define, document and verify how every secret of every environment is created, st
 ## Outputs
 
 - `docs/deployment.md` "Secrets and transport security" (inventory without values, procedures, operations log table).
-- `tests/smoke/test_tls.py`; unit tests `tests/unit/backend/core/test_settings_secrets.py`.
+- `tests/smoke/test_tls.py`; settings secret tests in `tests/security/test_transport_and_secrets.py`.
 
 ## Data Flow
 

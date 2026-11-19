@@ -76,7 +76,7 @@ Trigger for starting: Team 1 delivers DS-04 with a separate answer key, and OQ-2
 | FEAT-093-FR-10 | The SRC-03 validation (profile `test_v0_1`) shall remain unchanged and pass after calibration. | CUS-035, AGT-008 |
 | FEAT-093-FR-11 | `docs/reports/CALIBRATION_REPORT.md` and `docs/reports/calibration_results.json` shall contain the grid results, chosen values, dataset version and code_version. | CUS-034 |
 | FEAT-093-FR-12 | DS-04 results shall be informational and shall not gate CI until OQ-13 defines acceptance thresholds. | TDV-092 |
-| FEAT-093-FR-13 | The analytics page shall continue to show the active `cusum_k`, `cusum_h`, `baseline_n` and profile, and no documentation shall present v0.1 alarm rates as validated detection performance. | CUS-029 |
+| FEAT-093-FR-13 | The analytics page data (`GET /api/v1/analytics` `meta`) shall continue to include the active `cusum_h`, `baseline_n` and config profile; `cusum_k` is not a response field and is reported with every setting in the calibration report (CUS-034); no documentation shall present v0.1 alarm rates as validated detection performance. | CUS-029 |
 
 ## Inputs
 

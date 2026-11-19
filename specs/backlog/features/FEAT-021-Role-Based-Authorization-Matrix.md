@@ -39,7 +39,7 @@ Enforce on the server who may do what: the `require_roles(*roles)` dependency an
 
 ## Out of Scope
 
-- The exhaustive endpoint × credential test `tests/security/test_auth_matrix.py` across all 33 matrix rows (TST-130, SEC-041), delivered by FEAT-039 once every endpoint exists.
+- The exhaustive endpoint × credential test `tests/security/test_auth_matrix.py` across all 34 matrix rows of TRD 12 §4.6 (TST-130, SEC-041), delivered by FEAT-039 once every endpoint exists.
 - Self-role-change and self-deactivation rules of `PATCH /users/{id}` (SEC-044, FEAT-037).
 - Frontend role-based hiding (SEC-043, FEAT-064).
 - The OAS-021..OAS-026 data assertions on specific endpoint responses (verified by the endpoint and contract features).
@@ -124,7 +124,7 @@ None.
 
 ## Testing Requirements
 
-- Unit (`tests/unit/backend/api/test_require_roles.py`): role allowed/denied using a database role that differs from the token's `role` claim (role change takes effect immediately).
+- Integration (`tests/integration/api/test_role_checks.py::test_role_comes_from_the_database_not_the_token`; there is no separate unit test file): role allowed/denied using a database role that differs from the token's `role` claim (role change takes effect immediately).
 - Integration (`tests/integration/test_auth_coverage.py`): SEC-042 route enumeration.
 - Integration (`tests/integration/api/test_role_checks.py`): for the endpoints present in this Phase 5 checkpoint PR of Block 3, each matrix row's cells (anonymous, admin, clinician, researcher, `ingest:write` key, `pipeline:run` key) return the TRD 12 §4.6 status; 403 writes one `access.denied` row; 401 writes none. TRD 25 §4.6 Phase 5 required role tests: review (clinician, admin) and analytics (researcher, admin; clinician 403) are added by FEAT-031 and FEAT-035 using this mechanism.
 - TST-130 (full matrix) is delivered by FEAT-039.
@@ -136,7 +136,7 @@ None.
 | FEAT-021-AC-01 | `tests/integration/test_auth_coverage.py` passes, and adding a test route without an auth dependency makes it fail. | SEC-042 |
 | FEAT-021-AC-02 | A user whose database role is `researcher` but whose token claims `admin` receives 403 `FORBIDDEN` on an admin-only route. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | API-013, SEC-034 |
 | FEAT-021-AC-03 | Every 403 produced in the role-check suite creates exactly one `access.denied` audit row with `details.status = 403`; no 401 creates an audit row. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | SEC-108 |
-| FEAT-021-AC-04 | The permission table contains one entry per row of TRD 12 §4.6 (33 endpoint rows) and its allowed callers equal the matrix cells (compared by a unit test against a transcription of the matrix). Verified by: Integration (`tests/integration/api/test_role_checks.py`). | SEC-040, FR-213 |
+| FEAT-021-AC-04 | The permission table contains one entry per row of TRD 12 §4.6 (34 endpoint rows, including `GET /health` and `GET /openapi.json`) and its allowed callers equal the matrix cells (compared by a unit test against a transcription of the matrix). Verified by: Integration (`tests/integration/api/test_role_checks.py`). | SEC-040, FR-213 |
 | FEAT-021-AC-05 | With the analytics and review routers present, a clinician gets 403 on `GET /analytics` and a researcher gets 403 on `POST /alerts/{id}/reviews` and `POST /alerts/{id}/snooze`. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | FR-310, FR-275, SEC-045 |
 | FEAT-021-AC-06 | `POST /ingest` succeeds for an admin user and an `ingest:write` key and returns 403 for a clinician; `POST /sessions` returns 401 for any user token. Verified by: Integration (`tests/integration/api/test_role_checks.py`). | FR-004, TRD 12 §4.6 |
 

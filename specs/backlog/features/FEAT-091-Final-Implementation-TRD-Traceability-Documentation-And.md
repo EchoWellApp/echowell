@@ -17,7 +17,7 @@ Audit the finished build against the TRDs and decide demo readiness: produce `do
 ## Business Context
 
 - NFR-111 (design-control-style traceability BR → requirement → test) and VIS-014 via NFR-111.
-- BR-15, BR-16, BR-18: the grep checks prove that the answer key never touches the pipeline (AGT-007), no LLM dependency exists (AGT-004), wording never claims diagnosis (AGT-018) and the facility is never named "Edge4Care" (AGT-019).
+- BR-15, BR-16, BR-18: the grep checks prove that the answer key never touches the pipeline (AGT-007), no LLM dependency exists (AGT-004), wording never claims diagnosis (AGT-018) and the facility is never named the old facility name of AGT-019 (AGT-019).
 - NFR-110: EchoWell is documented as a research system, not an FDA-cleared device.
 
 ## Referenced TRDs
@@ -119,7 +119,7 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 ## Testing Requirements
 
 - Full suite: `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium` (TRD 25 §4.6 Phase 11 Commands).
-- Grep commands: `grep -rniE "openai|anthropic|langchain|llama|gpt" frontend backend analytics`; `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`; `grep -rn "evaluation_ground_truth" analytics`; `grep -rniE "diagnos(e|is)|severity" frontend/app frontend/components`; `grep -rni "edge4care" frontend backend analytics` (TRD 25 §4.3, §7).
+- Grep commands: `grep -rniE "openai|anthropic|langchain|llama|gpt" frontend backend analytics`; `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`; `grep -rn "evaluation_ground_truth" analytics`; `grep -rniE "diagnos(e|is)|severity" frontend/app frontend/components`; `grep -rni "edge[4]care" frontend backend analytics` (TRD 25 §4.3, §7).
 - `python tests/trace_report.py` output attached (TST-013).
 
 ## Acceptance Criteria
@@ -129,7 +129,7 @@ None at runtime. The batch report lists commands run and results (AGT-022).
 | FEAT-091-AC-01 | The four report files exist at their `docs/reports/` paths. Verified by: Test (TST-013). | AC-AGT-07 |
 | FEAT-091-AC-02 | `TRD_Implementation_Audit.md` has a PASS, FAIL or NOT APPLICABLE status with evidence for every requirement ID defined in TRDs 00–25 (count of rows equals the count of IDs extracted from the TRD tables). Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
 | FEAT-091-AC-03 | `grep -rn "pipeline_test_v0_1.xlsx" analytics backend` and `grep -rn "evaluation_ground_truth" analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-02 |
-| FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge4care" frontend backend analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-03 |
+| FEAT-091-AC-04 | `grep -rniE "openai\|anthropic\|langchain" frontend backend analytics` and `grep -rni "edge[4]care" frontend backend analytics` return no matches, recorded in the final audit. Verified by: Inspection (run the command in the criterion and check its output). | AC-AGT-03 |
 | FEAT-091-AC-05 | `FINAL_IMPLEMENTATION_AUDIT.md` ends with exactly one of "READY FOR DEMO" or "NOT READY FOR DEMO" followed by a justification. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 Outputs |
 | FEAT-091-AC-06 | The final audit lists every OQ with status Open in TRD 24 together with its interim decision. Verified by: Test (TST-013). | TRD 25 §4.6 Phase 11 DoD |
 | FEAT-091-AC-07 | `git diff --stat` of the commits of the Phase 11 checkpoint PR of Block 3 shows changes only under `docs/reports/` and `specs/backlog/`. Verified by: Test (run the command in the criterion against the stated environment and check the stated result). | TRD 25 §4.6 Phase 11 Pitfalls |

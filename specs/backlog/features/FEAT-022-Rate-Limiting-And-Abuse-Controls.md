@@ -116,7 +116,7 @@ None.
 
 ## Testing Requirements
 
-- Security (`tests/security/test_rate_limits.py`, marker `security`): TST-131 — on an app created with `RATE_LIMIT_LOGIN=5/minute` and `RATE_LIMIT_INGEST=600/minute`, the 6th login within 60 s from one IP returns 429; the 601st `POST /api/v1/sessions` within 60 s with one key returns 429; both carry `Retry-After`.
+- Integration (`tests/integration/api/test_rate_limits.py`, marker `integration`; there is no separate file under `tests/security/`): TST-131 — on an app created with `RATE_LIMIT_LOGIN=5/minute` and `RATE_LIMIT_INGEST=600/minute`, the 6th login within 60 s from one IP returns 429; the 601st `POST /api/v1/sessions` within 60 s with one key returns 429; both carry `Retry-After`.
 - Integration: rate-limited login writes one `auth.login.failed` row with reason `rate_limited`; a 429 on ingest writes no audit row (SEC-093); health is never limited (API-112); `X-Forwarded-For: 203.0.113.5, 10.0.0.1` keys on `203.0.113.5` (API-103).
 - Unit: the autouse limiter reset fixture empties storage (D-74).
 

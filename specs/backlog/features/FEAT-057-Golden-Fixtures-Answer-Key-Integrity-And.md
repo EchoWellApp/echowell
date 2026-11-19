@@ -127,7 +127,7 @@ None; the feature proves the opposite — that no `analytics/` module reads the 
 ## Testing Requirements
 
 - Validation (`tests/validation/test_answer_key_integrity.py`, marker `validation`): TST-071 / TDV-014 byte identity, TDV-013 checksums, TDV-020 regeneration, TDV-100 DS-10 vs Test_plan, TDV-010 / TDV-012 input folder contents.
-- Static scan (`tests/validation/test_answer_key_integrity.py` or `tests/unit/backend/test_answer_key_separation.py`): TDV-011, AGT-007 (`grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns nothing).
+- Static scan (`tests/validation/test_answer_key_integrity.py::test_no_production_code_reads_the_answer_key`): TDV-011, AGT-007 (`grep -rn "pipeline_test_v0_1.xlsx" analytics backend` returns nothing).
 - Integration (`tests/integration/db/test_ground_truth_loader.py`): TDV-103 refusal with `APP_ENV=production` and with `PIPELINE_PROFILE=production`; successful load of 10 rows in test_v0_1; TST-068 (c).
 - Unit: `diff_answer_key` on two workbooks with one changed cell prints that cell (TDV-023).
 - No validation test may be skipped or xfailed (TST-083).

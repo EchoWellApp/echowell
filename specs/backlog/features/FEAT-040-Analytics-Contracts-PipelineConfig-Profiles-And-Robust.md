@@ -125,7 +125,7 @@ None in `analytics/` (LOG-006, ANL-053). The backend logs `config_mismatch` at W
 
 - Unit (`tests/unit/analytics/test_robust_stats.py`, marker `unit`): ROB-01..ROB-06; the three TRD 08 §4.2 vectors (AC-BSC-01); empty input and NaN raise `ContractError`; Hypothesis property `robust_spread ≥ floor` (TST-022).
 - Unit (`tests/unit/analytics/test_config.py`): CFG-01 (test_v0_1 equals TRD 14 Table 4.5-E), CFG-02 (production baseline_n 30), CFG-03 (`ConfigError` naming the key for unknown key or wrong type), CFG-04 (snapshot JSON round-trip), CFG-05 (operational values both profiles); hash unchanged when `alert_snooze_hours` changes and changed when `cusum_h` changes (ANL-030); `FEATURE_KEYS` equals SRC-05 header columns 12–30 (DME-002); contracts are frozen (assignment raises).
-- Unit (`tests/unit/backend/services/test_config_service.py`): missing key → default plus `config_default_used`; empty profile → `pipeline_config_invalid`; `FACILITY_TZ` mismatch → `config_mismatch`.
+- Backend configuration loading (`backend/services/config_service.py`): missing key → default plus `config_default_used`; empty profile → `pipeline_config_invalid`; `FACILITY_TZ` mismatch → `config_mismatch`. No dedicated test file for these cases exists in the repository.
 - Import-linter contract that `analytics/` imports no database, HTTP or backend module (TST-021, AC-ANL-04).
 
 ## Acceptance Criteria

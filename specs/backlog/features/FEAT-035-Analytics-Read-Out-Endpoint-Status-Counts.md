@@ -131,7 +131,7 @@ No engine computation. Calculations performed in the backend read path: per-resi
 ## Testing Requirements
 
 - Integration (`tests/integration/api/test_analytics.py`, marker `integration`): role checks (researcher/admin 200, clinician 403); exactly one of `alarm_timing` / `review_outcomes` per profile (TDV-104 with an app instance configured for `production` against the test database without `PIPELINE_AS_OF`); `review_outcomes` counting latest review per alert; status counts and outcomes on fixture rows; schema validation (TST-061) and `meta` (TST-064).
-- Security/static (`tests/integration/test_readonly_boundary.py` or `tests/unit/backend/test_import_boundary.py`): import-boundary test of API-136 — no module other than `backend/services/analytics_summary.py` references `DATABASE_READONLY_URL` or `evaluation_ground_truth` (TST-068 (a), TDV-101); no `SET ROLE` in application code.
+- Static (`tests/unit/backend/test_ground_truth_boundary.py`): import-boundary test of API-136 — no module other than `backend/services/analytics_summary.py` references `DATABASE_READONLY_URL` or `evaluation_ground_truth` (TST-068 (a), TDV-101); no `SET ROLE` in application code.
 - Grant test: as the app login role `SELECT * FROM evaluation_ground_truth` fails with 42501 (PGS-040, AC-ANL-14) — owned by FEAT-008/FEAT-012 and must stay green.
 - DS-07 values (FEAT-060, OAS-024, OAS-028 for `alarm_timing`, AC-API-16): status totals 267/12/2/2/17/2; alarm timing R09 0 days, R10 7 days, others `correct_no_alarm`.
 - TDV-102 (identical pipeline output with and without ground truth loaded) runs in the validation suite (FEAT-059).

@@ -80,7 +80,7 @@ FEAT-045 builds each resident's personal baseline per epoch (`analytics/baseline
 | 3 | `print({s.z["z_voiced_fraction"] for s in res.scores if s.resident_code == "R01"})` | `{0.0}` (all 14 later R01 sessions) |
 | 4 | `print(next(b for b in res.baselines if b.resident_code == "R01" and b.feature_key == "voiced_fraction").robust_spread)` | `0.0` |
 
-Note: the `zero_spread` warning is emitted by the orchestrator (`analytics/pipeline.py:238-241`), not inside `build_baselines`; FEAT-045-FR-08 / BSC-035 only require the warning per run, so the behaviour matches, but `tests/unit/analytics/test_baseline_builder.py` has no assertion on the warning count.
+Note: the `zero_spread` warning is emitted by the orchestrator (`analytics/pipeline.py:238-241`), not inside `build_baselines`; FEAT-045-AC-06 is aligned to the TRD (TRD 24 D-184) and says so, and that no automated test asserts the warning count (`tests/unit/analytics/test_baseline_builder.py` has no such assertion).
 
 ### TC-045-07 Late-arrival fixture (AC-ANL-05)
 

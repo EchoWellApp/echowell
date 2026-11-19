@@ -140,7 +140,7 @@ None beyond calling the runner; the scope rule (resident plus device co-resident
   - TST-049: SRC-05 ingested one record at a time via `TestClient` with `time-machine` frozen at 2026-10-30 15:00 America/Chicago equals batch + full run (AC-ANL-06).
   - Batch: SRC-05 CSV → 202 with `pipeline_run_id`, run reaches `succeeded` (TST-124 ≤ 30 s background).
   - FR-184: after one usable POST, `GET /residents` last check-in and `used` count change; when frozen, `GET /scores` gains a row.
-- Unit (`tests/unit/backend/jobs/test_nightly_run.py`): TST-052 with injected clock — CDT 07:30 UTC runs once, second invocation exits 0, 08:30 UTC exits 0; CST 08:xx runs and 07:xx exits; DST dates 2026-11-01 and 2027-03-14 (ARC-061, AGT-059); schema-revision mismatch exits non-zero (DEP-048).
+- Integration (`tests/integration/pipeline/test_nightly_run.py`): TST-052 with injected clock — CDT 07:30 UTC runs once, second invocation exits 0, 08:30 UTC exits 0; CST 08:xx runs and 07:xx exits; DST dates 2026-11-01 and 2027-03-14 (ARC-061, AGT-059); schema-revision mismatch exits non-zero (DEP-048).
 - Performance: TST-121 (`POST /sessions` p95 ≤ 1,000 ms, 50 requests on PRs).
 
 ## Acceptance Criteria
@@ -150,7 +150,7 @@ None beyond calling the runner; the scope rule (resident plus device co-resident
 | FEAT-054-AC-01 | With the synchronous pipeline forced to raise, `POST /api/v1/sessions` returns 201 with `status_after_processing: "pending"`, the `raw_sessions` row exists, and the next run sets its processed status. | TST-037; API-047 |
 | FEAT-054-AC-02 | 283 single POSTs of SRC-05 in arrival order produce derived tables identical to one batch ingest plus a full run at the same as-of. | TST-049; AC-ANL-06 |
 | FEAT-054-AC-03 | `python -m backend.jobs.nightly_run` at 07:30 UTC in CDT starts exactly one nightly run; a second invocation the same night exits 0 without a run; at 08:30 UTC in CDT it exits 0 without a run. | AC-ANL-13; TST-052 |
-| FEAT-054-AC-04 | With a frozen clock on both sides of the 1 Nov 2026 DST change, the job produces exactly one nightly run per local night. Verified by: Unit (`tests/unit/backend/jobs/test_nightly_run.py`). | AGT-059; ARC-061 |
+| FEAT-054-AC-04 | With a frozen clock on both sides of the 1 Nov 2026 DST change, the job produces exactly one nightly run per local night. Verified by: Integration (`tests/integration/pipeline/test_nightly_run.py::test_one_run_per_local_night_across_dst`). | AGT-059; ARC-061 |
 | FEAT-054-AC-05 | `POST /api/v1/ingest` with SRC-05 returns 202 with a non-null `pipeline_run_id` whose run reaches `succeeded` within 30 s. | API-053; TST-124 |
 | FEAT-054-AC-06 | A nightly run on a database whose latest record is from the previous day adds that day to `day_ledger` as `missing_resident` for residents without a record. Verified by: Integration (`tests/integration/pipeline/`; TST-037, TST-049, TST-124). | FR-125; ARC-062 |
 | FEAT-054-AC-07 | No module imports APScheduler and no setting `NIGHTLY_SCHEDULER_ENABLED` exists (`grep -rn "apscheduler\|NIGHTLY_SCHEDULER_ENABLED" backend` returns nothing). Verified by: Inspection (run the command in the criterion and check its output). | AGT-059; DEP-046 |

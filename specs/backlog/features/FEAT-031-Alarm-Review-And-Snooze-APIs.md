@@ -141,7 +141,7 @@ None: reviews and snoozes are human state outside the engine; the pipeline never
 
 ## Testing Requirements
 
-- Integration (`tests/integration/api/test_alerts.py` and `tests/integration/test_alert_snooze.py`, marker `integration`):
+- Integration (`tests/integration/api/test_alerts.py`, snooze in `test_snooze`, marker `integration`):
   - TST-056: clinician review `{explanations: ["cold_cough_sore_throat"], outcome: "known_cause", note: "..."}` → 201, one row, status `acknowledged`, every `scores.cusum_tally`, `scores.alarm_state`, `cusum_state.current_tally` and `cusum_state.alarm_on` unchanged.
   - TST-057: second review → two rows, list newest first.
   - TST-058: each invalid body variant → 422, no row.

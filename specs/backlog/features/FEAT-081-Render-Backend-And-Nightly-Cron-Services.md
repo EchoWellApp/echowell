@@ -14,7 +14,7 @@
 
 ## Purpose
 
-Write the backend hosting configuration for the interim stack as code and as a runbook, without deploying: the Render Blueprint `render.yaml` with, per environment, the web service `echowell-backend-<env>` (Docker runtime from `backend/Dockerfile`, pre-deploy command `alembic upgrade head`, uvicorn Docker command that exports `GIT_SHA` from `RENDER_GIT_COMMIT`, health check `/api/v1/health`, one Starter instance, auto-deploy from `main` "After CI checks pass" in staging and off in production), the separate cron job `echowell-nightly-<env>` (`0 7,8 * * *` UTC, `python -m backend.jobs.nightly_run`) and the environment group `echowell-<env>-shared`, and the Neon setup procedure (project `echowell` in `aws-us-east-1`, database branches `main` and `staging`, extensions and timezone set by the owner role, pooled endpoint for the app role, direct endpoint for the migrator). Phase 10 (FEAT-088) executes these procedures.
+Write the backend hosting configuration for the interim stack as code and as a runbook, without deploying: the Render Blueprint `render.yaml` with, per environment, the web service (`echowell-api` in staging, the existing service kept per TRD 24 D-154; `echowell-backend-production` in production) (Docker runtime from `backend/Dockerfile`, pre-deploy command `alembic upgrade head`, uvicorn Docker command that exports `GIT_SHA` from `RENDER_GIT_COMMIT`, health check `/api/v1/health`, one Starter instance, auto-deploy from `main` "After CI checks pass" in staging and off in production), the separate cron job `echowell-nightly-<env>` (`0 7,8 * * *` UTC, `python -m backend.jobs.nightly_run`) and the environment group `echowell-<env>-shared`, and the Neon setup procedure (project `echowell` in `aws-us-east-1`, database branches `main` and `staging`, extensions and timezone set by the owner role, pooled endpoint for the app role, direct endpoint for the migrator). Phase 10 (FEAT-088) executes these procedures.
 
 ## Business Context
 
@@ -82,7 +82,7 @@ Write the backend hosting configuration for the interim stack as code and as a r
 
 - `/render.yaml` (Blueprint: two web services, two cron jobs, two environment groups).
 - `docs/deployment.md` sections "Render backend", "Render nightly cron job", "Render rollback", "Neon database", "Render Postgres fallback" (values and names, never secrets).
-- `tests/unit/backend/core/test_migration_url_boundary.py` (import-boundary test).
+- The import-boundary test in `tests/unit/test_render_blueprint.py` (`test_only_the_closed_list_reads_database_migration_url`, `test_boundary_check_catches_application_code`).
 
 ## Data Flow
 

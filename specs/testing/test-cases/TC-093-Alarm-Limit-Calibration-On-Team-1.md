@@ -155,7 +155,7 @@ Rehearse on a local database with profile `production` first; on hosted producti
 | 2 | Open `/study` | The active settings are shown; no text presents alarm rates as validated detection performance |
 | 3 | Search `CALIBRATION_REPORT.md` and `docs/` for "validated detection" claims about v0.1 | None; results labelled informational |
 
-Note: FEAT-093-FR-13 lists `cusum_k` among the displayed settings; TRD 09 CUS-029 states `cusum_k` is not a response field (reported in the calibration report), and `docs/api_reference/openapi.json` `Meta` has no `cusum_k`. This case follows the TRD.
+Note: FEAT-093-FR-13 is aligned to the TRD (TRD 24 D-184): `cusum_k` is not a response field (TRD 09 CUS-029; `docs/api_reference/openapi.json` `Meta` has no `cusum_k`) and is reported in the calibration report.
 
 ### TC-093-15 DS-04 and its outputs never reach staging or production
 

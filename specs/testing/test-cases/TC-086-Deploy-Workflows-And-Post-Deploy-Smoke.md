@@ -6,7 +6,7 @@ FEAT-086 (Complete, BACKLOG.md §10) delivers `.github/workflows/deploy-staging.
 
 Repository and local cases run on the checkout and the Compose demo stack. Cases marked **Hosted** run against the interim deployment (TRD 24 D-180) once the repository variables `STAGING_API_BASE_URL`, `STAGING_FRONTEND_URL`, `PRODUCTION_API_BASE_URL`, `PRODUCTION_FRONTEND_URL` are set (not set on 15 Nov 2026; until then `deploy-staging.yml` stops at "Wait for staging"). No case in this file triggers a push, migration or re-seed only for testing (TRD 24 D-170): hosted cases use the next naturally occurring merge, a `smoke_only` run, or runs that stop in job `verify`.
 
-Note: FEAT-086-AC-05 names DEP-080 (a)–(h) and DEP-081 (a)–(f); TRD 15 DEP-080 now defines (a)–(j) and DEP-081 (a)–(g) (FEAT-086 Implementation Notes). The cases below test every item of the TRD lists.
+Note: FEAT-086-AC-05 is aligned to the TRD (TRD 24 D-184): it names DEP-080 (a)–(j) and DEP-081 (a)–(g) as TRD 15 defines them. The cases below test every item of the TRD lists.
 
 ## Preconditions
 

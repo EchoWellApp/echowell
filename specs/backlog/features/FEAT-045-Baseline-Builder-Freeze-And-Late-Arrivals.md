@@ -12,7 +12,7 @@
 
 ## Purpose
 
-Build each resident's personal baseline per epoch from the first N usable check-ins (30 in production, 16 in the test profile), compute the median, MAD, robust spread and floor flag for all 19 features plus a composite entry, and freeze it: later sessions, drift and late-arriving records never change it. Report "Baseline forming · n of N" while fewer than N usable sessions exist. Classify late-arriving records that would have changed a frozen baseline or renumbered epochs, keep them out of every baseline, screen reference, score and tally, and flag them with a `late_arrival` warning. This is what makes R10's slow drift detectable ("baseline unchanged by drift") and keeps rebuilds reproducible.
+Build each resident's personal baseline per epoch from the first N usable check-ins (30 in production, 16 in the test profile), compute the median, MAD, robust spread and floor flag for all 19 features plus a composite entry, and freeze it: later sessions, drift and late-arriving records never change it. Report the status `baseline_forming` with n of N usable sessions while fewer than N usable sessions exist (shown in the UI as "Learning", BSC-027). Classify late-arriving records that would have changed a frozen baseline or renumbered epochs, keep them out of every baseline, screen reference, score and tally, and flag them with a `late_arrival` warning. This is what makes R10's slow drift detectable ("baseline unchanged by drift") and keeps rebuilds reproducible.
 
 ## Business Context
 
@@ -136,7 +136,7 @@ None in `analytics/` (LOG-006); warnings are returned as `RunWarning` data.
 | FEAT-045-AC-03 | A formed epoch yields 20 rows; the composite row uses floor 0.1, number_of_pauses floor 0.5, other floors 0; morning sessions enter with adjusted values. | BL-05, BL-06, BSC-034 |
 | FEAT-045-AC-04 | The `production` profile uses baseline_n 30. | BL-07 |
 | FEAT-045-AC-05 | The R09 epoch 1 baseline reproduces loudness median −22.405, MAD 1.45, spread 2.149770 and composite median 0.038219, MAD 0.359758, spread 0.533378 (±1e-6). Verified by: Unit (`tests/unit/analytics/test_baseline_builder.py`). | AC-BSC-06, TRD 08 §4.11 |
-| FEAT-045-AC-06 | A baseline with 16 identical voiced_fraction values yields z_voiced_fraction 0.0 for later sessions and exactly one `zero_spread` warning. Verified by: Unit (`tests/unit/analytics/test_baseline_builder.py`). | AC-BSC-07, BSC-035 |
+| FEAT-045-AC-06 | A baseline with 16 identical voiced_fraction values yields z_voiced_fraction 0.0 for later sessions and exactly one `zero_spread` warning. Verified by: Unit (`tests/unit/analytics/test_zscore_calculator.py::test_zero_spread_gives_zero` for the z value 0.0); the warning is emitted once per run by the engine's orchestrator `run_pipeline` (`analytics/pipeline.py`, BSC-035), and no automated test in the repository asserts the warning count. | AC-BSC-07, BSC-035 |
 | FEAT-045-AC-07 | The AC-ANL-05 late-arrival fixture yields a `late_arrival` warning, unchanged R01 baselines and scores, and the late record `usable` with `in_baseline` false and reason "late arrival (not used for baseline or scores)". | AC-ANL-05, PIP-04, BSC-040 |
 | FEAT-045-AC-08 | On SRC-05, the engine produces exactly 180 baseline rows equal to Exp_baselines within 1e-6 with exact `floor_applied`, `n_sessions`, first and frozen-after session ids; R08 and R07 epoch 1 produce none. | AC-BSC-02, AC-BSC-05, VC-G05 |
 

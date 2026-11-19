@@ -138,7 +138,7 @@ None. Read paths are covered by the `request_completed` access log (FEAT-018). N
   - DB-066: D07 `in_use_until` 2026-10-12.
   - TRD 23 §4.4.1: R08 baseline progress 13 of 16; R09 baseline dates Oct 1–16, watching since Oct 17, alarm since Oct 21; R10 alarm since Oct 24; alert open days R09 9, R10 6; tallies 26.8 and 13.4 (1 decimal); R07 baseline restarted Oct 13; device labels "D02 (shared)" and "D07B (was D07)".
   - DB-043: scores series of R09's epoch in `local_date` order with 14 rows.
-- Unit (`tests/unit/backend/repositories/test_read_models.py`): window clipping at `enrolled_on`; restart-cause ordering device → firmware → software; silent-day rule with mixed ledger statuses.
+- Window clipping at `enrolled_on`; restart-cause ordering device → firmware → software; silent-day rule with mixed ledger statuses: covered by `tests/integration/db/test_read_models.py` (`test_window_never_starts_before_enrolment`, `test_restart_cause`, `test_restart_cause_firmware_then_software`, `test_device_silent_and_gap_days`); there is no separate unit test file.
 - Until the full seed exists (FEAT-055), the same checks run on hand-built fixtures inserted through repositories; the `test_v0_1` assertions become active when the seed lands.
 
 ## Acceptance Criteria

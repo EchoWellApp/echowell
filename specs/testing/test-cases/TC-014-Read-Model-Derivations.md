@@ -162,7 +162,7 @@ FEAT-014 computes, in the repository layer (`backend/repositories/read_models.py
 |---|---|---|
 | 1 | Run `pytest -m integration tests/integration/db/test_read_models.py -q` | All tests pass, `0 failed` |
 
-Note: FEAT-014 names a unit file `tests/unit/backend/repositories/test_read_models.py`; it does not exist in the repository (only `test_raw_session_repository.py`); the window, restart-cause and silent-day unit checks are covered here by TC-014-13 and the integration suite.
+Note: FEAT-014 is aligned to the TRD (TRD 24 D-184): it names `tests/integration/db/test_read_models.py` for the window, restart-cause and silent-day checks (there is no separate unit file); they are also covered here by TC-014-13.
 
 ## API Validation
 

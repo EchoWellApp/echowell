@@ -123,7 +123,7 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
 
 ## Testing Requirements
 
-- Integration (`tests/integration/pipeline/test_run_logging.py`, marker `integration`, logs captured with `caplog` and JSON parsing):
+- Integration (marker `integration`, logs captured with `caplog` and JSON parsing; there is no single `test_run_logging.py` file: AC-LOG-06 is tested in `tests/integration/api/test_pipeline.py`, AC-LOG-07 and DB-049 in `tests/integration/pipeline/test_nightly_run.py`, and AC-LOG-05 and the start/success events by test cases TC-056-01 and TC-056-04 in `specs/testing/test-cases/`):
   - AC-LOG-05: exception injected into the `cusum` stage → `scores`, `cusum_state`, `alerts` unchanged, run `failed`, warning detail starting with `cusum:`, triggering ingest still 201.
   - AC-LOG-06: row left `running` with `started_at` 31 minutes ago → `failed` with `run_abandoned` on the next run.
   - AC-LOG-07: no nightly run in the past 26 hours → a non-running firing logs `nightly_run_missing`.
@@ -136,11 +136,11 @@ None. `analytics/` does not log (ANL-053, LOG-006); its warnings are logged by t
 
 | ID | Criterion | Realises |
 |---|---|---|
-| FEAT-056-AC-01 | An exception injected into the `cusum` stage leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run `failed` with an `exception` warning whose `detail` names stage `cusum`, and the triggering ingest returns 201. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-05; LOG-062 |
-| FEAT-056-AC-02 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is marked `failed` with warning `run_abandoned` and non-empty `error_message` when the next run starts. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-06; API-068 |
-| FEAT-056-AC-03 | With no succeeded nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs ERROR `nightly_run_missing`. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | AC-LOG-07; LOG-111 |
-| FEAT-056-AC-04 | A successful run emits exactly one `pipeline_run_started` and one completion event, each a single JSON line containing `pipeline_run_id`, `trigger`, `profile`, `config_hash`, and the completion event `counts`, `duration_ms`, `warning_count`. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | ANL-053; LOG-065 |
-| FEAT-056-AC-05 | A nightly run stores `counts.db_size_bytes` as a positive integer. Verified by: Integration (`tests/integration/pipeline/test_run_logging.py`). | DB-049 |
+| FEAT-056-AC-01 | An exception injected into the `cusum` stage leaves `scores`, `cusum_state` and `alerts` unchanged, sets the run `failed` with an `exception` warning whose `detail` names stage `cusum`, and the triggering ingest returns 201. Verified by: Test case TC-056-01 (no automated test exists in the repository). | AC-LOG-05; LOG-062 |
+| FEAT-056-AC-02 | A `pipeline_runs` row left `running` with `started_at` 31 minutes ago is marked `failed` with warning `run_abandoned` and non-empty `error_message` when the next run starts. Verified by: Integration (`tests/integration/api/test_pipeline.py::test_stale_running_run_is_abandoned`). | AC-LOG-06; API-068 |
+| FEAT-056-AC-03 | With no succeeded nightly run in the past 26 hours, a non-running firing of `backend.jobs.nightly_run` logs ERROR `nightly_run_missing`. Verified by: Integration (`tests/integration/pipeline/test_nightly_run.py::test_missed_night_is_reported`). | AC-LOG-07; LOG-111 |
+| FEAT-056-AC-04 | A successful run emits exactly one `pipeline_run_started` and one completion event, each a single JSON line containing `pipeline_run_id`, `trigger`, `profile`, `config_hash`, and the completion event `counts`, `duration_ms`, `warning_count`. Verified by: Test case TC-056-04 (no automated test exists in the repository). | ANL-053; LOG-065 |
+| FEAT-056-AC-05 | A nightly run stores `counts.db_size_bytes` as a positive integer. Verified by: Integration (`tests/integration/pipeline/test_nightly_run.py::test_one_run_per_local_night_across_dst`). | DB-049 |
 | FEAT-056-AC-06 | `grep` over captured logs of a SRC-05 batch run finds no feature value from the CSV and no e-mail address. Verified by: Inspection (run the command in the criterion and check its output). | ANL-054; LOG-021 |
 
 ## Definition of Done

@@ -54,7 +54,7 @@ FEAT-077 delivers the deployable artefacts (TRD 15 DEP-010..DEP-024, DEP-111, DE
 | 2 | `grep -n "^tests\|^specs\|^frontend\|^\.env" .dockerignore` | Entries `.env`, `.env.*`, `tests`, `specs`, `frontend` present. |
 | 3 | `grep -n "script_location" alembic.ini` (file at repository root) | `script_location = backend/alembic`. |
 
-Note: FEAT-077-FR-01 lists `backend/`, `analytics/` and `alembic.ini`; TRD 15 DEP-020 also lists `database/`, which `backend/Dockerfile:30` copies. The case follows DEP-020.
+Note: FEAT-077-FR-01 is aligned to the TRD (TRD 24 D-184) and lists `database/` as TRD 15 DEP-020 does (`backend/Dockerfile:30`).
 
 ### TC-077-04 Clean clone: `docker compose up --build -d` gives health 200 with `"database":"ok"` within 180 s
 
@@ -113,7 +113,7 @@ Note: FEAT-077-FR-01 lists `backend/`, `analytics/` and `alembic.ini`; TRD 15 DE
 | 2 | `pytest -q tests/unit/backend/core/test_env_templates.py tests/unit/test_env_templates.py` | All tests pass, including `test_env_040_every_settings_field_in_env_example`. |
 | 3 | `grep -c "=" .env.example` and compare with the variables of TRD 21 §4.2. | `.env.example` lists every variable with a comment; every secret value is empty. |
 
-Note: FEAT-077-AC-06 names `tests/unit/backend/core/test_env_example.py`; the repository has `tests/unit/backend/core/test_env_templates.py` (and `tests/unit/test_env_templates.py`) instead.
+Note: FEAT-077-AC-06 is aligned to the TRD (TRD 24 D-184) and names `tests/unit/backend/core/test_env_templates.py` (the repository also has `tests/unit/test_env_templates.py`).
 
 ### TC-077-11 `.env.production.example` profile, empty `PIPELINE_AS_OF`, no secret value; no `neon.tech` or production secret
 

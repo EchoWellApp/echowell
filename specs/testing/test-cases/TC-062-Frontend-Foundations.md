@@ -229,7 +229,7 @@ Not applicable: the frontend never accesses the database (FEAT-062 Database Impa
 | 6 | Render error inside a protected page | "Something went wrong on this page." with "Reload", no details (TC-062-11) |
 | 7 | Unknown route | "This page was not found." with "← Resident list" (TC-062-11) |
 
-Note: FEAT-062-FR-18 lists dedicated texts for 429 ("Too many attempts. Wait a minute and try again.") and 503 ("The service is temporarily unavailable. Try again in a minute."); TRD 17 LOG-081 (D-179) maps them to the section error state instead, and the code has no such strings (frontend/lib/wording/common.ts:75-83). The case follows the TRD.
+Note: FEAT-062-FR-18 and FR-22 are aligned to the TRD (TRD 24 D-184): 429 and 503 outside the login form go to the section error state (TRD 17 LOG-081, D-179; frontend/lib/wording/common.ts:75-83), and the font is loaded with `next/font/local`.
 
 ## Acceptance Criteria Validation
 

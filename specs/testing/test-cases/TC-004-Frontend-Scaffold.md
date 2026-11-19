@@ -70,7 +70,7 @@ FEAT-004 creates the `frontend/` application shell: a Next.js 14.2 App Router pr
 | 2 | Run `git ls-files .. \| grep -iE '\.(woff2?\|ttf\|otf\|eot)$'` from `frontend/`. | Exactly one path: `frontend/app/fonts/SourceSans3-latin-variable.woff2`; its licence `frontend/app/fonts/OFL.txt` is tracked. |
 | 3 | Open `http://localhost:3000/login`, open developer tools Network tab, reload with cache disabled. | No request to `fonts.googleapis.com` or `fonts.gstatic.com`; the font loads from the frontend origin (`/_next/static/media/…woff2`). |
 
-Note: FEAT-004-AC-04 and FR-04 (IBM Plex via `next/font/google`, no font file committed) are superseded by TRD 04 FE-004 v0.15 and TRD 18 GIT-097 (TRD 24 D-112, D-168, D-179): Source Sans 3 is loaded with `next/font/local` from the one committed woff2 (frontend/app/layout.tsx:5,15). The case follows the current TRD.
+Note: FEAT-004-FR-04 and AC-04 are aligned to the TRD (TRD 24 D-184): Source Sans 3 is loaded with `next/font/local` from the one committed woff2 (TRD 04 FE-004 v0.15, TRD 18 GIT-097; frontend/app/layout.tsx:5,15).
 
 ### TC-004-06 `package.json` scripts and pinned versions; no bare `test:e2e` script
 

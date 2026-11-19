@@ -73,7 +73,7 @@ FEAT-002 materialises the TRD 01 §4.6 monorepo layout in `EchoWellApp/echowell`
 | 4 | Read the pins of `fastapi`, `sqlalchemy`, `alembic`, `pydantic`, `numpy`. | `fastapi==0.115.12` (0.115.x), `sqlalchemy==2.0.41` (2.0.x), `alembic==1.13.3` (1.13.x), `pydantic==2.10.6` (2.x), `numpy==2.1.3` (2.x). |
 | 5 | Run `pytest -q tests/unit/test_repository_layout.py::test_requirements_pinned_without_psycopg2`. | `1 passed`. |
 
-Note: the literal AC command `grep -n "psycopg\[binary\]" backend/requirements.txt` also matches the comment on line 2 (`# Driver: psycopg 3 as psycopg[binary] …`); only one match is a pinned line (backend/requirements.txt:2 and :10).
+Note: FEAT-002-AC-04 is aligned to the TRD (TRD 24 D-184): its command is now `grep -n "^psycopg\[binary\]==3\." backend/requirements.txt`, which does not match the comment on line 2 (backend/requirements.txt:2 and :10).
 
 ### TC-002-06 `backend/requirements-dev.txt` is the single dev-tool list of TRD 16 §6
 

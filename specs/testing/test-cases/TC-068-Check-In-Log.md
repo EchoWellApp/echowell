@@ -117,7 +117,7 @@ Two sections of the resident chart (wireframe v0.2, SRC-21). "Check-in log" (`/r
 | 1 | Open `/residents/R08/baseline` | Paragraph "Still forming: 13 of 16 usable check-ins so far. 12 missed and 5 set-aside check-ins in the last 30 days have slowed it down." |
 | 2 | Inspect the meter | `<progress>` max 16, value 13, accessible name "13 of 16 usable check-ins"; caption "13 of 16 usable check-ins" |
 
-Note: FEAT-068-FR-13 words the clause " <m> missed and <s> set-aside check-ins have slowed it down." without "in the last 30 days"; TRD 11 §4.5.7.1 (D-149), FEAT-068-AC-07 and the code (frontend/lib/wording/chart.ts:257) include it. The case follows the TRD.
+Note: FEAT-068-FR-13 is aligned to the TRD (TRD 24 D-184): the clause includes "in the last 30 days" as in TRD 11 §4.5.7.1 (D-149), FEAT-068-AC-07 and the code (frontend/lib/wording/chart.ts:257).
 
 ### TC-068-11 R07 restarted Baseline
 

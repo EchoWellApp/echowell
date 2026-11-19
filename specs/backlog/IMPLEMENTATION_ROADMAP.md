@@ -73,7 +73,7 @@ After the checkpoint 9 PR is merged, Block 3 is complete and Block 4 starts.
 | `test_v0_1` never in production | The backend refuses `APP_ENV=production` with `PIPELINE_PROFILE=test_v0_1` or with `PIPELINE_AS_OF` set. | AGT-015, ENV-010, ENV-012 |
 | Answer key out of the pipeline | Only `tests/validation/` and `database/seeds/load_evaluation_ground_truth.py` read the workbook; no pipeline stage reads `evaluation_ground_truth`. | AGT-007, AGT-057, D-38 |
 | Expected values are fixed | No expected result, tolerance or `test_v0_1` parameter is changed to make a test pass. | AGT-008, TST-162 |
-| Data and wording | Study IDs only, no names or other PII; no secrets, `.env` files or third-party-licensed documents committed; the facility is named only through FACILITY_NAME and never "Edge4Care"; user-facing text says "detects a change" / "prompt to check in, not a diagnosis". | AGT-016..AGT-019 |
+| Data and wording | Study IDs only, no names or other PII; no secrets, `.env` files or third-party-licensed documents committed; the facility is named only through FACILITY_NAME and never the old facility name of AGT-019; user-facing text says "detects a change" / "prompt to check in, not a diagnosis". | AGT-016..AGT-019 |
 | Skeleton, pins, legacy data | Keep existing skeleton file names; pin versions as TRD 25 §4.7; never use `specs/data-samples/echowell_mock_data_500.csv` as input. | AGT-010, AGT-024, AGT-025 |
 | Unsettled questions | Add an OQ row to TRD 24, stop that part, report it. | AGT-009 |
 | Completion tracking | `BACKLOG.md` §10 (the primary tracker) is refreshed, together with the "Status" field of the feature files the PR touches and the section 2.1 status cell and PR column (D-104), at the end of each Block 3 checkpoint PR, reconciled with the Phase 15 audit in the checkpoint 9 PR, and refreshed again at the end of the Block 4 and Block 5 PRs, inside those PRs; a PR's own features are set to Complete in that PR, before it is merged, once implemented and verified. | D-95, D-100, D-101, D-104 |
@@ -586,7 +586,7 @@ Required tests and commands:
 
 - Full suite: `pytest -q`; frontend tests and E2E; grep checks of AGT-004, AGT-007, AGT-018, AGT-019 recorded; every acceptance criterion has a linked test.
 - Test IDs cited by the feature file: TST-013, TST-170.
-- `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium`; `grep -rniE "openai|anthropic|langchain|llama|gpt" frontend backend analytics`; `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`; `grep -rn "evaluation_ground_truth" analytics`; `grep -rniE "diagnos(e|is)|severity" frontend/app frontend/components`; `grep -rni "edge4care" frontend backend analytics`.
+- `pytest -q`; `cd frontend && npm run test && npm run test:e2e:readonly -- --project=chromium && npm run test:e2e:mutating -- --project=chromium`; `grep -rniE "openai|anthropic|langchain|llama|gpt" frontend backend analytics`; `grep -rn "pipeline_test_v0_1.xlsx" analytics backend`; `grep -rn "evaluation_ground_truth" analytics`; `grep -rniE "diagnos(e|is)|severity" frontend/app frontend/components`; `grep -rni "edge[4]care" frontend backend analytics`.
 
 Authentication and security checks the audit records (section 3.2):
 

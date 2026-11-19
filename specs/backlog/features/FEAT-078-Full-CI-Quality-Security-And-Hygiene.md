@@ -19,7 +19,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 - BR-15: the validation suite gates every merge (CIC-013, CIC-014); an answer-key regression cannot be merged (AC-CIC-01).
 - BR-01, BR-16: audio files, `.env` files, secrets and vulnerable dependencies fail CI (CIC-020, CIC-021, CIC-019, CIC-115).
 - BR-17: GitHub Actions CI is part of the fixed stack (SRC-01).
-- BR-18 and RSK-10: forbidden wording, "Edge4Care" and LLM SDKs fail `repo-hygiene` (CIC-114).
+- BR-18 and RSK-10: forbidden wording, the old facility name of AGT-019 and LLM SDKs fail `repo-hygiene` (CIC-114).
 
 ## Referenced TRDs
 
@@ -54,7 +54,7 @@ Complete `.github/workflows/ci.yml` so that every pull request and every push to
 |---|---|---|
 | FEAT-078-FR-01 | `ci.yml` shall run on every pull request, every push to `main`, and on manual dispatch, with default `permissions: contents: read` and no repository secret; the test JWT_SECRET shall be generated per run with `openssl rand -hex 32`. | CIC-010, CIC-024, CIC-026 |
 | FEAT-078-FR-02 | `repo-hygiene` shall fail on any tracked file with an audio extension (wav, mp3, flac, m4a, ogg, opus, aac, wma, aif, aiff, amr, webm, caf, pcm), any tracked `.env` or `.env.*` other than `*.example`, any tracked file above 10 MB, and (pull requests only) a title that is not a Conventional Commit header of types feat, fix, docs, chore, refactor, test, ci, build, perf, release. | CIC-020, CIC-021, CIC-022 |
-| FEAT-078-FR-03 | `repo-hygiene` shall fail when "Edge4Care" appears in a tracked file outside `specs/` and `docs/reports/`, when "diagnoses" or "severity" appears as a word in `frontend/app`, `frontend/components` or `frontend/lib/wording.ts`, or when an LLM SDK of SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json`. | CIC-114, SEC-128, AGT-004, AGT-019 |
+| FEAT-078-FR-03 | `repo-hygiene` shall fail when the old facility name of AGT-019 appears in a tracked file outside `specs/` and `docs/reports/`, when "diagnoses" or "severity" appears as a word in `frontend/app`, `frontend/components` or `frontend/lib/wording.ts`, or when an LLM SDK of SEC-128 appears in `backend/requirements*.txt` or `frontend/package.json`. | CIC-114, SEC-128, AGT-004, AGT-019 |
 | FEAT-078-FR-04 | `backend-lint` shall fail on any `ruff check` finding, any `ruff format --check` difference, any `mypy` error (strict for `analytics/`) or any import-linter contract violation. | CIC-011, CIC-115, ARC-041 |
 | FEAT-078-FR-05 | `backend-test` shall run on a `postgres:16-alpine` service, provision extensions and login roles first, use DATABASE_URL = `echowell_app_login`, DATABASE_MIGRATION_URL = `echowell_migrator_login`, DATABASE_READONLY_URL = `echowell_readonly_login`, apply `alembic upgrade head`, then `alembic downgrade base` and `alembic upgrade head`, and fail on any migration error. | CIC-012, CIC-015, D-72 |
 | FEAT-078-FR-06 | `backend-test` shall run unit, integration, contract, security and validation suites in one pytest invocation, fail on any failure or error, and compare R01–R10 at absolute tolerance 1e-6 with exact strings. | CIC-013, CIC-014, TST-083 |
@@ -152,7 +152,7 @@ None in code. The import-linter contracts enforce `analytics/` purity (ARC-041) 
 | FEAT-078-AC-05 | `ci.yml` on `main` completes all required checks in under 15 minutes and uploads `backend-reports` containing `ALGORITHM_VALIDATION_REPORT.md` with 10 of 10 residents passing and `validation_results.json`. Verified by: Analysis (the analysis method of CIC-110, applied to the condition stated in the criterion). | AC-CIC-05, CIC-110 |
 | FEAT-078-AC-06 | `grep -r "secrets\." .github/workflows/ci.yml` returns nothing. Verified by: Inspection (run the command in the criterion and check its output). | CIC-026, AC-CIC-06 |
 | FEAT-078-AC-07 | Branch protection for `main` lists exactly the eight required checks of CIC-070. Verified by: Inspection (review of `main` against the cited requirements). | AC-CIC-08, AC-GIT-01 |
-| FEAT-078-AC-08 | A PR adding `openai` to `backend/requirements.txt`, or the string "Edge4Care" to a file under `backend/`, fails `repo-hygiene`. Verified by: Test (Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite). | CIC-114, AC-AGT-03 |
+| FEAT-078-AC-08 | A PR adding `openai` to `backend/requirements.txt`, or the old facility name of AGT-019 to a file under `backend/`, fails `repo-hygiene`. Verified by: Test (Grep checks AC-AGT-02, AC-AGT-03 reproduced by `repo-hygiene` and the TDV-011 scan inside the validation suite). | CIC-114, AC-AGT-03 |
 | FEAT-078-AC-09 | Coverage below 95 % for `analytics/`, 85 % for `backend/` or 80 % for `frontend/` fails the respective job. Verified by: Test (the test method of CIC-016, applied to the condition stated in the criterion). | CIC-016, CIC-017, AC-TST-06 |
 | FEAT-078-AC-10 | A committed fake key matching a gitleaks rule (outside the allow-list) fails `security-audit`; a Bandit medium finding in `backend/` fails it too. Verified by: Test (the test method of CIC-115, applied to the condition stated in the criterion). | CIC-115, SEC-052 |
 

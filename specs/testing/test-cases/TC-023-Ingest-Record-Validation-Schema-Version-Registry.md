@@ -144,7 +144,7 @@ FEAT-023 decides for every incoming feature record whether it may enter the immu
 | 4 | Post BASE (`R02-20261031-21`, R02 is `M`) with `"mean_f0_hz": 180.0` | 201; `implausible_value` on `mean_f0_hz` (male range 110–145) |
 | 5 | Post an R01 (`F`) record with `"mean_f0_hz": 180.0` | 201; no `mean_f0_hz` warning (female range 165–200) |
 
-Note: FEAT-023 (Scope, FR-17) lists `device_assignment_mismatch` among the ingest warnings; TRD 10 revision 0.6 (TRD 24 D-125) moved it to the pipeline run warnings, and the code follows the TRD (`analytics/pipeline.py:297`; not produced in `backend/services/validation.py`). This case follows the TRD.
+Note: FEAT-023 is aligned to the TRD (TRD 24 D-184): `device_assignment_mismatch` is a pipeline run warning, not an ingest warning (TRD 10 revision 0.6, ING-023, D-125; `analytics/pipeline.py:297`; not produced in `backend/services/validation.py`).
 
 ### TC-023-13 Renamed column through `feature_name_map` is accepted; payload keeps the external name
 
