@@ -2,7 +2,7 @@
 #   docker build -f backend/Dockerfile -t echowell-backend .
 # The same image runs unchanged on Docker Compose, Render and AWS App Runner (ARC-090, NFR-090).
 # The root .dockerignore keeps .env files, tests/, specs/, docs/ and frontend/ out of the context (DEP-021).
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
