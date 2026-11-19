@@ -75,7 +75,7 @@ DDL (TRD 20), any audio, chat/LLM or push-notification endpoint (none exist; BR-
   `meta.as_of` is the as-of of the most recent succeeded pipeline run (TRD 05 API-069, API-135). Test-data value:
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"}}
 ```
 
@@ -141,7 +141,7 @@ Role abbreviations: A = admin, C = clinician, Rs = researcher, K = API key with 
   `OperationalConfig`), read from `config_parameters` of the active profile on each request. Errors: universal.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "alert_snooze_hours": 24,
  "review_explanations": [
@@ -244,7 +244,7 @@ Example (test_v0_1, as of 2026-10-30 15:00 CDT; rows R09, R03, R08 and R07 shown
 
 ```json
 {
-  "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+  "meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
   "window": {"from": "2026-10-01", "to": "2026-10-30", "days": 30},
   "summary": {"changed": 2, "needs_attention": 2, "learning": 0, "usual": 6},
@@ -306,7 +306,7 @@ it is `open`; `restart_cause` is the restart cause of the current epoch (TRD 06 
 {
   "resident_code": "R09", "cohort": "longitudinal", "resident_status": "active", "sex": "F",
   "enrolled_on": "2026-10-01", "admitted_on": null, "withdrawn_on": null,
-  "meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+  "meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
   "status": "alarm_on",
   "needs_attention": false, "attention_reasons": [], "alarm_reviewed": false,
@@ -344,7 +344,7 @@ as for the `baseline_restarted` event, TRD 06 DB-065); R08 has `needs_attention`
 - 200 `CheckinEventList` (newest first; events on the same local date in the order `alarm_on`, `watching_started`, `baseline_complete`, `baseline_restarted`, `quarantined`, `set_aside`, `device_silent`, `missed`, `checkins_started`, TRD 11 UX-141). Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"local_date": "2026-10-21", "event_type": "alarm_on", "epoch_number": 1, "session_id": "R09-20261021-01", "detail": "tally crossed 5.0", "cusum_tally": 5.431965, "device_code": null, "restart_cause": null, "previous_device_code": null, "from_value": null, "to_value": null},
   {"local_date": "2026-10-17", "event_type": "watching_started", "epoch_number": 1, "session_id": "R09-20261017-01", "detail": null, "cusum_tally": null, "device_code": null, "restart_cause": null, "previous_device_code": null, "from_value": null, "to_value": null},
@@ -380,7 +380,7 @@ is D07B (TRD 11 §4.5.6).
 - 200 `FeaturesResponse`. Errors: 404 `RESIDENT_NOT_FOUND`, 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "resident_code": "R09",
  "epoch_number": 1,
  "scored_features": [
@@ -405,7 +405,7 @@ values the engine computes on SRC-05.)
   Errors: 404 `RESIDENT_NOT_FOUND` (unknown resident_code), 413 `PAYLOAD_TOO_LARGE` (> 100,000 CSV rows), 422 `INVALID_QUERY_PARAMETER`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "cusum_k": 0.5,
  "baseline_periods": [{"resident_code": "R09", "epoch_number": 1, "first_local_date": "2026-10-01",
@@ -447,7 +447,7 @@ Oct 29 23.126702, Oct 30 26.830256 (all `on` after Oct 21).
   and Summary read the resident's alert with `GET /alerts?resident_code=<R>`.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"id": "0b8f3c2e-5d1a-4c3e-9f7a-2a6d1e4b7c90", "resident_code": "R09", "device_code": "D09", "epoch_number": 1,
@@ -506,7 +506,7 @@ Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_so
   D02 for the test data); open `baseline_stalled` and `high_set_aside` alerts also drive `needs_attention` on E-08/E-09.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "kind": "baseline_stalled", "resident_code": "R08", "device_code": null,
@@ -559,7 +559,7 @@ Explanation codes (configured list `review_explanations`, OQ-25): `cold_cough_so
 - Auth: bearer (A, C, Rs). Query `limit`, `offset`. 200 `DeviceList` ordered by `device_code` (natural).
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"device_code": "D02", "room_label": null, "active": true, "resident_codes": ["R02", "R03"], "shared": true,
@@ -595,7 +595,7 @@ record from D02. For D08 (single resident R08) the 12 missed days are silent day
   `review_outcomes` (production) is non-null. Percentages are rounded half-up to integers.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1",
           "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "period": {"from": "2026-10-01", "to": "2026-10-30", "days": 30},
  "kpis": {
@@ -654,7 +654,7 @@ In production `alarm_timing` is null and `review_outcomes` is
 - 200 `BaselineRowList`, or `text/csv` with `Accept: text/csv`. Test data total = 180.
 
 ```json
-{"meta": {"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
+{"meta": {"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"},
  "items": [
   {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "loudness_dbfs", "n_sessions": 16, "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01", "median": -22.405, "mad": 1.45, "robust_spread": 2.14977, "floor_applied": false},
   {"resident_code": "R09", "epoch_number": 1, "device_code": "D09", "feature_key": "composite", "n_sessions": 16, "first_session_id": "R09-20261001-01", "frozen_after_session_id": "R09-20261016-01", "median": 0.038219, "mad": 0.359758, "robust_spread": 0.533378, "floor_applied": false}
@@ -1269,7 +1269,7 @@ components:
       type: object
       required: [facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile]
       properties:
-        facility_name: {type: string, examples: ["Edgewood"]}
+        facility_name: {type: string, examples: ["Demo Facility"]}
         facility_tz: {type: string, examples: ["America/Chicago"]}
         data_source_label: {type: string, examples: ["pipeline test data v0.1"]}
         as_of: {type: [string, "null"], format: date-time, description: as-of of the latest succeeded pipeline run}

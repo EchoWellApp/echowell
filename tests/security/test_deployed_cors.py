@@ -62,7 +62,7 @@ def client(env: str) -> TestClient:
         database_readonly_url=TLS_URL if env == "staging" else None,
         jwt_secret=SECRET,
         pipeline_profile="test_v0_1" if env == "staging" else "production",
-        facility_name="Edgewood",
+        facility_name="Demo Facility",
         log_format="json",
         **web_cors(env),
     )

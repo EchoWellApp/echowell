@@ -115,7 +115,7 @@ tests/
     pipeline_input/               EchoWell_pipeline_test_input_v0_1.csv (copy of SRC-05; the ONLY pipeline input fixture)
     answer_key/                   EchoWell_pipeline_test_v0_1.xlsx (copy of SRC-03), evaluation_ground_truth_v0_1.csv (DS-10, TRD 14), SHA256SUMS
     legacy/                       echowell_mock_data_500.csv (copy of SRC-06; negative fixture)
-    seeds/demo_overlay/           facilities.csv (Edgewood), residents.csv (R11,F,longitudinal,2026-10-01,), devices.csv (D11,,true,fw-1.0.0),
+    seeds/demo_overlay/           facilities.csv (Demo Facility), residents.csv (R11,F,longitudinal,2026-10-01,), devices.csv (D11,,true,fw-1.0.0),
                                   device_assignments.csv (R11,D11,2026-10-01,) in the TRD 06 DB-060 format, loaded by
                                   `python -m backend.cli import-master-data --dir tests/fixtures/seeds/demo_overlay` (E2E-15, TST-187);
                                   the R01–R10 roster is read from database/seeds/test_v0_1/ (TRD 14 DS-07)

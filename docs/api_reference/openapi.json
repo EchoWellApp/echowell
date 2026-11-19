@@ -2575,7 +2575,7 @@
           },
           "facility_name": {
             "examples": [
-              "Edgewood"
+              "Demo Facility"
             ],
             "type": "string"
           },
@@ -4341,7 +4341,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -4731,7 +4731,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -4903,7 +4903,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -5095,7 +5095,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -5243,7 +5243,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -5352,7 +5352,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -6010,7 +6010,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -6130,7 +6130,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -6256,7 +6256,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -6326,7 +6326,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },
@@ -6909,7 +6909,7 @@
                         "baseline_n": 16,
                         "cusum_h": 5.0,
                         "data_source_label": "pipeline test data v0.1",
-                        "facility_name": "Edgewood",
+                        "facility_name": "Demo Facility",
                         "facility_tz": "America/Chicago",
                         "pipeline_profile": "test_v0_1"
                       },

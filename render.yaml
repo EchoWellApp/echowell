@@ -17,7 +17,7 @@ envVarGroups:
       - { key: APP_ENV, value: staging }
       - { key: PIPELINE_PROFILE, value: test_v0_1 }
       - { key: PIPELINE_AS_OF, value: "2026-10-30T15:00:00-05:00" }
-      - { key: FACILITY_NAME, value: Edgewood }
+      - { key: FACILITY_NAME, value: Demo Facility }
       - { key: FACILITY_TZ, value: America/Chicago }
       - { key: NIGHTLY_RUN_HOUR_LOCAL, value: "2" }
       - { key: LOG_LEVEL, value: INFO }
@@ -28,7 +28,7 @@ envVarGroups:
     envVars:
       - { key: APP_ENV, value: production }
       - { key: PIPELINE_PROFILE, value: production }
-      - { key: FACILITY_NAME, value: Edgewood }
+      - { key: FACILITY_NAME, value: Demo Facility }
       - { key: FACILITY_TZ, value: America/Chicago }
       - { key: NIGHTLY_RUN_HOUR_LOCAL, value: "2" }
       - { key: LOG_LEVEL, value: INFO }

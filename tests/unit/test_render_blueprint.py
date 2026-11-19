@@ -72,7 +72,7 @@ MATRIX: dict[str, dict[str, str]] = {
         "APP_ENV": "staging",
         "PIPELINE_PROFILE": "test_v0_1",
         "PIPELINE_AS_OF": "2026-10-30T15:00:00-05:00",
-        "FACILITY_NAME": "Edgewood",
+        "FACILITY_NAME": "Demo Facility",
         "FACILITY_TZ": "America/Chicago",
         "NIGHTLY_RUN_HOUR_LOCAL": "2",
         "LOG_LEVEL": "INFO",
@@ -87,7 +87,7 @@ MATRIX: dict[str, dict[str, str]] = {
     "production": {
         "APP_ENV": "production",
         "PIPELINE_PROFILE": "production",
-        "FACILITY_NAME": "Edgewood",
+        "FACILITY_NAME": "Demo Facility",
         "FACILITY_TZ": "America/Chicago",
         "NIGHTLY_RUN_HOUR_LOCAL": "2",
         "LOG_LEVEL": "INFO",

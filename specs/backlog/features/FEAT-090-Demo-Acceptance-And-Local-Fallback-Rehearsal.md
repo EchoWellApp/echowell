@@ -109,7 +109,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-091.
 ## Security Requirements
 
 - Only team-member voices or synthetic data; no real resident data on the interim stack (VIS-024, DEP-008, D-28).
-- The interim API key is bound to a test device, not an Edgewood device (SEC-003).
+- The interim API key is bound to a test device, not an Demo Facility device (SEC-003).
 - During the fallback, the backend port is exposed on the LAN only for the demo duration (DEP-091); local stack uses synthetic data only (SEC-065).
 
 ## Error Handling
@@ -117,7 +117,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-091.
 - Step 4b returns 422 → inspect `ingest_rejections` reason with Team 1, fix the record format (schema v0.1), repost with a new session ID.
 - Step 5 exceeds 60 s because of cold starts → confirm the Render web service runs on the always-on Starter instance type, not Free (DEP-042), wake the Neon compute with a health check, and repeat; the automated 5 s check is TST-187.
 - Production not passing DEP-081 by 5 Nov 2026 → switch to the rehearsed local fallback (DEP-090).
-- Device access windows at Edgewood are not needed (team-member speaker), but re-pointing a device to the laptop depends on OQ-17 where a site device is involved.
+- Device access windows at Demo Facility are not needed (team-member speaker), but re-pointing a device to the laptop depends on OQ-17 where a site device is involved.
 
 ## Logging Requirements
 

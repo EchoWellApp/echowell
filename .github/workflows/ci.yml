@@ -38,7 +38,7 @@ jobs:
         # The facility-name pattern is written as a character class so this file never contains the term.
         run: |
           if git grep -n -I -i -E "edge[4]care" -- . ':!specs/' ':!docs/reports/'; then
-            echo "::error::The old facility name must not be used (the facility is Edgewood)"; exit 1; fi
+            echo "::error::The old facility name must not be used (the facility is Demo Facility)"; exit 1; fi
           if git grep -n -I -w -i -E "diagnoses|severity" -- frontend/app frontend/components frontend/lib/wording.ts; then
             echo "::error::Forbidden wording in UI copy (detection, not diagnosis)"; exit 1; fi
       - name: No LLM SDK or ML model dependencies (CIC-114, SEC-128, ARC-104, AGT-004, AGT-005)
@@ -97,7 +97,7 @@ jobs:
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
       TEST_SUPERUSER_URL: postgresql+psycopg://echowell:ci-only-postgres@localhost:5432/echowell_test # throwaway databases (TST-040, PGS-002)
-      FACILITY_NAME: Edgewood
+      FACILITY_NAME: Demo Facility
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
       CORS_ORIGINS: http://localhost:3000

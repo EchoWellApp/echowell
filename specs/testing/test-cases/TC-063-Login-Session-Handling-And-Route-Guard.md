@@ -50,7 +50,7 @@ Staff sign in on `/login` and every dashboard page stays behind a valid session.
 | 1 | Open `/` | Redirected to `/login` (no stored token) |
 | 2 | Enter `clinician@example.com` and the `SEED_CLINICIAN_PASSWORD` value; click "Sign in" | `POST /api/v1/auth/login` returns 200 with `access_token`, `token_type` "bearer", `expires_in` and `user` |
 | 3 | Observe the navigation | URL becomes `/residents`; `GET /api/v1/auth/me` returns 200 with `role` "clinician" |
-| 4 | Check the app bar | "EchoWell", facility line "Edgewood, Assisted living", nav "Resident list" with badge "2" and "New admissions"; no "Study team" and no "Admin" link; display name "Clinician" and button "Sign out" |
+| 4 | Check the app bar | "EchoWell", facility line "Demo Facility, Assisted living", nav "Resident list" with badge "2" and "New admissions"; no "Study team" and no "Admin" link; display name "Clinician" and button "Sign out" |
 | 5 | Check the data bar | "Test data only (pipeline test data v0.1, Oct 1–30, 2026). No real residents. No audio is stored or played anywhere in EchoWell." |
 
 ### TC-063-03 Guard redirect and return to the requested route

@@ -95,7 +95,7 @@ jobs:
           APP_ENV: staging
           PIPELINE_PROFILE: test_v0_1
           PIPELINE_AS_OF: "2026-10-30T15:00:00-05:00"
-          FACILITY_NAME: Edgewood
+          FACILITY_NAME: Demo Facility
           FACILITY_TZ: America/Chicago
           LOG_FORMAT: json
           SEED_ADMIN_PASSWORD: ${{ secrets.STAGING_SEED_ADMIN_PASSWORD }}

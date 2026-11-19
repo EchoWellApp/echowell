@@ -299,7 +299,7 @@ def stack(
             cli(urls, "import-master-data", "--dir", str(roster))
         settings = make_settings(
             database_url=urls.app, database_readonly_url=urls.readonly,
-            facility_name="Edgewood", pipeline_as_of=pipeline_as_of,
+            facility_name="Demo Facility", pipeline_as_of=pipeline_as_of,
         )  # fmt: skip
         app = create_app(settings)
         app.dependency_overrides[get_settings] = lambda: settings
