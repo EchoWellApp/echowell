@@ -1,14 +1,15 @@
-*                              @EchoWellApp/team2-maintainers
-/analytics/                    @EchoWellApp/team2-algorithm
-/tests/validation/             @EchoWellApp/team2-algorithm
-/database/seeds/               @EchoWellApp/team2-algorithm
-/backend/alembic/              @EchoWellApp/team2-algorithm @EchoWellApp/team2-maintainers
-/specs/                        @EchoWellApp/team2-maintainers
-/specs/TRD/07_*                @EchoWellApp/team2-algorithm
-/specs/TRD/08_*                @EchoWellApp/team2-algorithm
-/specs/TRD/09_*                @EchoWellApp/team2-algorithm
-/specs/TRD/14_*                @EchoWellApp/team2-algorithm
-/.github/                      @EchoWellApp/team2-devops
-/netlify.toml                  @EchoWellApp/team2-devops
-/render.yaml                   @EchoWellApp/team2-devops
-/docker-compose.yml            @EchoWellApp/team2-devops
+# Code owners (TRD 18 GIT-032, GIT-037; TRD 24 D-189): the algorithm lead reviews every path.
+*                              @Shaba9
+/analytics/                    @Shaba9
+/tests/validation/             @Shaba9
+/database/seeds/               @Shaba9
+/backend/alembic/              @Shaba9
+/specs/                        @Shaba9
+/specs/TRD/07_*                @Shaba9
+/specs/TRD/08_*                @Shaba9
+/specs/TRD/09_*                @Shaba9
+/specs/TRD/14_*                @Shaba9
+/.github/                      @Shaba9
+/netlify.toml                  @Shaba9
+/render.yaml                   @Shaba9
+/docker-compose.yml            @Shaba9

@@ -1,6 +1,6 @@
 # 24 Risk, Assumptions and Open Questions
 
-Document ID: ECHOWELL-TRD-24 · Version 0.33 (draft for review) · Date: 18 October 2026, revised 19 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-24 · Version 0.34 (draft for review) · Date: 18 October 2026, revised 19 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -358,6 +358,7 @@ Likelihood (L) and impact (I): L = low, M = medium, H = high.
 | D-186 | Block 5 execution focuses on demo-relevant, clinician-facing workflows, not full coverage: `specs/testing/test-cases/TEST_EXECUTION_PRIORITY.md` sorts the test cases into Priority 1 (clinician UI happy paths), 2 (secondary screens) and 3 (negative, API, database, pipeline, deployment, security), executed in that order by the five testers. | Algorithm lead, 17 Nov 2026 (Block 5 review, GitHub PR #50, additional direction) | 13 |
 | D-187 | The TST-121 budget (`POST /api/v1/sessions` p95 ≤ 1,000 ms, contract R8) stays the requirement; because the GitHub-hosted runners are slower than the target host (nightly p95 about 1,090 ms), the CI workflows (`ci.yml` budget step, `e2e.yml` performance job) run it with a CI-only budget of 1,500 ms through `PERF_SESSIONS_BUDGET_MS`. Local runs and the release-candidate check keep 1,000 ms. | Algorithm lead, 19 Nov 2026 (reply on the open questions, item 2) | 13, 16 |
 | D-188 | The prototype names the facility with the generic name "Demo Facility" instead of the partner facility's name: FACILITY_NAME, the test seed, CI settings, test fixtures, OpenAPI examples and the TRDs use "Demo Facility". The deployed database keeps one `facilities` row, which the operator renames once (`UPDATE facilities SET name = 'Demo Facility'`); no migration or re-seed. Historical reports in `docs/reports/` are not rewritten. | Algorithm lead, 19 Nov 2026 (reply on the open questions, item 3) | 00, 21, 23, 24 |
+| D-189 | `.github/CODEOWNERS` names the algorithm lead (`@Shaba9`) for every path instead of the organisation teams `team2-maintainers`, `team2-algorithm` and `team2-devops`, which were never created, so the code-owner rule takes effect (GIT-037 amended). | Algorithm lead, by approving the CODEOWNERS pull request (options presented 19 Nov 2026) | 18 |
 
 ## 5. Assumptions
 
@@ -431,3 +432,4 @@ All open questions are listed in section 4.2 (OQ-01 to OQ-32). OQ-21 and OQ-23 (
 | 0.31 | 17 Nov 2026 | Block 5 review (GitHub PR #50): D-181..D-186 | — |
 | 0.32 | 19 Nov 2026 | D-187 (TST-121 CI-only budget) | — |
 | 0.33 | 19 Nov 2026 | D-188 (generic facility name) | — |
+| 0.34 | 19 Nov 2026 | D-189 (CODEOWNERS) | — |
