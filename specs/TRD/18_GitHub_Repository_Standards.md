@@ -1,6 +1,6 @@
 # 18 GitHub Repository Standards
 
-Document ID: ECHOWELL-TRD-18 · Version 0.17 (draft for review) · Date: 18 October 2026, revised 12 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-TRD-18 · Version 0.18 (draft for review) · Date: 18 October 2026, revised 19 November 2026 · Owner: Team 2 · Status: Draft
 
 ## 1. Purpose
 
@@ -182,25 +182,25 @@ PR template (`.github/pull_request_template.md`):
 CODEOWNERS (`.github/CODEOWNERS`), using GitHub teams that the organisation owner creates in `EchoWellApp`:
 
 ```
-*                              @EchoWellApp/team2-maintainers
-/analytics/                    @EchoWellApp/team2-algorithm
-/tests/validation/             @EchoWellApp/team2-algorithm
-/database/seeds/               @EchoWellApp/team2-algorithm
-/backend/alembic/              @EchoWellApp/team2-algorithm @EchoWellApp/team2-maintainers
-/specs/                        @EchoWellApp/team2-maintainers
-/specs/TRD/07_*                @EchoWellApp/team2-algorithm
-/specs/TRD/08_*                @EchoWellApp/team2-algorithm
-/specs/TRD/09_*                @EchoWellApp/team2-algorithm
-/specs/TRD/14_*                @EchoWellApp/team2-algorithm
-/.github/                      @EchoWellApp/team2-devops
-/netlify.toml                  @EchoWellApp/team2-devops
-/render.yaml                   @EchoWellApp/team2-devops
-/docker-compose.yml            @EchoWellApp/team2-devops
+*                              @Shaba9
+/analytics/                    @Shaba9
+/tests/validation/             @Shaba9
+/database/seeds/               @Shaba9
+/backend/alembic/              @Shaba9
+/specs/                        @Shaba9
+/specs/TRD/07_*                @Shaba9
+/specs/TRD/08_*                @Shaba9
+/specs/TRD/09_*                @Shaba9
+/specs/TRD/14_*                @Shaba9
+/.github/                      @Shaba9
+/netlify.toml                  @Shaba9
+/render.yaml                   @Shaba9
+/docker-compose.yml            @Shaba9
 ```
 
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
-| GIT-037 | The organisation shall create GitHub teams `team2-maintainers`, `team2-algorithm` (contains the algorithm lead) and `team2-devops`, each with at least 2 members where team size allows, and `.github/CODEOWNERS` shall use them as above. | Must | GIT-032 | Inspection |
+| GIT-037 | `.github/CODEOWNERS` shall name the algorithm lead (`@Shaba9`) as owner of every path listed above, so every pull request requests the algorithm lead's review; organisation teams may replace the user later (TRD 24 D-189). | Must | GIT-032 | Inspection |
 
 ### 4.5 Code style and static analysis
 
@@ -456,3 +456,4 @@ updates:
 | 0.15 | 26 Oct 2026 | Wireframe v0.2 (SRC-21; TRD 24 D-108 to D-114): GIT-097 names the v0.2 font Source Sans 3 (D-112) | — |
 | 0.16 | 4 Nov 2026 | Backend host Railway → Render (TRD 24 D-153) | — |
 | 0.17 | 12 Nov 2026 | Checkpoint 9 review follow-up, docs-only alignment with the deployed system (GitHub PR #32): GIT-095 and GIT-097 allow the committed Source Sans 3 font (D-168) and the test fixtures (TST-070) (TRD 24 D-179) | — |
+| 0.18 | 19 Nov 2026 | CODEOWNERS names the algorithm lead instead of teams that were never created (GIT-037, D-189) | — |
