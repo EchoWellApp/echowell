@@ -23,6 +23,7 @@ from openapi_core.templating.responses.exceptions import ResponseNotFound
 from openapi_core.testing import MockRequest, MockResponse
 
 from backend.api.openapi import build_openapi
+from backend.core import rate_limit
 from backend.main import create_app
 from tests.conftest import make_settings
 
@@ -36,7 +37,20 @@ META_FIELDS = {"facility_name", "facility_tz", "data_source_label", "as_of", "ba
 
 @functools.cache
 def document() -> dict[str, Any]:
-    return build_openapi(create_app(make_settings()))
+    """The OpenAPI document of an app with default settings, built once per session.
+
+    `create_app` binds its settings for the rate limits (`rate_limit.configure`); this throwaway
+    app must not replace the limits of the app under test, so the bound settings are restored.
+    Without this, the first response of a session reset the login limit to its default, and the
+    test that received it (e.g. `test_login_is_not_also_capped_by_the_default_limit`) failed
+    depending on the random test order (nightly run of 18 Nov 2026).
+    """
+    previous = getattr(rate_limit, "_current_settings", None)
+    try:
+        return build_openapi(create_app(make_settings()))
+    finally:
+        if previous is not None:
+            rate_limit.configure(previous)
 
 
 @functools.cache
