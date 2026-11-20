@@ -126,6 +126,7 @@ jobs:
       - run: coverage report --include='analytics/*' --fail-under=95 # CIC-016, TST-140
       - run: coverage report --include='backend/*' --fail-under=85 # CIC-016, TST-141
       - run: pytest -p no:randomly tests/performance -m budget # PR-scope budgets TST-120, TST-121 (50), TST-124 (CIC-036, TST-126); writes build/performance.json
+        env: { PERF_SESSIONS_BUDGET_MS: "1500" } # TST-121 CI-only budget (D-187)
       - if: always()
         uses: actions/upload-artifact@v7
         with:

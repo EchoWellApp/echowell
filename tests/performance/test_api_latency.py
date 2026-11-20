@@ -2,7 +2,8 @@
 TRD 03 NFR-001..NFR-004, NFR-009; TRD 07 ANL-049; FEAT-079-FR-03, FR-04, FR-06, FR-08, FR-09).
 
 - TST-121: `POST /api/v1/sessions` (API key, synchronous per-resident pipeline) for a resident with
-  120 days of history, p95 ≤ 1,000 ms: 50 sequential requests on every PR (`budget`), 200 nightly.
+  120 days of history, p95 ≤ 1,000 ms (≤ 1,500 ms in CI, `PERF_SESSIONS_BUDGET_MS`, D-187): 50
+  sequential requests on every PR (`budget`), 200 nightly.
 - TST-122 (nightly): six read endpoints on DS-08, 100 warm requests each, p95 ≤ 500 ms.
 - TST-124 (`budget`): `POST /api/v1/ingest` with SRC-05 as CSV answers 202 in ≤ 2 s and its batch
   run reaches `succeeded` in ≤ 30 s (from the POST).
@@ -15,6 +16,8 @@ the suite does before every test, TRD 24 D-74) so 105 requests per endpoint stay
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from backend.core.rate_limit import limiter
@@ -23,7 +26,10 @@ from tests.support.system import INPUT_CSV, TEST_AS_OF
 
 pytestmark = pytest.mark.performance
 
-SESSIONS_BUDGET_MS = 1_000
+# TST-121 budget: 1,000 ms (contract R8). The GitHub runners are slower than the target host, so
+# the CI workflows set PERF_SESSIONS_BUDGET_MS=1500 (algorithm lead, 19 Nov 2026; TRD 24 D-187);
+# a local run and the release-candidate check keep the 1,000 ms budget.
+SESSIONS_BUDGET_MS = float(os.environ.get("PERF_SESSIONS_BUDGET_MS", "1000"))
 READ_BUDGET_MS = 500
 HEALTH_BUDGET_MS = 200
 INGEST_ACCEPT_BUDGET_MS = 2_000
