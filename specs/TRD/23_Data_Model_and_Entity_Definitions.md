@@ -89,7 +89,7 @@ Reference entity. Written by seed / admin CLI. Read by: header subline (`meta.fa
 | Attribute | Type | Null | Meaning and allowed values | Source / set by |
 |---|---|---|---|---|
 | `id` | uuid | no | Surrogate key | gen_random_uuid() |
-| `name` | text | no | Facility name. Test seed and study site: `Edgewood` (never Edge4Care); test data is marked by DATA_SOURCE_LABEL. Returned as `meta.facility_name`; created from env FACILITY_NAME by bootstrap/seed | Admin CLI / seed |
+| `name` | text | no | Facility name. Test seed and deployed prototype: the generic name `Demo Facility` (D-188) (never Edge4Care); test data is marked by DATA_SOURCE_LABEL. Returned as `meta.facility_name`; created from env FACILITY_NAME by bootstrap/seed | Admin CLI / seed |
 | `timezone` | text | no | IANA time zone for local dates and morning rule; default `America/Chicago` (ASM-01) | Admin CLI / seed |
 | `created_at` | timestamptz | no | Instant the row was inserted (UTC) | Database default now() |
 | `updated_at` | timestamptz | no | Instant of the last UPDATE (UTC) | Trigger set_updated_at() |

@@ -215,7 +215,7 @@ Render replaced Railway as the interim backend host on 4 Nov 2026 (TRD 24 D-153,
 
 ## 5. Assumptions
 
-- ASM-03 Single facility (Edgewood): one instance of each service.
+- ASM-03 Single facility (Demo Facility): one instance of each service.
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; the transport service is Team 1's.
 - ASM-08 Small usage: free/entry tiers are sufficient for the interim stack.
 - D-OWNER-4 The interim stack never holds real resident data, so the absence of a BAA on interim tiers (RSK-14) does not block development or the demo.

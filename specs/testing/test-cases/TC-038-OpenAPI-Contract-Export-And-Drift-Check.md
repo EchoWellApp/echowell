@@ -144,7 +144,7 @@ FEAT-038 makes the TRD 19 API contract executable. The FastAPI application serve
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `GET /api/v1/residents` (list), `GET /api/v1/residents/R09` (detail), `GET /api/v1/analytics` (analytics) with ADMIN_TOKEN on DS-07 | Each body has `meta` with exactly `facility_name` ("Edgewood"), `facility_tz` ("America/Chicago"), `data_source_label` ("pipeline test data v0.1"), `as_of` ("2026-10-30T20:00:00Z"), `baseline_n` (16), `cusum_h` (5.0), `pipeline_profile` ("test_v0_1") |
+| 1 | `GET /api/v1/residents` (list), `GET /api/v1/residents/R09` (detail), `GET /api/v1/analytics` (analytics) with ADMIN_TOKEN on DS-07 | Each body has `meta` with exactly `facility_name` ("Demo Facility"), `facility_tz` ("America/Chicago"), `data_source_label` ("pipeline test data v0.1"), `as_of` ("2026-10-30T20:00:00Z"), `baseline_n` (16), `cusum_h` (5.0), `pipeline_profile` ("test_v0_1") |
 | 2 | `POST /api/v1/auth/login` (Token) | No `meta` key |
 | 3 | `GET /api/v1/health` (Health) | No `meta` key |
 | 4 | `POST /api/v1/users` as admin (User, 201) | No `meta` key |

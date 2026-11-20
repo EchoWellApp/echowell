@@ -198,7 +198,7 @@ def test_security_headers_and_hsts(app_factory: Callable[..., FastAPI]) -> None:
         database_url="postgresql+psycopg://u:p@db.example.org/x?sslmode=require",
         database_readonly_url="postgresql+psycopg://u:p@db.example.org/x?sslmode=require",
         jwt_secret="Zq8vN3xK1pL7wR4tY6uI0oP2aS5dF9gHk3Lm",  # noqa: S106 - test-only
-        facility_name="Edgewood", git_sha="0123abc", log_format="json",
+        facility_name="Demo Facility", git_sha="0123abc", log_format="json",
     )  # fmt: skip
     with TestClient(staging, raise_server_exceptions=False) as client:
         response = client.get("/api/v1/nowhere")
@@ -214,7 +214,7 @@ def test_meta_uses_the_latest_succeeded_run(app_session: Session, api_settings: 
     World.build(app_session)
     meta = get_meta(app_session, api_settings)
     assert meta.as_of is None
-    assert (meta.facility_name, meta.baseline_n, meta.cusum_h) == ("Edgewood", 16, 5.0)
+    assert (meta.facility_name, meta.baseline_n, meta.cusum_h) == ("Demo Facility", 16, 5.0)
     assert meta.pipeline_profile == "test_v0_1"
     runs = PipelineRunRepository(app_session)
     run = runs.insert_running(

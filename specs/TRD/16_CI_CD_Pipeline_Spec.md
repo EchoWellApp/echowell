@@ -162,7 +162,7 @@ jobs:
       - name: Forbidden terms (TRD 00 VIS-008, TRD 03 NFR-067)
         run: |
           if git grep -n -I -i "edge4care" -- . ':!specs/' ':!docs/reports/'; then
-            echo "::error::'Edge4Care' must not be used (the facility is Edgewood)"; exit 1; fi
+            echo "::error::'Edge4Care' must not be used (the facility is Demo Facility)"; exit 1; fi
           if git grep -n -I -w -i -E "diagnoses|severity" -- frontend/app frontend/components frontend/lib/wording.ts; then
             echo "::error::Forbidden wording in UI copy (detection, not diagnosis)"; exit 1; fi
       - name: No LLM SDK dependencies (TRD 12 SEC-128, TRD 03 NFR-115)
@@ -211,7 +211,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://echowell_app_login:ci-only-app@localhost:5432/echowell_test
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
-      FACILITY_NAME: Edgewood
+      FACILITY_NAME: Demo Facility
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
       CORS_ORIGINS: http://localhost:3000
@@ -444,7 +444,7 @@ Steps:
 1. Checkout; set `EXPECTED_SHA=${{ github.sha }}`.
 2. Wait for backend: poll `${{ vars.STAGING_API_BASE_URL }}/health` every 15 s, up to 15 min, until JSON `version` equals `EXPECTED_SHA`.
 3. Wait for frontend: poll `${{ vars.STAGING_FRONTEND_URL }}/login` until the HTML contains `<meta name="echowell-build" content="EXPECTED_SHA">` (TRD 21 NEXT_PUBLIC_GIT_SHA), up to 15 min. If the commit changed no file under `frontend/` (Netlify skipped the build), accept the previous build.
-4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL` and `DATABASE_MIGRATION_URL` both `${{ secrets.STAGING_DATABASE_URL }}` (migrator role), `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, `FACILITY_NAME=Edgewood`, `FACILITY_TZ=America/Chicago` (the complete variable set of an operator command, TRD 21 ENV-053), with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY from the environment secrets `STAGING_SEED_*` (the seed upserts the users and key and prints nothing, TRD 06 DB-057), followed by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` with the same variables.
+4. Re-seed when `inputs.reseed` is true or the push changed `backend/alembic/**` or `analytics/**`: `python -m backend.cli seed test_v0_1 --reset` with `DATABASE_URL` and `DATABASE_MIGRATION_URL` both `${{ secrets.STAGING_DATABASE_URL }}` (migrator role), `APP_ENV=staging`, `PIPELINE_PROFILE=test_v0_1`, `PIPELINE_AS_OF=2026-10-30T15:00:00-05:00`, `FACILITY_NAME=Demo Facility`, `FACILITY_TZ=America/Chicago` (the complete variable set of an operator command, TRD 21 ENV-053), with SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY from the environment secrets `STAGING_SEED_*` (the seed upserts the users and key and prints nothing, TRD 06 DB-057), followed by `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` with the same variables.
 5. Run `pytest tests/smoke -m smoke` with SMOKE_API_BASE_URL, SMOKE_FRONTEND_URL, SMOKE_EXPECTED_SHA, SMOKE_USER_EMAIL `researcher@example.com` (the seeded researcher), SMOKE_USER_PASSWORD (`secrets.STAGING_SEED_RESEARCHER_PASSWORD`), `SMOKE_ENV=staging`.
 6. Upload `build/smoke-junit.xml`.
 

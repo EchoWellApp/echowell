@@ -12,7 +12,7 @@ FEAT-009 creates the reference tables every other table points to: `facilities`,
   - `APP` = `docker compose exec db sh -c 'PGPASSWORD=$ECHOWELL_APP_DB_PASSWORD psql -h 127.0.0.1 -U echowell_app_login -d echowell -v VERBOSITY=verbose -v ON_ERROR_ROLLBACK=on'`
   - `RO` = the same with `ECHOWELL_READONLY_DB_PASSWORD` and `echowell_readonly_login`.
 - Every case that inserts, updates or deletes starts with `BEGIN;` and ends with `ROLLBACK;` so the seed is left unchanged. `ON_ERROR_ROLLBACK=on` keeps the transaction usable after an expected error. With `VERBOSITY=verbose` psql prints the SQLSTATE after `ERROR:`.
-- Seeded master data (TRD 20 §4.12, TRD 14 DS-04): facility `Edgewood` (`America/Chicago`); residents R01–R10; devices D01, D02, D04–D10 and D07B (D07 inactive); assignments R02 and R03 both on D02 from 2026-10-01 (open), R07 on D07 2026-10-01..2026-10-12 and on D07B from 2026-10-13 (open); users `admin@example.com`, `clinician@example.com`, `researcher@example.com`; API key `test-ingest`.
+- Seeded master data (TRD 20 §4.12, TRD 14 DS-04): facility `Demo Facility` (`America/Chicago`); residents R01–R10; devices D01, D02, D04–D10 and D07B (D07 inactive); assignments R02 and R03 both on D02 from 2026-10-01 (open), R07 on D07 2026-10-01..2026-10-12 and on D07B from 2026-10-13 (open); users `admin@example.com`, `clinician@example.com`, `researcher@example.com`; API key `test-ingest`.
 - For TC-009-14 a Bearer token from `POST /api/v1/auth/login` as `admin@example.com` (password `SEED_ADMIN_PASSWORD` from `.env`).
 
 ## Manual Test Cases
@@ -155,7 +155,7 @@ The hash values are synthetic patterns, not hashes of any key.
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | `APP`: `SELECT name, timezone FROM facilities;` | One row: `Edgewood`, `America/Chicago`. |
+| 1 | `APP`: `SELECT name, timezone FROM facilities;` | One row: `Demo Facility`, `America/Chicago`. |
 | 2 | `APP`: `SELECT count(*) FROM residents r JOIN facilities f ON f.id = r.facility_id;` and the same for `devices`. | `10` residents, `10` devices, all joined to the one facility. |
 | 3 | `APP`: `SELECT count(*) FROM residents WHERE facility_id NOT IN (SELECT id FROM facilities);` | `0`. |
 
@@ -191,7 +191,7 @@ The hash values are synthetic patterns, not hashes of any key.
 | Step | Database Check | Expected Result |
 |---|---|---|
 | 1 | `SELECT profile, count(*) FROM config_parameters GROUP BY 1;` | 23 / 23 |
-| 2 | `SELECT count(*) FROM facilities;` | 1 (`Edgewood`) |
+| 2 | `SELECT count(*) FROM facilities;` | 1 (`Demo Facility`) |
 | 3 | `SELECT count(*) FROM residents; SELECT count(*) FROM devices; SELECT count(*) FROM device_assignments;` | 10; 10; 11 |
 | 4 | Grant matrix (TC-009-13) | App: SELECT/INSERT/UPDATE, no DELETE; read-only: SELECT without credential columns |
 | 5 | Triggers (TC-009-10) | 7 `_set_updated_at` triggers |
@@ -223,7 +223,7 @@ The hash values are synthetic patterns, not hashes of any key.
 
 ## Test Data Requirements
 
-- `test_v0_1` seed: facility Edgewood; residents R01–R10; devices D01, D02, D04–D10, D07B; 11 assignments; seeded users and API key `test-ingest` (secrets from the `SEED_*` variables, stored only as argon2id / SHA-256 hashes).
+- `test_v0_1` seed: facility Demo Facility; residents R01–R10; devices D01, D02, D04–D10, D07B; 11 assignments; seeded users and API key `test-ingest` (secrets from the `SEED_*` variables, stored only as argon2id / SHA-256 hashes).
 - Synthetic test values only: emails under `example.com`, the code `R11` for rejected inserts, pattern hashes such as `repeat('d', 64)`.
 - All mutations inside `BEGIN … ROLLBACK`.
 

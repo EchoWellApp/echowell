@@ -10,7 +10,7 @@ FEAT-003 builds the single FastAPI application `backend.main:create_app()` with 
 - Local Docker Compose stack running and seeded for the API cases: `cp .env.development.example .env && docker compose up --build -d`, then `docker compose exec backend python -m backend.cli seed test_v0_1`.
 - A Bearer token for the API cases: `POST /api/v1/auth/login` with `{"email":"clinician@example.com","password":"<SEED_CLINICIAN_PASSWORD from .env>"}`; keep `access_token` as `$TOKEN`.
 - Guard cases use a clean environment so `.env` and shell variables do not interfere. Define the base (synthetic, non-secret values; the JWT value is generated per run and never written down):
-  - `BASE="env -i PATH=$PATH HOME=$HOME LOG_FORMAT=json FACILITY_NAME=Edgewood CORS_ORIGINS=https://staging.example.org PIPELINE_PROFILE=production DATABASE_URL=postgresql://u:p@h/db?sslmode=require JWT_SECRET=$(openssl rand -hex 32)"`
+  - `BASE="env -i PATH=$PATH HOME=$HOME LOG_FORMAT=json FACILITY_NAME=Demo Facility CORS_ORIGINS=https://staging.example.org PIPELINE_PROFILE=production DATABASE_URL=postgresql://u:p@h/db?sslmode=require JWT_SECRET=$(openssl rand -hex 32)"`
   - `START='python -c "from backend.main import create_app; create_app()"'`
   - Run as `eval "$BASE APP_ENV=<env> <overrides> $START"; echo "exit=$?"`. Settings validation runs before any database connection, so `h` need not resolve.
 - psql read access to the Compose database (`docker compose exec db psql -U echowell -d echowell`) for TC-003-12.
@@ -67,7 +67,7 @@ FEAT-003 builds the single FastAPI application `backend.main:create_app()` with 
 | 1 | For each of `local`, `test`, `staging`, `production` run `eval "$BASE APP_ENV=<env> JWT_SECRET=$(openssl rand -hex 16 \| cut -c1-31) $START"; echo "exit=$?"`. | Every run logs `startup_config_invalid:` containing `JWT_SECRET` and `must be at least 32 bytes (ENV-013)`; every run ends `exit=1`. |
 | 2 | Run once with a 32-byte value (`openssl rand -hex 16`) and `APP_ENV=local`, `CORS_ORIGINS=http://localhost:3000`. | No `JWT_SECRET` problem; `exit=0`. |
 | 3 | Run `pytest -q tests/unit/backend/core/test_config.py::test_forbidden_facility_name_rejected` (it sets `FACILITY_NAME` to the old facility name of AGT-019, in upper case with a suffix, and with spaces). | `1 passed`: each value raises a validation error on `facility_name` ("must not contain the forbidden facility name (ENV-015)"). |
-| 4 | Run `eval "$BASE APP_ENV=local FACILITY_NAME=Edgewood CORS_ORIGINS=http://localhost:3000 $START"; echo "exit=$?"`. | `exit=0` (the current facility name is accepted). |
+| 4 | Run `eval "$BASE APP_ENV=local FACILITY_NAME=Demo Facility CORS_ORIGINS=http://localhost:3000 $START"; echo "exit=$?"`. | `exit=0` (the current facility name is accepted). |
 
 ### TC-003-05 `postgres://` URL normalised to `postgresql+psycopg://` with query preserved
 

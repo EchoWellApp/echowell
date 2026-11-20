@@ -189,7 +189,7 @@ Fixture check: 12 set-aside records — R03 days 3, 14 (noise), 7, 22 (flag), 10
 | ING-047 | Epochs shall use the `device_id` carried by each record, not the assignment table; assignments are used only for the day ledger, the "(shared)" / "(was D07)" labels and the `device_assignment_mismatch` warning. | Must | BR-08, SRC-04 | Inspection, Test |
 
 Residents, devices and device assignments have no API endpoints in the MVP; they are managed by the CLI
-(`python -m backend.cli ...`) and seed files (contract §20 R4). Test fixture (seeded by `database/seeds/`, used by TRD 14) — facility Edgewood (`FACILITY_NAME`), all residents cohort
+(`python -m backend.cli ...`) and seed files (contract §20 R4). Test fixture (seeded by `database/seeds/`, used by TRD 14) — facility Demo Facility (`FACILITY_NAME`), all residents cohort
 `longitudinal`, `enrolled_on` 2026-10-01, status active:
 
 | resident | sex | assignments |
@@ -259,7 +259,7 @@ Worked check (SRC-05, as_of 2026-10-30 15:00 America/Chicago; 10 residents × 30
 
 - ASM-01 Facility timezone America/Chicago.
 - ASM-02 At most one session per resident per local day (session_id suffix -01); not enforced by validation.
-- ASM-03 Single facility (Edgewood); resident and device codes are unique facility-wide.
+- ASM-03 Single facility (Demo Facility); resident and device codes are unique facility-wide.
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's.
 - ASM-08 Volumes below 100 residents and 1 session per resident per day.
 - D-OWNER-4: the interim Netlify/Render/Neon stack receives synthetic and test data only; live resident data is ingested only after AWS approval.

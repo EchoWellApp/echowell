@@ -759,7 +759,7 @@ FR-xxx identifiers are defined in TRD 02 and trace to the same BR-xx listed here
 ## 5. Assumptions
 
 - ASM-01: Facility time zone is America/Chicago; the frontend still reads it from `meta.facility_tz`.
-- ASM-03: Single facility (Edgewood) in the MVP; the facility name is rendered from `meta.facility_name` (`facilities.name`).
+- ASM-03: Single facility (Demo Facility) in the MVP; the facility name is rendered from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: Production `baseline_n` = 30 (owner decision 18 Oct 2026); the test_v0_1 profile (16) exists only for build-out and testing and is never used in production. The frontend renders N from the API, so the same build shows "of 16" on test data and "of 30" in production.
 - D-OWNER-3 / D-OWNER-4: AWS (Amplify for the frontend) is the target production platform; Netlify is the interim host and carries synthetic and test data only. The frontend shall stay portable (FE-044).
 - ASM-08: Fewer than 25 users and fewer than 100 residents; therefore lists are fetched in a single page of up to 500 rows and no virtualisation is used.

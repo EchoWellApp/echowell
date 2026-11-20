@@ -41,7 +41,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -227,7 +227,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -388,7 +388,7 @@
    "admitted_on": null,
    "withdrawn_on": null,
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -462,7 +462,7 @@
   "name": "r09",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -524,7 +524,7 @@
   "name": "r09",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -819,7 +819,7 @@
   "name": "r09",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -913,7 +913,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -1019,7 +1019,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -1123,7 +1123,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -1189,7 +1189,7 @@
   "name": "test_v0_1",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",
@@ -1407,7 +1407,7 @@
   "name": "r09",
   "value": {
    "meta": {
-    "facility_name": "Edgewood",
+    "facility_name": "Demo Facility",
     "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1",
     "as_of": "2026-10-30T20:00:00Z",

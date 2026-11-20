@@ -177,7 +177,7 @@ def tier_b(*, ingest: bool = True) -> Iterator[TierB]:
     with database() as urls:
         operator(urls, "-m", "backend.cli", "seed", "test_v0_1", "--master-only")
         settings = make_settings(database_url=urls.app, database_readonly_url=urls.readonly,
-                                 facility_name="Edgewood",
+                                 facility_name="Demo Facility",
                                  pipeline_as_of=TEST_AS_OF if ingest else "")  # fmt: skip
         app = create_app(settings)
         app.dependency_overrides[get_settings] = lambda: settings
@@ -197,7 +197,7 @@ def ds07() -> Iterator[TierB]:
         operator(urls, "-m", "backend.cli", "seed", "test_v0_1")
         load_ground_truth(urls)
         settings = make_settings(database_url=urls.app, database_readonly_url=urls.readonly,
-                                 facility_name="Edgewood")  # fmt: skip
+                                 facility_name="Demo Facility")  # fmt: skip
         app = create_app(settings)
         app.dependency_overrides[get_settings] = lambda: settings
         with TestClient(app, raise_server_exceptions=False) as client:
