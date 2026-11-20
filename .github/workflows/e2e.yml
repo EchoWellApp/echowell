@@ -157,6 +157,7 @@ jobs:
         run: python tests/performance/make_load_dataset.py --seed 20261004 --out build/ds08
       - name: Contract R8 budgets and sustained ingest (TST-120..TST-126, TST-190, TST-191)
         run: pytest -p no:randomly tests/performance -m performance --junitxml=build/performance-junit.xml
+        env: { PERF_SESSIONS_BUDGET_MS: "1500" } # TST-121 CI-only budget (D-187)
       - name: Upload performance-report (build/performance.json)
         if: always()
         uses: actions/upload-artifact@v7
