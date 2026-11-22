@@ -1,6 +1,6 @@
 # HIPAA Technical Readiness Report
 
-Document ID: ECHOWELL-HIPAA-REPORT · Version 0.1 · Date: 22 November 2026 · Owner: Team 2 · Status: Draft
+Document ID: ECHOWELL-HIPAA-REPORT · Version 0.2 · Date: 22 November 2026 · Owner: Team 2 · Status: Draft
 Assessed commit: `b74c38e` (`main`, 20 Nov 2026) · Prompt: `specs/prompts/hipaa/Implement_HIPAA_Verification.md`
 Method: `docs/hipaa/HIPAA_VERIFICATION_TRD.md` · Companion documents: `HIPAA_EVIDENCE_MATRIX.md` (46 controls),
 `FINDINGS_REGISTER.md` (18 findings)
@@ -271,6 +271,213 @@ scheduled as go-live conditions, stronger session and login protection (MFA, idl
 (restore drill, provider settings, audit-log review), and organizational decisions outside the code (retention,
 BAAs). Closing the Immediate and Short-Term items would support a High Readiness rating before any real resident
 data is collected.
+
+This assessment represents a technical HIPAA readiness review based on repository evidence and does not
+constitute legal certification, regulatory certification, or a formal HIPAA audit.
+
+---
+
+*Sections below added in version 0.2 by `specs/prompts/hipaa/HIPAA_Compliance_Readiness_Prompt.md`. The
+findings, ratings and sections above are unchanged.*
+
+## Path to Independent HIPAA Assessment
+
+**HIPAA has no official certification program, and there is no government-issued HIPAA certification.**
+Compliance is demonstrated through evidence: implemented safeguards, risk analyses, policies, training and
+independent reviews. This roadmap is a realistic path toward external validation and healthcare audit
+readiness; it is not a claim of compliance.
+
+### 1. What remains self-assessed
+
+Everything in this package: the technical readiness assessment, evidence matrix, findings register, risk
+analysis, draft policies, data-flow analysis, vendor review and audit readiness plan. All were produced by the
+project team from repository evidence; none has been reviewed by an independent party.
+
+### 2. What requires third-party validation
+
+- That the risk analysis is complete and the safeguards are reasonable and appropriate for the organization
+  (independent HIPAA security risk assessment).
+- That the application, API and cloud configuration resist real attacks (penetration test).
+- That vendor arrangements, including BAAs, are in place and adequate (vendor compliance review, legal review).
+- That administrative safeguards (training, access reviews, incident handling) operate in practice.
+
+### 3. Evidence package already produced
+
+| Document | Content |
+|---|---|
+| `HIPAA_VERIFICATION_TRD.md` | Assessment methodology |
+| `HIPAA_READINESS_REPORT.md` | This report |
+| `HIPAA_EVIDENCE_MATRIX.md` | 46 controls with evidence and ratings |
+| `FINDINGS_REGISTER.md` | 18 findings with recommendations |
+| `HIPAA_RISK_ANALYSIS.md` | 15 risks, matrix, register, prioritized remediation |
+| `policies/` (7 files) | Draft access control, encryption, audit logging, data retention, incident response, vendor management and device security policies |
+| `DATA_FLOW_ANALYSIS.md` | Architecture and stage-by-stage data-flow analysis |
+| `VENDOR_COMPLIANCE_REVIEW.md` | Vendor inventory with BAA and verification status |
+| `HIPAA_AUDIT_READINESS_PLAN.md` | Actions by time horizon with owners and effort |
+| Existing project evidence | TRD 12 security specification, TRD 22 vendor rules, `docs/deployment.md` runbook, automated security tests and CI gates |
+
+### 4. Remaining gaps before external review
+
+Open High findings (HF-01, HF-02); MFA and idle time-out (HF-03, HF-04); retention decision (HF-06); AWS BAA and
+eligible services (HF-07); restore drill and provider settings (HF-08); audit-log review (HF-09); draft policies
+not yet approved; no training or access review performed yet; Team 1 device security undocumented (HF-18).
+
+### 5. Recommended engagement plan
+
+| Engagement | Purpose | When |
+|---|---|---|
+| HIPAA Security Risk Assessment | Independent evaluation of the Security Rule risk analysis and safeguards | After the internal gaps above are closed and the AWS platform is built |
+| Independent Security Assessment | Review of architecture, configuration and controls against HIPAA and NIST | Can be combined with the risk assessment |
+| Penetration Test | Hands-on testing of application, API, authentication, authorization and AWS configuration, with retest | After the risk assessment's Critical and High items are fixed, before live data at scale |
+| Vendor Compliance Review | Check of BAAs, HIPAA-eligible services and vendor security documentation | Before go-live |
+
+**Estimated industry costs** (typical startup ranges supplied in the assessment brief; not independently
+verified; actual quotes vary widely with organization size, system scope and provider):
+
+| Item | Typical range |
+|---|---|
+| HIPAA Security Risk Assessment | $5,000–$25,000 |
+| Penetration Test | $7,000–$30,000 |
+| Compliance Consulting | $5,000–$50,000+ |
+| Compliance Automation Platform | $5,000–$20,000 per year |
+
+Because EchoWell is a university research system, UND's own IT security and compliance offices may be able to
+perform or arrange parts of this review at lower cost; this should be asked first.
+
+## External Validation and Independent Review Strategy
+
+The objective is a realistic route from this internal readiness assessment to external validation. Provider
+names are examples taken from the assessment brief, listed for orientation only; they are not recommendations,
+and none has been contacted.
+
+### Option 1: HIPAA Security Risk Assessment
+
+- **Purpose:** independent evaluation of HIPAA Security Rule compliance and risk exposure.
+- **Typical providers:** Clearwater, CompliancePoint, Meditology, Fortified Health Security, Impact Advisors.
+- **Deliverables:** formal risk assessment report, risk register, risk prioritization, remediation
+  recommendations.
+- **Typical cost:** $5,000–$25,000.
+- **Recommended timing:** after completion of the internal readiness assessment and remediation of major
+  findings.
+
+### Option 2: Independent Penetration Test
+
+- **Purpose:** independent validation of application, API, authentication, authorization and infrastructure
+  security.
+- **Typical providers:** Bishop Fox, Coalfire, NCC Group, NetSPI, Praetorian.
+- **Deliverables:** executive summary, technical findings report, severity ratings, retest validation.
+- **Typical cost:** $7,000–$30,000.
+- **Recommended timing:** after remediation of Critical and High findings from internal review.
+
+### Option 3: Compliance Management Platform
+
+- **Purpose:** ongoing collection of compliance evidence, policies, controls, vendor documentation and audit
+  readiness materials.
+- **Typical platforms:** Vanta, Drata, Secureframe, Thoropass, Sprinto.
+- **Deliverables:** evidence repository, continuous monitoring, vendor tracking, compliance dashboards.
+- **Typical cost:** $5,000–$30,000+ per year.
+- **Recommended timing:** when preparing for healthcare customers, enterprise procurement reviews, SOC 2 audits
+  or ongoing compliance management. Likely unnecessary while EchoWell remains a university research system.
+
+### Recommended path for EchoWell
+
+| Phase | Activity | Status | Expected deliverables |
+|---|---|---|---|
+| 1 | Internal HIPAA readiness assessment | **Current activity** (this package) | Methodology, report, evidence matrix, findings, risk analysis, draft policies, data-flow and vendor reviews, plan |
+| 2 | Remediation of findings | PLANNED | Closed findings with evidence; approved policies; AWS platform with recorded settings |
+| 3 | Independent HIPAA security risk assessment | PLANNED | External risk assessment report and remediation list |
+| 4 | Independent penetration test | PLANNED | Penetration test report, fixes, retest letter |
+| 5 | Compliance automation platform (optional) | PLANNED (optional) | Continuous evidence collection and dashboards |
+
+### Estimated budget ranges (from the assessment brief; not independently verified)
+
+| Path | Components | Estimated total |
+|---|---|---|
+| Minimum Validation Path | HIPAA Security Risk Assessment $5,000–$10,000; Penetration Test $7,000–$15,000 | $12,000–$25,000 |
+| Moderate Validation Path | Risk Assessment $10,000–$20,000; Penetration Test $15,000–$30,000; Compliance Platform $5,000–$15,000/year | $30,000–$65,000 (first year) |
+| Enterprise Validation Path | Risk Assessment $20,000–$25,000+; Advanced Penetration Testing $25,000–$50,000+; Compliance Platform $15,000–$30,000+/year | $60,000–$100,000+ (first year) |
+
+For a single-facility research deployment, the Minimum Validation Path, possibly with UND support, is the
+proportionate choice.
+
+**Important:** HIPAA does not provide an official certification program; there is no government-issued HIPAA
+certification. Compliance is demonstrated through evidence, implemented safeguards, risk assessments, policies,
+training and independent reviews. The purpose of this roadmap is a realistic path toward external validation and
+healthcare audit readiness.
+
+## Demonstration of Due Diligence
+
+| Area | Summary |
+|---|---|
+| Standards reviewed | HIPAA Security Rule (45 CFR Part 164 Subpart C); NIST SP 800-66 Rev. 2; NIST CSF 2.0; OWASP ASVS 5.0.0 |
+| Evidence collected | Code, configuration, migrations, workflows, tests and design documents at commit `b74c38e`; outputs of four automated tools |
+| Security controls evaluated | 46 controls: 26 PASS, 13 PARTIAL, 1 FAIL, 6 NOT DETERMINED |
+| Risks identified | 15 risks: 4 High, 7 Medium, 4 Low (`HIPAA_RISK_ANALYSIS.md`) |
+| Policies created | 7 policies, all **DRAFT** and not yet approved or in force |
+| Data flows reviewed | 7 flows from device to dashboard, backups and administration (`DATA_FLOW_ANALYSIS.md`) |
+| Security findings documented | 18 findings: 0 Critical, 2 High, 7 Medium, 5 Low, 4 Informational |
+| External validation plan established | Five-phase path with budget ranges (above) |
+
+### Completed Activities
+
+- Assessment methodology defined (`HIPAA_VERIFICATION_TRD.md`).
+- Repository discovery and architecture summary.
+- Automated scans: Gitleaks, Trivy, Semgrep, pip-audit (22 Nov 2026), with triage.
+- Manual review of authentication, authorization, data flow, logging, encryption, database and device
+  authentication.
+- Evidence matrix, findings register and readiness report.
+- Internal risk analysis.
+- Drafting of seven policies.
+- Data-flow analysis and vendor compliance review.
+- Audit readiness plan.
+
+### Planned Activities
+
+- Remediation of findings HF-01 to HF-18 — PLANNED
+- Approval and adoption of the seven policies — PLANNED
+- MFA and idle time-out — PLANNED
+- Retention decision (OQ-01) — PLANNED
+- Restore drill and provider-settings record — PLANNED
+- Weekly audit-log review, quarterly access review, security briefing — PLANNED
+- AWS platform with BAA, eligible services and KMS encryption — PLANNED
+- Incident response tabletop exercise — PLANNED
+- Repeat of this assessment on the go-live commit — PLANNED
+- Independent risk assessment and penetration test — PLANNED
+
+### Externally Validated Activities
+
+**None.** No part of EchoWell's security or HIPAA readiness has been reviewed or validated by an independent party
+as of 22 November 2026.
+
+## Appendix: Healthcare Customer and Investor Readiness Summary
+
+1. **Internal HIPAA readiness work completed.** A technical HIPAA readiness assessment of the full EchoWell
+   repository against the HIPAA Security Rule, NIST SP 800-66 Rev. 2, NIST CSF 2.0 and OWASP ASVS 5.0, rated
+   Moderate Readiness, with an audit readiness package (risk analysis, draft policies, data-flow and vendor
+   reviews, plan).
+2. **Technical assessments performed.** Secret scanning of full history (no real secrets found), dependency and
+   configuration scanning, static code analysis, and manual review of every technical safeguard. EchoWell also
+   runs security tests and gates on every change (authorization matrix, no-audio, CORS, tokens, transport,
+   database privileges; Gitleaks, pip-audit, npm audit, Bandit).
+3. **Security controls reviewed.** 46 controls. Strengths: argon2id passwords with lockout; server-enforced,
+   fully tested role-based access; per-device hashed API keys; append-only audit trail; immutable raw data;
+   least-privilege database roles; TLS end to end; strict input validation; log redaction; no raw audio in the
+   system; study codes instead of names.
+4. **Documentation package created.** Fifteen documents under `docs/hipaa/` (eight assessment documents and seven
+   draft policies), plus the existing security, vendor and deployment specifications.
+5. **Risk analysis completed (internal).** 15 risks with likelihood, impact, existing and recommended controls;
+   4 High risks with a prioritized remediation table. Not yet independently reviewed.
+6. **Gaps remaining before independent validation.** Framework upgrades (two High findings), MFA, idle
+   time-out, retention decision, AWS BAA and production platform, restore drill, audit-log review, policy
+   approval, training, device security documentation.
+7. **Estimated costs for external validation.** Minimum path about $12,000–$25,000; moderate path about
+   $30,000–$65,000 in the first year (industry ranges, not quotes).
+8. **Recommended next steps.** Close the Immediate and Short-Term actions of `HIPAA_AUDIT_READINESS_PLAN.md`;
+   build the AWS platform under a BAA; repeat the internal assessment; then commission an independent HIPAA
+   security risk assessment followed by a penetration test.
+
+EchoWell does not claim HIPAA compliance, HIPAA certification, audit success or external validation. It currently
+holds synthetic and test data only.
 
 This assessment represents a technical HIPAA readiness review based on repository evidence and does not
 constitute legal certification, regulatory certification, or a formal HIPAA audit.
