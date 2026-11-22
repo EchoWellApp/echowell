@@ -52,7 +52,7 @@ def test_env_041_local_dev_jwt_refused_in_staging() -> None:
         database_readonly_url="postgresql+psycopg://ro:pw-y@db.example.org/echowell?sslmode=require",
         jwt_secret="local-dev-only-0123456789abcdef0123456789abcdef",  # noqa: S106 - template value
         cors_origins="https://echowell-und-staging.netlify.app",
-        facility_name="Edgewood",
+        facility_name="Demo Facility",
     )
     assert ("JWT_SECRET", "template, placeholder or low-entropy value refused") in (
         startup_violations(settings)

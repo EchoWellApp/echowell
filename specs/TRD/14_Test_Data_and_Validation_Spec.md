@@ -507,7 +507,7 @@ Registry = the master-data CSVs in `database/seeds/test_v0_1/` (the single roste
 | R09 | F | longitudinal | 2026-10-01 | D09 from 2026-10-01 |
 | R10 | M | longitudinal | 2026-10-01 | D10 from 2026-10-01 |
 
-Devices: D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (there is no D03). Facility: `Edgewood` (`meta.facility_name` is read from `facilities.name`; DATA_SOURCE_LABEL `pipeline test data v0.1` marks the data as test data). Users: one each of admin, clinician,
+Devices: D01, D02, D04, D05, D06, D07, D07B, D08, D09, D10 (there is no D03). Facility: `Demo Facility` (`meta.facility_name` is read from `facilities.name`; DATA_SOURCE_LABEL `pipeline test data v0.1` marks the data as test data). Users: one each of admin, clinician,
 researcher with test-only passwords from the test environment, never reused in staging or production.
 
 Table 4.9-B Expected Resident list (as of 2026-10-30 15:00 America/Chicago; "last 30 days" = local dates 2026-10-01..2026-10-30 inclusive; default order `sort=alarm`, TRD 24 D-109; rendering per TRD 11 §4.13.1). The Device column and the counts are shown in the Resident chart (banner and Check-in log), not on the list.

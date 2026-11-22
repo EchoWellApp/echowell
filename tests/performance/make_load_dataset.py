@@ -33,7 +33,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 
 SEED = 20261004
-FACILITY = ("Edgewood", "America/Chicago")
+FACILITY = ("Demo Facility", "America/Chicago")
 TZ = ZoneInfo(FACILITY[1])
 UTC = ZoneInfo("UTC")
 START = date(2026, 6, 1)

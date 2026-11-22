@@ -497,7 +497,7 @@ components:
       type: object
       required: [facility_name, facility_tz, data_source_label, as_of, baseline_n, cusum_h, pipeline_profile]
       properties:
-        facility_name: {type: string, examples: ["Edgewood"]}
+        facility_name: {type: string, examples: ["Demo Facility"]}
         facility_tz: {type: string, examples: ["America/Chicago"]}
         data_source_label: {type: string, examples: ["pipeline test data v0.1"]}
         as_of: {type: [string, "null"], format: date-time, description: as-of of the latest succeeded pipeline run}

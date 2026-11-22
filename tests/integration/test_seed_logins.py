@@ -50,7 +50,7 @@ def test_seeded_users_log_in_with_their_role(cli: Cli) -> None:
     assert seeded.code == 0, seeded.err
     assert {email for email, *_ in SEED_USERS} == set(SEEDED)
     settings = make_settings(database_url=cli.urls.app, database_readonly_url=cli.urls.readonly,
-                             facility_name="Edgewood")  # fmt: skip
+                             facility_name="Demo Facility")  # fmt: skip
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app, raise_server_exceptions=False) as client:

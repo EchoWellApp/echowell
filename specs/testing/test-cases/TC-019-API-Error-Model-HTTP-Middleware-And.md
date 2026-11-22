@@ -121,7 +121,7 @@ FEAT-019 gives every endpoint the same outer contract: one RFC 7807 `application
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | As the clinician, `GET /api/v1/residents` | `meta` = `{"facility_name": "Edgewood", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"}` |
+| 1 | As the clinician, `GET /api/v1/residents` | `meta` = `{"facility_name": "Demo Facility", "facility_tz": "America/Chicago", "data_source_label": "pipeline test data v0.1", "as_of": "2026-10-30T20:00:00Z", "baseline_n": 16, "cusum_h": 5.0, "pipeline_profile": "test_v0_1"}` |
 | 2 | `GET /api/v1/residents/R09` and, as the researcher, `GET /api/v1/analytics` | Same `meta` values in both responses |
 | 3 | `SELECT as_of FROM pipeline_runs WHERE status = 'succeeded' ORDER BY started_at DESC LIMIT 1;` | `2026-10-30 20:00:00+00` = `meta.as_of` |
 | 4 | Open the resident list in the browser | Header shows "Showing pipeline test data v0.1 as of …" with Oct 30, 2026, 3:00 PM CT |
@@ -205,7 +205,7 @@ Note: FEAT-019-FR-21 asks for a shared helper for the SEC-086 rule; no such help
 
 | Step | Database Check | Expected Result |
 |---|---|---|
-| 1 | `SELECT name FROM facilities;` | `Edgewood` = `meta.facility_name` |
+| 1 | `SELECT name FROM facilities;` | `Demo Facility` = `meta.facility_name` |
 | 2 | `SELECT key, value FROM config_parameters WHERE profile = 'test_v0_1' AND key IN ('baseline_n','cusum_h');` | `baseline_n` 16, `cusum_h` 5.0 = `meta` values |
 | 3 | `SELECT key, value FROM config_parameters WHERE profile = 'production' AND key = 'baseline_n';` | 30 (value used when `PIPELINE_PROFILE=production`) |
 | 4 | `raw_sessions` and `ingest_rejections` counts before and after the 413/415 requests | Unchanged |
@@ -233,7 +233,7 @@ Note: FEAT-019-FR-21 asks for a shared helper for the SEC-086 rule; no such help
 | FEAT-019-AC-05 | 65,537-byte JSON body to a non-ingest endpoint: 413; `Content-Type: audio/wav`: 415 | TC-019-06, TC-019-07 |
 | FEAT-019-AC-06 | Allowed origin echoed with `X-Request-ID` exposed; unlisted origin gets no allow header | TC-019-08 |
 | FEAT-019-AC-07 | Four security headers on every response; HSTS with `APP_ENV=staging` | TC-019-09 |
-| FEAT-019-AC-08 | `meta.as_of` "2026-10-30T20:00:00Z", `baseline_n` 16, `cusum_h` 5.0, `pipeline_profile` "test_v0_1", `facility_name` "Edgewood" | TC-019-10, TC-019-11 |
+| FEAT-019-AC-08 | `meta.as_of` "2026-10-30T20:00:00Z", `baseline_n` 16, `cusum_h` 5.0, `pipeline_profile` "test_v0_1", `facility_name` "Demo Facility" | TC-019-10, TC-019-11 |
 | FEAT-019-AC-09 | `from=2026-10-20&to=2026-10-10`: 422 `INVALID_QUERY_PARAMETER` | TC-019-12 |
 
 ## Test Data Requirements

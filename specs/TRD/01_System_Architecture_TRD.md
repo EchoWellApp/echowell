@@ -410,7 +410,7 @@ flowchart LR
 | ARC-102 | All timestamps shall be stored as `timestamptz` in UTC; conversion to local time shall use the IANA zone in `facilities.timezone` (default `America/Chicago`) via Python `zoneinfo`. | Must | BR-07, ASM-01 | Test |
 | ARC-103 | Security-relevant actions listed in TRD 12 shall be written to the append-only `audit_logs` table. | Must | BR-16 | Test |
 | ARC-104 | The system shall contain no LLM component and no machine-learning model in the processing path. | Must | BR-18 | Inspection (dependency scan) |
-| ARC-105 | The facility shall be modelled as a row in `facilities`; all residents and devices shall reference a facility, and the MVP shall operate with exactly one facility (Edgewood). | Must | ASM-03, BR-17 | Test |
+| ARC-105 | The facility shall be modelled as a row in `facilities`; all residents and devices shall reference a facility, and the MVP shall operate with exactly one facility (Demo Facility). | Must | ASM-03, BR-17 | Test |
 
 ## 5. Assumptions
 

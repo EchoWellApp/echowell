@@ -101,7 +101,7 @@
 |---|---|---|
 | 1 | On `qa/tc-078-08a`, append `openai==1.0.0` to `backend/requirements.txt`; draft PR "test(ci): llm dependency". | Step "No LLM SDK or ML model dependencies" prints the line and "LLM SDKs and machine-learning model packages are not allowed"; job fails. |
 | 2 | On `qa/tc-078-08b`, add `"@tensorflow/tfjs": "4.0.0"` to `frontend/package.json` dependencies; draft PR. | Same step fails. |
-| 3 | On `qa/tc-078-08c`, add a comment line under `backend/` containing the old facility name of AGT-019 (the term matched by the job's character-class pattern); draft PR. | Step "Forbidden terms" prints the file and line and "The old facility name must not be used (the facility is Edgewood)"; job fails. |
+| 3 | On `qa/tc-078-08c`, add a comment line under `backend/` containing the old facility name of AGT-019 (the term matched by the job's character-class pattern); draft PR. | Step "Forbidden terms" prints the file and line and "The old facility name must not be used (the facility is Demo Facility)"; job fails. |
 | 4 | Close and delete the three branches. | Done. |
 
 ### TC-078-09 Coverage below 95 % / 85 % / 80 % fails the respective job

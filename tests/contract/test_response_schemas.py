@@ -19,7 +19,7 @@ from tests.contract.response_validation import META_FIELDS, ContractViolationErr
 pytestmark = pytest.mark.contract
 
 META = dict.fromkeys(META_FIELDS, None) | {
-    "facility_name": "Edgewood", "facility_tz": "America/Chicago",
+    "facility_name": "Demo Facility", "facility_tz": "America/Chicago",
     "data_source_label": "pipeline test data v0.1", "baseline_n": 16, "cusum_h": 5.0,
     "pipeline_profile": "test_v0_1",
 }  # fmt: skip

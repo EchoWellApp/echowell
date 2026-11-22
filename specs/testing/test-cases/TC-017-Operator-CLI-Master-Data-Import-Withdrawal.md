@@ -6,7 +6,7 @@ FEAT-017 gives operators the only supported way to manage master data and test d
 
 ## Preconditions
 
-- Local development stack running; `.env` from `.env.development.example` (`APP_ENV=local`, `PIPELINE_PROFILE=test_v0_1`, `FACILITY_NAME=Edgewood`, `FACILITY_TZ=America/Chicago`, all four `SEED_*` variables set; values never written down).
+- Local development stack running; `.env` from `.env.development.example` (`APP_ENV=local`, `PIPELINE_PROFILE=test_v0_1`, `FACILITY_NAME=Demo Facility`, `FACILITY_TZ=America/Chicago`, all four `SEED_*` variables set; values never written down).
 - `DATABASE_URL` (app role) and `DATABASE_MIGRATION_URL` (migrator) set in the environment file.
 - CLI run from the repository root (or `docker compose exec backend python -m backend.cli …`); exit code read with `echo $?`; stdout and stderr captured to files for the secret checks.
 - `psql` access to the local database (read-only `SELECT`).
@@ -49,7 +49,7 @@ FEAT-017 gives operators the only supported way to manage master data and test d
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | `ls database/seeds/test_v0_1/` | Contains `facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` (plus the SRC-05 input CSV and `README.md`) |
-| 2 | `cat database/seeds/test_v0_1/facilities.csv` | Header `name,timezone`; one row `Edgewood,America/Chicago` |
+| 2 | `cat database/seeds/test_v0_1/facilities.csv` | Header `name,timezone`; one row `Demo Facility,America/Chicago` |
 | 3 | Inspect `residents.csv` | Header `resident_code,sex,cohort,enrolled_on,admitted_on`; 10 rows R01–R10; every `enrolled_on` `2026-10-01`; study IDs only, no names or rooms |
 | 4 | Inspect `devices.csv` | Header `device_code,room_label,active,firmware_version_last`; 10 rows (D01–D06, D07, D07B, D08–D10); D07 `active` `false`; `room_label` empty; firmware `fw-1.0.0` |
 | 5 | Inspect `device_assignments.csv` | Header `resident_code,device_code,valid_from,valid_to`; 11 rows; R02 and R03 both on D02; R07 on D07 until `2026-10-12` and on D07B from `2026-10-13` |
@@ -156,7 +156,7 @@ FEAT-017 gives operators the only supported way to manage master data and test d
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | Run `python -m backend.cli reset-test-db`, then `python -m backend.cli bootstrap` | Exit code 0; stderr `Bootstrap complete.` |
-| 2 | Dump: `SELECT * FROM facilities ORDER BY id; SELECT * FROM config_parameters ORDER BY profile, key;` into a file | One facility `Edgewood` / `America/Chicago`; 46 parameter rows |
+| 2 | Dump: `SELECT * FROM facilities ORDER BY id; SELECT * FROM config_parameters ORDER BY profile, key;` into a file | One facility `Demo Facility` / `America/Chicago`; 46 parameter rows |
 | 3 | Run `bootstrap` again and repeat the dump into a second file; `diff` the files | No difference (identical rows, including timestamps) |
 | 4 | `SELECT count(*) FROM config_parameters;` | 46 (bootstrap never inserts or overwrites parameter rows) |
 
@@ -243,7 +243,7 @@ FEAT-017 gives operators the only supported way to manage master data and test d
 
 ## Test Data Requirements
 
-- Roster `database/seeds/test_v0_1/` (facility Edgewood, R01–R10, D01–D10 with D07B, 11 assignments) and the SRC-05 input used by the full seed.
+- Roster `database/seeds/test_v0_1/` (facility Demo Facility, R01–R10, D01–D10 with D07B, 11 assignments) and the SRC-05 input used by the full seed.
 - Fixture overlay `tests/fixtures/seeds/demo_overlay` (R11, D11) and a scratch copy with device `D99` for TC-017-15.
 - Non-existent codes R99 and D99; synthetic withdrawal date 2026-10-20.
 - Environment: `APP_ENV`, `PIPELINE_PROFILE`, `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `FACILITY_NAME`, `FACILITY_TZ`, `SEED_ADMIN_PASSWORD`, `SEED_CLINICIAN_PASSWORD`, `SEED_RESEARCHER_PASSWORD`, `SEED_INGEST_API_KEY` (values never written down).

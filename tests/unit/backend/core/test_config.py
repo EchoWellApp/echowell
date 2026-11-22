@@ -34,7 +34,7 @@ def prod(**overrides: object) -> dict[str, object]:
         "jwt_secret": PROD_SECRET,
         "pipeline_profile": "production",
         "cors_origins": "https://echowell-und.netlify.app",
-        "facility_name": "Edgewood",
+        "facility_name": "Demo Facility",
     }
     values.update(overrides)
     return values
@@ -177,7 +177,7 @@ def test_dotenv_ignored_in_staging(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     monkeypatch.delenv("FACILITY_NAME", raising=False)
     from backend.core.config import build_settings
 
-    assert build_settings().facility_name == "Edgewood"
+    assert build_settings().facility_name == "Demo Facility"
     monkeypatch.setenv("APP_ENV", "local")
     assert build_settings().facility_name == "FromDotenv"
 

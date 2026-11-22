@@ -25,7 +25,7 @@ def test_nightly_run_refuses_test_profile_in_production() -> None:
         "PIPELINE_PROFILE": "test_v0_1",
         "DATABASE_URL": "postgresql://app:pw-1@db.example.org/echowell?sslmode=require",
         "CORS_ORIGINS": "https://echowell-und.netlify.app",
-        "FACILITY_NAME": "Edgewood",
+        "FACILITY_NAME": "Demo Facility",
     }
     result = subprocess.run(  # noqa: S603 - fixed interpreter and arguments
         [sys.executable, "-m", "backend.jobs.nightly_run"],
