@@ -137,7 +137,7 @@ def _api_full_run(cli: Cli) -> dict[str, object]:
     """A full run started by `POST /api/v1/pipeline/run` as the seeded admin, polled until it
     leaves `running`."""
     settings = make_settings(database_url=cli.urls.app, database_readonly_url=cli.urls.readonly,
-                             facility_name="Edgewood")  # fmt: skip
+                             facility_name="Demo Facility")  # fmt: skip
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app, raise_server_exceptions=False) as client:

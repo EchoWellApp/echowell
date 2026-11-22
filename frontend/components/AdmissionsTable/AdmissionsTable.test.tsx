@@ -5,7 +5,7 @@ import type { AdmissionRow, Meta } from "@/lib/types";
 import { AdmissionsTable } from "./AdmissionsTable";
 
 const meta: Meta = {
-  facility_name: "Edgewood",
+  facility_name: "Demo Facility",
   facility_tz: "America/Chicago",
   data_source_label: "synthetic",
   as_of: "2026-10-30T20:00:00Z",

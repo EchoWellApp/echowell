@@ -85,7 +85,7 @@ def _session(stack: Stack) -> Iterator[tuple[Session, ReadContext, Capture]]:
     capture = Capture()
     _listen(engine, capture)
     settings = make_settings(database_url=stack.urls.app, database_readonly_url=stack.urls.readonly,
-                             facility_name="Edgewood")  # fmt: skip
+                             facility_name="Demo Facility")  # fmt: skip
     try:
         with Session(engine) as session:
             yield session, resident_service.read_context(session, settings), capture

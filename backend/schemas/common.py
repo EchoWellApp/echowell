@@ -47,7 +47,7 @@ def reject_null(value: object) -> object:
 
 
 class Meta(ResponseModel):
-    facility_name: str = Field(examples=["Edgewood"])
+    facility_name: str = Field(examples=["Demo Facility"])
     facility_tz: str = Field(examples=["America/Chicago"])
     data_source_label: str = Field(examples=["pipeline test data v0.1"])
     as_of: datetime | None = Field(description="as-of of the latest succeeded pipeline run")

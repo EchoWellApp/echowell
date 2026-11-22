@@ -128,7 +128,7 @@ def cli_environment(urls: PgUrls, **extra: str) -> dict[str, str]:
             "DATABASE_MIGRATION_URL": urls.migrator,
             "DATABASE_READONLY_URL": urls.readonly,
             "PIPELINE_PROFILE": "test_v0_1",
-            "FACILITY_NAME": "Edgewood",
+            "FACILITY_NAME": "Demo Facility",
             "FACILITY_TZ": "America/Chicago",
             "LOG_FORMAT": "json",
         }

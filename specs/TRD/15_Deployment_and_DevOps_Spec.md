@@ -280,7 +280,7 @@ envVarGroups:
       - { key: APP_ENV, value: staging }
       - { key: PIPELINE_PROFILE, value: test_v0_1 }
       - { key: PIPELINE_AS_OF, value: "2026-10-30T15:00:00-05:00" }
-      - { key: FACILITY_NAME, value: Edgewood }
+      - { key: FACILITY_NAME, value: Demo Facility }
       - { key: FACILITY_TZ, value: America/Chicago }
       - { key: NIGHTLY_RUN_HOUR_LOCAL, value: "2" }
       - { key: LOG_LEVEL, value: INFO }
@@ -415,7 +415,7 @@ The backend provides a CLI module `backend/cli.py` (invoked as `python -m backen
 | `revoke-api-key --name N` | Sets `api_keys.active = false` (audited; TRD 12 SEC-024); refuses an unknown name with exit code 2 and no change (TRD 24 D-86). | all |
 | `import-master-data --dir D` | Idempotent upsert of the facility, residents, devices and device assignments from CSV files `facilities.csv`, `residents.csv`, `devices.csv`, `device_assignments.csv` in directory D (format TRD 06 DB-060; the test roster is `database/seeds/test_v0_1/`, TRD 20 §4.12); master data has no API endpoints in the MVP (contract R4). | all |
 | `withdraw-resident <resident_code> --on <YYYY-MM-DD>` | Sets resident status `withdrawn` and `withdrawn_on` (audited `resident.withdrawn`; TRD 06 DB-062, TRD 23 DME-009). | all |
-| `seed test_v0_1 [--master-only] [--reset]` | Runs the `import-master-data` step on `database/seeds/test_v0_1/` (facility "Edgewood"), upserts the test users and the API key `test-ingest` from SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY without printing them (TRD 06 DB-056/DB-057, idempotent), then ingests SRC-05 (`tests/fixtures/pipeline_input/`) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`, giving a fully populated test system (TRD 06 DB-058; TRD 24 D-68); `--master-only` stops after the roster, users and API key; refused in production (DEP-070); `--reset`: see `reset-test-db` (TRD 24 D-71). It does not load `evaluation_ground_truth`; run `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` afterwards (refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`; `backend/cli.py` never references that table). | local, staging, test |
+| `seed test_v0_1 [--master-only] [--reset]` | Runs the `import-master-data` step on `database/seeds/test_v0_1/` (facility "Demo Facility"), upserts the test users and the API key `test-ingest` from SEED_ADMIN_PASSWORD, SEED_CLINICIAN_PASSWORD, SEED_RESEARCHER_PASSWORD and SEED_INGEST_API_KEY without printing them (TRD 06 DB-056/DB-057, idempotent), then ingests SRC-05 (`tests/fixtures/pipeline_input/`) through the ingest service with `ingest_batches.source = seed` and runs the pipeline with profile `test_v0_1` and as-of `2026-10-30T15:00:00-05:00`, giving a fully populated test system (TRD 06 DB-058; TRD 24 D-68); `--master-only` stops after the roster, users and API key; refused in production (DEP-070); `--reset`: see `reset-test-db` (TRD 24 D-71). It does not load `evaluation_ground_truth`; run `python database/seeds/load_evaluation_ground_truth.py tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` afterwards (refuses when APP_ENV=production or PIPELINE_PROFILE is not `test_v0_1`; `backend/cli.py` never references that table). | local, staging, test |
 | `set-config --profile P --key K --value '<json>' --reason "<text>"` | Admin/operator only; runs as `echowell_migrator` (DATABASE_MIGRATION_URL). Validates the JSON value against the key's schema (TRD 07 ANL-029, TRD 10 ING-017); refuses unknown keys and invalid values with exit code 2 and no change; otherwise updates the `config_parameters` row and writes one `audit_logs` row `config.changed` (`details`: profile, key, old, new, reason) in the same transaction. For an algorithm key (TRD 07 §4.7) it prints "Algorithm key changed: run python -m backend.cli rebuild --profile P --confirm REBUILD"; until that rebuild runs, ingest and nightly runs end `failed` with `config_changed_requires_rebuild` (ANL-032). Operational keys take effect at the next run or request (TRD 24 D-56, D-69). | all |
 | `run-pipeline --scope all [--profile P]` | Runs the full pipeline and records a `pipeline_runs` row with trigger `manual`. | all |
 | `rebuild --profile P --confirm REBUILD` | After an algorithm-key change only: connects with DATABASE_MIGRATION_URL (`echowell_migrator`), runs the full pipeline (trigger `manual`) with `rebuild=True`, which deletes and recomputes each resident's `baselines` inside that resident's transaction; audited `pipeline.rebuild` (TRD 07 ANL-032, TRD 24 D-56). Run by the operator from the Render Shell (or SSH) of the environment's web service, or as a Render one-off job of that service, never by the web service process. | all |
@@ -562,7 +562,7 @@ Mapping from the current interim stack:
 
 ## 5. Assumptions
 
-- ASM-03 Single facility (Edgewood) in MVP; one Neon project and one Render project serve it.
+- ASM-03 Single facility (Demo Facility) in MVP; one Neon project and one Render project serve it.
 - ASM-05 Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's.
 - ASM-07 Frozen baselines are never recomputed after freeze; restore + rebuild relies on this.
 - RSK-14 Interim hosting providers may not offer a BAA / HIPAA-eligible plan on the tiers used; mitigated by DEP-008 (synthetic/test data only) and the ready AWS path (§4.16).
@@ -610,7 +610,7 @@ Mapping from the current interim stack:
 - OQ-01 Data retention architecture — determines where weekly dumps may be stored and for how long (DEP-096).
 - OQ-07 AWS budget approval timing and account ownership (UND IT) — determines when §4.16 is executed, plan upgrades on the interim stack and the custom domain.
 - OQ-15 Store-and-forward after network outage — a backend outage during a deploy loses device posts unless Team 1 retries; deploys to production should avoid the 08:00–20:00 facility-local window until OQ-15 is closed.
-- OQ-17 Edgewood site access windows — affects when a device can be re-pointed to the fallback laptop (DEP-091).
+- OQ-17 Demo Facility site access windows — affects when a device can be re-pointed to the fallback laptop (DEP-091).
 
 ## Revision History
 

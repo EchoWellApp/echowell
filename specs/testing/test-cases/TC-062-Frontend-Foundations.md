@@ -166,7 +166,7 @@ The shared frontend layer used by every page: the single typed API client `front
 | 4 | Search the pages for "!" used as punctuation | None; "!" appears only as the Needs attention pill glyph |
 | 5 | Inspect glyphs used across the pages | Only "▲", "!", "●", "○", "←"; no icon images or icon fonts |
 | 6 | Run `npx vitest run tests/unit/wording-*.test.ts` | All pass (exact TRD 11 strings; marker present while `CLINICAL_WORDING_APPROVED = false`) |
-| 7 | Check the app bar facility line | Reads "Edgewood, Assisted living" (from `meta.facility_name`); the old facility name of AGT-019 never appears |
+| 7 | Check the app bar facility line | Reads "Demo Facility, Assisted living" (from `meta.facility_name`); the old facility name of AGT-019 never appears |
 
 ### TC-062-15 Single HTTP module and test-only fixtures
 
@@ -247,7 +247,7 @@ Note: FEAT-062-FR-18 and FR-22 are aligned to the TRD (TRD 24 D-184): 429 and 50
 
 ## Test Data Requirements
 
-- DS-07: `test_v0_1` seed (R01–R10) and pipeline run as-of 2026-10-30 15:00 America/Chicago; `FACILITY_NAME` Edgewood; `DATA_SOURCE_LABEL` "pipeline test data v0.1".
+- DS-07: `test_v0_1` seed (R01–R10) and pipeline run as-of 2026-10-30 15:00 America/Chicago; `FACILITY_NAME` Demo Facility; `DATA_SOURCE_LABEL` "pipeline test data v0.1".
 - Learning fixture: R11 from `tests/fixtures/seeds/demo_overlay/` (isolated `echowell_demo` database) for the "○ Learning" pill.
 - Seeded users and `SEED_*` passwords from the environment file; `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_APP_ENV`.
 - Captured fixtures `frontend/tests/fixtures/ds07/`; no audio, no real person.

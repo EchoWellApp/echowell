@@ -21,7 +21,7 @@ In scope:
   of contract sections 19/20, with the column additions listed in section 4.10), 15 enumerated types, 2 extensions (created by
   provisioning, checked by migration 0001, D-72), 2 trigger functions, 17 triggers, 3 group roles and their grants.
 - Seed SQL for `config_parameters` (profiles `production` and `test_v0_1`).
-- The synthetic test roster (facility "Edgewood", residents R01–R10, devices, assignments) as CSV files, and the
+- The synthetic test roster (facility "Demo Facility", residents R01–R10, devices, assignments) as CSV files, and the
   test-only evaluation answer key CSV (section 4.12).
 - Rules that keep the Alembic migrations, `database/schema.sql` and SQLAlchemy models equivalent to this DDL.
 
@@ -1074,7 +1074,7 @@ CROSS JOIN (VALUES
 
 ### 4.12 Seed: synthetic test roster (test_v0_1, non-production only)
 
-Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The test facility is named "Edgewood"
+Applied by `python -m backend.cli seed test_v0_1` (PGS-026) as role `echowell_migrator`. The test facility is named "Demo Facility"
 (`meta.facility_name` is read from `facilities.name`; `DATA_SOURCE_LABEL` marks the data as test data). The answer-key facts for the
 Study team "Alarm timing check" (SRC-21) are NOT part of this seed: they are loaded from the CSV fixture
 `tests/fixtures/answer_key/evaluation_ground_truth_v0_1.csv` (TRD 14 DS-10) by running
@@ -1094,7 +1094,7 @@ The roster has a single format (TRD 24 D-68): four CSV files in `database/seeds/
 ```csv
 # database/seeds/test_v0_1/facilities.csv
 name,timezone
-Edgewood,America/Chicago
+Demo Facility,America/Chicago
 ```
 
 ```csv

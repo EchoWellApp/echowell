@@ -164,7 +164,7 @@ def test_comparison_with_ranges(api: TestClient, scene: World, principals: Princ
 
 AS_OF = datetime(2026, 10, 30, 20, 0, tzinfo=UTC)  # 2026-10-30 15:00 America/Chicago
 N01_ROSTER = {
-    "facilities.csv": "name,timezone\nEdgewood,America/Chicago\n",
+    "facilities.csv": "name,timezone\nDemo Facility,America/Chicago\n",
     "residents.csv": "resident_code,sex,cohort,enrolled_on,admitted_on\n"
                      "N01,F,new_admission,2026-10-15,2026-10-15\n",
     "devices.csv": "device_code,room_label,active,firmware_version_last\nDN01,,true,fw-1.0.0\n",
