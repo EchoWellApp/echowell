@@ -59,7 +59,7 @@ Every requirement in TRDs 01 to 25 SHALL trace to at least one BR-xx defined in 
 | X-14 | delete data on a retention schedule | Retention policy is OQ-01 | OQ-01 |
 | X-15 | show an EWMA trend against a baseline band | Shown in SRC-02 final box but not in the wireframes; deferred | OQ-18 |
 | X-16 | integrate with external records systems (EHR, facility systems) or smart-home platforms | Not requested; smart-home activation is OQ-16 | SRC-15 item 5, OQ-16 |
-| X-17 | support multiple facilities in the user interface | Single facility (Edgewood) in MVP; the schema supports more | ASM-03 |
+| X-17 | support multiple facilities in the user interface | Single facility (Demo Facility) in MVP; the schema supports more | ASM-03 |
 | X-18 | claim regulatory clearance | EchoWell is a research system, not an FDA-cleared device | SRC-14 |
 | X-19 | load any real resident data onto the interim Netlify/Render/Neon stack, or go live with real residents anywhere other than the approved AWS platform | Interim stack = synthetic and test data only; EchoWell goes live only on AWS after approval (OQ-23 closed) | D-OWNER-3, D-OWNER-4, RSK-14 |
 | X-20 | use the `test_v0_1` profile (baseline_n = 16) in production | The test profile exists only because the 30-day build/test dataset must reach scoring | D-OWNER-2 |
@@ -95,17 +95,17 @@ Related TRDs: all of 01 to 25. TRD 24 is the master list of OQ, ASM and RSK iden
 
 ### 4.1 Vision
 
-**Vision statement.** EchoWell makes voice a vital sign for residents of Edgewood: a short daily spoken check-in lets staff see, in one dashboard, when a resident's voice has moved away from that resident's own usual pattern steadily enough to be worth a conversation, while no audio ever leaves the resident's room.
+**Vision statement.** EchoWell makes voice a vital sign for residents of Demo Facility: a short daily spoken check-in lets staff see, in one dashboard, when a resident's voice has moved away from that resident's own usual pattern steadily enough to be worth a conversation, while no audio ever leaves the resident's room.
 
-**Problem statement (SRC-14 Part D §1).** Edgewood staff do not have a timely and objective way to detect when a resident's mental state changes from their own baseline. A change in mood is often an early sign of broader health decline; when it is caught late, the resident may already need intensive care.
+**Problem statement (SRC-14 Part D §1).** Demo Facility staff do not have a timely and objective way to detect when a resident's mental state changes from their own baseline. A change in mood is often an early sign of broader health decline; when it is caught late, the resident may already need intensive care.
 
 **What EchoWell changes.** Each resident says one agreed command phrase after a wake word. Team 1's device extracts acoustic features and discards the audio. EchoWell (Team 2) stores the feature record unaltered, screens it for quality and wrong-speaker suspicion, compares it with the resident's own frozen baseline, and raises a flag for clinician review only when a deviation persists across several sessions (SRC-02: "A single odd day never raises a flag").
 
-**Project context.** EchoWell is the product for the Speech Study ("voice as a vital sign"), funded by the ARPA-H grant awarded to the University of North Dakota (UND) (pending). There is no commercial partner. The Principal Investigator (PI) is Dr. Zvika Shinar. The study site is Edgewood, an assisted living facility. Edge4Care is a separate UND AI initiative and is never the name of the facility.
+**Project context.** EchoWell is the product for the Speech Study ("voice as a vital sign"), funded by the ARPA-H grant awarded to the University of North Dakota (UND) (pending). There is no commercial partner. The Principal Investigator (PI) is Dr. Zvika Shinar. The study site is a partner assisted living facility; the prototype shows it under the generic name "Demo Facility" (FACILITY_NAME, TRD 24 D-188). Edge4Care is a separate UND AI initiative and is never the name of the facility.
 
 ### 4.2 Intended use
 
-**Intended use statement.** EchoWell is intended for research use within the Speech Study. It is used by Edgewood care staff and the Speech Study research team to detect a change in an enrolled, consenting resident's voice relative to that resident's own frozen baseline, from acoustic features extracted on a device in the resident's room, and to prompt staff to check in with the resident. EchoWell output is a prompt to check in, not a diagnosis.
+**Intended use statement.** EchoWell is intended for research use within the Speech Study. It is used by Demo Facility care staff and the Speech Study research team to detect a change in an enrolled, consenting resident's voice relative to that resident's own frozen baseline, from acoustic features extracted on a device in the resident's room, and to prompt staff to check in with the resident. EchoWell output is a prompt to check in, not a diagnosis.
 
 **EchoWell is not intended to:** diagnose depression, anxiety or any other condition; measure the severity of any condition; replace clinical assessment; trigger emergency response; compare a resident with the general population for a clinical decision; or make any claim as a medical device.
 
@@ -132,13 +132,13 @@ The second arm is experimental because the systematic review supports between-pe
 
 | ID | Stakeholder group | Who they are | Key needs and priorities | Interaction with EchoWell |
 |---|---|---|---|---|
-| STK-01 | Edgewood care staff and clinicians | Nurses, care aides and clinical staff responsible for residents | Notice a change early without extra workload; trustworthy, few false alarms; plain language | Primary dashboard users (role `clinician`) |
-| STK-02 | Residents | Enrolled, consenting Edgewood residents (study IDs only) | Privacy (no audio leaves the room), dignity, low burden (one short phrase per day) | Speak to the device; never see the dashboard |
+| STK-01 | Demo Facility care staff and clinicians | Nurses, care aides and clinical staff responsible for residents | Notice a change early without extra workload; trustworthy, few false alarms; plain language | Primary dashboard users (role `clinician`) |
+| STK-02 | Residents | Enrolled, consenting Demo Facility residents (study IDs only) | Privacy (no audio leaves the room), dignity, low burden (one short phrase per day) | Speak to the device; never see the dashboard |
 | STK-03 | Principal Investigator | Dr. Zvika Shinar | Scientific validity, correct claims, final clinical wording (OQ-12), study constraints respected | Decision maker; reviews wording and thresholds |
 | STK-04 | Research team (Team 2 analysts, project coordinator) | Megan Stubbs (project coordinator, data processing), Team 2 research members | Reproducible, exportable data for the offline mixed-effects analysis and publications; exact match with the answer key | Dashboard users (role `researcher`); data export |
 | STK-05 | Team 2 engineering | Team 2 software engineer (Shaba Rahavi) and student developers | Implementable, testable specifications; low-cost hosting; simple operations | Builders and operators (role `admin`) |
 | STK-06 | Team 1 | Device hardware, audio capture, wake word, feature extraction and transport team | A stable, documented ingest interface and record schema | Sends feature records to the ingest API |
-| STK-07 | Facility leadership | Edgewood management | Staff time, resident satisfaction, privacy and reputation, site access (OQ-17) | Approves site participation; possible report reader |
+| STK-07 | Facility leadership | Demo Facility management | Staff time, resident satisfaction, privacy and reputation, site access (OQ-17) | Approves site participation; possible report reader |
 | STK-08 | IRB and faculty | UND faculty who own the IRB and research protocol | Consent, privacy, data retention (OQ-01) and withdrawal handling (OQ-11) | Governance; EchoWell must support their decisions, not make them |
 | STK-09 | Families | Residents' family members | Their relative's wellbeing and privacy | Indirect beneficiaries; no system access in MVP |
 | STK-10 | Funder | ARPA-H (grant awarded to UND, pending) | Credible results, responsible conduct | No system access |
@@ -146,7 +146,7 @@ The second arm is experimental because the systematic review supports between-pe
 
 ### 4.5 Personas and user needs (PROVISIONAL)
 
-> **Status: PROVISIONAL.** SRC-14 requires personas and user needs to be based on interview evidence from Ann and Lovette. Their Edgewood staff interviews take place during the last week of October 2026 (SRC-15 item 1). Until those findings are available, the personas below are working hypotheses derived from SRC-14 Part C prompts, the wireframes (SRC-21) and the project givens. Every persona and user need SHALL be reviewed and either confirmed, revised, or removed after the interviews (VIS-021). No requirement may be justified by a provisional persona alone; each traces to a BR-xx.
+> **Status: PROVISIONAL.** SRC-14 requires personas and user needs to be based on interview evidence from Ann and Lovette. Their Demo Facility staff interviews take place during the last week of October 2026 (SRC-15 item 1). Until those findings are available, the personas below are working hypotheses derived from SRC-14 Part C prompts, the wireframes (SRC-21) and the project givens. Every persona and user need SHALL be reviewed and either confirmed, revised, or removed after the interviews (VIS-021). No requirement may be justified by a provisional persona alone; each traces to a BR-xx.
 
 | ID | Persona (tag) | Role and responsibilities | Pain points today (hypothesis) | Goals | What they need from EchoWell | Dashboard role |
 |---|---|---|---|---|---|---|
@@ -253,7 +253,7 @@ All data used for the demo, including the record spoken in the demo video, is te
 | VIS-004 | EchoWell shall contain no large-language-model component, library call, or external LLM API. | Must | BR-18, C-06 | Inspection (dependency scan in CI, TRD 16) |
 | VIS-005 | The MVP alarm decision shall depend only on deterministic robust statistics and the CUSUM rule, with no trained ML model on the path from record to alarm. | Must | BR-11, BR-18, C-07 | Inspection, Test |
 | VIS-006 | EchoWell shall store no resident names or other PII; residents are identified only by study ID. | Must | BR-16, X-09 | Inspection (schema), Test |
-| VIS-007 | The facility shall be named "Edgewood" wherever it is named, and the UI shall take the facility name from the FACILITY_NAME configuration value. | Must | SRC-14 B.4, RSK-10 | Inspection |
+| VIS-007 | The facility shall be named "Demo Facility" wherever it is named, and the UI shall take the facility name from the FACILITY_NAME configuration value. | Must | SRC-14 B.4, RSK-10 | Inspection |
 | VIS-008 | The term "Edge4Care" shall not be used to refer to the facility in any TRD, UI string, seed data or documentation. | Must | SRC-14 B.4, RSK-10 | Inspection (repository text search in CI) |
 | VIS-009 | The New admissions page and API shall be labelled "Future / experimental" in every place they are shown (page note: TRD 11 UX-181). | Must | BR-14, SRC-21, SRC-12 | Inspection, Test (E2E) |
 | VIS-010 | The pipeline, run with profile `test_v0_1` on SRC-05, shall reproduce every expected result in SRC-03 within absolute tolerance 1e-6 for numeric values and exactly for statuses, reasons and alarm states. | Must | BR-15, SRC-03 | Test (TRD 13/14 validation suite) |
@@ -299,11 +299,11 @@ Dates from SRC-15 and SRC-16. Phases are high level; task-level planning lives i
 |---|---|---|---|
 | P0 Specification | to 18 Oct 2026 | Sources gathered; wireframes, test set and answer key issued (7 Oct 2026); TRDs 00–25 drafted | TRD set reviewed |
 | P1 MVP build block | 19 Oct – 15 Nov 2026 | Monorepo, database, ingest, analytics pipeline passing SRC-03, dashboard pages, auth, CI/CD, deployments | AC-VIS-01..05 met |
-| P1a Customer discovery | last week of Oct 2026 (26–30 Oct) | Ann and Lovette interview Edgewood staff | Personas and user needs revised (VIS-021) |
+| P1a Customer discovery | last week of Oct 2026 (26–30 Oct) | Ann and Lovette interview Demo Facility staff | Personas and user needs revised (VIS-021) |
 | P1b Team 1 device capture | target 30 Oct 2026 | Device records the agreed phrase on cue (Team 1 step 1) | Team 1 demo step 1 done |
 | P1c Demo fallback decision | 5 Nov 2026 | If cloud or device not ready, film on the local server | Decision recorded |
 | P2 Demo and presentations | 16 Nov – 8 Dec 2026 | End-to-end demo video; Solution presentation 1 Dec 2026; Impact presentation 8 Dec 2026 (both dates confirmed by the owner, contract §19) | Presentations delivered |
-| P3 Study preparation (semester 2) | not dated (depends on OQ-07, OQ-17, IRB) | Migration to the target AWS platform after budget approval (go-live with real resident data only there); alarm-limit calibration on Team 1's 50-resident/120-day dataset (OQ-13); morning offset estimation (OQ-09); facility norm method (OQ-08); Edgewood deployment with live data | Separate plan |
+| P3 Study preparation (semester 2) | not dated (depends on OQ-07, OQ-17, IRB) | Migration to the target AWS platform after budget approval (go-live with real resident data only there); alarm-limit calibration on Team 1's 50-resident/120-day dataset (OQ-13); morning offset estimation (OQ-09); facility norm method (OQ-08); Demo Facility deployment with live data | Separate plan |
 
 ```mermaid
 gantt
@@ -314,7 +314,7 @@ gantt
     TRD set drafted                      :done,    p0, 2026-10-01, 2026-10-18
     section MVP build block
     Build block (monorepo, pipeline, UI) :active,  p1, 2026-10-19, 2026-11-15
-    Edgewood staff interviews (Ann, Lovette) :     p1a, 2026-10-26, 2026-10-30
+    Demo Facility staff interviews (Ann, Lovette) :     p1a, 2026-10-26, 2026-10-30
     Team 1 device capture target         :milestone, m1, 2026-10-30, 0d
     Demo fallback decision               :milestone, m2, 2026-11-05, 0d
     Build block complete                 :milestone, m3, 2026-11-15, 0d
@@ -361,7 +361,7 @@ gantt
 |---|---|
 | ASM-01 | Facility timezone is America/Chicago. |
 | ASM-02 | At most one session per resident per local day in v0.1. |
-| ASM-03 | Single facility (Edgewood) in the MVP; the schema supports more. |
+| ASM-03 | Single facility (Demo Facility) in the MVP; the schema supports more. |
 | ASM-04 | Test profile baseline_n = 16; production 30. |
 | ASM-05 | Records arrive via HTTPS POST from Team 1 or CSV upload; transport is Team 1's. |
 | ASM-08 | Fewer than 25 dashboard users, fewer than 100 residents, fewer than 1 session per resident per day. |
@@ -423,7 +423,7 @@ Notes for lead (TRD-local, not in TRD 24): personas PER-01..07 and user needs UN
 | OQ-12 | Final clinical wording | VIS-012 |
 | OQ-13 | Alarm-limit calibration on the larger dataset and the participant-criteria 90-day minimum stay question (production baseline_n = 30 is decided, D-OWNER-2) | VIS-011 |
 | OQ-16 | Smart-home wake phrase vs no-raw-audio rule | X-16, C-01 |
-| OQ-17 | Edgewood site access | Phase P3 |
+| OQ-17 | Demo Facility site access | Phase P3 |
 | OQ-19 | Who owns "compare to baseline" between teams | Team boundary; this TRD set assumes Team 2 owns everything downstream of the ingest endpoint |
 | OQ-24 | Confirmation of data-alert thresholds (study team) | S-12 |
 | OQ-25 | Confirmation of the alarm-review explanation checklist (clinical team) | S-05 |

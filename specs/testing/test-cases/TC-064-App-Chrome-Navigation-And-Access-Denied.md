@@ -6,7 +6,7 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 
 ## Preconditions
 
-- Local Docker Compose demo profile running, seeded with `test_v0_1` and the DS-07 pipeline run (as-of Oct 30, 2026, 3:00 PM CT; `FACILITY_NAME` Edgewood; `DATA_SOURCE_LABEL` "pipeline test data v0.1"; `PIPELINE_PROFILE=test_v0_1`); no alarm reviewed yet (fresh seed: 2 open change alarms R09, R10).
+- Local Docker Compose demo profile running, seeded with `test_v0_1` and the DS-07 pipeline run (as-of Oct 30, 2026, 3:00 PM CT; `FACILITY_NAME` Demo Facility; `DATA_SOURCE_LABEL` "pipeline test data v0.1"; `PIPELINE_PROFILE=test_v0_1`); no alarm reviewed yet (fresh seed: 2 open change alarms R09, R10).
 - Seeded users `clinician@example.com`, `researcher@example.com`, `admin@example.com` with the `SEED_*` passwords.
 - Frontend built with `NEXT_PUBLIC_APP_ENV=local` (default for the local stack) unless the case says otherwise.
 - Browser developer tools (Network panel, Accessibility tree, element inspector).
@@ -46,8 +46,8 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 | Step | Action | Expected Result |
 |---|---|---|
 | 1 | Open `/residents` and inspect the app bar | `role="banner"`, background `--chrome` (#1F3A52 light); "EchoWell" 20px weight 700 in `--chrome-ink`; the brand is not a heading element |
-| 2 | Read the facility line next to the brand | "Edgewood, Assisted living" (14px, `--chrome-muted`) |
-| 3 | Compare with `GET /api/v1/config/ui` `meta.facility_name` | Same value "Edgewood" |
+| 2 | Read the facility line next to the brand | "Demo Facility, Assisted living" (14px, `--chrome-muted`) |
+| 3 | Compare with `GET /api/v1/config/ui` `meta.facility_name` | Same value "Demo Facility" |
 | 4 | Search every page for "[Facility name]" and for the old facility name of AGT-019 | No match |
 
 ### TC-064-03 Clinician navigation
@@ -171,7 +171,7 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 
 | Step | API Action | Expected Result |
 |---|---|---|
-| 1 | `GET /api/v1/config/ui` (clinician token) | 200; `meta.facility_name` "Edgewood", `meta.pipeline_profile` "test_v0_1", `meta.data_source_label` "pipeline test data v0.1" |
+| 1 | `GET /api/v1/config/ui` (clinician token) | 200; `meta.facility_name` "Demo Facility", `meta.pipeline_profile` "test_v0_1", `meta.data_source_label` "pipeline test data v0.1" |
 | 2 | `GET /api/v1/alerts?status=open` | 200; `total` 2 (R09, R10) |
 | 3 | `GET /api/v1/users` with the clinician token | 403 (admin only) |
 | 4 | `GET /api/v1/analytics` with the clinician token | 403 |
@@ -181,7 +181,7 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 
 | Step | Database Check | Expected Result |
 |---|---|---|
-| 1 | `SELECT name FROM facilities;` | "Edgewood", the same value shown in the facility line |
+| 1 | `SELECT name FROM facilities;` | "Demo Facility", the same value shown in the facility line |
 | 2 | `SELECT count(*) FROM alerts WHERE status = 'open';` | 2 on a fresh seed, matching the badge |
 | 3 | After TC-064-06 step 4: same query | 1 |
 
@@ -202,7 +202,7 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 |---|---|---|
 | FEAT-064-AC-01 | Clinician `/admin`: "You do not have access to this page." with "← Resident list", no admin request, no "Admin" link | TC-064-12, TC-064-03 |
 | FEAT-064-AC-02 | Clinician: no "Study team" link; `/study` access denied with no `GET /api/v1/analytics` request | TC-064-13 |
-| FEAT-064-AC-03 | App bar "EchoWell" / "Edgewood, Assisted living", nav per role with badge "2", data bar test-data sentence | TC-064-02, TC-064-03, TC-064-04, TC-064-09 |
+| FEAT-064-AC-03 | App bar "EchoWell" / "Demo Facility, Assisted living", nav per role with badge "2", data bar test-data sentence | TC-064-02, TC-064-03, TC-064-04, TC-064-09 |
 | FEAT-064-AC-04 | `/` → `/residents`; "Resident list" `aria-current="page"` on `/residents/R09/trends` | TC-064-01, TC-064-05 |
 | FEAT-064-AC-05 | Titles per FR-09, one `<h1>` per route with UX-010 text, skip link first focusable | TC-064-11 |
 | FEAT-064-AC-06 | `/residents/r09!` renders not-found without API request | TC-064-14 |
@@ -211,7 +211,7 @@ The page frame shared by every dashboard page (wireframe v0.2, SRC-21): the rout
 
 ## Test Data Requirements
 
-- DS-07 (`test_v0_1`, R01–R10, open change alarms R09 and R10), `FACILITY_NAME` Edgewood, `DATA_SOURCE_LABEL` "pipeline test data v0.1".
+- DS-07 (`test_v0_1`, R01–R10, open change alarms R09 and R10), `FACILITY_NAME` Demo Facility, `DATA_SOURCE_LABEL` "pipeline test data v0.1".
 - Seeded users and `SEED_*` passwords; display name "Clinician" for the clinician.
 - `NEXT_PUBLIC_APP_ENV` values `local`, `staging`, `production` (staging/production only on the hosted sites).
 - Re-seed command for resetting the review made in TC-064-06.

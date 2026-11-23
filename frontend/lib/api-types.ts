@@ -999,7 +999,7 @@ export interface components {
             cusum_h: number;
             /** @example pipeline test data v0.1 */
             data_source_label: string;
-            /** @example Edgewood */
+            /** @example Demo Facility */
             facility_name: string;
             /** @example America/Chicago */
             facility_tz: string;

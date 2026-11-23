@@ -6,7 +6,7 @@ import { test, expect } from "./fixtures";
 import { credentials, type E2ERole } from "./auth-store";
 import { DATA_BAR, sql } from "./helpers";
 
-const FACILITY = process.env.FACILITY_NAME ?? "Edgewood";
+const FACILITY = process.env.FACILITY_NAME ?? "Demo Facility";
 
 async function submitLogin(page: Page, role: E2ERole, password?: string): Promise<void> {
   const c = credentials(role);

@@ -45,7 +45,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Render and
 
 ## Out of Scope
 
-- Real residents, real devices at Edgewood or any go-live step (AGT-014, DEP-118; go-live is FEAT-092 on AWS).
+- Real residents, real devices at Demo Facility or any go-live step (AGT-014, DEP-118; go-live is FEAT-092 on AWS).
 - Backups, restore drill and rollback rehearsal (FEAT-089); demo acceptance (FEAT-090).
 - Changes to requirements or application logic, except to fix a deployment-specific defect, which must be reported (TRD 25 §4.6 Phase 10 Pitfalls).
 
@@ -60,7 +60,7 @@ Execute the Phase 10 deployment on the interim stack: provision Neon, Render and
 | FEAT-088-FR-05 | Production shall contain only the facility row, `config_parameters`, users, API keys and data received from devices or CSV upload of team test check-ins under `T`-prefixed demo study IDs; no row with `ingest_batches.source = seed` and no `test_v0_1` data. | DEP-007, DEP-008, DEP-073, DEP-093 |
 | FEAT-088-FR-06 | `python -m backend.cli bootstrap` shall be run on production (idempotent); the first production admin shall be created only with `python -m backend.cli create-user --email <admin email> --display-name <name> --role admin` in the Render Shell (or SSH) of the production web service, the password entered interactively and never written to a file, shell history or chat. | DEP-072, DEP-075, SEC-017 |
 | FEAT-088-FR-07 | Each environment shall have its own JWT_SECRET, API keys and users; a staging credential shall be rejected by production. | DEP-006, ENV-051 |
-| FEAT-088-FR-08 | Interim API keys shall be issued only to test devices or harnesses, never to devices deployed at Edgewood. | SEC-003, AGT-014 |
+| FEAT-088-FR-08 | Interim API keys shall be issued only to test devices or harnesses, never to devices deployed at Demo Facility. | SEC-003, AGT-014 |
 | FEAT-088-FR-09 | Migrations shall run only as the Render pre-deploy command `alembic upgrade head`, never by hand against the target. | DEP-060, ARC-082, TRD 25 §4.6 Phase 10 Commands |
 | FEAT-088-FR-10 | Health shall return `status` ok with `database` ok and `version` = deployed SHA in both environments; the frontend shall load over HTTPS; login shall work; staging and production smoke tests shall pass. | ARC-083, DEP-080, DEP-081, TST-152 |
 | FEAT-088-FR-11 | The R01–R10 suite (`pytest tests/validation -q`) shall pass in CI on the deployed commit. | TRD 25 §4.6 Phase 10 DoD, AC-AGT-04 |
@@ -113,7 +113,7 @@ Features that build directly on this one (BACKLOG.md §4): FEAT-089, FEAT-090.
 
 ## Security Requirements
 
-- Hard rule: no real resident data, no Edgewood devices (AGT-014, SEC-001, SEC-003, DEP-008).
+- Hard rule: no real resident data, no Demo Facility devices (AGT-014, SEC-001, SEC-003, DEP-008).
 - `test_v0_1` refused in production (AGT-015); seeding refused in production (DEP-070).
 - Secrets entered only in platform stores (FEAT-083); first admin password interactive only (DEP-075).
 - TLS everywhere, HSTS, `sslmode=require` (DEP-009, DEP-034, DEP-045).

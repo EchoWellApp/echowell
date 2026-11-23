@@ -93,7 +93,7 @@ Wireframe SRC-21: a dark app bar (`--chrome`) with, on the left, "EchoWell" (20p
 | ID | Requirement | Priority | Trace | Verification |
 |---|---|---|---|---|
 | UX-010 | The app bar (`role="banner"`) shall show the brand text "EchoWell" (20px, weight 700, `--chrome-ink`); each page shall have exactly one `<h1>` in its main content: "Residents in the study" on `/residents`, the resident code on the chart, "New admissions" on `/admissions`, "Study team: how the system is working" on `/study`, "Admin" on `/admin`, "EchoWell" on `/login`. | Must | SRC-21 | T |
-| UX-011 | Next to the brand the app bar shall show the facility line "<FACILITY_NAME>, Assisted living" (14px, `--chrome-muted`), e.g. "Edgewood, Assisted living". | Must | SRC-21, contract §11 | T |
+| UX-011 | Next to the brand the app bar shall show the facility line "<FACILITY_NAME>, Assisted living" (14px, `--chrome-muted`), e.g. "Demo Facility, Assisted living". | Must | SRC-21, contract §11 | T |
 | UX-012 | The facility name shall be rendered from `meta.facility_name` (`facilities.name`, seeded from FACILITY_NAME) and shall never be hard-coded; the UI shall never display the word "Edge4Care" as a facility name. | Must | contract §2, RSK-10 | T |
 | UX-013 | The main navigation (`<nav aria-label="Main">`, right-aligned, wrapping) shall contain, in order, the links "Resident list" (`/residents`), "New admissions" (`/admissions`) and "Study team" (`/study`), each padding 8px 12px, radius 4px, weight 600, 15px, `--chrome-ink`; the link of the current page (the chart counts as "Resident list") shall have `aria-current="page"` and a background of white at 16% opacity. | Must | SRC-21 | T |
 | UX-014 | For users with role `admin` the navigation shall show a fourth link "Admin" (`/admin`) after "Study team"; it shall not be shown to other roles. | Must | contract §10, D-111 | T |
@@ -838,7 +838,7 @@ Counts only. The page shall not use alarm wording other than "Alarms raised", "A
 
 - ASM-01: facility time zone America/Chicago (rendered from the API).
 - ASM-02: at most one session per resident per local day, so the count "<n> of <N> usable check-ins" never exceeds the number of days with a usable record.
-- ASM-03: one facility (Edgewood); facility name from `meta.facility_name` (`facilities.name`).
+- ASM-03: one facility (Demo Facility); facility name from `meta.facility_name` (`facilities.name`).
 - ASM-04 / D-OWNER-2: production N = 30; the test profile N = 16 is used only for build-out and testing. Screens render N from the API.
 - ASM-06: a new epoch closes the previous epoch's open alert and restarts the change score, so the pill reflects the current epoch only.
 - ASM-08: fewer than 100 residents, so the resident list shows all rows without paging.

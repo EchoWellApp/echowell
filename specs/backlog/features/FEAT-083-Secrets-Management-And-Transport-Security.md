@@ -17,7 +17,7 @@ Define, document and verify how every secret of every environment is created, st
 ## Business Context
 
 - BR-16 (privacy and security of potentially PHI-derived feature data): D-27 requires TLS 1.2+ including `sslmode=require`, encryption at rest, least privilege and no secrets in code.
-- D-28 / AGT-014 (hard rule): no real resident data on the interim Netlify/Render/Neon stack; interim API keys are never issued to devices at Edgewood (SEC-003).
+- D-28 / AGT-014 (hard rule): no real resident data on the interim Netlify/Render/Neon stack; interim API keys are never issued to devices at Demo Facility (SEC-003).
 
 ## Referenced TRDs
 
@@ -61,7 +61,7 @@ Define, document and verify how every secret of every environment is created, st
 | FEAT-083-FR-12 | The backend and every CLI command shall refuse to start when JWT_SECRET, any SEED_* value or a database URL password contains `local-dev-only` or `ci-only` and APP_ENV is `staging` or `production`. | ENV-041, AC-ENV-03 |
 | FEAT-083-FR-13 | A TLS check (TLS 1.1 refused, TLS 1.2 accepted) shall be part of the staging and production smoke tests, together with the HSTS header on both origins. | SEC-066, SEC-062, DEP-045 |
 | FEAT-083-FR-14 | Data at rest shall rely on provider-managed encryption on Neon (and Render Postgres if used; the Render services keep no data) (KMS on AWS), recorded per provider in `docs/deployment.md`. | SEC-063, DB-052, PGS-039 |
-| FEAT-083-FR-15 | The interim stack shall hold synthetic and test data only; interim API keys shall be bound to test devices or harnesses, never issued to devices deployed at Edgewood; DATA_SOURCE_LABEL shall name the synthetic or test source. | SEC-001, SEC-003, SEC-004, DEP-008, AGT-014 |
+| FEAT-083-FR-15 | The interim stack shall hold synthetic and test data only; interim API keys shall be bound to test devices or harnesses, never issued to devices deployed at Demo Facility; DATA_SOURCE_LABEL shall name the synthetic or test source. | SEC-001, SEC-003, SEC-004, DEP-008, AGT-014 |
 | FEAT-083-FR-16 | All hosted data shall reside in US East regions (Neon `aws-us-east-1`, Render `ohio` (US East; D-156), AWS `us-east-1`). | SEC-007 |
 | FEAT-083-FR-17 | GitHub secret scanning with push protection shall be enabled where the plan allows. | SEC-053 |
 

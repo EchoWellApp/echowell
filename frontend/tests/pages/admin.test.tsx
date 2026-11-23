@@ -63,7 +63,7 @@ describe("/admin", () => {
         "href",
         "/residents",
       );
-      await screen.findByText("Edgewood, Assisted living");
+      await screen.findByText("Demo Facility, Assisted living");
       server.events.removeListener("request:start", spy);
       expect(paths.filter((p) => /\/(users|pipeline|ingest|health)/.test(p))).toEqual([]);
       expect(screen.queryByRole("tablist")).toBeNull();

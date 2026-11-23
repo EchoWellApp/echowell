@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     jwt_expires_minutes: int = Field(default=60, ge=5, le=1440)
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
     cors_origin_regex: str = ""
-    facility_name: str = Field(default="Edgewood", min_length=1, max_length=80)
+    facility_name: str = Field(default="Demo Facility", min_length=1, max_length=80)
     facility_tz: str = "America/Chicago"
     pipeline_profile: Literal["production", "test_v0_1"] = "production"
     pipeline_as_of: str = ""

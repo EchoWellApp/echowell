@@ -19,7 +19,7 @@ describe("AppHeader", () => {
     renderSignedIn(<AppHeader meta={meta} active="residents" />, "clinician");
     expect(await screen.findByText("Clinician User")).toBeVisible();
     expect(screen.getByText("EchoWell")).toBeVisible();
-    expect(screen.getByText("Edgewood, Assisted living")).toBeVisible();
+    expect(screen.getByText("Demo Facility, Assisted living")).toBeVisible();
     const navEl = screen.getByRole("navigation", { name: "Main" });
     const list = await within(navEl).findByRole("link", {
       name: "Resident list, 2 alarms not reviewed",

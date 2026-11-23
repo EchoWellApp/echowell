@@ -227,7 +227,7 @@ Indicators: Summary fact "Not reviewed" / "Reviewed", list text "… Not reviewe
 
 ```text
 +---------------------------------------------------------------------------------------------+
-| EchoWell  Edgewood, Assisted living     [Resident list (2)] [New admissions] [Study team]    |
+| EchoWell  Demo Facility, Assisted living     [Resident list (2)] [New admissions] [Study team]    |
 |                                          [Admin]   <display name>  [Sign out]                |
 |---------------------------------------------------------------------------------------------|
 | Test data only (pipeline test data v0.1, Oct 1–30, 2026). No real residents. No audio is     |

@@ -135,7 +135,7 @@ jobs:
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
       TEST_SUPERUSER_URL: postgresql+psycopg://echowell:ci-only-postgres@localhost:5432/echowell_test
-      FACILITY_NAME: Edgewood
+      FACILITY_NAME: Demo Facility
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
       CORS_ORIGINS: http://localhost:3000
@@ -191,7 +191,7 @@ jobs:
       DATABASE_MIGRATION_URL: postgresql+psycopg://echowell_migrator_login:ci-only-migrator@localhost:5432/echowell_test
       DATABASE_READONLY_URL: postgresql+psycopg://echowell_readonly_login:ci-only-readonly@localhost:5432/echowell_test
       TEST_SUPERUSER_URL: postgresql+psycopg://echowell:ci-only-postgres@localhost:5432/echowell_test
-      FACILITY_NAME: Edgewood
+      FACILITY_NAME: Demo Facility
       FACILITY_TZ: America/Chicago
       PIPELINE_PROFILE: test_v0_1
       CORS_ORIGINS: http://localhost:3000

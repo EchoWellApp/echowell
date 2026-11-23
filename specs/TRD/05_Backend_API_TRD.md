@@ -462,7 +462,7 @@ resident_code), `GET /alerts`, `GET /scores`, `GET /analytics`, `POST /sessions`
 
 - ASM-01 Facility timezone America/Chicago (all `local_*` fields and date filters).
 - ASM-02 At most one session per resident per local day in v0.1.
-- ASM-03 Single facility (Edgewood); endpoints are not facility-scoped in the MVP.
+- ASM-03 Single facility (Demo Facility); endpoints are not facility-scoped in the MVP.
 - ASM-04 Test profile baseline_n=16; production 30 (API-066).
 - ASM-05 Records arrive via HTTPS POST from Team 1 or admin CSV upload.
 - ASM-06 New epoch closes any open alert of the previous epoch (pipeline behaviour; the API only reads it).

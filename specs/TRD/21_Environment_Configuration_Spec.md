@@ -62,7 +62,7 @@ the AWS target.
 | `JWT_SECRET` | HS256 signing key for access tokens | Yes | — | 64 characters from `openssl rand -base64 48` (TRD 24 D-161) | all | Yes | ≥ 32 bytes; in `staging`/`production` must not equal any value present in a committed template and must contain ≥ 16 distinct characters |
 | `JWT_EXPIRES_MINUTES` | Access token lifetime | No | `60` | `60` | all | No | integer 5–1440 |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated | Yes in staging/production | `http://localhost:3000,http://localhost:3001` (local/test only) | `https://echowell-und.netlify.app` | all | No | each item a valid origin without path; `*` forbidden; `http://` allowed only for `localhost` origins and only when APP_ENV is `local` or `test` |
-| `FACILITY_NAME` | Name used only by `backend.cli bootstrap`/`seed` to create the `facilities` row; the app bar facility line ("<name>, Assisted living", TRD 11 UX-011) shows `facilities.name` via `meta.facility_name` | Yes in staging/production | `Edgewood` | `Edgewood` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
+| `FACILITY_NAME` | Name used only by `backend.cli bootstrap`/`seed` to create the `facilities` row; the app bar facility line ("<name>, Assisted living", TRD 11 UX-011) shows `facilities.name` via `meta.facility_name` | Yes in staging/production | `Demo Facility` | `Demo Facility` | all | No | 1–80 chars; must not contain `Edge4Care` (RSK-10) |
 | `FACILITY_TZ` | Facility IANA time zone (bootstrap facility row, nightly job hour check) | No | `America/Chicago` | `America/Chicago` | all | No | valid `zoneinfo.ZoneInfo` key |
 | `PIPELINE_PROFILE` | Name of `config_parameters` profile used by pipeline runs | No | `production` | `test_v0_1` | all | No | one of `production`, `test_v0_1`; `test_v0_1` refused when APP_ENV=`production` |
 | `NIGHTLY_RUN_HOUR_LOCAL` | Facility-local hour in which `backend.jobs.nightly_run` starts the full nightly run (TRD 15 DEP-047) | No | `2` | `2` | all | No | integer 0–23 |
@@ -161,7 +161,7 @@ DATABASE_READONLY_URL=postgresql+psycopg://echowell_readonly_login:local-dev-onl
 JWT_SECRET=local-dev-only-0123456789abcdef0123456789abcdef
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-FACILITY_NAME=Edgewood
+FACILITY_NAME=Demo Facility
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=test_v0_1
 PIPELINE_AS_OF=2026-10-30T15:00:00-05:00
@@ -196,7 +196,7 @@ JWT_SECRET=                        # secret: openssl rand -base64 48 (different 
 JWT_EXPIRES_MINUTES=60
 CORS_ORIGINS=                      # e.g. https://echowell-und.netlify.app (staging: https://echowell-und-staging.netlify.app)
 CORS_ORIGIN_REGEX=                 # staging only: ^https://deploy-preview-\d+--echowell-und-staging\.netlify\.app$ ; empty in production
-FACILITY_NAME=Edgewood
+FACILITY_NAME=Demo Facility
 FACILITY_TZ=America/Chicago
 PIPELINE_PROFILE=production        # staging: test_v0_1 ; production: production (test_v0_1 refused)
 PIPELINE_AS_OF=                    # staging: 2026-10-30T15:00:00-05:00 ; production: must be empty
@@ -230,7 +230,7 @@ NEXT_PUBLIC_APP_ENV=production
 | JWT_SECRET | local-dev-only value | generated per run | unique secret | unique secret | unique secret (Secrets Manager) |
 | CORS_ORIGINS | `http://localhost:3000,http://localhost:3001` | `http://localhost:3000` | `https://echowell-und-staging.netlify.app` | `https://echowell-und.netlify.app` | Amplify production domain |
 | CORS_ORIGIN_REGEX | empty | empty | deploy-preview regex | empty | empty |
-| FACILITY_NAME | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` | `Edgewood` |
+| FACILITY_NAME | `Demo Facility` | `Demo Facility` | `Demo Facility` | `Demo Facility` | `Demo Facility` |
 | FACILITY_TZ | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` | `America/Chicago` |
 | PIPELINE_PROFILE | `test_v0_1` | `test_v0_1` | `test_v0_1` | `production` | `production` |
 | RATE_LIMIT_LOGIN | `5/minute` (E2E stack in CI: `60/minute`, D-74) | `5/minute` (pytest: limiter reset per test, TST-131 sets its own) | `5/minute` | `5/minute` | `5/minute` |
@@ -238,7 +238,7 @@ NEXT_PUBLIC_APP_ENV=production
 | LOG_FORMAT / LOG_LEVEL | `console` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` | `json` / `INFO` |
 | SENTRY_DSN | empty | empty | optional | optional (synthetic data only) | optional, re-approved (TRD 22) |
 | GIT_SHA | `unknown` | `${{ github.sha }}` | from `RENDER_GIT_COMMIT` (start command) | from `RENDER_GIT_COMMIT` = released SHA deployed by `deploy-production.yml` | image build arg |
-| DATA_SOURCE_LABEL | `pipeline test data v0.1` | `pipeline test data v0.1` | `pipeline test data v0.1` | `demo data (synthetic)` | `Edgewood check-ins` |
+| DATA_SOURCE_LABEL | `pipeline test data v0.1` | `pipeline test data v0.1` | `pipeline test data v0.1` | `demo data (synthetic)` | `Demo Facility check-ins` |
 | NEXT_PUBLIC_API_BASE_URL | `http://localhost:8000` | `http://localhost:8000` | `https://echowell-api.onrender.com` | `https://echowell-backend-production.onrender.com` | App Runner origin |
 | NEXT_PUBLIC_APP_ENV | `local` | `local` | `staging` | `production` | `production` |
 
@@ -251,7 +251,7 @@ NEXT_PUBLIC_APP_ENV=production
 ## 5. Assumptions
 
 - ASM-01 Facility timezone America/Chicago (default FACILITY_TZ).
-- ASM-03 Single facility (Edgewood): one FACILITY_NAME per deployment.
+- ASM-03 Single facility (Demo Facility): one FACILITY_NAME per deployment.
 - ASM-04 Test profile baseline_n=16, production 30 — selected via PIPELINE_PROFILE.
 - D-OWNER-4 Interim production holds synthetic/test data only; hence DATA_SOURCE_LABEL `demo data (synthetic)` until AWS go-live.
 

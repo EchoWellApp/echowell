@@ -45,7 +45,7 @@ def deployed_env(app_env: str, **overrides: str) -> dict[str, str]:
         "JWT_SECRET": SECRET,
         "PIPELINE_PROFILE": "production",
         "CORS_ORIGINS": "https://echowell-und.netlify.app",
-        "FACILITY_NAME": "Edgewood",
+        "FACILITY_NAME": "Demo Facility",
         "LOG_FORMAT": "json",
     }
     env.update(overrides)
@@ -126,7 +126,7 @@ def _settings(app_env: str, **overrides: object) -> dict[str, object]:
         "jwt_secret": SECRET,
         "pipeline_profile": "production",
         "cors_origins": "https://echowell-und.netlify.app",
-        "facility_name": "Edgewood",
+        "facility_name": "Demo Facility",
         "log_format": "json",
     }
     values.update(overrides)

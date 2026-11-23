@@ -24,7 +24,7 @@ describe("protected layout", () => {
     );
     expect(screen.getByRole("status")).toHaveTextContent("Loading EchoWell…");
     expect(await screen.findByText("content")).toBeVisible();
-    expect(await screen.findByText("Edgewood, Assisted living")).toBeVisible();
+    expect(await screen.findByText("Demo Facility, Assisted living")).toBeVisible();
     expect(await screen.findByTestId("data-bar")).toHaveTextContent(
       "Test data only (pipeline test data v0.1, Oct 1–30, 2026).",
     );
